@@ -243,31 +243,104 @@ body{font-family:'DM Sans',sans-serif;background:var(--felt2);min-height:100vh;c
 .waiting-hint{font-size:.82rem;color:rgba(244,236,216,.25);font-style:italic;text-align:center;padding:8px 0}
 
 /* ── CARDS ── */
-.cards-grid{display:flex;flex-wrap:wrap;gap:11px}
+.cards-grid{display:flex;flex-wrap:wrap;gap:14px;padding:4px 2px}
 .pcard{
-  width:76px;height:106px;
-  background:var(--card);border-radius:12px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  cursor:pointer;border:2px solid transparent;position:relative;overflow:hidden;
-  user-select:none;
-  box-shadow:0 6px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.75);
-  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,border-color .2s;
-  animation:dealIn .3s ease both;
+  width:82px;height:118px;
+  position:relative;cursor:pointer;user-select:none;
+  animation:dealIn .35s ease both;
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),filter .2s;
+  perspective:600px;
 }
-.pcard::before,.pcard::after{
-  content:attr(data-v);position:absolute;
-  font-family:'Playfair Display',serif;font-size:.63rem;color:rgba(0,0,0,.2);
-}
-.pcard::before{top:5px;left:7px}
-.pcard::after{bottom:5px;right:7px;transform:rotate(180deg)}
-.pcard:hover:not(.locked){transform:translateY(-10px) scale(1.06);box-shadow:0 20px 42px rgba(0,0,0,.5)}
-.pcard.sel{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold),0 16px 38px rgba(0,0,0,.55);transform:translateY(-12px) scale(1.08);background:#fffce6}
+.pcard:hover:not(.locked){transform:translateY(-14px) scale(1.06);filter:drop-shadow(0 22px 18px rgba(0,0,0,.55));}
+.pcard.sel{transform:translateY(-16px) scale(1.08);filter:drop-shadow(0 0 12px rgba(200,150,42,.9)) drop-shadow(0 18px 20px rgba(0,0,0,.6));}
 .pcard.locked{cursor:default}
-.pcard .cv{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--ink);line-height:1}
-.pcard .cs{font-size:.8rem;color:rgba(0,0,0,.16);margin-top:2px}
-.pcard.red .cv{color:var(--red)}
-.pcard.red .cs{color:rgba(192,57,43,.32)}
-.pcard.wild .cv{font-size:1.2rem}
+
+/* Card face */
+.pcard-inner{
+  width:100%;height:100%;
+  background:linear-gradient(160deg,#ffffff 0%,#fdf8ee 100%);
+  border-radius:10px;
+  border:1px solid rgba(0,0,0,.12);
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.9) inset,
+    0 -1px 0 rgba(0,0,0,.08) inset,
+    1px 0 0 rgba(255,255,255,.6) inset,
+    0 8px 24px rgba(0,0,0,.45),
+    0 2px 4px rgba(0,0,0,.3);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.pcard.sel .pcard-inner{
+  background:linear-gradient(160deg,#fffde8 0%,#fff8d0 100%);
+  border-color:rgba(200,150,42,.6);
+  box-shadow:
+    0 2px 0 rgba(255,255,255,.9) inset,
+    0 -1px 0 rgba(200,150,42,.2) inset,
+    0 8px 24px rgba(0,0,0,.5),
+    0 0 0 2.5px rgba(200,150,42,.85);
+}
+
+/* Card back pattern (subtle linen texture lines) */
+.pcard-inner::before{
+  content:'';position:absolute;inset:5px;border-radius:6px;
+  background:
+    repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.018) 3px,rgba(0,0,0,.018) 4px),
+    repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.012) 3px,rgba(0,0,0,.012) 4px);
+  pointer-events:none;
+}
+
+/* Corner pips - top left */
+.pcard-tl{
+  position:absolute;top:6px;left:8px;
+  display:flex;flex-direction:column;align-items:center;line-height:1;
+}
+/* Corner pips - bottom right (rotated) */
+.pcard-br{
+  position:absolute;bottom:6px;right:8px;
+  display:flex;flex-direction:column;align-items:center;line-height:1;
+  transform:rotate(180deg);
+}
+.pcard-num{
+  font-family:'Playfair Display',serif;
+  font-size:.78rem;font-weight:700;color:#1a1208;line-height:1;
+}
+.pcard-suit-sm{font-size:.65rem;line-height:1;margin-top:1px}
+
+/* Center display */
+.pcard-center{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;position:relative;z-index:1;
+}
+.pcard-bignum{
+  font-family:'Playfair Display',serif;
+  font-size:2rem;font-weight:700;line-height:1;color:#1a1208;
+  text-shadow:0 1px 0 rgba(255,255,255,.8);
+}
+.pcard-bigsuit{font-size:1.1rem;line-height:1;margin-top:1px}
+
+/* Red cards */
+.pcard.red .pcard-num,
+.pcard.red .pcard-bignum{ color:#b01020; }
+.pcard.red .pcard-suit-sm,
+.pcard.red .pcard-bigsuit{ color:#b01020; }
+
+/* Black cards */
+.pcard:not(.red) .pcard-suit-sm,
+.pcard:not(.red) .pcard-bigsuit{ color:#1a1208; }
+
+/* Wild / ? card special */
+.pcard.wild .pcard-bignum{ font-size:1.8rem; color:#6b3fa0; }
+.pcard.wild .pcard-bigsuit{ color:#6b3fa0; font-size:.9rem; }
+.pcard.wild .pcard-num{ color:#6b3fa0; }
+.pcard.wild .pcard-suit-sm{ color:#6b3fa0; }
+.pcard.wild .pcard-inner{
+  background:linear-gradient(160deg,#fdfaff 0%,#f5eeff 100%);
+  border-color:rgba(107,63,160,.2);
+}
+.pcard.wild.sel .pcard-inner{
+  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 8px 24px rgba(0,0,0,.5), 0 0 0 2.5px rgba(107,63,160,.7);
+}
 
 .obs-box{
   display:flex;align-items:center;gap:12px;
@@ -431,8 +504,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--felt2);min-height:100vh;c
   .hdr-c{order:3;width:100%;justify-content:center;padding-bottom:6px}
   .hdr-r{display:none}
   .cards-grid{justify-content:center}
-  .pcard{width:68px;height:96px}
-  .pcard .cv{font-size:1.45rem}
+  .pcard{width:70px;height:100px}
+  .pcard-bignum{font-size:1.7rem}
   .game-body{padding:16px 14px 50px}
   .actions{flex-direction:column}
   .btn-reveal,.btn-ghost,.btn-danger{flex:none;width:100%}
@@ -441,8 +514,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--felt2);min-height:100vh;c
 }
 @media(max-width:420px){
   .join-title{font-size:1.75rem}
-  .pcard{width:60px;height:86px}
-  .pcard .cv{font-size:1.25rem}
+  .pcard{width:62px;height:88px}
+  .pcard-bignum{font-size:1.45rem}
   .rc{font-size:1rem;letter-spacing:2px}
   .start-btn{font-size:.95rem;padding:16px}
 }
@@ -1079,13 +1152,24 @@ function GameScreen({
                     return (
                       <div
                         key={c.val}
-                        data-v={c.val}
                         className={`pcard${c.red ? " red" : ""}${c.val === "?" ? " wild" : ""}${sel ? " sel" : ""}${revealed ? " locked" : ""}`}
-                        style={{ animationDelay: `${i * 0.045}s` }}
+                        style={{ animationDelay: `${i * 0.055}s` }}
                         onClick={() => !revealed && onCard(c.val)}
                       >
-                        <span className="cv">{c.val}</span>
-                        <span className="cs">{c.suit}</span>
+                        <div className="pcard-inner">
+                          <div className="pcard-tl">
+                            <span className="pcard-num">{c.val}</span>
+                            <span className="pcard-suit-sm">{c.suit}</span>
+                          </div>
+                          <div className="pcard-center">
+                            <span className="pcard-bignum">{c.val}</span>
+                            <span className="pcard-bigsuit">{c.suit}</span>
+                          </div>
+                          <div className="pcard-br">
+                            <span className="pcard-num">{c.val}</span>
+                            <span className="pcard-suit-sm">{c.suit}</span>
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
