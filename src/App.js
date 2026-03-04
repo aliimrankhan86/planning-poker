@@ -1009,7 +1009,7 @@ export default function App() {
     }, 1000);
     setTimerInterval(iv);
     return () => clearInterval(iv);
-  }, [roomData?.timer?.running, roomData?.timer?.startedBy, myId, roomCode]);
+  }, [roomData?.timer?.running, roomData?.timer?.startedBy, myId, roomCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-reveal when all voters have voted ──────────────
   useEffect(() => {
