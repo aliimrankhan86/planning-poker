@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { db } from "./firebase";
 import {
   ref,
@@ -18,8 +18,10 @@ const CARDS = [
   { val: "13", suit: "♣", red: false },
   { val: "?", suit: "★", red: false },
 ];
-
-const initials = (n = "") =>
+const CIRC = 201.1;
+const uid = () => Math.random().toString(36).slice(2, 10);
+const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
+const ini = (n = "") =>
   n
     .split(" ")
     .slice(0, 2)
@@ -27,1380 +29,1284 @@ const initials = (n = "") =>
     .join("")
     .toUpperCase();
 
-const uid = () => Math.random().toString(36).slice(2, 10);
-const generateRoomCode = () =>
-  Math.random().toString(36).slice(2, 7).toUpperCase();
-
-const S = {
-  body: {
-    fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-    background: "linear-gradient(135deg, #183d2c 0%, #0f2a1e 100%)",
-    minHeight: "100vh",
-    color: "#f4edd8",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "0 16px 60px",
-  },
-  card: (selected, locked) => ({
-    width: 72,
-    height: 100,
-    background: selected ? "#fffbe8" : "#fffdf5",
-    borderRadius: 10,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: locked ? "default" : "pointer",
-    border: `2px solid ${selected ? "#c8a44a" : "transparent"}`,
-    boxShadow: selected
-      ? "0 0 0 2px #c8a44a, 0 12px 28px rgba(0,0,0,0.45)"
-      : "0 5px 16px rgba(0,0,0,0.45)",
-    transform: selected
-      ? "translateY(-10px) scale(1.07)"
-      : "translateY(0) scale(1)",
-    transition:
-      "transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.18s, border-color 0.18s",
-    userSelect: "none",
-    position: "relative",
-  }),
-  panel: {
-    background: "rgba(0,0,0,0.22)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: 18,
-    padding: "22px 22px",
-  },
-  input: {
-    width: "100%",
-    padding: "13px 16px",
-    border: "2px solid #d8cead",
-    borderRadius: 12,
-    fontFamily: "inherit",
-    fontSize: "0.98rem",
-    color: "#1a1a14",
-    background: "#fafaf3",
-    outline: "none",
-    marginBottom: 14,
-  },
-  btnGold: {
-    padding: "12px 28px",
-    background: "#c8a44a",
-    color: "#183d2c",
-    border: "none",
-    borderRadius: 100,
-    fontFamily: "inherit",
-    fontSize: "0.9rem",
-    fontWeight: 700,
-    cursor: "pointer",
-    letterSpacing: "0.3px",
-    transition: "background 0.2s",
-  },
-  btnGhost: {
-    padding: "11px 24px",
-    background: "transparent",
-    color: "#f4edd8",
-    border: "2px solid rgba(255,255,255,0.22)",
-    borderRadius: 100,
-    fontFamily: "inherit",
-    fontSize: "0.9rem",
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.2s",
-  },
-  secLabel: {
-    fontSize: "0.7rem",
-    fontWeight: 600,
-    letterSpacing: "2px",
-    textTransform: "uppercase",
-    color: "rgba(244,237,216,0.38)",
-    marginBottom: 12,
-    display: "block",
-  },
-};
-
-function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("voter");
-  const [roomCode, setRoom] = useState(initialRoom || "");
-  const [tab, setTab] = useState(initialRoom ? "join" : "create");
-  const [err, setErr] = useState("");
-
-  const handleCreate = () => {
-    if (!name.trim()) {
-      setErr("Please enter your name");
-      return;
-    }
-    onCreateRoom(name.trim(), role);
-  };
-  const handleJoin = () => {
-    if (!name.trim()) {
-      setErr("Please enter your name");
-      return;
-    }
-    if (!roomCode.trim()) {
-      setErr("Please enter a room code");
-      return;
-    }
-    onJoin(name.trim(), role, roomCode.trim().toUpperCase());
-  };
-
-  return (
-    <div style={{ maxWidth: 460, margin: "0 auto", width: "100%" }}>
-      <div
-        style={{
-          marginTop: 70,
-          background: "#fffdf5",
-          color: "#1a1a14",
-          borderRadius: 24,
-          padding: "48px 40px 44px",
-          boxShadow:
-            "0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(200,164,74,0.3)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 4,
-            background: "linear-gradient(90deg,#c8a44a,#debb6a,#c8a44a)",
-          }}
-        />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 14,
-            marginBottom: 24,
-            fontSize: "1.4rem",
-          }}
-        >
-          {["♠", "♥", "♣", "♦", "♠"].map((s, i) => (
-            <span
-              key={i}
-              style={{
-                opacity: 0.15,
-                color: i % 2 === 1 ? "#b83232" : "#1a1a14",
-              }}
-            >
-              {s}
-            </span>
-          ))}
-        </div>
-        <h1
-          style={{
-            fontFamily: "Georgia,serif",
-            fontSize: "2rem",
-            color: "#183d2c",
-            marginBottom: 6,
-          }}
-        >
-          Planning Poker
-        </h1>
-        <p
-          style={{
-            color: "#999",
-            fontSize: "0.87rem",
-            marginBottom: 28,
-            fontWeight: 300,
-          }}
-        >
-          Real-time estimates for your scrum team
-        </p>
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            marginBottom: 24,
-            background: "#f0ebe0",
-            borderRadius: 12,
-            padding: 4,
-          }}
-        >
-          {["create", "join"].map((t) => (
-            <button
-              key={t}
-              onClick={() => {
-                setTab(t);
-                setErr("");
-              }}
-              style={{
-                flex: 1,
-                padding: "9px 0",
-                border: "none",
-                borderRadius: 9,
-                fontFamily: "inherit",
-                fontSize: "0.88rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all .2s",
-                background: tab === t ? "#183d2c" : "transparent",
-                color: tab === t ? "#f4edd8" : "#888",
-              }}
-            >
-              {t === "create" ? "✦ Create Room" : "→ Join Room"}
-            </button>
-          ))}
-        </div>
-        <label
-          style={{
-            display: "block",
-            fontSize: "0.7rem",
-            fontWeight: 600,
-            letterSpacing: "1.4px",
-            textTransform: "uppercase",
-            color: "#666",
-            marginBottom: 6,
-          }}
-        >
-          Your Name
-        </label>
-        <input
-          style={S.input}
-          placeholder="e.g. Alex Chen"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setErr("");
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter")
-              tab === "create" ? handleCreate() : handleJoin();
-          }}
-        />
-        {tab === "join" && (
-          <>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.7rem",
-                fontWeight: 600,
-                letterSpacing: "1.4px",
-                textTransform: "uppercase",
-                color: "#666",
-                marginBottom: 6,
-              }}
-            >
-              Room Code
-            </label>
-            <input
-              style={S.input}
-              placeholder="e.g. AB12C"
-              value={roomCode}
-              onChange={(e) => {
-                setRoom(e.target.value.toUpperCase());
-                setErr("");
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleJoin();
-              }}
-              maxLength={6}
-            />
-          </>
-        )}
-        <label
-          style={{
-            display: "block",
-            fontSize: "0.7rem",
-            fontWeight: 600,
-            letterSpacing: "1.4px",
-            textTransform: "uppercase",
-            color: "#666",
-            marginBottom: 8,
-          }}
-        >
-          Your Role
-        </label>
-        <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
-          {[
-            {
-              r: "voter",
-              icon: "🃏",
-              label: "Voter",
-              sub: "Dev · QA · Designer",
-            },
-            {
-              r: "observer",
-              icon: "👁",
-              label: "Observer",
-              sub: "SM · PO · BA · Coach",
-            },
-          ].map(({ r, icon, label, sub }) => (
-            <button
-              key={r}
-              onClick={() => setRole(r)}
-              style={{
-                flex: 1,
-                padding: "10px 8px",
-                borderRadius: 10,
-                border: `2px solid ${role === r ? (r === "voter" ? "#183d2c" : "#6a8fa8") : "#d8cead"}`,
-                background:
-                  role === r
-                    ? r === "voter"
-                      ? "rgba(24,61,44,0.08)"
-                      : "rgba(106,143,168,0.12)"
-                    : "transparent",
-                color:
-                  role === r ? (r === "voter" ? "#183d2c" : "#6a8fa8") : "#888",
-                fontFamily: "inherit",
-                fontSize: "0.84rem",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "all .2s",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 3,
-              }}
-            >
-              <span style={{ fontSize: "1.2rem" }}>{icon}</span>
-              <span style={{ fontWeight: 600 }}>{label}</span>
-              <span
-                style={{ fontSize: "0.66rem", fontWeight: 300, opacity: 0.65 }}
-              >
-                {sub}
-              </span>
-            </button>
-          ))}
-        </div>
-        {err && (
-          <p
-            style={{ color: "#b83232", fontSize: "0.82rem", marginBottom: 10 }}
-          >
-            {err}
-          </p>
-        )}
-        <button
-          onClick={tab === "create" ? handleCreate : handleJoin}
-          style={{ ...S.btnGold, width: "100%", padding: 14, fontSize: "1rem" }}
-        >
-          {tab === "create" ? "Create Room →" : "Join Room →"}
-        </button>
-      </div>
-    </div>
-  );
+/* ─────────────────────────── CSS ─────────────────────────── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --felt:#0b2115;--felt2:#081a0f;--rail:#183422;
+  --gold:#c8962a;--gold2:#e9b84d;--goldA:rgba(200,150,42,0.15);
+  --cream:#f4ecd8;--cream2:#e6d9bf;
+  --red:#c0392b;--obs:#1a6b9a;
+  --card:#fdfaf2;--ink:#18120a;
+  --panel:rgba(15,35,20,0.75);
+  --border:rgba(255,255,255,0.07);
 }
-
-const CIRC = 201.1;
-
-function TimerPanel({ isObserver, timerState, onStart, onStop }) {
-  const [selected, setSelected] = useState(30);
-  const { running, remaining, duration } = timerState;
-  const progress = running ? remaining / duration : 1;
-  const offset = CIRC * (1 - progress);
-  const isUrgent = remaining <= 5;
-  const isWarn = remaining <= 10 && !isUrgent;
-  return (
-    <div style={S.panel}>
-      <span style={S.secLabel}>Estimation Timer</span>
-      {isObserver && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            marginBottom: running ? 14 : 0,
-          }}
-        >
-          <div style={{ position: "relative" }}>
-            <select
-              value={selected}
-              onChange={(e) => setSelected(+e.target.value)}
-              disabled={running}
-              style={{
-                appearance: "none",
-                padding: "9px 32px 9px 13px",
-                background: "rgba(200,164,74,0.12)",
-                border: "1.5px solid rgba(200,164,74,0.35)",
-                color: "#debb6a",
-                borderRadius: 10,
-                fontFamily: "inherit",
-                fontSize: "0.87rem",
-                fontWeight: 500,
-                cursor: running ? "not-allowed" : "pointer",
-                outline: "none",
-                opacity: running ? 0.5 : 1,
-              }}
-            >
-              <option value={30}>30 seconds</option>
-              <option value={45}>45 seconds</option>
-            </select>
-            <span
-              style={{
-                position: "absolute",
-                right: 11,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "#c8a44a",
-                fontSize: "0.75rem",
-                pointerEvents: "none",
-              }}
-            >
-              ▾
-            </span>
-          </div>
-          {!running ? (
-            <button style={S.btnGold} onClick={() => onStart(selected)}>
-              ▶ Start
-            </button>
-          ) : (
-            <button
-              style={{
-                ...S.btnGhost,
-                padding: "9px 18px",
-                fontSize: "0.85rem",
-              }}
-              onClick={onStop}
-            >
-              ✕ Stop
-            </button>
-          )}
-        </div>
-      )}
-      {running && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            ...(isObserver
-              ? {
-                  paddingTop: 14,
-                  borderTop: "1px solid rgba(255,255,255,0.07)",
-                }
-              : {}),
-          }}
-        >
-          <div style={{ position: "relative", flexShrink: 0 }}>
-            <svg
-              width={76}
-              height={76}
-              viewBox="0 0 76 76"
-              style={{ transform: "rotate(-90deg)" }}
-            >
-              <circle
-                cx={38}
-                cy={38}
-                r={32}
-                fill="none"
-                stroke="rgba(255,255,255,0.08)"
-                strokeWidth={5}
-              />
-              <circle
-                cx={38}
-                cy={38}
-                r={32}
-                fill="none"
-                stroke={isUrgent ? "#e84040" : isWarn ? "#e8a030" : "#c8a44a"}
-                strokeWidth={5}
-                strokeLinecap="round"
-                strokeDasharray={CIRC}
-                strokeDashoffset={offset}
-                style={{
-                  transition: "stroke-dashoffset 1s linear, stroke 0.3s",
-                }}
-              />
-            </svg>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: "Georgia,serif",
-                fontSize: "1.65rem",
-                color: isUrgent ? "#e84040" : "#f4edd8",
-              }}
-            >
-              {remaining}
-            </div>
-          </div>
-          <div>
-            <div
-              style={{
-                fontSize: "0.77rem",
-                letterSpacing: "1.3px",
-                textTransform: "uppercase",
-                color: isUrgent
-                  ? "#e84040"
-                  : isWarn
-                    ? "#e8a030"
-                    : "rgba(244,237,216,0.4)",
-                marginBottom: 3,
-              }}
-            >
-              {isUrgent
-                ? "Time's almost up!"
-                : isWarn
-                  ? "Wrapping up…"
-                  : "Estimating…"}
-            </div>
-            <div
-              style={{ fontSize: "0.74rem", color: "rgba(244,237,216,0.27)" }}
-            >
-              {isObserver ? "Cards lock when timer ends" : "Pick your card!"}
-            </div>
-          </div>
-        </div>
-      )}
-      {!isObserver && !running && (
-        <div
-          style={{
-            fontSize: "0.82rem",
-            color: "rgba(244,237,216,0.3)",
-            fontStyle: "italic",
-            marginTop: 4,
-          }}
-        >
-          Waiting for facilitator to start the timer…
-        </div>
-      )}
-    </div>
-  );
+html{font-size:16px}
+body{font-family:'DM Sans',sans-serif;background:var(--felt2);min-height:100vh;color:var(--cream);overflow-x:hidden;
+  background-image:
+    radial-gradient(ellipse 140% 60% at 50% -10%,rgba(24,52,34,0.9) 0%,transparent 55%),
+    repeating-linear-gradient(0deg,transparent,transparent 44px,rgba(255,255,255,.006) 44px,rgba(255,255,255,.006) 45px),
+    repeating-linear-gradient(90deg,transparent,transparent 44px,rgba(255,255,255,.006) 44px,rgba(255,255,255,.006) 45px);
 }
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes flip{0%{transform:rotateY(90deg) scale(.85)}60%{transform:rotateY(-6deg) scale(1.02)}100%{transform:rotateY(0) scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes shimmer{0%{background-position:-300% center}100%{background-position:300% center}}
+@keyframes glow{0%,100%{box-shadow:0 0 18px rgba(200,150,42,.3)}50%{box-shadow:0 0 40px rgba(200,150,42,.65),0 0 80px rgba(200,150,42,.2)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes urgentBg{0%,100%{background:rgba(192,57,43,.12)}50%{background:rgba(192,57,43,.28)}}
+@keyframes dealIn{from{opacity:0;transform:translateY(-20px) scale(.88)}to{opacity:1;transform:translateY(0) scale(1)}}
 
-function PlayerList({ players, revealed, myId }) {
-  const voters = players.filter((p) => p.role === "voter");
-  const observers = players.filter((p) => p.role === "observer");
-  const votedCount = voters.filter((p) => p.voted).length;
-  return (
-    <div style={S.panel}>
-      <span style={S.secLabel}>At the Table</span>
-      {voters.length > 0 && !revealed && (
-        <div style={{ marginBottom: 14 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "0.75rem",
-              color: "rgba(244,237,216,0.4)",
-              marginBottom: 6,
-            }}
-          >
-            <span>Votes in</span>
-            <span>
-              {votedCount} / {voters.length}
-            </span>
-          </div>
-          <div
-            style={{
-              background: "rgba(255,255,255,0.08)",
-              borderRadius: 100,
-              height: 5,
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                borderRadius: 100,
-                background: "linear-gradient(90deg,#c8a44a,#debb6a)",
-                width: `${voters.length ? (votedCount / voters.length) * 100 : 0}%`,
-                transition: "width 0.4s ease",
-              }}
-            />
-          </div>
-        </div>
-      )}
-      {voters.length === 0 && observers.length === 0 && (
-        <div
-          style={{
-            color: "rgba(244,237,216,0.25)",
-            fontSize: "0.82rem",
-            fontStyle: "italic",
-            padding: "12px 0",
-          }}
-        >
-          Nobody here yet
-        </div>
-      )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        {voters.map((p) => (
-          <PlayerRow
-            key={p.id}
-            p={p}
-            revealed={revealed}
-            isMe={p.id === myId}
-          />
-        ))}
-        {observers.length > 0 && voters.length > 0 && (
-          <div
-            style={{
-              borderTop: "1px solid rgba(255,255,255,0.06)",
-              margin: "6px 0",
-            }}
-          />
-        )}
-        {observers.map((p) => (
-          <PlayerRow
-            key={p.id}
-            p={p}
-            revealed={revealed}
-            isMe={p.id === myId}
-          />
-        ))}
-      </div>
-    </div>
-  );
+/* ── APP ── */
+.app{min-height:100vh;display:flex;flex-direction:column}
+
+/* ── JOIN ── */
+.join-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .4s ease}
+.join-box{
+  width:100%;max-width:460px;
+  background:linear-gradient(155deg,rgba(24,52,34,.96) 0%,rgba(11,33,21,.98) 100%);
+  border:1px solid rgba(200,150,42,.35);border-radius:24px;
+  padding:46px 38px 42px;
+  box-shadow:0 40px 100px rgba(0,0,0,.65),inset 0 1px 0 rgba(200,150,42,.18);
+  position:relative;overflow:hidden;animation:fadeUp .45s ease;
 }
-
-function PlayerRow({ p, revealed, isMe }) {
-  const isObs = p.role === "observer";
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "9px 12px",
-        borderRadius: 12,
-        background: isObs
-          ? "rgba(106,143,168,0.12)"
-          : p.voted
-            ? "rgba(200,164,74,0.1)"
-            : "rgba(255,255,255,0.04)",
-        border: `1px solid ${isObs ? "rgba(106,143,168,0.2)" : p.voted ? "rgba(200,164,74,0.25)" : "rgba(255,255,255,0.07)"}`,
-        transition: "background 0.3s",
-      }}
-    >
-      <div
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: 8,
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: 700,
-          fontSize: "0.74rem",
-          background: isObs
-            ? "rgba(106,143,168,0.4)"
-            : p.voted
-              ? "#c8a44a"
-              : "#2e8055",
-          color: p.voted && !isObs ? "#183d2c" : "#f4edd8",
-        }}
-      >
-        {initials(p.name)}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: "0.85rem",
-            fontWeight: 500,
-            color: "#e8dfc5",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {p.name}
-          {isMe ? " (you)" : ""}
-        </div>
-        <div
-          style={{
-            fontSize: "0.68rem",
-            color: isObs ? "rgba(106,143,168,0.7)" : "rgba(244,237,216,0.33)",
-            marginTop: 1,
-          }}
-        >
-          {isObs ? "Observer · Facilitator" : "Voter"}
-        </div>
-      </div>
-      {isObs ? (
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "rgba(106,143,168,0.5)",
-            flexShrink: 0,
-          }}
-        />
-      ) : revealed && p.voted ? (
-        <div
-          style={{
-            background: "#fffdf5",
-            color: "#1a1a14",
-            fontFamily: "Georgia,serif",
-            fontWeight: 700,
-            fontSize: "0.9rem",
-            borderRadius: 6,
-            padding: "2px 10px",
-            border: "1px solid #c8a44a",
-            minWidth: 32,
-            textAlign: "center",
-            flexShrink: 0,
-          }}
-        >
-          {p.vote}
-        </div>
-      ) : (
-        <div
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            flexShrink: 0,
-            background: p.voted ? "#c8a44a" : "rgba(255,255,255,0.18)",
-            animation: !p.voted ? "pulse 1.6s ease infinite" : "none",
-          }}
-        />
-      )}
-    </div>
-  );
+.join-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--gold),var(--gold2),var(--gold),transparent);
+  background-size:300% auto;animation:shimmer 3s linear infinite;
 }
-
-function Results({ players }) {
-  const voters = players.filter((p) => p.role === "voter" && p.voted);
-  if (!voters.length) return null;
-  const nums = voters
-    .map((p) => p.vote)
-    .filter((v) => v !== "?")
-    .map(Number);
-  const allSame = new Set(voters.map((p) => p.vote)).size === 1;
-  const avg = nums.length
-    ? (nums.reduce((a, b) => a + b, 0) / nums.length).toFixed(1)
-    : null;
-  const min = nums.length ? Math.min(...nums) : null;
-  const max = nums.length ? Math.max(...nums) : null;
-  return (
-    <div style={{ ...S.panel, border: "1px solid rgba(200,164,74,0.35)" }}>
-      <div
-        style={{
-          fontFamily: "Georgia,serif",
-          fontSize: "0.95rem",
-          color: "#c8a44a",
-          letterSpacing: "0.5px",
-          marginBottom: 14,
-          textAlign: "center",
-        }}
-      >
-        ✦ &nbsp; Votes Revealed &nbsp; ✦
-      </div>
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          justifyContent: "center",
-          flexWrap: "wrap",
-          marginBottom: 14,
-        }}
-      >
-        {voters.map((p, i) => (
-          <div
-            key={p.id}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 5,
-              animation: `flipIn 0.35s ease ${i * 0.07}s both`,
-            }}
-          >
-            <div
-              style={{
-                background: "#fffdf5",
-                color: "#1a1a14",
-                fontFamily: "Georgia,serif",
-                fontWeight: 700,
-                fontSize: "1.1rem",
-                borderRadius: 8,
-                padding: "7px 16px",
-                border: "1px solid #d8cead",
-                minWidth: 42,
-                textAlign: "center",
-                boxShadow: "0 3px 10px rgba(0,0,0,0.3)",
-              }}
-            >
-              {p.vote}
-            </div>
-            <div
-              style={{
-                fontSize: "0.68rem",
-                color: "rgba(244,237,216,0.35)",
-                maxWidth: 64,
-                textAlign: "center",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {p.name}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div
-        style={{
-          textAlign: "center",
-          fontSize: "0.83rem",
-          color: "rgba(244,237,216,0.5)",
-        }}
-      >
-        {allSame ? (
-          <span style={{ color: "#debb6a", fontWeight: 500 }}>
-            🎉 Perfect consensus! Everyone picked {voters[0].vote}
-          </span>
-        ) : avg !== null ? (
-          <>
-            Average: <strong style={{ color: "#f4edd8" }}>{avg}</strong>{" "}
-            &nbsp;·&nbsp; Range: {min}–{max}
-          </>
-        ) : (
-          "Votes recorded"
-        )}
-      </div>
-    </div>
-  );
+.join-suits{display:flex;justify-content:center;gap:18px;margin-bottom:26px;font-size:1.55rem}
+.join-suits span{opacity:.18}
+.join-suits span:nth-child(2),.join-suits span:nth-child(4){color:var(--red)}
+.join-title{font-family:'Playfair Display',serif;font-size:2.1rem;color:var(--gold2);text-align:center;margin-bottom:5px;letter-spacing:.5px}
+.join-sub{text-align:center;color:rgba(244,236,216,.4);font-size:.84rem;margin-bottom:30px;font-weight:300}
+.tab-row{display:flex;gap:4px;margin-bottom:26px;background:rgba(0,0,0,.35);border-radius:12px;padding:4px;border:1px solid rgba(255,255,255,.05)}
+.tab-btn{flex:1;padding:10px;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;color:rgba(244,236,216,.35)}
+.tab-btn.on{background:var(--gold);color:var(--ink);box-shadow:0 2px 14px rgba(200,150,42,.4)}
+.lbl{display:block;font-size:.67rem;font-weight:600;letter-spacing:1.9px;text-transform:uppercase;color:rgba(244,236,216,.38);margin-bottom:7px}
+.inp{
+  width:100%;padding:13px 16px;
+  background:rgba(0,0,0,.32);border:1.5px solid rgba(255,255,255,.1);
+  border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.95rem;
+  color:var(--cream);outline:none;margin-bottom:18px;transition:border-color .2s,box-shadow .2s;
 }
+.inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,150,42,.14)}
+.inp::placeholder{color:rgba(244,236,216,.2)}
+.role-row{display:flex;gap:8px;margin-bottom:24px}
+.role-btn{
+  flex:1;padding:12px 6px;border-radius:12px;
+  border:1.5px solid rgba(255,255,255,.1);background:transparent;
+  font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;
+  cursor:pointer;color:rgba(244,236,216,.4);transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.role-btn .ri{font-size:1.3rem}
+.role-btn .rl{font-weight:700}
+.role-btn .rs{font-size:.63rem;opacity:.6;font-weight:300}
+.role-btn.rv{border-color:var(--gold);background:rgba(200,150,42,.12);color:var(--gold2)}
+.role-btn.ro{border-color:var(--obs);background:rgba(26,107,154,.14);color:#5dade2}
+.err{color:#e74c3c;font-size:.8rem;margin-bottom:10px;text-align:center}
+.btn-primary{
+  width:100%;padding:15px;border:none;border-radius:13px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:var(--ink);font-family:'DM Sans',sans-serif;font-size:.98rem;font-weight:700;
+  cursor:pointer;letter-spacing:.4px;transition:all .2s;
+  box-shadow:0 4px 22px rgba(200,150,42,.38);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 7px 30px rgba(200,150,42,.55)}
+.btn-primary:active{transform:none}
 
+/* ── HEADER ── */
+.hdr{
+  background:linear-gradient(180deg,rgba(11,33,21,.97),rgba(11,33,21,.9));
+  border-bottom:1px solid rgba(200,150,42,.18);
+  backdrop-filter:blur(14px);position:sticky;top:0;z-index:100;padding:0 20px;
+}
+.hdr-in{
+  max-width:1120px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  min-height:62px;gap:10px;flex-wrap:wrap;padding:10px 0;
+}
+.hdr-l{display:flex;align-items:center;gap:10px}
+.btn-back{
+  display:flex;align-items:center;gap:5px;
+  padding:7px 13px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.1);background:transparent;
+  color:rgba(244,236,216,.45);font-family:'DM Sans',sans-serif;
+  font-size:.78rem;cursor:pointer;transition:all .2s;
+}
+.btn-back:hover{background:rgba(255,255,255,.07);color:var(--cream);border-color:rgba(255,255,255,.22)}
+.logo-btn{
+  font-family:'Playfair Display',serif;font-size:1.25rem;
+  color:var(--gold);background:none;border:none;cursor:pointer;
+  transition:color .2s;letter-spacing:.3px;
+}
+.logo-btn:hover{color:var(--gold2)}
+.logo-btn span{color:var(--cream)}
+.hdr-c{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+.room-badge{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(0,0,0,.3);border:1px solid rgba(200,150,42,.22);
+  border-radius:10px;padding:6px 14px;
+}
+.rl2{font-size:.63rem;letter-spacing:2px;text-transform:uppercase;color:rgba(244,236,216,.32)}
+.rc{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--gold2);letter-spacing:4px}
+.badge{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);
+  border-radius:100px;padding:5px 13px;
+  font-size:.7rem;letter-spacing:1.8px;text-transform:uppercase;color:rgba(244,236,216,.32);
+}
+.badge-gold{background:rgba(200,150,42,.1);border-color:rgba(200,150,42,.2);color:rgba(232,184,77,.7)}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.btn-sm{
+  display:flex;align-items:center;gap:5px;
+  padding:7px 14px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.12);background:transparent;
+  color:rgba(244,236,216,.5);font-family:'DM Sans',sans-serif;
+  font-size:.78rem;cursor:pointer;transition:all .2s;
+}
+.btn-sm:hover{background:rgba(255,255,255,.07);color:var(--cream)}
+
+/* ── GAME ── */
+.game-body{max-width:1120px;margin:0 auto;padding:22px 20px 60px;width:100%}
+.game-grid{display:grid;grid-template-columns:1fr 310px;gap:18px;align-items:start}
+.lcol,.rcol{display:flex;flex-direction:column;gap:16px}
+
+/* ── PANEL ── */
+.panel{
+  background:linear-gradient(155deg,rgba(20,48,28,.72),rgba(11,33,21,.72));
+  border:1px solid var(--border);border-radius:18px;padding:20px;
+  backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.28);
+}
+.panel-gold{border-color:rgba(200,150,42,.22)}
+.ptitle{font-size:.66rem;font-weight:600;letter-spacing:2.3px;text-transform:uppercase;color:rgba(244,236,216,.32);margin-bottom:15px;display:block}
+
+/* ── START BTN ── */
+.start-btn{
+  width:100%;padding:18px;border:none;border-radius:14px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:var(--ink);font-family:'DM Sans',sans-serif;font-size:1.05rem;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:0 4px 24px rgba(200,150,42,.42);
+  transition:all .2s;animation:glow 2.8s ease infinite;letter-spacing:.3px;
+}
+.start-btn:hover{transform:translateY(-2px);box-shadow:0 8px 34px rgba(200,150,42,.58)}
+.start-btn:active{transform:none}
+.start-btn .ico{font-size:1.25rem}
+
+/* ── TIMER SELECT ── */
+.tsel-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.tsel-wrap{position:relative}
+.tsel-wrap::after{content:'▾';position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:.74rem;pointer-events:none}
+.tsel{
+  appearance:none;padding:9px 32px 9px 13px;
+  background:rgba(0,0,0,.3);border:1.5px solid rgba(200,150,42,.28);
+  color:var(--gold2);border-radius:10px;
+  font-family:'DM Sans',sans-serif;font-size:.87rem;font-weight:500;
+  cursor:pointer;outline:none;transition:border-color .2s;
+}
+.tsel:hover{border-color:var(--gold)}
+.tsel option{background:#0b2115}
+.tsel:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── RING ── */
+.ring-area{
+  display:flex;align-items:center;gap:18px;
+  padding:16px;background:rgba(0,0,0,.22);
+  border-radius:14px;border:1px solid rgba(255,255,255,.05);
+  animation:fadeIn .3s ease;
+}
+.ring-area.urgent{animation:urgentBg 1s ease infinite}
+.ring-wrap{position:relative;width:82px;height:82px;flex-shrink:0}
+.rsv{transform:rotate(-90deg)}
+.rt{fill:none;stroke:rgba(255,255,255,.06);stroke-width:6}
+.rp{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .3s}
+.rnum{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:1.75rem;color:var(--cream);
+}
+.rnum.urgent{color:#e74c3c}
+.rtxt{flex:1}
+.rstatus{font-size:.76rem;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:3px;color:rgba(244,236,216,.38)}
+.rstatus.warn{color:#e67e22}.rstatus.danger{color:#e74c3c}
+.rhint{font-size:.72rem;color:rgba(244,236,216,.22);margin-top:2px}
+.btn-stop{
+  margin-top:9px;padding:6px 13px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.13);background:transparent;
+  color:rgba(244,236,216,.42);font-family:'DM Sans',sans-serif;
+  font-size:.75rem;cursor:pointer;transition:all .2s;
+}
+.btn-stop:hover{background:rgba(255,255,255,.06);color:var(--cream)}
+
+.waiting-hint{font-size:.82rem;color:rgba(244,236,216,.25);font-style:italic;text-align:center;padding:8px 0}
+
+/* ── CARDS ── */
+.cards-grid{display:flex;flex-wrap:wrap;gap:11px}
+.pcard{
+  width:76px;height:106px;
+  background:var(--card);border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;border:2px solid transparent;position:relative;overflow:hidden;
+  user-select:none;
+  box-shadow:0 6px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.75);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s,border-color .2s;
+  animation:dealIn .3s ease both;
+}
+.pcard::before,.pcard::after{
+  content:attr(data-v);position:absolute;
+  font-family:'Playfair Display',serif;font-size:.63rem;color:rgba(0,0,0,.2);
+}
+.pcard::before{top:5px;left:7px}
+.pcard::after{bottom:5px;right:7px;transform:rotate(180deg)}
+.pcard:hover:not(.locked){transform:translateY(-10px) scale(1.06);box-shadow:0 20px 42px rgba(0,0,0,.5)}
+.pcard.sel{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold),0 16px 38px rgba(0,0,0,.55);transform:translateY(-12px) scale(1.08);background:#fffce6}
+.pcard.locked{cursor:default}
+.pcard .cv{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--ink);line-height:1}
+.pcard .cs{font-size:.8rem;color:rgba(0,0,0,.16);margin-top:2px}
+.pcard.red .cv{color:var(--red)}
+.pcard.red .cs{color:rgba(192,57,43,.32)}
+.pcard.wild .cv{font-size:1.2rem}
+
+.obs-box{
+  display:flex;align-items:center;gap:12px;
+  padding:16px 18px;background:rgba(26,107,154,.1);
+  border:1px solid rgba(26,107,154,.22);border-radius:12px;
+  color:#5dade2;font-size:.88rem;
+}
+.vstatus{text-align:center;font-size:.83rem;padding:8px 0}
+.vstatus.voted{color:rgba(200,150,42,.7)}
+.vstatus.wait{color:rgba(244,236,216,.22);font-style:italic}
+
+/* ── RESULTS ── */
+.results-panel{border-color:rgba(200,150,42,.3);animation:fadeUp .35s ease}
+.res-hdr{font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold2);text-align:center;margin-bottom:16px}
+.res-cards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.rc-wrap{display:flex;flex-direction:column;align-items:center;gap:5px}
+.rc-val{
+  background:var(--card);color:var(--ink);
+  font-family:'Playfair Display',serif;font-weight:700;font-size:1.12rem;
+  border-radius:10px;padding:8px 16px;min-width:44px;text-align:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);
+  animation:flip .4s ease both;
+}
+.rc-name{font-size:.67rem;color:rgba(244,236,216,.32);max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stats-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:14px 0;margin-bottom:10px}
+.stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 16px;background:rgba(0,0,0,.22);border-radius:11px;border:1px solid rgba(255,255,255,.07)}
+.sv{font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--gold2);font-weight:700}
+.sl{font-size:.63rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(244,236,216,.3)}
+.consensus{text-align:center;color:var(--gold2);font-weight:600;font-size:.9rem;margin-bottom:6px}
+.no-vote{text-align:center;color:rgba(244,236,216,.35);font-size:.79rem}
+
+/* ── AVG BOX ── */
+.avg-box{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 20px;
+  background:linear-gradient(135deg,rgba(200,150,42,.12),rgba(200,150,42,.04));
+  border:1px solid rgba(200,150,42,.22);border-radius:14px;
+}
+.avg-l .al{font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:rgba(244,236,216,.35);margin-bottom:4px}
+.avg-l .av{font-family:'Playfair Display',serif;font-size:2.2rem;color:var(--gold2);font-weight:700;line-height:1}
+.avg-l .as{font-size:.7rem;color:rgba(244,236,216,.28);margin-top:3px}
+.chips{display:flex}
+.chip{width:33px;height:33px;border-radius:50%;border:3px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:700;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);font-family:'DM Sans',sans-serif}
+
+/* ── ACTIONS ── */
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn-reveal{
+  flex:1;padding:13px 18px;border:none;border-radius:12px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:var(--ink);font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;
+  cursor:pointer;transition:all .2s;
+  box-shadow:0 4px 18px rgba(200,150,42,.32);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-reveal:hover{transform:translateY(-1px);box-shadow:0 6px 26px rgba(200,150,42,.5)}
+.btn-reveal:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{
+  padding:13px 18px;background:transparent;color:var(--cream);
+  border:1.5px solid rgba(255,255,255,.17);border-radius:12px;
+  font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-ghost:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.28)}
+.btn-danger{
+  padding:13px 18px;background:rgba(192,57,43,.1);color:rgba(231,76,60,.8);
+  border:1.5px solid rgba(192,57,43,.22);border-radius:12px;
+  font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.btn-danger:hover{background:rgba(192,57,43,.18);border-color:rgba(192,57,43,.38);color:#e74c3c}
+
+/* ── PLAYERS ── */
+.vp-head{display:flex;justify-content:space-between;font-size:.73rem;color:rgba(244,236,216,.35);margin-bottom:7px}
+.vp-bar{background:rgba(255,255,255,.06);border-radius:100px;height:5px;overflow:hidden;margin-bottom:14px}
+.vp-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .4s ease}
+.plist{display:flex;flex-direction:column;gap:7px}
+.prow{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:13px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.055);
+  transition:all .3s;
+}
+.prow.voted{background:rgba(200,150,42,.08);border-color:rgba(200,150,42,.18)}
+.prow.obs{background:rgba(26,107,154,.08);border-color:rgba(26,107,154,.14)}
+.pav{
+  width:32px;height:32px;border-radius:9px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.74rem;background:#2e8055;color:var(--cream);
+}
+.prow.voted .pav{background:var(--gold);color:var(--ink)}
+.prow.obs .pav{background:rgba(26,107,154,.45)}
+.pname{font-size:.85rem;font-weight:500;color:var(--cream2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prole{font-size:.66rem;color:rgba(244,236,216,.28);margin-top:1px}
+.prow.obs .prole{color:rgba(93,173,226,.55)}
+.pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.pdot.v{background:var(--gold)}
+.pdot.w{background:rgba(255,255,255,.14);animation:pulse 1.9s ease infinite}
+.pdot.o{background:rgba(93,173,226,.4)}
+.vchip{
+  background:var(--card);color:var(--ink);
+  font-family:'Playfair Display',serif;font-weight:700;font-size:.9rem;
+  border-radius:7px;padding:3px 10px;
+  border:1px solid var(--gold);min-width:32px;text-align:center;
+  animation:flip .3s ease both;
+}
+.sep{border:none;border-top:1px solid rgba(255,255,255,.05);margin:6px 0}
+.nobody{font-size:.79rem;color:rgba(244,236,216,.2);font-style:italic;text-align:center;padding:10px 0}
+
+/* ── SESSION ── */
+.ss-grid{display:flex;gap:8px;flex-wrap:wrap}
+.ss-chip{
+  flex:1;min-width:72px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:12px 8px;
+  background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.06);border-radius:12px;
+}
+.ss-v{font-family:'Playfair Display',serif;font-size:1.45rem;color:var(--gold2);font-weight:700}
+.ss-l{font-size:.61rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(244,236,216,.28);text-align:center}
+
+/* ── INVITE ── */
+.inv-panel{border-style:dashed;border-color:rgba(255,255,255,.1)}
+.inv-url{
+  background:rgba(0,0,0,.24);border-radius:9px;padding:9px 12px;
+  font-family:monospace;font-size:.73rem;color:rgba(244,236,216,.32);
+  word-break:break-all;margin-bottom:10px;border:1px solid rgba(255,255,255,.05);
+}
+.btn-inv{
+  width:100%;padding:10px;
+  background:rgba(200,150,42,.1);border:1px solid rgba(200,150,42,.22);
+  border-radius:10px;color:var(--gold2);
+  font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:600;
+  cursor:pointer;transition:all .2s;
+}
+.btn-inv:hover{background:rgba(200,150,42,.18)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:26px;left:50%;
+  transform:translateX(-50%) translateY(70px);
+  background:var(--card);color:var(--ink);
+  border-radius:12px;padding:12px 22px;
+  font-size:.87rem;font-weight:600;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);
+  border:1px solid rgba(200,150,42,.28);
+  z-index:500;white-space:nowrap;
+  transition:transform .32s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ── LOADING ── */
+.loading{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.spinner{width:36px;height:36px;border:3px solid rgba(200,150,42,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+
+/* ── RESPONSIVE ── */
+@media(max-width:780px){
+  .game-grid{grid-template-columns:1fr}
+  .rcol{order:-1}
+  .hdr-in{padding:10px 0;gap:8px}
+  .hdr-c{order:3;width:100%;justify-content:center;padding-bottom:6px}
+  .hdr-r{display:none}
+  .cards-grid{justify-content:center}
+  .pcard{width:68px;height:96px}
+  .pcard .cv{font-size:1.45rem}
+  .game-body{padding:16px 14px 50px}
+  .actions{flex-direction:column}
+  .btn-reveal,.btn-ghost,.btn-danger{flex:none;width:100%}
+  .avg-box{flex-direction:column;text-align:center}
+  .join-box{padding:34px 22px 30px}
+}
+@media(max-width:420px){
+  .join-title{font-size:1.75rem}
+  .pcard{width:60px;height:86px}
+  .pcard .cv{font-size:1.25rem}
+  .rc{font-size:1rem;letter-spacing:2px}
+  .start-btn{font-size:.95rem;padding:16px}
+}
+`;
+
+/* ─────────────────────── MAIN APP ───────────────────────── */
 export default function App() {
   const [screen, setScreen] = useState("join");
   const [myId] = useState(uid);
-  const [, setMyName] = useState("");
   const [myRole, setMyRole] = useState("voter");
-  const [roomCode, setRoomCode] = useState("");
+  const [code, setCode] = useState("");
   const [roomData, setRoomData] = useState(null);
   const [toast, setToast] = useState("");
-  const [timerInterval, setTimerInterval] = useState(null);
+  const [toastOn, setToastOn] = useState(false);
+  const [timerIv, setTimerIv] = useState(null);
+  const toastRef = useRef(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const r = params.get("room");
-    if (r) setRoomCode(r.toUpperCase());
+    const p = new URLSearchParams(window.location.search);
+    const r = p.get("room");
+    if (r) setCode(r.toUpperCase());
   }, []);
 
   useEffect(() => {
-    if (!roomCode || screen !== "game") return;
-    const roomRef = ref(db, `rooms/${roomCode}`);
-    const unsub = onValue(roomRef, (snap) => {
-      if (snap.exists()) {
-        setRoomData(snap.val());
-      } else {
-        showToast("Room not found or was deleted.");
-        setScreen("join");
+    if (!code || screen !== "game") return;
+    const unsub = onValue(ref(db, `rooms/${code}`), (snap) => {
+      if (snap.exists()) setRoomData(snap.val());
+      else {
+        showToast("Room not found.");
+        goBack();
       }
     });
     return () => unsub();
-  }, [roomCode, screen]);
+  }, [code, screen]); // eslint-disable-line
 
   useEffect(() => {
     if (!roomData?.timer?.running) {
-      clearInterval(timerInterval);
-      setTimerInterval(null);
+      clearInterval(timerIv);
+      setTimerIv(null);
       return;
     }
     if (roomData.timer.startedBy !== myId) return;
-    if (timerInterval) return;
+    if (timerIv) return;
     const iv = setInterval(async () => {
-      const newRemaining = (roomData.timer.remaining ?? 0) - 1;
-      if (newRemaining <= 0) {
+      const r = (roomData.timer.remaining ?? 1) - 1;
+      if (r <= 0) {
         clearInterval(iv);
-        setTimerInterval(null);
-        await update(ref(db, `rooms/${roomCode}/timer`), {
+        setTimerIv(null);
+        await update(ref(db, `rooms/${code}/timer`), {
           running: false,
           remaining: 0,
         });
-        await update(ref(db, `rooms/${roomCode}`), { revealed: true });
-        showToast("⏰ Time's up! Cards revealed.");
+        await update(ref(db, `rooms/${code}`), { revealed: true });
+        showToast("⏰ Time's up — cards revealed!");
       } else {
-        await update(ref(db, `rooms/${roomCode}/timer`), {
-          remaining: newRemaining,
-        });
+        await update(ref(db, `rooms/${code}/timer`), { remaining: r });
       }
     }, 1000);
-    setTimerInterval(iv);
+    setTimerIv(iv);
     return () => clearInterval(iv);
-  }, [roomData?.timer?.running, roomData?.timer?.startedBy, myId, roomCode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roomData?.timer?.running, roomData?.timer?.startedBy, myId, code]); // eslint-disable-line
 
   useEffect(() => {
     if (!roomData || roomData.revealed) return;
-    const players = Object.values(roomData.players || {});
-    const voters = players.filter((p) => p.role === "voter");
-    if (voters.length === 0) return;
+    const all = Object.values(roomData.players || {});
+    const voters = all.filter((p) => p.role === "voter");
+    if (!voters.length) return;
     if (voters.every((p) => p.voted)) {
       setTimeout(async () => {
-        const players2 = Object.values(roomData.players || {});
-        if (
-          players2.filter((p) => p.role === "voter").every((p) => p.voted) &&
-          !roomData.revealed
-        ) {
-          await update(ref(db, `rooms/${roomCode}`), { revealed: true });
-          showToast("🃏 All votes in — cards revealed!");
+        const fresh = Object.values(roomData.players || {}).filter(
+          (p) => p.role === "voter",
+        );
+        if (fresh.every((p) => p.voted) && !roomData.revealed) {
+          await update(ref(db, `rooms/${code}`), { revealed: true });
+          showToast("🃏 All voted — revealing cards!");
         }
-      }, 800);
+      }, 700);
     }
-  }, [roomData, roomCode]);
+  }, [roomData, code]); // eslint-disable-line
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 3500);
-  };
-
-  const handleCreateRoom = async (name, role) => {
-    const code = generateRoomCode();
-    setMyName(name);
-    setMyRole(role);
-    setRoomCode(code);
-    await set(ref(db, `rooms/${code}`), {
-      createdAt: serverTimestamp(),
-      revealed: false,
-      round: 1,
-      timer: { running: false, duration: 30, remaining: 30 },
-      players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
-    });
-    window.history.replaceState({}, "", `?room=${code}`);
-    setScreen("game");
-    showToast(`Room created! Code: ${code}`);
-  };
-
-  const handleJoinRoom = async (name, role, code) => {
-    setMyName(name);
-    setMyRole(role);
-    setRoomCode(code);
-    const roomRef = ref(db, `rooms/${code}`);
-    const snap = await new Promise((res) =>
-      onValue(roomRef, res, { onlyOnce: true }),
-    );
-    if (!snap.exists()) {
-      showToast(`Room "${code}" not found. Check the code and try again.`);
-      return;
-    }
-    await update(ref(db, `rooms/${code}/players/${myId}`), {
-      id: myId,
-      name,
-      role,
-      voted: false,
-      vote: null,
-    });
-    window.history.replaceState({}, "", `?room=${code}`);
-    setScreen("game");
-  };
+  const goBack = useCallback(() => {
+    if (code && myId) remove(ref(db, `rooms/${code}/players/${myId}`));
+    setScreen("join");
+    setRoomData(null);
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [code, myId]);
 
   useEffect(() => {
     const cleanup = () => {
-      if (roomCode && myId)
-        remove(ref(db, `rooms/${roomCode}/players/${myId}`));
+      if (code && myId) remove(ref(db, `rooms/${code}/players/${myId}`));
     };
     window.addEventListener("beforeunload", cleanup);
     return () => {
       cleanup();
       window.removeEventListener("beforeunload", cleanup);
     };
-  }, [roomCode, myId]);
+  }, [code, myId]);
+
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setToastOn(true);
+    clearTimeout(toastRef.current);
+    toastRef.current = setTimeout(() => setToastOn(false), 3200);
+  }, []);
+
+  const handleCreate = async (name, role) => {
+    const c = mkCode();
+    setMyRole(role);
+    setCode(c);
+    await set(ref(db, `rooms/${c}`), {
+      createdAt: serverTimestamp(),
+      revealed: false,
+      round: 1,
+      storiesDone: 0,
+      timer: { running: false, duration: 30, remaining: 30 },
+      players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
+    });
+    window.history.replaceState({}, "", `?room=${c}`);
+    setScreen("game");
+    showToast(`🎲 Room created! Code: ${c}`);
+  };
+
+  const handleJoin = async (name, role, c) => {
+    setMyRole(role);
+    setCode(c);
+    const snap = await new Promise((res) =>
+      onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
+    );
+    if (!snap.exists()) {
+      showToast(`Room "${c}" not found.`);
+      return;
+    }
+    await update(ref(db, `rooms/${c}/players/${myId}`), {
+      id: myId,
+      name,
+      role,
+      voted: false,
+      vote: null,
+    });
+    window.history.replaceState({}, "", `?room=${c}`);
+    setScreen("game");
+  };
 
   const selectCard = useCallback(
     async (val) => {
       if (!roomData || roomData.revealed) return;
-      const newVote = roomData.players?.[myId]?.vote === val ? null : val;
-      await update(ref(db, `rooms/${roomCode}/players/${myId}`), {
-        voted: !!newVote,
-        vote: newVote,
+      const cur = roomData.players?.[myId]?.vote;
+      const nv = cur === val ? null : val;
+      await update(ref(db, `rooms/${code}/players/${myId}`), {
+        voted: !!nv,
+        vote: nv,
       });
     },
-    [roomData, roomCode, myId],
+    [roomData, code, myId],
   );
 
   const revealVotes = useCallback(async () => {
-    await update(ref(db, `rooms/${roomCode}`), { revealed: true });
-    await update(ref(db, `rooms/${roomCode}/timer`), { running: false });
-  }, [roomCode]);
+    await update(ref(db, `rooms/${code}`), { revealed: true });
+    await update(ref(db, `rooms/${code}/timer`), { running: false });
+  }, [code]);
 
   const newRound = useCallback(async () => {
     const players = roomData?.players || {};
-    const updates = {};
+    const upd = {};
     Object.keys(players).forEach((id) => {
-      updates[`rooms/${roomCode}/players/${id}/voted`] = false;
-      updates[`rooms/${roomCode}/players/${id}/vote`] = null;
+      upd[`rooms/${code}/players/${id}/voted`] = false;
+      upd[`rooms/${code}/players/${id}/vote`] = null;
     });
-    updates[`rooms/${roomCode}/revealed`] = false;
-    updates[`rooms/${roomCode}/round`] = (roomData?.round || 1) + 1;
-    updates[`rooms/${roomCode}/timer/running`] = false;
-    updates[`rooms/${roomCode}/timer/remaining`] =
-      roomData?.timer?.duration || 30;
-    await update(ref(db), updates);
-  }, [roomCode, roomData]);
+    upd[`rooms/${code}/revealed`] = false;
+    upd[`rooms/${code}/round`] = (roomData?.round || 1) + 1;
+    upd[`rooms/${code}/storiesDone`] = (roomData?.storiesDone || 0) + 1;
+    upd[`rooms/${code}/timer/running`] = false;
+    upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
+    await update(ref(db), upd);
+    showToast("🔄 New round — vote on the next story!");
+  }, [code, roomData, showToast]);
+
+  const resetSession = useCallback(async () => {
+    const players = roomData?.players || {};
+    const upd = {};
+    Object.keys(players).forEach((id) => {
+      upd[`rooms/${code}/players/${id}/voted`] = false;
+      upd[`rooms/${code}/players/${id}/vote`] = null;
+    });
+    upd[`rooms/${code}/revealed`] = false;
+    upd[`rooms/${code}/round`] = 1;
+    upd[`rooms/${code}/storiesDone`] = 0;
+    upd[`rooms/${code}/timer/running`] = false;
+    upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
+    await update(ref(db), upd);
+    showToast("♻️ Session reset to zero!");
+  }, [code, roomData, showToast]);
 
   const startTimer = useCallback(
-    async (seconds) => {
-      await update(ref(db, `rooms/${roomCode}/timer`), {
+    async (sec) => {
+      await update(ref(db, `rooms/${code}/timer`), {
         running: true,
-        duration: seconds,
-        remaining: seconds,
+        duration: sec,
+        remaining: sec,
         startedBy: myId,
       });
     },
-    [roomCode, myId],
+    [code, myId],
   );
 
   const stopTimer = useCallback(async () => {
-    clearInterval(timerInterval);
-    setTimerInterval(null);
-    await update(ref(db, `rooms/${roomCode}/timer`), { running: false });
-  }, [roomCode, timerInterval]);
+    clearInterval(timerIv);
+    setTimerIv(null);
+    await update(ref(db, `rooms/${code}/timer`), { running: false });
+  }, [code, timerIv]);
 
-  if (screen === "join") {
-    return (
-      <div style={S.body}>
-        <JoinScreen
-          onJoin={handleJoinRoom}
-          onCreateRoom={handleCreateRoom}
-          initialRoom={roomCode}
-        />
-      </div>
-    );
-  }
-
-  if (!roomData) {
-    return (
-      <div
-        style={{ ...S.body, alignItems: "center", justifyContent: "center" }}
-      >
-        <div style={{ fontSize: "1rem", color: "rgba(244,237,216,0.4)" }}>
-          Connecting to room…
-        </div>
-      </div>
-    );
-  }
-
-  const players = Object.values(roomData.players || {});
-  const myPlayer = roomData.players?.[myId];
-  const myVote = myPlayer?.vote || null;
-  const isObserver = myRole === "observer";
-  const revealed = roomData.revealed || false;
-  const round = roomData.round || 1;
-  const timerState = roomData.timer || {
-    running: false,
-    duration: 30,
-    remaining: 30,
-  };
-  const voters = players.filter((p) => p.role === "voter");
-  const hasVotes = voters.some((p) => p.voted);
-  const shareUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
+  const shareUrl = `${window.location.origin}${window.location.pathname}?room=${code}`;
 
   return (
-    <div style={S.body}>
-      <style>{`
-        @keyframes flipIn { from{transform:rotateY(90deg) scale(0.9)} to{transform:rotateY(0) scale(1)} }
-        @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .p-card-hover:hover { transform: translateY(-8px) scale(1.05) !important; box-shadow: 0 16px 32px rgba(0,0,0,0.4) !important; }
-      `}</style>
-      <header
-        style={{
-          width: "100%",
-          maxWidth: 940,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "24px 0 16px",
-          borderBottom: "1px solid rgba(200,164,74,0.2)",
-          marginBottom: 22,
-          flexWrap: "wrap",
-          gap: 10,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "Georgia,serif",
-            fontSize: "1.5rem",
-            color: "#c8a44a",
-          }}
-        >
-          Planning <span style={{ color: "#f4edd8" }}>Poker</span>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-            style={{
-              background: "rgba(0,0,0,0.25)",
-              border: "1px solid rgba(200,164,74,0.25)",
-              borderRadius: 10,
-              padding: "6px 14px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <span
-              style={{
-                fontSize: "0.7rem",
-                letterSpacing: "1.5px",
-                textTransform: "uppercase",
-                color: "rgba(244,237,216,0.4)",
-              }}
-            >
-              Room
-            </span>
-            <span
-              style={{
-                fontFamily: "Georgia,serif",
-                fontSize: "1.1rem",
-                fontWeight: 700,
-                color: "#debb6a",
-                letterSpacing: "3px",
-              }}
-            >
-              {roomCode}
-            </span>
+    <>
+      <style>{CSS}</style>
+      <div className="app">
+        {screen === "join" && (
+          <JoinScreen
+            onCreate={handleCreate}
+            onJoin={handleJoin}
+            initCode={code}
+          />
+        )}
+        {screen === "game" && !roomData && (
+          <div className="loading">
+            <div className="spinner" />
+            <div style={{ color: "rgba(244,236,216,.3)", fontSize: ".9rem" }}>
+              Connecting…
+            </div>
           </div>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(shareUrl);
-              showToast("Link copied! Share with your team.");
-            }}
-            style={{ ...S.btnGhost, padding: "7px 16px", fontSize: "0.8rem" }}
-          >
-            🔗 Copy Link
-          </button>
-          <div
-            style={{
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 100,
-              padding: "5px 14px",
-              fontSize: "0.74rem",
-              letterSpacing: "1.6px",
-              textTransform: "uppercase",
-              color: "rgba(244,237,216,0.38)",
-            }}
-          >
-            Round {round}
-          </div>
-        </div>
-      </header>
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 940,
-          display: "grid",
-          gridTemplateColumns: "1fr 300px",
-          gap: 22,
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <TimerPanel
-            isObserver={isObserver}
-            timerState={timerState}
+        )}
+        {screen === "game" && roomData && (
+          <GameScreen
+            rd={roomData}
+            myId={myId}
+            myRole={myRole}
+            code={code}
+            shareUrl={shareUrl}
+            onBack={goBack}
+            onCard={selectCard}
+            onReveal={revealVotes}
+            onNewRound={newRound}
+            onReset={resetSession}
             onStart={startTimer}
             onStop={stopTimer}
+            toast={showToast}
           />
-          <div style={S.panel}>
-            <span style={S.secLabel}>
-              {isObserver ? "Votes Overview" : "Your Estimate"}
-            </span>
-            {isObserver ? (
-              <div
-                style={{
-                  padding: "14px 18px",
-                  background: "rgba(106,143,168,0.12)",
-                  border: "1px solid rgba(106,143,168,0.3)",
-                  borderRadius: 12,
-                  color: "#6a8fa8",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  fontSize: "0.88rem",
-                }}
-              >
-                <span style={{ fontSize: "1.2rem" }}>👁</span>
-                <span>
-                  You're observing — use the controls below to reveal votes and
-                  start new rounds.
-                </span>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {CARDS.map((c) => {
-                  const selected = myVote === c.val;
-                  return (
-                    <div
-                      key={c.val}
-                      className={!revealed && !selected ? "p-card-hover" : ""}
-                      onClick={() => !revealed && selectCard(c.val)}
-                      style={S.card(selected, revealed)}
-                    >
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 5,
-                          left: 6,
-                          fontFamily: "Georgia,serif",
-                          fontSize: "0.62rem",
-                          color: c.red
-                            ? "rgba(184,50,50,0.25)"
-                            : "rgba(0,0,0,0.2)",
-                        }}
-                      >
-                        {c.val}
-                      </span>
-                      <span
-                        style={{
-                          position: "absolute",
-                          bottom: 5,
-                          right: 6,
-                          fontFamily: "Georgia,serif",
-                          fontSize: "0.62rem",
-                          color: c.red
-                            ? "rgba(184,50,50,0.25)"
-                            : "rgba(0,0,0,0.2)",
-                          transform: "rotate(180deg)",
-                        }}
-                      >
-                        {c.val}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "Georgia,serif",
-                          fontSize: "1.5rem",
-                          fontWeight: 700,
-                          color: c.red ? "#b83232" : "#1a1a14",
-                        }}
-                      >
-                        {c.val}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "0.76rem",
-                          color: c.red
-                            ? "rgba(184,50,50,0.3)"
-                            : "rgba(0,0,0,0.18)",
-                          marginTop: 1,
-                        }}
-                      >
-                        {c.suit}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          {revealed && <Results players={players} />}
-          {isObserver && (
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                style={{
-                  ...S.btnGold,
-                  opacity: !hasVotes || revealed ? 0.38 : 1,
-                  cursor: !hasVotes || revealed ? "not-allowed" : "pointer",
-                }}
-                disabled={!hasVotes || revealed}
-                onClick={revealVotes}
-              >
-                Reveal Cards
-              </button>
-              <button style={S.btnGhost} onClick={newRound}>
-                ↺ New Round
-              </button>
-            </div>
-          )}
-          {!isObserver && !myVote && !revealed && (
-            <div
-              style={{
-                fontSize: "0.82rem",
-                color: "rgba(244,237,216,0.3)",
-                fontStyle: "italic",
-                textAlign: "center",
-              }}
-            >
-              Pick a card above to cast your vote
-            </div>
-          )}
-          {!isObserver && myVote && !revealed && (
-            <div
-              style={{
-                fontSize: "0.82rem",
-                color: "rgba(200,164,74,0.6)",
-                textAlign: "center",
-              }}
-            >
-              ✓ You voted <strong style={{ color: "#debb6a" }}>{myVote}</strong>{" "}
-              — waiting for others…
-            </div>
-          )}
+        )}
+        <div className={`toast${toastOn ? " show" : ""}`}>{toast}</div>
+      </div>
+    </>
+  );
+}
+
+/* ─────────────────────── JOIN SCREEN ────────────────────── */
+function JoinScreen({ onCreate, onJoin, initCode }) {
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("voter");
+  const [tab, setTab] = useState(initCode ? "join" : "create");
+  const [rc, setRc] = useState(initCode || "");
+  const [err, setErr] = useState("");
+
+  const go = () => {
+    if (!name.trim()) {
+      setErr("Please enter your name");
+      return;
+    }
+    if (tab === "join" && !rc.trim()) {
+      setErr("Please enter a room code");
+      return;
+    }
+    tab === "create"
+      ? onCreate(name.trim(), role)
+      : onJoin(name.trim(), role, rc.trim().toUpperCase());
+  };
+
+  return (
+    <div className="join-wrap">
+      <div className="join-box">
+        <div className="join-suits">
+          {["♠", "♥", "♣", "♦", "♠"].map((s, i) => (
+            <span key={i}>{s}</span>
+          ))}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <PlayerList players={players} revealed={revealed} myId={myId} />
-          <div
-            style={{
-              background: "rgba(0,0,0,0.14)",
-              border: "1px dashed rgba(255,255,255,0.1)",
-              borderRadius: 16,
-              padding: "16px 18px",
+        <h1 className="join-title">Planning Poker</h1>
+        <p className="join-sub">Scrum estimation, casino style ✦ 2026</p>
+
+        <div className="tab-row">
+          <button
+            className={`tab-btn${tab === "create" ? " on" : ""}`}
+            onClick={() => {
+              setTab("create");
+              setErr("");
             }}
           >
-            <span style={S.secLabel}>Invite Team</span>
-            <p
-              style={{
-                fontSize: "0.8rem",
-                color: "rgba(244,237,216,0.35)",
-                marginBottom: 10,
-                lineHeight: 1.5,
+            ✦ Create Room
+          </button>
+          <button
+            className={`tab-btn${tab === "join" ? " on" : ""}`}
+            onClick={() => {
+              setTab("join");
+              setErr("");
+            }}
+          >
+            → Join Room
+          </button>
+        </div>
+
+        <label className="lbl">Your Name</label>
+        <input
+          className="inp"
+          placeholder="e.g. Alex Chen"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setErr("");
+          }}
+          onKeyDown={(e) => e.key === "Enter" && go()}
+          autoFocus
+        />
+
+        {tab === "join" && (
+          <>
+            <label className="lbl">Room Code</label>
+            <input
+              className="inp"
+              placeholder="e.g. AB12C"
+              value={rc}
+              onChange={(e) => {
+                setRc(e.target.value.toUpperCase());
+                setErr("");
               }}
-            >
-              Share the room code or copy the link below.
-            </p>
-            <div
-              style={{
-                background: "rgba(0,0,0,0.2)",
-                borderRadius: 8,
-                padding: "8px 12px",
-                fontFamily: "monospace",
-                fontSize: "0.78rem",
-                color: "rgba(244,237,216,0.4)",
-                wordBreak: "break-all",
-                marginBottom: 10,
-              }}
-            >
-              {shareUrl}
-            </div>
+              onKeyDown={(e) => e.key === "Enter" && go()}
+              maxLength={6}
+            />
+          </>
+        )}
+
+        <label className="lbl">Your Role</label>
+        <div className="role-row">
+          {[
+            { r: "voter", icon: "🃏", l: "Voter", s: "Dev · QA · Designer" },
+            {
+              r: "observer",
+              icon: "👁",
+              l: "Observer",
+              s: "SM · PO · BA · Coach",
+            },
+          ].map(({ r, icon, l, s }) => (
             <button
+              key={r}
+              className={`role-btn${role === r ? (r === "voter" ? " rv" : " ro") : ""}`}
+              onClick={() => setRole(r)}
+            >
+              <span className="ri">{icon}</span>
+              <span className="rl">{l}</span>
+              <span className="rs">{s}</span>
+            </button>
+          ))}
+        </div>
+
+        {err && <div className="err">{err}</div>}
+        <button className="btn-primary" onClick={go}>
+          {tab === "create" ? "Deal Me In →" : "Join the Table →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── GAME SCREEN ────────────────────── */
+function GameScreen({
+  rd,
+  myId,
+  myRole,
+  code,
+  shareUrl,
+  onBack,
+  onCard,
+  onReveal,
+  onNewRound,
+  onReset,
+  onStart,
+  onStop,
+  toast,
+}) {
+  const [tsel, setTsel] = useState(30);
+
+  const players = Object.values(rd.players || {});
+  const voters = players.filter((p) => p.role === "voter");
+  const observers = players.filter((p) => p.role === "observer");
+  const me = rd.players?.[myId];
+  const myVote = me?.vote || null;
+  const isObs = myRole === "observer";
+  const revealed = rd.revealed || false;
+  const round = rd.round || 1;
+  const storiesDone = rd.storiesDone || 0;
+  const timer = rd.timer || { running: false, duration: 30, remaining: 30 };
+  const hasVotes = voters.some((p) => p.voted);
+  const votedCount = voters.filter((p) => p.voted).length;
+
+  const voted = voters.filter((p) => p.voted);
+  const noVoted = voters.filter((p) => !p.voted);
+  const nums = voted
+    .map((p) => p.vote)
+    .filter((v) => v !== "?")
+    .map(Number);
+  const avg = nums.length
+    ? nums.reduce((a, b) => a + b, 0) / nums.length
+    : null;
+  const avgDisp =
+    avg !== null ? (Number.isInteger(avg) ? avg : avg.toFixed(1)) : "—";
+  const allSame =
+    new Set(voted.map((p) => p.vote)).size === 1 && voted.length > 1;
+  const minV = nums.length ? Math.min(...nums) : null;
+  const maxV = nums.length ? Math.max(...nums) : null;
+
+  const prog = timer.running ? timer.remaining / timer.duration : 1;
+  const offset = CIRC * (1 - prog);
+  const urgent = timer.remaining <= 5;
+  const warn = timer.remaining <= 10 && !urgent;
+  const ringClr = urgent ? "#e74c3c" : warn ? "#e67e22" : "var(--gold)";
+  const chips = ["#c0392b", "#1a6b9a", "#27ae60", "#2c2c2c"];
+
+  return (
+    <>
+      {/* HEADER */}
+      <header className="hdr">
+        <div className="hdr-in">
+          <div className="hdr-l">
+            <button className="btn-back" onClick={onBack}>
+              ← Back
+            </button>
+            <button className="logo-btn" onClick={onBack}>
+              Planning <span>Poker</span>
+            </button>
+          </div>
+          <div className="hdr-c">
+            <div className="room-badge">
+              <span className="rl2">Room</span>
+              <span className="rc">{code}</span>
+            </div>
+            <div className="badge">Round {round}</div>
+            <div className="badge badge-gold">🎲 {storiesDone} stories</div>
+          </div>
+          <div className="hdr-r">
+            <button
+              className="btn-sm"
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl);
-                showToast("Link copied!");
+                toast("🔗 Link copied!");
               }}
-              style={{ ...S.btnGold, padding: "8px 18px", fontSize: "0.82rem" }}
             >
-              Copy Invite Link
+              🔗 Copy Link
             </button>
           </div>
         </div>
-      </div>
-      {toast && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 28,
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "#fffdf5",
-            color: "#1a1a14",
-            borderRadius: 12,
-            padding: "12px 22px",
-            fontSize: "0.88rem",
-            fontWeight: 500,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-            border: "1px solid rgba(200,164,74,0.3)",
-            zIndex: 200,
-            whiteSpace: "nowrap",
-          }}
-        >
-          {toast}
+      </header>
+
+      {/* BODY */}
+      <div className="game-body">
+        <div className="game-grid">
+          {/* LEFT */}
+          <div className="lcol">
+            {/* Timer Panel */}
+            <div className="panel panel-gold">
+              <span className="ptitle">Estimation Timer</span>
+
+              {isObs ? (
+                <>
+                  {!timer.running && !revealed && (
+                    <>
+                      <div className="tsel-row">
+                        <div className="tsel-wrap">
+                          <select
+                            className="tsel"
+                            value={tsel}
+                            onChange={(e) => setTsel(+e.target.value)}
+                          >
+                            <option value={30}>30 seconds</option>
+                            <option value={45}>45 seconds</option>
+                            <option value={60}>60 seconds</option>
+                          </select>
+                        </div>
+                      </div>
+                      <button
+                        className="start-btn"
+                        onClick={() => onStart(tsel)}
+                      >
+                        <span className="ico">🃏</span> Start Voting — {tsel}s
+                      </button>
+                    </>
+                  )}
+
+                  {timer.running && (
+                    <div className={`ring-area${urgent ? " urgent" : ""}`}>
+                      <div className="ring-wrap">
+                        <svg
+                          className="rsv"
+                          width="82"
+                          height="82"
+                          viewBox="0 0 82 82"
+                        >
+                          <circle className="rt" cx="41" cy="41" r="32" />
+                          <circle
+                            className="rp"
+                            cx="41"
+                            cy="41"
+                            r="32"
+                            strokeDasharray={CIRC}
+                            strokeDashoffset={offset}
+                            style={{ stroke: ringClr }}
+                          />
+                        </svg>
+                        <div
+                          className="rnum-wrap"
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <span className={`rnum${urgent ? " urgent" : ""}`}>
+                            {timer.remaining}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="rtxt">
+                        <div
+                          className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}
+                        >
+                          {urgent
+                            ? "Time's almost up!"
+                            : warn
+                              ? "Wrapping up…"
+                              : "Estimating…"}
+                        </div>
+                        <div className="rhint">Cards auto-reveal on zero</div>
+                        <button className="btn-stop" onClick={onStop}>
+                          ✕ Stop Timer
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {revealed && (
+                    <div className="waiting-hint">
+                      Round complete — start a new round below
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {timer.running ? (
+                    <div className={`ring-area${urgent ? " urgent" : ""}`}>
+                      <div className="ring-wrap">
+                        <svg
+                          className="rsv"
+                          width="82"
+                          height="82"
+                          viewBox="0 0 82 82"
+                        >
+                          <circle className="rt" cx="41" cy="41" r="32" />
+                          <circle
+                            className="rp"
+                            cx="41"
+                            cy="41"
+                            r="32"
+                            strokeDasharray={CIRC}
+                            strokeDashoffset={offset}
+                            style={{ stroke: ringClr }}
+                          />
+                        </svg>
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <span className={`rnum${urgent ? " urgent" : ""}`}>
+                            {timer.remaining}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="rtxt">
+                        <div
+                          className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}
+                        >
+                          {urgent
+                            ? "Pick a card — NOW!"
+                            : warn
+                              ? "Last few seconds!"
+                              : "Pick your card!"}
+                        </div>
+                        <div className="rhint">
+                          Facilitator controls the reveal
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="waiting-hint">
+                      {revealed
+                        ? "✓ Cards revealed — see results below"
+                        : "Waiting for facilitator to start the timer…"}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Cards */}
+            <div className="panel">
+              <span className="ptitle">
+                {isObs ? "Votes Overview" : "Your Estimate"}
+              </span>
+              {isObs ? (
+                <div className="obs-box">
+                  <span style={{ fontSize: "1.3rem" }}>👁</span>
+                  <span>
+                    You're observing this session. Use the controls to reveal
+                    cards and manage rounds.
+                  </span>
+                </div>
+              ) : (
+                <div className="cards-grid">
+                  {CARDS.map((c, i) => {
+                    const sel = myVote === c.val;
+                    return (
+                      <div
+                        key={c.val}
+                        data-v={c.val}
+                        className={`pcard${c.red ? " red" : ""}${c.val === "?" ? " wild" : ""}${sel ? " sel" : ""}${revealed ? " locked" : ""}`}
+                        style={{ animationDelay: `${i * 0.045}s` }}
+                        onClick={() => !revealed && onCard(c.val)}
+                      >
+                        <span className="cv">{c.val}</span>
+                        <span className="cs">{c.suit}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {!isObs && (
+                <div
+                  className={`vstatus${myVote && !revealed ? " voted" : " wait"}`}
+                  style={{ marginTop: 10 }}
+                >
+                  {myVote && !revealed
+                    ? `✓ You voted ${myVote} — waiting for reveal…`
+                    : !revealed
+                      ? "Pick a card to cast your vote"
+                      : ""}
+                </div>
+              )}
+            </div>
+
+            {/* Results */}
+            {revealed && (
+              <div className="panel panel-gold results-panel">
+                <div className="res-hdr">✦ &nbsp; Votes Revealed &nbsp; ✦</div>
+                {voted.length > 0 && (
+                  <>
+                    <div className="res-cards">
+                      {voted.map((p, i) => (
+                        <div
+                          key={p.id}
+                          className="rc-wrap"
+                          style={{ animationDelay: `${i * 0.07}s` }}
+                        >
+                          <div className="rc-val">{p.vote}</div>
+                          <div className="rc-name">{p.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="stats-row">
+                      <div className="stat">
+                        <span className="sv">{avgDisp}</span>
+                        <span className="sl">Average</span>
+                      </div>
+                      {minV !== null && (
+                        <div className="stat">
+                          <span className="sv">{minV}</span>
+                          <span className="sl">Lowest</span>
+                        </div>
+                      )}
+                      {maxV !== null && (
+                        <div className="stat">
+                          <span className="sv">{maxV}</span>
+                          <span className="sl">Highest</span>
+                        </div>
+                      )}
+                      <div className="stat">
+                        <span className="sv">{voted.length}</span>
+                        <span className="sl">Voted</span>
+                      </div>
+                    </div>
+                    {allSame && (
+                      <div className="consensus">
+                        🎉 Perfect consensus! Everyone picked {voted[0].vote}
+                      </div>
+                    )}
+                    {noVoted.length > 0 && (
+                      <div className="no-vote">
+                        ⚠️ Didn't vote: {noVoted.map((p) => p.name).join(", ")}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Observer actions */}
+            {isObs && (
+              <div className="actions">
+                <button
+                  className="btn-reveal"
+                  disabled={!hasVotes || revealed}
+                  onClick={onReveal}
+                >
+                  🂠 Reveal Cards
+                </button>
+                <button className="btn-ghost" onClick={onNewRound}>
+                  ↺ New Round
+                </button>
+                <button className="btn-danger" onClick={onReset}>
+                  ⟳ Reset Session
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT */}
+          <div className="rcol">
+            {/* Players */}
+            <div className="panel">
+              <span className="ptitle">At the Table</span>
+              {voters.length > 0 && !revealed && (
+                <>
+                  <div className="vp-head">
+                    <span>Votes in</span>
+                    <span>
+                      {votedCount} / {voters.length}
+                    </span>
+                  </div>
+                  <div className="vp-bar">
+                    <div
+                      className="vp-fill"
+                      style={{
+                        width: `${voters.length ? (votedCount / voters.length) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+              {players.length === 0 && (
+                <div className="nobody">Nobody here yet</div>
+              )}
+              <div className="plist">
+                {voters.map((p) => (
+                  <div key={p.id} className={`prow${p.voted ? " voted" : ""}`}>
+                    <div className="pav">{ini(p.name)}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="pname">
+                        {p.name}
+                        {p.id === myId ? " (you)" : ""}
+                      </div>
+                      <div className="prole">Voter</div>
+                    </div>
+                    {revealed && p.voted ? (
+                      <div className="vchip">{p.vote}</div>
+                    ) : (
+                      <div className={`pdot${p.voted ? " v" : " w"}`} />
+                    )}
+                  </div>
+                ))}
+                {observers.length > 0 && voters.length > 0 && (
+                  <div className="sep" />
+                )}
+                {observers.map((p) => (
+                  <div key={p.id} className="prow obs">
+                    <div className="pav">{ini(p.name)}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="pname">
+                        {p.name}
+                        {p.id === myId ? " (you)" : ""}
+                      </div>
+                      <div className="prole">Observer · Facilitator</div>
+                    </div>
+                    <div className="pdot o" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Average Story Points */}
+            {revealed && avg !== null && (
+              <div className="avg-box">
+                <div className="avg-l">
+                  <div className="al">Avg Story Points</div>
+                  <div className="av">{avgDisp}</div>
+                  <div className="as">
+                    {allSame ? "Consensus reached" : `Range: ${minV}–${maxV}`}
+                  </div>
+                </div>
+                <div className="chips">
+                  {chips.map((c, i) => (
+                    <div
+                      key={i}
+                      className="chip"
+                      style={{
+                        background: c,
+                        marginLeft: i > 0 ? -10 : 0,
+                        zIndex: 4 - i,
+                      }}
+                    >
+                      {avgDisp}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Session Stats */}
+            <div className="panel">
+              <span className="ptitle">Session Stats</span>
+              <div className="ss-grid">
+                <div className="ss-chip">
+                  <span className="ss-v">{storiesDone}</span>
+                  <span className="ss-l">Stories Done</span>
+                </div>
+                <div className="ss-chip">
+                  <span className="ss-v">{round}</span>
+                  <span className="ss-l">Current Round</span>
+                </div>
+                <div className="ss-chip">
+                  <span className="ss-v">{voters.length}</span>
+                  <span className="ss-l">Voters</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Invite */}
+            <div className="panel inv-panel">
+              <span className="ptitle">Invite Team</span>
+              <div className="inv-url">{shareUrl}</div>
+              <button
+                className="btn-inv"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareUrl);
+                  toast("🔗 Link copied! Share with your team.");
+                }}
+              >
+                🔗 Copy Invite Link
+              </button>
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
