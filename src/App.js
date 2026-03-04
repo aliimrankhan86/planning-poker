@@ -9,7 +9,6 @@ import {
   serverTimestamp,
 } from "firebase/database";
 
-// ── Fibonacci cards + wildcard ──────────────────────────────
 const CARDS = [
   { val: "1", suit: "♠", red: false },
   { val: "2", suit: "♣", red: false },
@@ -20,7 +19,6 @@ const CARDS = [
   { val: "?", suit: "★", red: false },
 ];
 
-// ── Tiny helpers ────────────────────────────────────────────
 const initials = (n = "") =>
   n
     .split(" ")
@@ -30,11 +28,9 @@ const initials = (n = "") =>
     .toUpperCase();
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-
 const generateRoomCode = () =>
   Math.random().toString(36).slice(2, 7).toUpperCase();
 
-// ── Styles (all inline so zero config needed) ───────────────
 const S = {
   body: {
     fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
@@ -46,7 +42,7 @@ const S = {
     alignItems: "center",
     padding: "0 16px 60px",
   },
-  card: (selected, locked, red) => ({
+  card: (selected, locked) => ({
     width: 72,
     height: 100,
     background: selected ? "#fffbe8" : "#fffdf5",
@@ -111,17 +107,6 @@ const S = {
     cursor: "pointer",
     transition: "all 0.2s",
   },
-  btnDanger: {
-    padding: "8px 18px",
-    background: "transparent",
-    color: "rgba(220,80,80,0.7)",
-    border: "1px solid rgba(220,80,80,0.3)",
-    borderRadius: 8,
-    fontFamily: "inherit",
-    fontSize: "0.78rem",
-    cursor: "pointer",
-    transition: "all 0.2s",
-  },
   secLabel: {
     fontSize: "0.7rem",
     fontWeight: 600,
@@ -133,9 +118,6 @@ const S = {
   },
 };
 
-// ═══════════════════════════════════════════════════════════
-// COMPONENT: JoinScreen
-// ═══════════════════════════════════════════════════════════
 function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
   const [name, setName] = useState("");
   const [role, setRole] = useState("voter");
@@ -150,7 +132,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
     }
     onCreateRoom(name.trim(), role);
   };
-
   const handleJoin = () => {
     if (!name.trim()) {
       setErr("Please enter your name");
@@ -178,7 +159,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
           overflow: "hidden",
         }}
       >
-        {/* gold top bar */}
         <div
           style={{
             position: "absolute",
@@ -189,8 +169,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
             background: "linear-gradient(90deg,#c8a44a,#debb6a,#c8a44a)",
           }}
         />
-
-        {/* suits */}
         <div
           style={{
             display: "flex",
@@ -212,7 +190,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
             </span>
           ))}
         </div>
-
         <h1
           style={{
             fontFamily: "Georgia,serif",
@@ -233,8 +210,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
         >
           Real-time estimates for your scrum team
         </p>
-
-        {/* Tab switcher */}
         <div
           style={{
             display: "flex",
@@ -270,8 +245,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
             </button>
           ))}
         </div>
-
-        {/* Name */}
         <label
           style={{
             display: "block",
@@ -298,8 +271,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
               tab === "create" ? handleCreate() : handleJoin();
           }}
         />
-
-        {/* Room code (join only) */}
         {tab === "join" && (
           <>
             <label
@@ -330,8 +301,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
             />
           </>
         )}
-
-        {/* Role */}
         <label
           style={{
             display: "block",
@@ -397,7 +366,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
             </button>
           ))}
         </div>
-
         {err && (
           <p
             style={{ color: "#b83232", fontSize: "0.82rem", marginBottom: 10 }}
@@ -405,7 +373,6 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
             {err}
           </p>
         )}
-
         <button
           onClick={tab === "create" ? handleCreate : handleJoin}
           style={{ ...S.btnGold, width: "100%", padding: 14, fontSize: "1rem" }}
@@ -417,10 +384,7 @@ function JoinScreen({ onJoin, onCreateRoom, initialRoom }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-// COMPONENT: Timer
-// ═══════════════════════════════════════════════════════════
-const CIRC = 201.1; // 2π × 32
+const CIRC = 201.1;
 
 function TimerPanel({ isObserver, timerState, onStart, onStop }) {
   const [selected, setSelected] = useState(30);
@@ -429,11 +393,9 @@ function TimerPanel({ isObserver, timerState, onStart, onStop }) {
   const offset = CIRC * (1 - progress);
   const isUrgent = remaining <= 5;
   const isWarn = remaining <= 10 && !isUrgent;
-
   return (
     <div style={S.panel}>
       <span style={S.secLabel}>Estimation Timer</span>
-      {/* Controls — only observers see start/stop */}
       {isObserver && (
         <div
           style={{
@@ -443,7 +405,6 @@ function TimerPanel({ isObserver, timerState, onStart, onStop }) {
             marginBottom: running ? 14 : 0,
           }}
         >
-          {/* Dropdown */}
           <div style={{ position: "relative" }}>
             <select
               value={selected}
@@ -499,8 +460,6 @@ function TimerPanel({ isObserver, timerState, onStart, onStop }) {
           )}
         </div>
       )}
-
-      {/* Ring — visible to everyone when running */}
       {running && (
         <div
           style={{
@@ -523,7 +482,6 @@ function TimerPanel({ isObserver, timerState, onStart, onStop }) {
               style={{ transform: "rotate(-90deg)" }}
             >
               <circle
-                className="ring-bg"
                 cx={38}
                 cy={38}
                 r={32}
@@ -589,8 +547,6 @@ function TimerPanel({ isObserver, timerState, onStart, onStop }) {
           </div>
         </div>
       )}
-
-      {/* Non-observer sees timer info only when not running */}
       {!isObserver && !running && (
         <div
           style={{
@@ -607,20 +563,13 @@ function TimerPanel({ isObserver, timerState, onStart, onStop }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-// COMPONENT: PlayerList
-// ═══════════════════════════════════════════════════════════
 function PlayerList({ players, revealed, myId }) {
   const voters = players.filter((p) => p.role === "voter");
   const observers = players.filter((p) => p.role === "observer");
-
   const votedCount = voters.filter((p) => p.voted).length;
-
   return (
     <div style={S.panel}>
       <span style={S.secLabel}>At the Table</span>
-
-      {/* Vote progress */}
       {voters.length > 0 && !revealed && (
         <div style={{ marginBottom: 14 }}>
           <div
@@ -657,8 +606,6 @@ function PlayerList({ players, revealed, myId }) {
           </div>
         </div>
       )}
-
-      {/* Voters */}
       {voters.length === 0 && observers.length === 0 && (
         <div
           style={{
@@ -671,7 +618,6 @@ function PlayerList({ players, revealed, myId }) {
           Nobody here yet
         </div>
       )}
-
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         {voters.map((p) => (
           <PlayerRow
@@ -704,17 +650,6 @@ function PlayerList({ players, revealed, myId }) {
 
 function PlayerRow({ p, revealed, isMe }) {
   const isObs = p.role === "observer";
-  const bgColor = isObs
-    ? "rgba(106,143,168,0.12)"
-    : p.voted
-      ? "rgba(200,164,74,0.1)"
-      : "rgba(255,255,255,0.04)";
-  const borderColor = isObs
-    ? "rgba(106,143,168,0.2)"
-    : p.voted
-      ? "rgba(200,164,74,0.25)"
-      : "rgba(255,255,255,0.07)";
-
   return (
     <div
       style={{
@@ -723,12 +658,15 @@ function PlayerRow({ p, revealed, isMe }) {
         gap: 10,
         padding: "9px 12px",
         borderRadius: 12,
-        background: bgColor,
-        border: `1px solid ${borderColor}`,
+        background: isObs
+          ? "rgba(106,143,168,0.12)"
+          : p.voted
+            ? "rgba(200,164,74,0.1)"
+            : "rgba(255,255,255,0.04)",
+        border: `1px solid ${isObs ? "rgba(106,143,168,0.2)" : p.voted ? "rgba(200,164,74,0.25)" : "rgba(255,255,255,0.07)"}`,
         transition: "background 0.3s",
       }}
     >
-      {/* Avatar */}
       <div
         style={{
           width: 30,
@@ -750,8 +688,6 @@ function PlayerRow({ p, revealed, isMe }) {
       >
         {initials(p.name)}
       </div>
-
-      {/* Name + role */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -776,8 +712,6 @@ function PlayerRow({ p, revealed, isMe }) {
           {isObs ? "Observer · Facilitator" : "Voter"}
         </div>
       </div>
-
-      {/* Indicator */}
       {isObs ? (
         <div
           style={{
@@ -802,7 +736,6 @@ function PlayerRow({ p, revealed, isMe }) {
             minWidth: 32,
             textAlign: "center",
             flexShrink: 0,
-            animation: "flipIn 0.3s ease both",
           }}
         >
           {p.vote}
@@ -823,13 +756,9 @@ function PlayerRow({ p, revealed, isMe }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-// COMPONENT: Results
-// ═══════════════════════════════════════════════════════════
 function Results({ players }) {
   const voters = players.filter((p) => p.role === "voter" && p.voted);
   if (!voters.length) return null;
-
   const nums = voters
     .map((p) => p.vote)
     .filter((v) => v !== "?")
@@ -840,15 +769,8 @@ function Results({ players }) {
     : null;
   const min = nums.length ? Math.min(...nums) : null;
   const max = nums.length ? Math.max(...nums) : null;
-
   return (
-    <div
-      style={{
-        ...S.panel,
-        border: "1px solid rgba(200,164,74,0.35)",
-        animation: "fadeUp 0.35s ease",
-      }}
-    >
+    <div style={{ ...S.panel, border: "1px solid rgba(200,164,74,0.35)" }}>
       <div
         style={{
           fontFamily: "Georgia,serif",
@@ -861,8 +783,6 @@ function Results({ players }) {
       >
         ✦ &nbsp; Votes Revealed &nbsp; ✦
       </div>
-
-      {/* Vote cards */}
       <div
         style={{
           display: "flex",
@@ -916,8 +836,6 @@ function Results({ players }) {
           </div>
         ))}
       </div>
-
-      {/* Stats */}
       <div
         style={{
           textAlign: "center",
@@ -942,11 +860,8 @@ function Results({ players }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════
-// MAIN APP
-// ═══════════════════════════════════════════════════════════
 export default function App() {
-  const [screen, setScreen] = useState("join"); // join | game
+  const [screen, setScreen] = useState("join");
   const [myId] = useState(uid);
   const [, setMyName] = useState("");
   const [myRole, setMyRole] = useState("voter");
@@ -955,14 +870,12 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [timerInterval, setTimerInterval] = useState(null);
 
-  // Parse ?room=CODE from URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const r = params.get("room");
     if (r) setRoomCode(r.toUpperCase());
   }, []);
 
-  // ── Listen to room in Firebase ──────────────────────────
   useEffect(() => {
     if (!roomCode || screen !== "game") return;
     const roomRef = ref(db, `rooms/${roomCode}`);
@@ -977,17 +890,14 @@ export default function App() {
     return () => unsub();
   }, [roomCode, screen]);
 
-  // ── Timer: observers drive it via Firebase, all clients read it ──
   useEffect(() => {
     if (!roomData?.timer?.running) {
       clearInterval(timerInterval);
       setTimerInterval(null);
       return;
     }
-    // Only the observer who started it ticks it down
     if (roomData.timer.startedBy !== myId) return;
-    if (timerInterval) return; // already ticking
-
+    if (timerInterval) return;
     const iv = setInterval(async () => {
       const newRemaining = (roomData.timer.remaining ?? 0) - 1;
       if (newRemaining <= 0) {
@@ -997,7 +907,6 @@ export default function App() {
           running: false,
           remaining: 0,
         });
-        // Auto-reveal
         await update(ref(db, `rooms/${roomCode}`), { revealed: true });
         showToast("⏰ Time's up! Cards revealed.");
       } else {
@@ -1010,7 +919,6 @@ export default function App() {
     return () => clearInterval(iv);
   }, [roomData?.timer?.running, roomData?.timer?.startedBy, myId, roomCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-reveal when all voters have voted ──────────────
   useEffect(() => {
     if (!roomData || roomData.revealed) return;
     const players = Object.values(roomData.players || {});
@@ -1018,7 +926,6 @@ export default function App() {
     if (voters.length === 0) return;
     if (voters.every((p) => p.voted)) {
       setTimeout(async () => {
-        // re-check still all voted and not yet revealed
         const players2 = Object.values(roomData.players || {});
         if (
           players2.filter((p) => p.role === "voter").every((p) => p.voted) &&
@@ -1036,37 +943,27 @@ export default function App() {
     setTimeout(() => setToast(""), 3500);
   };
 
-  // ── Create room ─────────────────────────────────────────
   const handleCreateRoom = async (name, role) => {
     const code = generateRoomCode();
     setMyName(name);
     setMyRole(role);
     setRoomCode(code);
-
-    const roomRef = ref(db, `rooms/${code}`);
-    await set(roomRef, {
+    await set(ref(db, `rooms/${code}`), {
       createdAt: serverTimestamp(),
       revealed: false,
       round: 1,
       timer: { running: false, duration: 30, remaining: 30 },
-      players: {
-        [myId]: { id: myId, name, role, voted: false, vote: null },
-      },
+      players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
     });
-
-    // Update URL
     window.history.replaceState({}, "", `?room=${code}`);
     setScreen("game");
     showToast(`Room created! Code: ${code}`);
   };
 
-  // ── Join room ───────────────────────────────────────────
   const handleJoinRoom = async (name, role, code) => {
     setMyName(name);
     setMyRole(role);
     setRoomCode(code);
-
-    // Check room exists
     const roomRef = ref(db, `rooms/${code}`);
     const snap = await new Promise((res) =>
       onValue(roomRef, res, { onlyOnce: true }),
@@ -1075,7 +972,6 @@ export default function App() {
       showToast(`Room "${code}" not found. Check the code and try again.`);
       return;
     }
-
     await update(ref(db, `rooms/${code}/players/${myId}`), {
       id: myId,
       name,
@@ -1083,17 +979,14 @@ export default function App() {
       voted: false,
       vote: null,
     });
-
     window.history.replaceState({}, "", `?room=${code}`);
     setScreen("game");
   };
 
-  // ── Leave room on unmount / unload ──────────────────────
   useEffect(() => {
     const cleanup = () => {
-      if (roomCode && myId) {
+      if (roomCode && myId)
         remove(ref(db, `rooms/${roomCode}/players/${myId}`));
-      }
     };
     window.addEventListener("beforeunload", cleanup);
     return () => {
@@ -1102,7 +995,6 @@ export default function App() {
     };
   }, [roomCode, myId]);
 
-  // ── Select card ─────────────────────────────────────────
   const selectCard = useCallback(
     async (val) => {
       if (!roomData || roomData.revealed) return;
@@ -1115,14 +1007,11 @@ export default function App() {
     [roomData, roomCode, myId],
   );
 
-  // ── Reveal votes (observer only) ────────────────────────
   const revealVotes = useCallback(async () => {
     await update(ref(db, `rooms/${roomCode}`), { revealed: true });
-    // Stop timer if running
     await update(ref(db, `rooms/${roomCode}/timer`), { running: false });
   }, [roomCode]);
 
-  // ── New round (observer only) ───────────────────────────
   const newRound = useCallback(async () => {
     const players = roomData?.players || {};
     const updates = {};
@@ -1138,7 +1027,6 @@ export default function App() {
     await update(ref(db), updates);
   }, [roomCode, roomData]);
 
-  // ── Start timer (observer only) ─────────────────────────
   const startTimer = useCallback(
     async (seconds) => {
       await update(ref(db, `rooms/${roomCode}/timer`), {
@@ -1157,9 +1045,6 @@ export default function App() {
     await update(ref(db, `rooms/${roomCode}/timer`), { running: false });
   }, [roomCode, timerInterval]);
 
-  // ─────────────────────────────────────────────────────────
-  // RENDER
-  // ─────────────────────────────────────────────────────────
   if (screen === "join") {
     return (
       <div style={S.body}>
@@ -1207,8 +1092,6 @@ export default function App() {
         @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .p-card-hover:hover { transform: translateY(-8px) scale(1.05) !important; box-shadow: 0 16px 32px rgba(0,0,0,0.4) !important; }
       `}</style>
-
-      {/* Header */}
       <header
         style={{
           width: "100%",
@@ -1232,8 +1115,6 @@ export default function App() {
         >
           Planning <span style={{ color: "#f4edd8" }}>Poker</span>
         </div>
-
-        {/* Room code + share */}
         <div
           style={{
             display: "flex",
@@ -1300,8 +1181,6 @@ export default function App() {
           </div>
         </div>
       </header>
-
-      {/* Body */}
       <div
         style={{
           width: "100%",
@@ -1311,22 +1190,17 @@ export default function App() {
           gap: 22,
         }}
       >
-        {/* LEFT */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Timer */}
           <TimerPanel
             isObserver={isObserver}
             timerState={timerState}
             onStart={startTimer}
             onStop={stopTimer}
           />
-
-          {/* Cards / Observer notice */}
           <div style={S.panel}>
             <span style={S.secLabel}>
               {isObserver ? "Votes Overview" : "Your Estimate"}
             </span>
-
             {isObserver ? (
               <div
                 style={{
@@ -1356,9 +1230,8 @@ export default function App() {
                       key={c.val}
                       className={!revealed && !selected ? "p-card-hover" : ""}
                       onClick={() => !revealed && selectCard(c.val)}
-                      style={S.card(selected, revealed, c.red)}
+                      style={S.card(selected, revealed)}
                     >
-                      {/* corner labels */}
                       <span
                         style={{
                           position: "absolute",
@@ -1415,11 +1288,7 @@ export default function App() {
               </div>
             )}
           </div>
-
-          {/* Results */}
           {revealed && <Results players={players} />}
-
-          {/* Observer controls */}
           {isObserver && (
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button
@@ -1438,8 +1307,6 @@ export default function App() {
               </button>
             </div>
           )}
-
-          {/* Voter: waiting message if no vote yet and not revealed */}
           {!isObserver && !myVote && !revealed && (
             <div
               style={{
@@ -1465,12 +1332,8 @@ export default function App() {
             </div>
           )}
         </div>
-
-        {/* RIGHT */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <PlayerList players={players} revealed={revealed} myId={myId} />
-
-          {/* Invite hint */}
           <div
             style={{
               background: "rgba(0,0,0,0.14)",
@@ -1516,8 +1379,6 @@ export default function App() {
           </div>
         </div>
       </div>
-
-      {/* Toast */}
       {toast && (
         <div
           style={{
@@ -1535,7 +1396,6 @@ export default function App() {
             border: "1px solid rgba(200,164,74,0.3)",
             zIndex: 200,
             whiteSpace: "nowrap",
-            animation: "fadeUp 0.3s ease",
           }}
         >
           {toast}
