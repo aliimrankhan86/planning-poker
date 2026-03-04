@@ -949,7 +949,7 @@ function Results({ players }) {
 export default function App() {
   const [screen, setScreen] = useState("join"); // join | game
   const [myId] = useState(uid);
-  const [myName, setMyName] = useState("");
+  const [, setMyName] = useState("");
   const [myRole, setMyRole] = useState("voter");
   const [roomCode, setRoomCode] = useState("");
   const [roomData, setRoomData] = useState(null);
