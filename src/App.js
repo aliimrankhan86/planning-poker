@@ -519,25 +519,116 @@ body{font-family:'DM Sans',sans-serif;background:var(--felt2);min-height:100vh;c
   .rc{font-size:1rem;letter-spacing:2px}
   .start-btn{font-size:.95rem;padding:16px}
 }
+
+/* ── REVEAL RESULT HERO ── */
+.avg-hero{
+  text-align:center;padding:28px 20px 22px;
+  background:linear-gradient(135deg,rgba(200,150,42,.18),rgba(200,150,42,.06));
+  border:2px solid rgba(200,150,42,.45);border-radius:20px;
+  margin-bottom:18px;animation:fadeUp .4s ease;
+  box-shadow:0 0 40px rgba(200,150,42,.15),0 8px 32px rgba(0,0,0,.3);
+}
+.avg-hero-label{font-size:.68rem;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(244,236,216,.4);margin-bottom:8px}
+.avg-hero-num{font-family:'Playfair Display',serif;font-size:5rem;color:var(--gold2);font-weight:700;line-height:1;text-shadow:0 0 40px rgba(200,150,42,.5)}
+.avg-hero-sub{font-size:.82rem;color:rgba(244,236,216,.45);margin-top:8px}
+.avg-hero-consensus{
+  display:inline-block;margin-top:12px;
+  background:rgba(200,150,42,.2);border:1px solid rgba(200,150,42,.4);
+  border-radius:100px;padding:5px 18px;
+  font-size:.82rem;font-weight:600;color:var(--gold2);
+}
+.avg-hero-range{display:flex;justify-content:center;gap:24px;margin-top:14px}
+.avg-hero-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+.avg-hero-stat .v{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--cream);font-weight:700}
+.avg-hero-stat .l{font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(244,236,216,.3)}
+
+/* ── REVEALED VOTE CARDS ── */
+.revealed-grid{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;padding:6px 0 18px}
+.rv-card{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  animation:dealIn .4s ease both;
+}
+.rv-card-face{
+  width:72px;height:100px;
+  background:linear-gradient(160deg,#ffffff 0%,#fdf8ee 100%);
+  border-radius:10px;border:1px solid rgba(0,0,0,.12);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px rgba(0,0,0,.4),0 2px 0 rgba(255,255,255,.9) inset;
+  position:relative;
+}
+.rv-card-face.outlier-high{border:2px solid #e74c3c;box-shadow:0 6px 20px rgba(231,76,60,.3)}
+.rv-card-face.outlier-low{border:2px solid #3498db;box-shadow:0 6px 20px rgba(52,152,219,.3)}
+.rv-card-face.consensus{border:2px solid var(--gold);box-shadow:0 6px 20px rgba(200,150,42,.4)}
+.rv-val{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--ink)}
+.rv-val.red{color:#c0392b}
+.rv-name{font-size:.7rem;color:rgba(244,236,216,.55);text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.rv-you{font-size:.58rem;color:var(--gold2);font-weight:700;letter-spacing:.5px}
+.outlier-tag{font-size:.56rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-top:-2px}
+.outlier-tag.high{background:rgba(231,76,60,.2);color:#e74c3c}
+.outlier-tag.low{background:rgba(52,152,219,.2);color:#3498db}
+
+/* ── OBSERVER CONTROLS (redesigned) ── */
+.obs-controls{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.btn-reveal-primary{
+  width:100%;padding:16px 20px;border:none;border-radius:14px;
+  background:linear-gradient(135deg,var(--gold),var(--gold2));
+  color:var(--ink);font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:800;
+  cursor:pointer;transition:all .2s;letter-spacing:.3px;
+  box-shadow:0 4px 22px rgba(200,150,42,.45);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn-reveal-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(200,150,42,.6)}
+.btn-reveal-primary:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+.obs-secondary-row{display:flex;gap:10px}
+.btn-next-round{
+  flex:1;padding:14px 16px;border-radius:13px;
+  background:rgba(39,174,96,.12);border:1.5px solid rgba(39,174,96,.3);
+  color:#2ecc71;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-next-round:hover{background:rgba(39,174,96,.2);border-color:rgba(39,174,96,.5)}
+.btn-new-session{
+  padding:14px 16px;border-radius:13px;
+  background:rgba(192,57,43,.08);border:1.5px solid rgba(192,57,43,.2);
+  color:rgba(231,76,60,.7);font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  white-space:nowrap;
+}
+.btn-new-session:hover{background:rgba(192,57,43,.16);border-color:rgba(192,57,43,.35);color:#e74c3c}
+.btn-hint{font-size:.62rem;color:rgba(244,236,216,.2);text-align:center;margin-top:2px;font-style:italic}
 `;
+
+/* ─────────────────────── FIXED ROOM CONFIG ───────────────────────── */
+// FIXED ROOM MODE: Everyone joins the same room automatically.
+// To re-enable dynamic rooms with shareable links, do the following:
+//   1. Remove the FIXED_ROOM_CODE constant below
+//   2. In the App() useEffect, uncomment the URL param reading block
+//   3. In handleCreate, uncomment window.history.replaceState for room URL
+//   4. In handleJoin, uncomment window.history.replaceState for room URL
+//   5. In goBack, uncomment window.history.replaceState
+//   6. In JoinScreen, re-add the tab-row (Create/Join tabs) and room code input
+const FIXED_ROOM_CODE = "SPRINTROOM";
 
 /* ─────────────────────── MAIN APP ───────────────────────── */
 export default function App() {
   const [screen, setScreen] = useState("join");
   const [myId] = useState(uid);
   const [myRole, setMyRole] = useState("voter");
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(FIXED_ROOM_CODE);
   const [roomData, setRoomData] = useState(null);
   const [toast, setToast] = useState("");
   const [toastOn, setToastOn] = useState(false);
   const [timerIv, setTimerIv] = useState(null);
   const toastRef = useRef(null);
 
-  useEffect(() => {
-    const p = new URLSearchParams(window.location.search);
-    const r = p.get("room");
-    if (r) setCode(r.toUpperCase());
-  }, []);
+  // DYNAMIC ROOM MODE (disabled): Uncomment below to read room code from URL
+  // useEffect(() => {
+  //   const p = new URLSearchParams(window.location.search);
+  //   const r = p.get("room");
+  //   if (r) setCode(r.toUpperCase());
+  // }, []);
 
   useEffect(() => {
     if (!code || screen !== "game") return;
@@ -600,7 +691,8 @@ export default function App() {
     if (code && myId) remove(ref(db, `rooms/${code}/players/${myId}`));
     setScreen("join");
     setRoomData(null);
-    window.history.replaceState({}, "", window.location.pathname);
+    // DYNAMIC ROOM MODE: uncomment below to clear room from URL
+    // window.history.replaceState({}, "", window.location.pathname);
   }, [code, myId]);
 
   useEffect(() => {
@@ -622,20 +714,34 @@ export default function App() {
   }, []);
 
   const handleCreate = async (name, role) => {
-    const c = mkCode();
+    // FIXED ROOM MODE: Always joins FIXED_ROOM_CODE. Creates room if it doesn't exist yet.
+    // To re-enable dynamic rooms: replace FIXED_ROOM_CODE with mkCode(), add URL replaceState
+    const c = FIXED_ROOM_CODE;
     setMyRole(role);
     setCode(c);
-    await set(ref(db, `rooms/${c}`), {
-      createdAt: serverTimestamp(),
-      revealed: false,
-      round: 1,
-      storiesDone: 0,
-      timer: { running: false, duration: 30, remaining: 30 },
-      players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
-    });
-    window.history.replaceState({}, "", `?room=${c}`);
+    const snap = await new Promise((res) =>
+      onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
+    );
+    if (!snap.exists()) {
+      await set(ref(db, `rooms/${c}`), {
+        createdAt: serverTimestamp(),
+        revealed: false,
+        round: 1,
+        storiesDone: 0,
+        timer: { running: false, duration: 30, remaining: 30 },
+        players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
+      });
+    } else {
+      await update(ref(db, `rooms/${c}/players/${myId}`), {
+        id: myId,
+        name,
+        role,
+        voted: false,
+        vote: null,
+      });
+    }
     setScreen("game");
-    showToast(`🎲 Room created! Code: ${c}`);
+    showToast(`🎲 Welcome, ${name}!`);
   };
 
   const handleJoin = async (name, role, c) => {
@@ -655,7 +761,8 @@ export default function App() {
       voted: false,
       vote: null,
     });
-    window.history.replaceState({}, "", `?room=${c}`);
+    // DYNAMIC ROOM MODE: uncomment below to update URL with room code
+    // window.history.replaceState({}, "", `?room=${c}`);
     setScreen("game");
   };
 
@@ -690,7 +797,7 @@ export default function App() {
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
-    showToast("🔄 New round — vote on the next story!");
+    showToast("✅ Story done! Please vote on the next user story.");
   }, [code, roomData, showToast]);
 
   const resetSession = useCallback(async () => {
@@ -706,7 +813,9 @@ export default function App() {
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
-    showToast("♻️ Session reset to zero!");
+    showToast(
+      "🔄 New sprint session started! Everyone's votes have been cleared.",
+    );
   }, [code, roomData, showToast]);
 
   const startTimer = useCallback(
@@ -772,11 +881,15 @@ export default function App() {
 }
 
 /* ─────────────────────── JOIN SCREEN ────────────────────── */
+// FIXED ROOM MODE: Simplified join screen - just name + role, no room code needed.
+// To re-enable room creation/joining tabs and room code input, restore:
+//   - tab-row with "Create Room" / "Join Room" buttons
+//   - room code input field shown when tab === "join"
+//   - tab state and rc state
+//   - go() logic that checks tab === "create" vs "join"
 function JoinScreen({ onCreate, onJoin, initCode }) {
   const [name, setName] = useState("");
   const [role, setRole] = useState("voter");
-  const [tab, setTab] = useState(initCode ? "join" : "create");
-  const [rc, setRc] = useState(initCode || "");
   const [err, setErr] = useState("");
 
   const go = () => {
@@ -784,13 +897,7 @@ function JoinScreen({ onCreate, onJoin, initCode }) {
       setErr("Please enter your name");
       return;
     }
-    if (tab === "join" && !rc.trim()) {
-      setErr("Please enter a room code");
-      return;
-    }
-    tab === "create"
-      ? onCreate(name.trim(), role)
-      : onJoin(name.trim(), role, rc.trim().toUpperCase());
+    onCreate(name.trim(), role);
   };
 
   return (
@@ -802,28 +909,7 @@ function JoinScreen({ onCreate, onJoin, initCode }) {
           ))}
         </div>
         <h1 className="join-title">Planning Poker</h1>
-        <p className="join-sub">Scrum estimation, casino style ✦ 2026</p>
-
-        <div className="tab-row">
-          <button
-            className={`tab-btn${tab === "create" ? " on" : ""}`}
-            onClick={() => {
-              setTab("create");
-              setErr("");
-            }}
-          >
-            ✦ Create Room
-          </button>
-          <button
-            className={`tab-btn${tab === "join" ? " on" : ""}`}
-            onClick={() => {
-              setTab("join");
-              setErr("");
-            }}
-          >
-            → Join Room
-          </button>
-        </div>
+        <p className="join-sub">Sprint Planning · Enter your name to join</p>
 
         <label className="lbl">Your Name</label>
         <input
@@ -837,23 +923,6 @@ function JoinScreen({ onCreate, onJoin, initCode }) {
           onKeyDown={(e) => e.key === "Enter" && go()}
           autoFocus
         />
-
-        {tab === "join" && (
-          <>
-            <label className="lbl">Room Code</label>
-            <input
-              className="inp"
-              placeholder="e.g. AB12C"
-              value={rc}
-              onChange={(e) => {
-                setRc(e.target.value.toUpperCase());
-                setErr("");
-              }}
-              onKeyDown={(e) => e.key === "Enter" && go()}
-              maxLength={6}
-            />
-          </>
-        )}
 
         <label className="lbl">Your Role</label>
         <div className="role-row">
@@ -880,7 +949,7 @@ function JoinScreen({ onCreate, onJoin, initCode }) {
 
         {err && <div className="err">{err}</div>}
         <button className="btn-primary" onClick={go}>
-          {tab === "create" ? "Deal Me In →" : "Join the Table →"}
+          Join the Table →
         </button>
       </div>
     </div>
@@ -1192,48 +1261,106 @@ function GameScreen({
             {/* Results */}
             {revealed && (
               <div className="panel panel-gold results-panel">
-                <div className="res-hdr">✦ &nbsp; Votes Revealed &nbsp; ✦</div>
                 {voted.length > 0 && (
                   <>
-                    <div className="res-cards">
-                      {voted.map((p, i) => (
-                        <div
-                          key={p.id}
-                          className="rc-wrap"
-                          style={{ animationDelay: `${i * 0.07}s` }}
-                        >
-                          <div className="rc-val">{p.vote}</div>
-                          <div className="rc-name">{p.name}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="stats-row">
-                      <div className="stat">
-                        <span className="sv">{avgDisp}</span>
-                        <span className="sl">Average</span>
+                    {/* Hero Average — big and impossible to miss */}
+                    <div className="avg-hero">
+                      <div className="avg-hero-label">
+                        Team Average Story Points
                       </div>
-                      {minV !== null && (
-                        <div className="stat">
-                          <span className="sv">{minV}</span>
-                          <span className="sl">Lowest</span>
+                      <div className="avg-hero-num">{avgDisp}</div>
+                      {allSame ? (
+                        <div className="avg-hero-consensus">
+                          🎉 Perfect consensus! Everyone agreed on{" "}
+                          {voted[0].vote}
+                        </div>
+                      ) : (
+                        <div className="avg-hero-sub">
+                          Team voted — see individual estimates below
                         </div>
                       )}
-                      {maxV !== null && (
-                        <div className="stat">
-                          <span className="sv">{maxV}</span>
-                          <span className="sl">Highest</span>
+                      {!allSame && minV !== null && (
+                        <div className="avg-hero-range">
+                          <div className="avg-hero-stat">
+                            <span className="v">{minV}</span>
+                            <span className="l">Lowest</span>
+                          </div>
+                          <div className="avg-hero-stat">
+                            <span
+                              className="v"
+                              style={{
+                                color: "var(--gold2)",
+                                fontSize: "1.8rem",
+                              }}
+                            >
+                              {avgDisp}
+                            </span>
+                            <span className="l">Average</span>
+                          </div>
+                          <div className="avg-hero-stat">
+                            <span className="v">{maxV}</span>
+                            <span className="l">Highest</span>
+                          </div>
                         </div>
                       )}
-                      <div className="stat">
-                        <span className="sv">{voted.length}</span>
-                        <span className="sl">Voted</span>
-                      </div>
                     </div>
-                    {allSame && (
-                      <div className="consensus">
-                        🎉 Perfect consensus! Everyone picked {voted[0].vote}
-                      </div>
-                    )}
+
+                    {/* Individual vote cards — who picked what */}
+                    <div style={{ marginBottom: 8 }}>
+                      <span className="ptitle">Who Picked What</span>
+                    </div>
+                    <div className="revealed-grid">
+                      {voted.map((p, i) => {
+                        const isHigh =
+                          !allSame && p.vote === String(maxV) && maxV !== minV;
+                        const isLow =
+                          !allSame && p.vote === String(minV) && maxV !== minV;
+                        const isMe = p.id === myId;
+                        const cardClass = allSame
+                          ? "consensus"
+                          : isHigh
+                            ? "outlier-high"
+                            : isLow
+                              ? "outlier-low"
+                              : "";
+                        const isRed = ["♥", "♦"].includes(
+                          CARDS.find((c) => c.val === p.vote)?.suit || "",
+                        );
+                        return (
+                          <div
+                            key={p.id}
+                            className="rv-card"
+                            style={{ animationDelay: `${i * 0.07}s` }}
+                          >
+                            <div className={`rv-card-face ${cardClass}`}>
+                              <span className={`rv-val${isRed ? " red" : ""}`}>
+                                {p.vote}
+                              </span>
+                            </div>
+                            <div className="rv-name">
+                              {p.name}
+                              {isMe ? " (you)" : ""}
+                            </div>
+                            {isHigh && (
+                              <span className="outlier-tag high">Highest</span>
+                            )}
+                            {isLow && (
+                              <span className="outlier-tag low">Lowest</span>
+                            )}
+                            {allSame && (
+                              <span
+                                style={{
+                                  fontSize: ".6rem",
+                                  color: "var(--gold2)",
+                                }}
+                              >
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                     {noVoted.length > 0 && (
                       <div className="no-vote">
                         ⚠️ Didn't vote: {noVoted.map((p) => p.name).join(", ")}
@@ -1246,20 +1373,33 @@ function GameScreen({
 
             {/* Observer actions */}
             {isObs && (
-              <div className="actions">
+              <div className="obs-controls">
                 <button
-                  className="btn-reveal"
+                  className="btn-reveal-primary"
                   disabled={!hasVotes || revealed}
                   onClick={onReveal}
                 >
-                  🂠 Reveal Cards
+                  🂠 Reveal Everyone's Cards
                 </button>
-                <button className="btn-ghost" onClick={onNewRound}>
-                  ↺ New Round
-                </button>
-                <button className="btn-danger" onClick={onReset}>
-                  ⟳ Reset Session
-                </button>
+                {!revealed && (
+                  <div className="btn-hint">
+                    {hasVotes
+                      ? "Ready to reveal — cards are in!"
+                      : "Waiting for team to vote before you can reveal…"}
+                  </div>
+                )}
+                <div className="obs-secondary-row">
+                  <button className="btn-next-round" onClick={onNewRound}>
+                    ✅ Story Done — Next Story
+                  </button>
+                  <button className="btn-new-session" onClick={onReset}>
+                    🔄 New Sprint Session
+                  </button>
+                </div>
+                <div className="btn-hint">
+                  "Story Done" resets votes for the next user story
+                  &nbsp;·&nbsp; "New Sprint" resets everything
+                </div>
               </div>
             )}
           </div>
@@ -1326,34 +1466,6 @@ function GameScreen({
                 ))}
               </div>
             </div>
-
-            {/* Average Story Points */}
-            {revealed && avg !== null && (
-              <div className="avg-box">
-                <div className="avg-l">
-                  <div className="al">Avg Story Points</div>
-                  <div className="av">{avgDisp}</div>
-                  <div className="as">
-                    {allSame ? "Consensus reached" : `Range: ${minV}–${maxV}`}
-                  </div>
-                </div>
-                <div className="chips">
-                  {chips.map((c, i) => (
-                    <div
-                      key={i}
-                      className="chip"
-                      style={{
-                        background: c,
-                        marginLeft: i > 0 ? -10 : 0,
-                        zIndex: 4 - i,
-                      }}
-                    >
-                      {avgDisp}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Session Stats */}
             <div className="panel">
