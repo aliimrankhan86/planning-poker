@@ -20,7 +20,8 @@ const CARDS = [
 ];
 const CIRC = 201.1;
 const uid = () => Math.random().toString(36).slice(2, 10);
-const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
+// mkCode kept for dynamic room mode — uncomment when re-enabling room creation:
+// const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
 const ini = (n = "") =>
   n
     .split(" ")
@@ -1008,7 +1009,6 @@ function GameScreen({
   const urgent = timer.remaining <= 5;
   const warn = timer.remaining <= 10 && !urgent;
   const ringClr = urgent ? "#e74c3c" : warn ? "#e67e22" : "var(--gold)";
-  const chips = ["#c0392b", "#1a6b9a", "#27ae60", "#2c2c2c"];
 
   return (
     <>
