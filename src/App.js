@@ -20,8 +20,7 @@ const CARDS = [
 ];
 const CIRC = 201.1;
 const uid = () => Math.random().toString(36).slice(2, 10);
-// mkCode kept for dynamic room mode — uncomment when re-enabling room creation:
-// const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
+// const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase(); // re-enable for dynamic rooms
 const ini = (n = "") =>
   n
     .split(" ")
@@ -30,614 +29,503 @@ const ini = (n = "") =>
     .join("")
     .toUpperCase();
 
-/* ─────────────────────────── CSS ─────────────────────────── */
+/* ═══════════════════════════ CSS ═══════════════════════════ */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --felt:#0b2115;--felt2:#081a0f;--rail:#183422;
-  --gold:#c8962a;--gold2:#e9b84d;--goldA:rgba(200,150,42,0.15);
-  --cream:#f4ecd8;--cream2:#e6d9bf;
-  --red:#c0392b;--obs:#1a6b9a;
-  --card:#fdfaf2;--ink:#18120a;
-  --panel:rgba(15,35,20,0.75);
-  --border:rgba(255,255,255,0.07);
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #080c0a;
+  --bg2:      #0d1510;
+  --surface:  rgba(255,255,255,0.035);
+  --surface2: rgba(255,255,255,0.06);
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.14);
+  --gold:     #c9912a;
+  --gold2:    #e8b84b;
+  --gold3:    #f5d07a;
+  --goldA:    rgba(201,145,42,0.15);
+  --goldB:    rgba(201,145,42,0.08);
+  --cream:    #f0e6d0;
+  --cream2:   #c9bba0;
+  --red:      #c0392b;
+  --green:    #27ae60;
+  --blue:     #2980b9;
+  --ink:      #0d1007;
+  --card-bg:  #fdfaf3;
+  --radius:   16px;
+  --radius-sm:10px;
+  --shadow:   0 20px 60px rgba(0,0,0,0.6);
 }
-html{font-size:16px}
-body{font-family:'DM Sans',sans-serif;background:var(--felt2);min-height:100vh;color:var(--cream);overflow-x:hidden;
+
+html { font-size: 16px; }
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--cream);
+  overflow-x: hidden;
+}
+
+/* Subtle felt texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    radial-gradient(ellipse 140% 60% at 50% -10%,rgba(24,52,34,0.9) 0%,transparent 55%),
-    repeating-linear-gradient(0deg,transparent,transparent 44px,rgba(255,255,255,.006) 44px,rgba(255,255,255,.006) 45px),
-    repeating-linear-gradient(90deg,transparent,transparent 44px,rgba(255,255,255,.006) 44px,rgba(255,255,255,.006) 45px);
-}
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes flip{0%{transform:rotateY(90deg) scale(.85)}60%{transform:rotateY(-6deg) scale(1.02)}100%{transform:rotateY(0) scale(1)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-@keyframes shimmer{0%{background-position:-300% center}100%{background-position:300% center}}
-@keyframes glow{0%,100%{box-shadow:0 0 18px rgba(200,150,42,.3)}50%{box-shadow:0 0 40px rgba(200,150,42,.65),0 0 80px rgba(200,150,42,.2)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes urgentBg{0%,100%{background:rgba(192,57,43,.12)}50%{background:rgba(192,57,43,.28)}}
-@keyframes dealIn{from{opacity:0;transform:translateY(-20px) scale(.88)}to{opacity:1;transform:translateY(0) scale(1)}}
-
-/* ── APP ── */
-.app{min-height:100vh;display:flex;flex-direction:column}
-
-/* ── JOIN ── */
-.join-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .4s ease}
-.join-box{
-  width:100%;max-width:460px;
-  background:linear-gradient(155deg,rgba(24,52,34,.96) 0%,rgba(11,33,21,.98) 100%);
-  border:1px solid rgba(200,150,42,.35);border-radius:24px;
-  padding:46px 38px 42px;
-  box-shadow:0 40px 100px rgba(0,0,0,.65),inset 0 1px 0 rgba(200,150,42,.18);
-  position:relative;overflow:hidden;animation:fadeUp .45s ease;
-}
-.join-box::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,transparent,var(--gold),var(--gold2),var(--gold),transparent);
-  background-size:300% auto;animation:shimmer 3s linear infinite;
-}
-.join-suits{display:flex;justify-content:center;gap:18px;margin-bottom:26px;font-size:1.55rem}
-.join-suits span{opacity:.18}
-.join-suits span:nth-child(2),.join-suits span:nth-child(4){color:var(--red)}
-.join-title{font-family:'Playfair Display',serif;font-size:2.1rem;color:var(--gold2);text-align:center;margin-bottom:5px;letter-spacing:.5px}
-.join-sub{text-align:center;color:rgba(244,236,216,.4);font-size:.84rem;margin-bottom:30px;font-weight:300}
-.tab-row{display:flex;gap:4px;margin-bottom:26px;background:rgba(0,0,0,.35);border-radius:12px;padding:4px;border:1px solid rgba(255,255,255,.05)}
-.tab-btn{flex:1;padding:10px;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;background:transparent;color:rgba(244,236,216,.35)}
-.tab-btn.on{background:var(--gold);color:var(--ink);box-shadow:0 2px 14px rgba(200,150,42,.4)}
-.lbl{display:block;font-size:.67rem;font-weight:600;letter-spacing:1.9px;text-transform:uppercase;color:rgba(244,236,216,.38);margin-bottom:7px}
-.inp{
-  width:100%;padding:13px 16px;
-  background:rgba(0,0,0,.32);border:1.5px solid rgba(255,255,255,.1);
-  border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.95rem;
-  color:var(--cream);outline:none;margin-bottom:18px;transition:border-color .2s,box-shadow .2s;
-}
-.inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,150,42,.14)}
-.inp::placeholder{color:rgba(244,236,216,.2)}
-.role-row{display:flex;gap:8px;margin-bottom:24px}
-.role-btn{
-  flex:1;padding:12px 6px;border-radius:12px;
-  border:1.5px solid rgba(255,255,255,.1);background:transparent;
-  font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;
-  cursor:pointer;color:rgba(244,236,216,.4);transition:all .2s;
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-}
-.role-btn .ri{font-size:1.3rem}
-.role-btn .rl{font-weight:700}
-.role-btn .rs{font-size:.63rem;opacity:.6;font-weight:300}
-.role-btn.rv{border-color:var(--gold);background:rgba(200,150,42,.12);color:var(--gold2)}
-.role-btn.ro{border-color:var(--obs);background:rgba(26,107,154,.14);color:#5dade2}
-.err{color:#e74c3c;font-size:.8rem;margin-bottom:10px;text-align:center}
-.btn-primary{
-  width:100%;padding:15px;border:none;border-radius:13px;
-  background:linear-gradient(135deg,var(--gold),var(--gold2));
-  color:var(--ink);font-family:'DM Sans',sans-serif;font-size:.98rem;font-weight:700;
-  cursor:pointer;letter-spacing:.4px;transition:all .2s;
-  box-shadow:0 4px 22px rgba(200,150,42,.38);
-}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 7px 30px rgba(200,150,42,.55)}
-.btn-primary:active{transform:none}
-
-/* ── HEADER ── */
-.hdr{
-  background:linear-gradient(180deg,rgba(11,33,21,.97),rgba(11,33,21,.9));
-  border-bottom:1px solid rgba(200,150,42,.18);
-  backdrop-filter:blur(14px);position:sticky;top:0;z-index:100;padding:0 20px;
-}
-.hdr-in{
-  max-width:1120px;margin:0 auto;
-  display:flex;align-items:center;justify-content:space-between;
-  min-height:62px;gap:10px;flex-wrap:wrap;padding:10px 0;
-}
-.hdr-l{display:flex;align-items:center;gap:10px}
-.btn-back{
-  display:flex;align-items:center;gap:5px;
-  padding:7px 13px;border-radius:8px;
-  border:1px solid rgba(255,255,255,.1);background:transparent;
-  color:rgba(244,236,216,.45);font-family:'DM Sans',sans-serif;
-  font-size:.78rem;cursor:pointer;transition:all .2s;
-}
-.btn-back:hover{background:rgba(255,255,255,.07);color:var(--cream);border-color:rgba(255,255,255,.22)}
-.logo-btn{
-  font-family:'Playfair Display',serif;font-size:1.25rem;
-  color:var(--gold);background:none;border:none;cursor:pointer;
-  transition:color .2s;letter-spacing:.3px;
-}
-.logo-btn:hover{color:var(--gold2)}
-.logo-btn span{color:var(--cream)}
-.hdr-c{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
-.room-badge{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(0,0,0,.3);border:1px solid rgba(200,150,42,.22);
-  border-radius:10px;padding:6px 14px;
-}
-.rl2{font-size:.63rem;letter-spacing:2px;text-transform:uppercase;color:rgba(244,236,216,.32)}
-.rc{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--gold2);letter-spacing:4px}
-.badge{
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);
-  border-radius:100px;padding:5px 13px;
-  font-size:.7rem;letter-spacing:1.8px;text-transform:uppercase;color:rgba(244,236,216,.32);
-}
-.badge-gold{background:rgba(200,150,42,.1);border-color:rgba(200,150,42,.2);color:rgba(232,184,77,.7)}
-.hdr-r{display:flex;align-items:center;gap:8px}
-.btn-sm{
-  display:flex;align-items:center;gap:5px;
-  padding:7px 14px;border-radius:9px;
-  border:1px solid rgba(255,255,255,.12);background:transparent;
-  color:rgba(244,236,216,.5);font-family:'DM Sans',sans-serif;
-  font-size:.78rem;cursor:pointer;transition:all .2s;
-}
-.btn-sm:hover{background:rgba(255,255,255,.07);color:var(--cream)}
-
-/* ── GAME ── */
-.game-body{max-width:1120px;margin:0 auto;padding:22px 20px 60px;width:100%}
-.game-grid{display:grid;grid-template-columns:1fr 310px;gap:18px;align-items:start}
-.lcol,.rcol{display:flex;flex-direction:column;gap:16px}
-
-/* ── PANEL ── */
-.panel{
-  background:linear-gradient(155deg,rgba(20,48,28,.72),rgba(11,33,21,.72));
-  border:1px solid var(--border);border-radius:18px;padding:20px;
-  backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.28);
-}
-.panel-gold{border-color:rgba(200,150,42,.22)}
-.ptitle{font-size:.66rem;font-weight:600;letter-spacing:2.3px;text-transform:uppercase;color:rgba(244,236,216,.32);margin-bottom:15px;display:block}
-
-/* ── START BTN ── */
-.start-btn{
-  width:100%;padding:18px;border:none;border-radius:14px;
-  background:linear-gradient(135deg,var(--gold),var(--gold2));
-  color:var(--ink);font-family:'DM Sans',sans-serif;font-size:1.05rem;font-weight:700;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;
-  box-shadow:0 4px 24px rgba(200,150,42,.42);
-  transition:all .2s;animation:glow 2.8s ease infinite;letter-spacing:.3px;
-}
-.start-btn:hover{transform:translateY(-2px);box-shadow:0 8px 34px rgba(200,150,42,.58)}
-.start-btn:active{transform:none}
-.start-btn .ico{font-size:1.25rem}
-
-/* ── TIMER SELECT ── */
-.tsel-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.tsel-wrap{position:relative}
-.tsel-wrap::after{content:'▾';position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:.74rem;pointer-events:none}
-.tsel{
-  appearance:none;padding:9px 32px 9px 13px;
-  background:rgba(0,0,0,.3);border:1.5px solid rgba(200,150,42,.28);
-  color:var(--gold2);border-radius:10px;
-  font-family:'DM Sans',sans-serif;font-size:.87rem;font-weight:500;
-  cursor:pointer;outline:none;transition:border-color .2s;
-}
-.tsel:hover{border-color:var(--gold)}
-.tsel option{background:#0b2115}
-.tsel:disabled{opacity:.4;cursor:not-allowed}
-
-/* ── RING ── */
-.ring-area{
-  display:flex;align-items:center;gap:18px;
-  padding:16px;background:rgba(0,0,0,.22);
-  border-radius:14px;border:1px solid rgba(255,255,255,.05);
-  animation:fadeIn .3s ease;
-}
-.ring-area.urgent{animation:urgentBg 1s ease infinite}
-.ring-wrap{position:relative;width:82px;height:82px;flex-shrink:0}
-.rsv{transform:rotate(-90deg)}
-.rt{fill:none;stroke:rgba(255,255,255,.06);stroke-width:6}
-.rp{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .3s}
-.rnum{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:'Playfair Display',serif;font-size:1.75rem;color:var(--cream);
-}
-.rnum.urgent{color:#e74c3c}
-.rtxt{flex:1}
-.rstatus{font-size:.76rem;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:3px;color:rgba(244,236,216,.38)}
-.rstatus.warn{color:#e67e22}.rstatus.danger{color:#e74c3c}
-.rhint{font-size:.72rem;color:rgba(244,236,216,.22);margin-top:2px}
-.btn-stop{
-  margin-top:9px;padding:6px 13px;border-radius:8px;
-  border:1px solid rgba(255,255,255,.13);background:transparent;
-  color:rgba(244,236,216,.42);font-family:'DM Sans',sans-serif;
-  font-size:.75rem;cursor:pointer;transition:all .2s;
-}
-.btn-stop:hover{background:rgba(255,255,255,.06);color:var(--cream)}
-
-.waiting-hint{font-size:.82rem;color:rgba(244,236,216,.25);font-style:italic;text-align:center;padding:8px 0}
-
-/* ── CARDS ── */
-.cards-grid{display:flex;flex-wrap:wrap;gap:14px;padding:4px 2px}
-.pcard{
-  width:82px;height:118px;
-  position:relative;cursor:pointer;user-select:none;
-  animation:dealIn .35s ease both;
-  transition:transform .2s cubic-bezier(.34,1.56,.64,1),filter .2s;
-  perspective:600px;
-}
-.pcard:hover:not(.locked){transform:translateY(-14px) scale(1.06);filter:drop-shadow(0 22px 18px rgba(0,0,0,.55));}
-.pcard.sel{transform:translateY(-16px) scale(1.08);filter:drop-shadow(0 0 12px rgba(200,150,42,.9)) drop-shadow(0 18px 20px rgba(0,0,0,.6));}
-.pcard.locked{cursor:default}
-
-/* Card face */
-.pcard-inner{
-  width:100%;height:100%;
-  background:linear-gradient(160deg,#ffffff 0%,#fdf8ee 100%);
-  border-radius:10px;
-  border:1px solid rgba(0,0,0,.12);
-  box-shadow:
-    0 2px 0 rgba(255,255,255,.9) inset,
-    0 -1px 0 rgba(0,0,0,.08) inset,
-    1px 0 0 rgba(255,255,255,.6) inset,
-    0 8px 24px rgba(0,0,0,.45),
-    0 2px 4px rgba(0,0,0,.3);
-  position:relative;overflow:hidden;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  transition:background .15s;
-}
-.pcard.sel .pcard-inner{
-  background:linear-gradient(160deg,#fffde8 0%,#fff8d0 100%);
-  border-color:rgba(200,150,42,.6);
-  box-shadow:
-    0 2px 0 rgba(255,255,255,.9) inset,
-    0 -1px 0 rgba(200,150,42,.2) inset,
-    0 8px 24px rgba(0,0,0,.5),
-    0 0 0 2.5px rgba(200,150,42,.85);
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(20,60,30,0.5) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-size: cover, 200px 200px;
 }
 
-/* Card back pattern (subtle linen texture lines) */
-.pcard-inner::before{
-  content:'';position:absolute;inset:5px;border-radius:6px;
-  background:
-    repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.018) 3px,rgba(0,0,0,.018) 4px),
-    repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.012) 3px,rgba(0,0,0,.012) 4px);
-  pointer-events:none;
+.app { min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp   { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+@keyframes shimmer  { 0% { background-position:-300% center; } 100% { background-position:300% center; } }
+@keyframes spin     { to { transform: rotate(360deg); } }
+@keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+@keyframes flip     { 0% { transform:rotateY(90deg) scale(.85); } 60% { transform:rotateY(-6deg) scale(1.02); } 100% { transform:rotateY(0) scale(1); } }
+@keyframes dealIn   { from { opacity:0; transform:translateY(-18px) scale(.9); } to { opacity:1; transform:none; } }
+@keyframes glow     { 0%,100% { box-shadow:0 0 20px rgba(201,145,42,.25); } 50% { box-shadow:0 0 40px rgba(201,145,42,.6), 0 0 80px rgba(201,145,42,.15); } }
+@keyframes urgentBg { 0%,100% { background:rgba(192,57,43,.1); } 50% { background:rgba(192,57,43,.22); } }
+@keyframes heroIn   { from { opacity:0; transform:scale(.92) translateY(12px); } to { opacity:1; transform:none; } }
+@keyframes badgePop { 0% { transform:scale(0.7); opacity:0; } 70% { transform:scale(1.08); } 100% { transform:scale(1); opacity:1; } }
+
+/* ══════════════════════ JOIN SCREEN ══════════════════════ */
+.join-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 24px; animation: fadeIn .4s ease;
+}
+.join-box {
+  width: 100%; max-width: 440px;
+  background: linear-gradient(160deg, rgba(18,40,22,.97) 0%, rgba(8,14,10,.99) 100%);
+  border: 1px solid rgba(201,145,42,.3);
+  border-radius: 24px;
+  padding: 48px 40px 44px;
+  box-shadow: 0 40px 100px rgba(0,0,0,.7), inset 0 1px 0 rgba(201,145,42,.12);
+  position: relative; overflow: hidden;
+  animation: fadeUp .45s ease;
+}
+.join-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--gold3), var(--gold), transparent);
+  background-size: 300% auto; animation: shimmer 3s linear infinite;
+}
+.join-suits {
+  display: flex; justify-content: center; gap: 16px;
+  margin-bottom: 28px; font-size: 1.4rem;
+}
+.join-suits span { opacity: .12; }
+.join-suits span:nth-child(2), .join-suits span:nth-child(4) { color: var(--red); opacity: .18; }
+.join-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.6rem; font-weight: 700;
+  color: var(--gold2); text-align: center;
+  margin-bottom: 4px; letter-spacing: .5px; line-height: 1.1;
+}
+.join-sub {
+  text-align: center; color: rgba(240,230,208,.35);
+  font-size: .8rem; margin-bottom: 36px; font-weight: 300; letter-spacing: .5px;
+}
+.lbl {
+  display: block; font-size: .65rem; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: rgba(240,230,208,.35); margin-bottom: 8px;
+}
+.inp {
+  width: 100%; padding: 13px 16px;
+  background: rgba(0,0,0,.35); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  font-family: 'Outfit', sans-serif; font-size: .95rem;
+  color: var(--cream); outline: none; margin-bottom: 20px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.inp:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,145,42,.12); }
+.inp::placeholder { color: rgba(240,230,208,.18); }
+.role-row { display: flex; gap: 10px; margin-bottom: 28px; }
+.role-btn {
+  flex: 1; padding: 14px 8px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface);
+  font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 500;
+  cursor: pointer; color: rgba(240,230,208,.45); transition: all .2s;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+}
+.role-btn .ri { font-size: 1.25rem; }
+.role-btn .rl { font-weight: 600; font-size: .85rem; }
+.role-btn .rs { font-size: .62rem; opacity: .55; font-weight: 300; }
+.role-btn.rv { border-color: var(--gold); background: var(--goldB); color: var(--gold2); }
+.role-btn.ro { border-color: rgba(41,128,185,.5); background: rgba(41,128,185,.08); color: #5dade2; }
+.err { color: #e74c3c; font-size: .78rem; margin-bottom: 12px; text-align: center; }
+.btn-primary {
+  width: 100%; padding: 15px; border: none; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--ink); font-family: 'Outfit', sans-serif;
+  font-size: .98rem; font-weight: 700; cursor: pointer;
+  letter-spacing: .3px; transition: all .2s;
+  box-shadow: 0 4px 20px rgba(201,145,42,.35);
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,145,42,.5); }
+.btn-primary:active { transform: none; }
+
+/* ══════════════════════ HEADER ══════════════════════ */
+.hdr {
+  background: rgba(8,12,10,.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  position: sticky; top: 0; z-index: 100; padding: 0 24px;
+}
+.hdr-in {
+  max-width: 1160px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 60px; gap: 12px; flex-wrap: wrap; padding: 10px 0;
+}
+.hdr-l { display: flex; align-items: center; gap: 12px; }
+.btn-back {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 13px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: rgba(240,230,208,.4); font-family: 'Outfit', sans-serif;
+  font-size: .78rem; cursor: pointer; transition: all .2s;
+}
+.btn-back:hover { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
+.logo-txt {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.3rem; font-weight: 700; color: var(--gold2); letter-spacing: .3px;
+}
+.hdr-c { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.badge {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 100px; padding: 5px 12px;
+  font-size: .68rem; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(240,230,208,.3);
+}
+.badge-gold { background: var(--goldB); border-color: rgba(201,145,42,.22); color: rgba(232,184,77,.7); }
+.hdr-r { display: flex; align-items: center; gap: 8px; }
+.btn-sm {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 13px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: rgba(240,230,208,.45); font-family: 'Outfit', sans-serif;
+  font-size: .76rem; cursor: pointer; transition: all .2s;
+}
+.btn-sm:hover { background: var(--surface2); color: var(--cream); }
+
+/* ══════════════════════ LAYOUT ══════════════════════ */
+.game-body { max-width: 1160px; margin: 0 auto; padding: 24px 24px 80px; width: 100%; }
+.game-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+.lcol, .rcol { display: flex; flex-direction: column; gap: 16px; }
+
+/* ══════════════════════ PANEL ══════════════════════ */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgba(0,0,0,.3);
+}
+.panel-gold { border-color: rgba(201,145,42,.2); }
+.ptitle {
+  font-size: .62rem; font-weight: 600; letter-spacing: 2.5px;
+  text-transform: uppercase; color: rgba(240,230,208,.28);
+  margin-bottom: 14px; display: block;
 }
 
-/* Corner pips - top left */
-.pcard-tl{
-  position:absolute;top:6px;left:8px;
-  display:flex;flex-direction:column;align-items:center;line-height:1;
+/* ══════════════════════ TIMER ══════════════════════ */
+.start-btn {
+  width: 100%; padding: 16px; border: none; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--ink); font-family: 'Outfit', sans-serif;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 4px 24px rgba(201,145,42,.4);
+  transition: all .2s; animation: glow 3s ease infinite; letter-spacing: .3px;
 }
-/* Corner pips - bottom right (rotated) */
-.pcard-br{
-  position:absolute;bottom:6px;right:8px;
-  display:flex;flex-direction:column;align-items:center;line-height:1;
-  transform:rotate(180deg);
+.start-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(201,145,42,.55); }
+.tsel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.tsel-wrap { position: relative; }
+.tsel-wrap::after { content: '▾'; position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: .72rem; pointer-events: none; }
+.tsel {
+  appearance: none; padding: 9px 30px 9px 13px;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(201,145,42,.25);
+  color: var(--gold2); border-radius: 8px;
+  font-family: 'Outfit', sans-serif; font-size: .85rem;
+  cursor: pointer; outline: none;
 }
-.pcard-num{
-  font-family:'Playfair Display',serif;
-  font-size:.78rem;font-weight:700;color:#1a1208;line-height:1;
+.tsel option { background: #0d1510; }
+.ring-area {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px; background: rgba(0,0,0,.2);
+  border-radius: 12px; border: 1px solid var(--border);
 }
-.pcard-suit-sm{font-size:.65rem;line-height:1;margin-top:1px}
+.ring-area.urgent { animation: urgentBg 1s ease infinite; }
+.ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+.rsv { transform: rotate(-90deg); }
+.rt { fill: none; stroke: rgba(255,255,255,.05); stroke-width: 6; }
+.rp { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke .3s; }
+.rnum { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; color: var(--cream); }
+.rnum.urgent { color: #e74c3c; }
+.rtxt { flex: 1; }
+.rstatus { font-size: .72rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px; color: rgba(240,230,208,.35); }
+.rstatus.warn { color: #e67e22; } .rstatus.danger { color: #e74c3c; }
+.rhint { font-size: .7rem; color: rgba(240,230,208,.2); margin-top: 3px; }
+.btn-stop { margin-top: 8px; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border2); background: transparent; color: rgba(240,230,208,.4); font-family: 'Outfit', sans-serif; font-size: .73rem; cursor: pointer; transition: all .2s; }
+.btn-stop:hover { background: var(--surface2); color: var(--cream); }
+.waiting-hint { font-size: .8rem; color: rgba(240,230,208,.22); font-style: italic; text-align: center; padding: 8px 0; }
 
-/* Center display */
-.pcard-center{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;position:relative;z-index:1;
+/* ══════════════════════ VOTE CARDS ══════════════════════ */
+.cards-grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 0; }
+.pcard {
+  width: 80px; height: 114px; position: relative;
+  cursor: pointer; user-select: none;
+  animation: dealIn .35s ease both;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1), filter .2s;
 }
-.pcard-bignum{
-  font-family:'Playfair Display',serif;
-  font-size:2rem;font-weight:700;line-height:1;color:#1a1208;
-  text-shadow:0 1px 0 rgba(255,255,255,.8);
+.pcard:hover:not(.locked) { transform: translateY(-14px) scale(1.06); filter: drop-shadow(0 20px 16px rgba(0,0,0,.55)); }
+.pcard.sel { transform: translateY(-16px) scale(1.08); filter: drop-shadow(0 0 14px rgba(201,145,42,.9)) drop-shadow(0 18px 20px rgba(0,0,0,.6)); }
+.pcard.locked { cursor: default; }
+.pcard-inner {
+  width: 100%; height: 100%;
+  background: linear-gradient(160deg, #fff 0%, #fdf8ee 100%);
+  border-radius: 10px; border: 1px solid rgba(0,0,0,.1);
+  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 8px 22px rgba(0,0,0,.4);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: background .15s;
 }
-.pcard-bigsuit{font-size:1.1rem;line-height:1;margin-top:1px}
+.pcard.sel .pcard-inner { background: linear-gradient(160deg, #fffde8 0%, #fff8d0 100%); border-color: rgba(201,145,42,.6); box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 8px 22px rgba(0,0,0,.5), 0 0 0 2.5px rgba(201,145,42,.85); }
+.pcard-tl { position: absolute; top: 6px; left: 7px; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.pcard-br { position: absolute; bottom: 6px; right: 7px; display: flex; flex-direction: column; align-items: center; line-height: 1; transform: rotate(180deg); }
+.pcard-num { font-family: 'Cormorant Garamond', serif; font-size: .78rem; font-weight: 700; color: #1a1208; line-height: 1; }
+.pcard-suit-sm { font-size: .62rem; line-height: 1; margin-top: 1px; }
+.pcard-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.pcard-bignum { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; line-height: 1; color: #1a1208; }
+.pcard-bigsuit { font-size: 1rem; line-height: 1; margin-top: 1px; }
+.pcard.red .pcard-num, .pcard.red .pcard-bignum { color: #b01020; }
+.pcard.red .pcard-suit-sm, .pcard.red .pcard-bigsuit { color: #b01020; }
+.pcard:not(.red) .pcard-suit-sm, .pcard:not(.red) .pcard-bigsuit { color: #1a1208; }
+.pcard.wild .pcard-bignum { font-size: 1.7rem; color: #6b3fa0; }
+.pcard.wild .pcard-bigsuit { color: #6b3fa0; font-size: .85rem; }
+.pcard.wild .pcard-num { color: #6b3fa0; }
+.pcard.wild .pcard-suit-sm { color: #6b3fa0; }
+.pcard.wild .pcard-inner { background: linear-gradient(160deg, #fdfaff 0%, #f5eeff 100%); }
+.obs-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(41,128,185,.08); border: 1px solid rgba(41,128,185,.2); border-radius: 10px; color: #5dade2; font-size: .86rem; }
+.vstatus { text-align: center; font-size: .82rem; padding: 8px 0; }
+.vstatus.voted { color: rgba(201,145,42,.7); }
+.vstatus.wait  { color: rgba(240,230,208,.2); font-style: italic; }
 
-/* Red cards */
-.pcard.red .pcard-num,
-.pcard.red .pcard-bignum{ color:#b01020; }
-.pcard.red .pcard-suit-sm,
-.pcard.red .pcard-bigsuit{ color:#b01020; }
+/* ══════════════════════ RESULTS HERO ══════════════════════ */
+.avg-hero {
+  text-align: center; padding: 32px 24px 26px;
+  background: linear-gradient(135deg, rgba(201,145,42,.14), rgba(201,145,42,.04));
+  border: 1.5px solid rgba(201,145,42,.4); border-radius: 18px;
+  margin-bottom: 20px; animation: heroIn .45s ease;
+  box-shadow: 0 0 50px rgba(201,145,42,.12), 0 8px 32px rgba(0,0,0,.35);
+}
+.avg-hero-label {
+  font-size: .62rem; font-weight: 600; letter-spacing: 2.5px;
+  text-transform: uppercase; color: rgba(240,230,208,.38); margin-bottom: 10px;
+}
+.avg-hero-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 5.5rem; color: var(--gold2); font-weight: 700;
+  line-height: 1; text-shadow: 0 0 50px rgba(201,145,42,.45);
+  animation: heroIn .5s ease;
+}
+.avg-hero-sub { font-size: .8rem; color: rgba(240,230,208,.4); margin-top: 10px; }
+.avg-hero-consensus {
+  display: inline-block; margin-top: 14px;
+  background: rgba(201,145,42,.18); border: 1px solid rgba(201,145,42,.38);
+  border-radius: 100px; padding: 6px 20px;
+  font-size: .82rem; font-weight: 600; color: var(--gold2);
+  animation: badgePop .4s .2s ease both;
+}
+.avg-hero-range { display: flex; justify-content: center; gap: 32px; margin-top: 18px; }
+.avg-hero-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.avg-hero-stat .v { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--cream); font-weight: 700; }
+.avg-hero-stat .l { font-size: .58rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(240,230,208,.28); }
 
-/* Black cards */
-.pcard:not(.red) .pcard-suit-sm,
-.pcard:not(.red) .pcard-bigsuit{ color:#1a1208; }
+/* ══════════════════════ WHO PICKED WHAT ══════════════════════ */
+.who-section { margin-bottom: 8px; }
+.revealed-grid { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; padding: 4px 0 16px; }
+.rv-card { display: flex; flex-direction: column; align-items: center; gap: 7px; animation: dealIn .4s ease both; }
+.rv-card-face {
+  width: 70px; height: 96px;
+  background: linear-gradient(160deg, #fff 0%, #fdf8ee 100%);
+  border-radius: 10px; border: 1px solid rgba(0,0,0,.1);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4), 0 2px 0 rgba(255,255,255,.9) inset;
+}
+.rv-card-face.outlier-high { border: 2px solid #e74c3c; box-shadow: 0 6px 18px rgba(231,76,60,.3); }
+.rv-card-face.outlier-low  { border: 2px solid #3498db; box-shadow: 0 6px 18px rgba(52,152,219,.3); }
+.rv-card-face.consensus    { border: 2px solid var(--gold); box-shadow: 0 6px 18px rgba(201,145,42,.4); }
+.rv-val { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; color: var(--ink); }
+.rv-val.red { color: #b01020; }
+.rv-name { font-size: .68rem; color: rgba(240,230,208,.55); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.rv-you-tag { font-size: .58rem; color: var(--gold2); font-weight: 700; letter-spacing: .3px; }
+.outlier-tag { font-size: .55rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
+.outlier-tag.high { background: rgba(231,76,60,.18); color: #e74c3c; }
+.outlier-tag.low  { background: rgba(52,152,219,.18); color: #3498db; }
+.no-vote { text-align: center; color: rgba(240,230,208,.32); font-size: .77rem; padding: 6px 0; }
 
-/* Wild / ? card special */
-.pcard.wild .pcard-bignum{ font-size:1.8rem; color:#6b3fa0; }
-.pcard.wild .pcard-bigsuit{ color:#6b3fa0; font-size:.9rem; }
-.pcard.wild .pcard-num{ color:#6b3fa0; }
-.pcard.wild .pcard-suit-sm{ color:#6b3fa0; }
-.pcard.wild .pcard-inner{
-  background:linear-gradient(160deg,#fdfaff 0%,#f5eeff 100%);
-  border-color:rgba(107,63,160,.2);
+/* ══════════════════════ OBSERVER CONTROLS ══════════════════════ */
+.obs-controls { display: flex; flex-direction: column; gap: 10px; }
+.btn-reveal-primary {
+  width: 100%; padding: 16px 20px; border: none; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--ink); font-family: 'Outfit', sans-serif;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  transition: all .2s; letter-spacing: .3px;
+  box-shadow: 0 4px 20px rgba(201,145,42,.4);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
 }
-.pcard.wild.sel .pcard-inner{
-  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 8px 24px rgba(0,0,0,.5), 0 0 0 2.5px rgba(107,63,160,.7);
+.btn-reveal-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,145,42,.55); }
+.btn-reveal-primary:disabled { opacity: .3; cursor: not-allowed; transform: none; box-shadow: none; }
+.obs-secondary-row { display: flex; gap: 10px; }
+.btn-next-round {
+  flex: 1; padding: 13px 14px; border-radius: var(--radius-sm);
+  background: rgba(39,174,96,.1); border: 1px solid rgba(39,174,96,.25);
+  color: #2ecc71; font-family: 'Outfit', sans-serif; font-size: .86rem; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
 }
+.btn-next-round:hover { background: rgba(39,174,96,.18); border-color: rgba(39,174,96,.45); }
+.btn-new-session {
+  padding: 13px 14px; border-radius: var(--radius-sm);
+  background: rgba(192,57,43,.08); border: 1px solid rgba(192,57,43,.18);
+  color: rgba(231,76,60,.65); font-family: 'Outfit', sans-serif;
+  font-size: .86rem; font-weight: 600; cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap;
+}
+.btn-new-session:hover { background: rgba(192,57,43,.15); border-color: rgba(192,57,43,.35); color: #e74c3c; }
+.btn-hint { font-size: .6rem; color: rgba(240,230,208,.18); text-align: center; margin-top: 1px; font-style: italic; }
+.btn-end-session {
+  width: 100%; padding: 12px 16px; border-radius: var(--radius-sm);
+  background: transparent; border: 1px solid rgba(192,57,43,.2);
+  color: rgba(231,76,60,.55); font-family: 'Outfit', sans-serif;
+  font-size: .84rem; font-weight: 500; cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px;
+}
+.btn-end-session:hover { background: rgba(192,57,43,.1); border-color: rgba(192,57,43,.35); color: #e74c3c; }
+.end-session-hint { font-size: .58rem; color: rgba(240,230,208,.15); text-align: center; margin-top: 3px; font-style: italic; }
 
-.obs-box{
-  display:flex;align-items:center;gap:12px;
-  padding:16px 18px;background:rgba(26,107,154,.1);
-  border:1px solid rgba(26,107,154,.22);border-radius:12px;
-  color:#5dade2;font-size:.88rem;
+/* ══════════════════════ PLAYERS PANEL ══════════════════════ */
+.vp-head { display: flex; justify-content: space-between; font-size: .7rem; color: rgba(240,230,208,.3); margin-bottom: 8px; }
+.vp-bar { background: rgba(255,255,255,.05); border-radius: 100px; height: 4px; overflow: hidden; margin-bottom: 14px; }
+.vp-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--gold), var(--gold2)); transition: width .5s ease; }
+.plist { display: flex; flex-direction: column; gap: 6px; }
+.prow {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 11px;
+  background: rgba(255,255,255,.025); border: 1px solid var(--border);
+  transition: all .3s;
 }
-.vstatus{text-align:center;font-size:.83rem;padding:8px 0}
-.vstatus.voted{color:rgba(200,150,42,.7)}
-.vstatus.wait{color:rgba(244,236,216,.22);font-style:italic}
+.prow.voted { background: var(--goldB); border-color: rgba(201,145,42,.15); }
+.prow.obs   { background: rgba(41,128,185,.07); border-color: rgba(41,128,185,.12); }
+.prow.not-voted-yet { border-color: rgba(255,255,255,.04); opacity: .75; }
+.prow.not-voted-yet .pav { background: rgba(255,255,255,.08); color: rgba(240,230,208,.4); }
+.pav {
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .72rem; background: #2e6640; color: var(--cream);
+}
+.prow.voted .pav { background: var(--gold); color: var(--ink); }
+.prow.obs   .pav { background: rgba(41,128,185,.4); }
+.pname { font-size: .84rem; font-weight: 500; color: var(--cream2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prole { font-size: .64rem; color: rgba(240,230,208,.25); margin-top: 1px; }
+.prow.obs .prole { color: rgba(93,173,226,.5); }
+.pdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.pdot.v { background: var(--gold); }
+.pdot.w { background: rgba(255,255,255,.12); animation: pulse 2s ease infinite; }
+.pdot.o { background: rgba(93,173,226,.35); }
+.vchip {
+  background: var(--card-bg); color: var(--ink);
+  font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: .95rem;
+  border-radius: 6px; padding: 3px 10px;
+  border: 1px solid var(--gold); min-width: 32px; text-align: center;
+  animation: flip .3s ease both;
+}
+.voted-label { font-size: .62rem; color: rgba(201,145,42,.7); font-weight: 600; }
+.waiting-label { font-size: .62rem; color: rgba(231,76,60,.5); font-style: italic; }
+.sep { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+.nobody { font-size: .78rem; color: rgba(240,230,208,.18); font-style: italic; text-align: center; padding: 10px 0; }
 
-/* ── RESULTS ── */
-.results-panel{border-color:rgba(200,150,42,.3);animation:fadeUp .35s ease}
-.res-hdr{font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold2);text-align:center;margin-bottom:16px}
-.res-cards{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
-.rc-wrap{display:flex;flex-direction:column;align-items:center;gap:5px}
-.rc-val{
-  background:var(--card);color:var(--ink);
-  font-family:'Playfair Display',serif;font-weight:700;font-size:1.12rem;
-  border-radius:10px;padding:8px 16px;min-width:44px;text-align:center;
-  box-shadow:0 4px 14px rgba(0,0,0,.35);
-  animation:flip .4s ease both;
+/* ══════════════════════ SESSION STATS ══════════════════════ */
+.ss-grid { display: flex; gap: 8px; }
+.ss-chip {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 8px; background: rgba(0,0,0,.2);
+  border: 1px solid var(--border); border-radius: 10px;
 }
-.rc-name{font-size:.67rem;color:rgba(244,236,216,.32);max-width:70px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.stats-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:14px 0;margin-bottom:10px}
-.stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 16px;background:rgba(0,0,0,.22);border-radius:11px;border:1px solid rgba(255,255,255,.07)}
-.sv{font-family:'Playfair Display',serif;font-size:1.35rem;color:var(--gold2);font-weight:700}
-.sl{font-size:.63rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(244,236,216,.3)}
-.consensus{text-align:center;color:var(--gold2);font-weight:600;font-size:.9rem;margin-bottom:6px}
-.no-vote{text-align:center;color:rgba(244,236,216,.35);font-size:.79rem}
+.ss-v { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--gold2); font-weight: 700; }
+.ss-l { font-size: .6rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(240,230,208,.25); text-align: center; }
 
-/* ── AVG BOX ── */
-.avg-box{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:16px 20px;
-  background:linear-gradient(135deg,rgba(200,150,42,.12),rgba(200,150,42,.04));
-  border:1px solid rgba(200,150,42,.22);border-radius:14px;
+/* ══════════════════════ SESSION WARNING ══════════════════════ */
+.session-warn-banner {
+  background: linear-gradient(135deg, rgba(230,126,34,.15), rgba(192,57,43,.1));
+  border: 1px solid rgba(230,126,34,.35); border-radius: var(--radius-sm);
+  padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+  animation: urgentBg 2s ease infinite; margin-bottom: 16px;
 }
-.avg-l .al{font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:rgba(244,236,216,.35);margin-bottom:4px}
-.avg-l .av{font-family:'Playfair Display',serif;font-size:2.2rem;color:var(--gold2);font-weight:700;line-height:1}
-.avg-l .as{font-size:.7rem;color:rgba(244,236,216,.28);margin-top:3px}
-.chips{display:flex}
-.chip{width:33px;height:33px;border-radius:50%;border:3px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:700;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);font-family:'DM Sans',sans-serif}
+.session-warn-text { flex: 1; font-size: .8rem; color: rgba(240,230,208,.75); }
+.session-warn-text strong { color: #e67e22; }
 
-/* ── ACTIONS ── */
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-.btn-reveal{
-  flex:1;padding:13px 18px;border:none;border-radius:12px;
-  background:linear-gradient(135deg,var(--gold),var(--gold2));
-  color:var(--ink);font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;
-  cursor:pointer;transition:all .2s;
-  box-shadow:0 4px 18px rgba(200,150,42,.32);
-  display:flex;align-items:center;justify-content:center;gap:8px;
-}
-.btn-reveal:hover{transform:translateY(-1px);box-shadow:0 6px 26px rgba(200,150,42,.5)}
-.btn-reveal:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
-.btn-ghost{
-  padding:13px 18px;background:transparent;color:var(--cream);
-  border:1.5px solid rgba(255,255,255,.17);border-radius:12px;
-  font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;
-  cursor:pointer;transition:all .2s;
-  display:flex;align-items:center;justify-content:center;gap:7px;
-}
-.btn-ghost:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.28)}
-.btn-danger{
-  padding:13px 18px;background:rgba(192,57,43,.1);color:rgba(231,76,60,.8);
-  border:1.5px solid rgba(192,57,43,.22);border-radius:12px;
-  font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;
-  cursor:pointer;transition:all .2s;
-  display:flex;align-items:center;justify-content:center;gap:7px;
-}
-.btn-danger:hover{background:rgba(192,57,43,.18);border-color:rgba(192,57,43,.38);color:#e74c3c}
+/* ══════════════════════ INVITE ══════════════════════ */
+.inv-panel { border-style: dashed; border-color: rgba(255,255,255,.07); }
+.inv-url { background: rgba(0,0,0,.2); border-radius: 8px; padding: 9px 12px; font-family: monospace; font-size: .7rem; color: rgba(240,230,208,.28); word-break: break-all; margin-bottom: 10px; border: 1px solid var(--border); }
+.btn-inv { width: 100%; padding: 10px; background: var(--goldB); border: 1px solid rgba(201,145,42,.2); border-radius: 9px; color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .2s; }
+.btn-inv:hover { background: rgba(201,145,42,.14); }
 
-/* ── PLAYERS ── */
-.vp-head{display:flex;justify-content:space-between;font-size:.73rem;color:rgba(244,236,216,.35);margin-bottom:7px}
-.vp-bar{background:rgba(255,255,255,.06);border-radius:100px;height:5px;overflow:hidden;margin-bottom:14px}
-.vp-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .4s ease}
-.plist{display:flex;flex-direction:column;gap:7px}
-.prow{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 12px;border-radius:13px;
-  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.055);
-  transition:all .3s;
+/* ══════════════════════ TOAST ══════════════════════ */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  background: #f0ead8; color: var(--ink);
+  border-radius: 12px; padding: 12px 22px;
+  font-size: .86rem; font-weight: 600;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  border: 1px solid rgba(201,145,42,.25);
+  z-index: 500; white-space: nowrap;
+  transition: transform .32s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity: 0;
 }
-.prow.voted{background:rgba(200,150,42,.08);border-color:rgba(200,150,42,.18)}
-.prow.obs{background:rgba(26,107,154,.08);border-color:rgba(26,107,154,.14)}
-.pav{
-  width:32px;height:32px;border-radius:9px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:.74rem;background:#2e8055;color:var(--cream);
-}
-.prow.voted .pav{background:var(--gold);color:var(--ink)}
-.prow.obs .pav{background:rgba(26,107,154,.45)}
-.pname{font-size:.85rem;font-weight:500;color:var(--cream2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.prole{font-size:.66rem;color:rgba(244,236,216,.28);margin-top:1px}
-.prow.obs .prole{color:rgba(93,173,226,.55)}
-.pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.pdot.v{background:var(--gold)}
-.pdot.w{background:rgba(255,255,255,.14);animation:pulse 1.9s ease infinite}
-.pdot.o{background:rgba(93,173,226,.4)}
-.vchip{
-  background:var(--card);color:var(--ink);
-  font-family:'Playfair Display',serif;font-weight:700;font-size:.9rem;
-  border-radius:7px;padding:3px 10px;
-  border:1px solid var(--gold);min-width:32px;text-align:center;
-  animation:flip .3s ease both;
-}
-.sep{border:none;border-top:1px solid rgba(255,255,255,.05);margin:6px 0}
-.nobody{font-size:.79rem;color:rgba(244,236,216,.2);font-style:italic;text-align:center;padding:10px 0}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-/* ── SESSION ── */
-.ss-grid{display:flex;gap:8px;flex-wrap:wrap}
-.ss-chip{
-  flex:1;min-width:72px;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:12px 8px;
-  background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.06);border-radius:12px;
-}
-.ss-v{font-family:'Playfair Display',serif;font-size:1.45rem;color:var(--gold2);font-weight:700}
-.ss-l{font-size:.61rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(244,236,216,.28);text-align:center}
+/* ══════════════════════ LOADING ══════════════════════ */
+.loading { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+.spinner { width: 34px; height: 34px; border: 3px solid rgba(201,145,42,.18); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
 
-/* ── INVITE ── */
-.inv-panel{border-style:dashed;border-color:rgba(255,255,255,.1)}
-.inv-url{
-  background:rgba(0,0,0,.24);border-radius:9px;padding:9px 12px;
-  font-family:monospace;font-size:.73rem;color:rgba(244,236,216,.32);
-  word-break:break-all;margin-bottom:10px;border:1px solid rgba(255,255,255,.05);
+/* ══════════════════════ RESPONSIVE ══════════════════════ */
+@media (max-width: 780px) {
+  .game-grid { grid-template-columns: 1fr; }
+  .rcol { order: -1; }
+  .hdr-c { order: 3; width: 100%; justify-content: center; padding-bottom: 6px; }
+  .hdr-r { display: none; }
+  .cards-grid { justify-content: center; }
+  .pcard { width: 70px; height: 100px; }
+  .pcard-bignum { font-size: 1.7rem; }
+  .game-body { padding: 16px 16px 60px; }
+  .obs-secondary-row { flex-direction: column; }
+  .join-box { padding: 36px 24px 32px; }
 }
-.btn-inv{
-  width:100%;padding:10px;
-  background:rgba(200,150,42,.1);border:1px solid rgba(200,150,42,.22);
-  border-radius:10px;color:var(--gold2);
-  font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:600;
-  cursor:pointer;transition:all .2s;
+@media (max-width: 420px) {
+  .join-title { font-size: 2.1rem; }
+  .pcard { width: 62px; height: 88px; }
+  .avg-hero-num { font-size: 4rem; }
 }
-.btn-inv:hover{background:rgba(200,150,42,.18)}
-
-/* ── TOAST ── */
-.toast{
-  position:fixed;bottom:26px;left:50%;
-  transform:translateX(-50%) translateY(70px);
-  background:var(--card);color:var(--ink);
-  border-radius:12px;padding:12px 22px;
-  font-size:.87rem;font-weight:600;
-  box-shadow:0 10px 40px rgba(0,0,0,.5);
-  border:1px solid rgba(200,150,42,.28);
-  z-index:500;white-space:nowrap;
-  transition:transform .32s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;
-}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-
-/* ── LOADING ── */
-.loading{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
-.spinner{width:36px;height:36px;border:3px solid rgba(200,150,42,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
-
-/* ── RESPONSIVE ── */
-@media(max-width:780px){
-  .game-grid{grid-template-columns:1fr}
-  .rcol{order:-1}
-  .hdr-in{padding:10px 0;gap:8px}
-  .hdr-c{order:3;width:100%;justify-content:center;padding-bottom:6px}
-  .hdr-r{display:none}
-  .cards-grid{justify-content:center}
-  .pcard{width:70px;height:100px}
-  .pcard-bignum{font-size:1.7rem}
-  .game-body{padding:16px 14px 50px}
-  .actions{flex-direction:column}
-  .btn-reveal,.btn-ghost,.btn-danger{flex:none;width:100%}
-  .avg-box{flex-direction:column;text-align:center}
-  .join-box{padding:34px 22px 30px}
-}
-@media(max-width:420px){
-  .join-title{font-size:1.75rem}
-  .pcard{width:62px;height:88px}
-  .pcard-bignum{font-size:1.45rem}
-  .rc{font-size:1rem;letter-spacing:2px}
-  .start-btn{font-size:.95rem;padding:16px}
-}
-
-/* ── REVEAL RESULT HERO ── */
-.avg-hero{
-  text-align:center;padding:28px 20px 22px;
-  background:linear-gradient(135deg,rgba(200,150,42,.18),rgba(200,150,42,.06));
-  border:2px solid rgba(200,150,42,.45);border-radius:20px;
-  margin-bottom:18px;animation:fadeUp .4s ease;
-  box-shadow:0 0 40px rgba(200,150,42,.15),0 8px 32px rgba(0,0,0,.3);
-}
-.avg-hero-label{font-size:.68rem;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(244,236,216,.4);margin-bottom:8px}
-.avg-hero-num{font-family:'Playfair Display',serif;font-size:5rem;color:var(--gold2);font-weight:700;line-height:1;text-shadow:0 0 40px rgba(200,150,42,.5)}
-.avg-hero-sub{font-size:.82rem;color:rgba(244,236,216,.45);margin-top:8px}
-.avg-hero-consensus{
-  display:inline-block;margin-top:12px;
-  background:rgba(200,150,42,.2);border:1px solid rgba(200,150,42,.4);
-  border-radius:100px;padding:5px 18px;
-  font-size:.82rem;font-weight:600;color:var(--gold2);
-}
-.avg-hero-range{display:flex;justify-content:center;gap:24px;margin-top:14px}
-.avg-hero-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
-.avg-hero-stat .v{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--cream);font-weight:700}
-.avg-hero-stat .l{font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(244,236,216,.3)}
-
-/* ── REVEALED VOTE CARDS ── */
-.revealed-grid{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;padding:6px 0 18px}
-.rv-card{
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  animation:dealIn .4s ease both;
-}
-.rv-card-face{
-  width:72px;height:100px;
-  background:linear-gradient(160deg,#ffffff 0%,#fdf8ee 100%);
-  border-radius:10px;border:1px solid rgba(0,0,0,.12);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 20px rgba(0,0,0,.4),0 2px 0 rgba(255,255,255,.9) inset;
-  position:relative;
-}
-.rv-card-face.outlier-high{border:2px solid #e74c3c;box-shadow:0 6px 20px rgba(231,76,60,.3)}
-.rv-card-face.outlier-low{border:2px solid #3498db;box-shadow:0 6px 20px rgba(52,152,219,.3)}
-.rv-card-face.consensus{border:2px solid var(--gold);box-shadow:0 6px 20px rgba(200,150,42,.4)}
-.rv-val{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--ink)}
-.rv-val.red{color:#c0392b}
-.rv-name{font-size:.7rem;color:rgba(244,236,216,.55);text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
-.rv-you{font-size:.58rem;color:var(--gold2);font-weight:700;letter-spacing:.5px}
-.outlier-tag{font-size:.56rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-top:-2px}
-.outlier-tag.high{background:rgba(231,76,60,.2);color:#e74c3c}
-.outlier-tag.low{background:rgba(52,152,219,.2);color:#3498db}
-
-/* ── OBSERVER CONTROLS (redesigned) ── */
-.obs-controls{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-.btn-reveal-primary{
-  width:100%;padding:16px 20px;border:none;border-radius:14px;
-  background:linear-gradient(135deg,var(--gold),var(--gold2));
-  color:var(--ink);font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:800;
-  cursor:pointer;transition:all .2s;letter-spacing:.3px;
-  box-shadow:0 4px 22px rgba(200,150,42,.45);
-  display:flex;align-items:center;justify-content:center;gap:10px;
-}
-.btn-reveal-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(200,150,42,.6)}
-.btn-reveal-primary:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
-.obs-secondary-row{display:flex;gap:10px}
-.btn-next-round{
-  flex:1;padding:14px 16px;border-radius:13px;
-  background:rgba(39,174,96,.12);border:1.5px solid rgba(39,174,96,.3);
-  color:#2ecc71;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;
-  cursor:pointer;transition:all .2s;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-}
-.btn-next-round:hover{background:rgba(39,174,96,.2);border-color:rgba(39,174,96,.5)}
-.btn-new-session{
-  padding:14px 16px;border-radius:13px;
-  background:rgba(192,57,43,.08);border:1.5px solid rgba(192,57,43,.2);
-  color:rgba(231,76,60,.7);font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;
-  cursor:pointer;transition:all .2s;
-  display:flex;align-items:center;justify-content:center;gap:7px;
-  white-space:nowrap;
-}
-.btn-new-session:hover{background:rgba(192,57,43,.16);border-color:rgba(192,57,43,.35);color:#e74c3c}
-.btn-hint{font-size:.62rem;color:rgba(244,236,216,.2);text-align:center;margin-top:2px;font-style:italic}
-
-/* ── SESSION WARNING BANNER ── */
-.session-warn-banner{
-  background:linear-gradient(135deg,rgba(230,126,34,.18),rgba(192,57,43,.12));
-  border:1.5px solid rgba(230,126,34,.4);border-radius:14px;
-  padding:12px 18px;display:flex;align-items:center;gap:12px;
-  animation:urgentBg 2s ease infinite;margin-bottom:4px;
-}
-.session-warn-icon{font-size:1.3rem;flex-shrink:0}
-.session-warn-text{flex:1;font-size:.82rem;color:rgba(244,236,216,.8);font-weight:500}
-.session-warn-text strong{color:#e67e22;font-weight:700}
-
-/* ── END SESSION BUTTON ── */
-.btn-end-session{
-  width:100%;padding:13px 18px;border-radius:13px;
-  background:rgba(192,57,43,.08);border:1.5px solid rgba(192,57,43,.25);
-  color:rgba(231,76,60,.75);font-family:'DM Sans',sans-serif;
-  font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  margin-top:6px;
-}
-.btn-end-session:hover{background:rgba(192,57,43,.18);border-color:rgba(192,57,43,.4);color:#e74c3c}
-.end-session-hint{font-size:.6rem;color:rgba(244,236,216,.18);text-align:center;margin-top:4px;font-style:italic}
 `;
 
-/* ─────────────────────── FIXED ROOM CONFIG ───────────────────────── */
+/* ═══════════════════════ FIXED ROOM CONFIG ═══════════════════════ */
 // FIXED ROOM MODE: Everyone joins the same room automatically.
-// To re-enable dynamic rooms with shareable links, do the following:
-//   1. Remove the FIXED_ROOM_CODE constant below
-//   2. In the App() useEffect, uncomment the URL param reading block
-//   3. In handleCreate, uncomment window.history.replaceState for room URL
-//   4. In handleJoin, uncomment window.history.replaceState for room URL
-//   5. In goBack, uncomment window.history.replaceState
-//   6. In JoinScreen, re-add the tab-row (Create/Join tabs) and room code input
+// To re-enable dynamic rooms with shareable links:
+//   1. Remove FIXED_ROOM_CODE constant below
+//   2. Uncomment the URL param useEffect in App()
+//   3. Uncomment window.history.replaceState in handleCreate, handleJoin, goBack
+//   4. Restore the tab-row + room code input in JoinScreen
 const FIXED_ROOM_CODE = "SPRINTROOM";
-const SESSION_MAX_MS = 3 * 60 * 60 * 1000; // 3 hours — auto-expire
-const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 mins before
+const SESSION_MAX_MS = 3 * 60 * 60 * 1000;
+const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000;
 
-/* ─────────────────────── MAIN APP ───────────────────────── */
+/* ═══════════════════════ MAIN APP ═══════════════════════ */
 export default function App() {
   const [screen, setScreen] = useState("join");
   const [myId] = useState(uid);
@@ -651,7 +539,7 @@ export default function App() {
   const toastRef = useRef(null);
   const sessionCheckRef = useRef(null);
 
-  // DYNAMIC ROOM MODE (disabled): Uncomment below to read room code from URL
+  // DYNAMIC ROOM MODE (disabled) — uncomment to read room from URL:
   // useEffect(() => {
   //   const p = new URLSearchParams(window.location.search);
   //   const r = p.get("room");
@@ -699,8 +587,9 @@ export default function App() {
 
   useEffect(() => {
     if (!roomData || roomData.revealed) return;
-    const all = Object.values(roomData.players || {});
-    const voters = all.filter((p) => p.role === "voter");
+    const voters = Object.values(roomData.players || {}).filter(
+      (p) => p.role === "voter",
+    );
     if (!voters.length) return;
     if (voters.every((p) => p.voted)) {
       setTimeout(async () => {
@@ -715,12 +604,31 @@ export default function App() {
     }
   }, [roomData, code]); // eslint-disable-line
 
+  useEffect(() => {
+    if (screen !== "game" || !roomData?.createdAt) return;
+    clearInterval(sessionCheckRef.current);
+    sessionCheckRef.current = setInterval(async () => {
+      const age = Date.now() - roomData.createdAt;
+      if (age >= SESSION_MAX_MS) {
+        clearInterval(sessionCheckRef.current);
+        await remove(ref(db, `rooms/${code}`));
+        setScreen("join");
+        setRoomData(null);
+        setSessionWarning(false);
+        showToast("⏰ Session ended after 3 hours. See you next sprint!");
+      } else if (age >= SESSION_WARN_MS && !sessionWarning) {
+        setSessionWarning(true);
+        showToast("⚠️ Session ending in ~10 minutes. Wrap up your planning!");
+      }
+    }, 60 * 1000);
+    return () => clearInterval(sessionCheckRef.current);
+  }, [screen, roomData?.createdAt, code, sessionWarning]); // eslint-disable-line
+
   const goBack = useCallback(() => {
     if (code && myId) remove(ref(db, `rooms/${code}/players/${myId}`));
     setScreen("join");
     setRoomData(null);
-    // DYNAMIC ROOM MODE: uncomment below to clear room from URL
-    // window.history.replaceState({}, "", window.location.pathname);
+    // window.history.replaceState({}, "", window.location.pathname); // dynamic rooms
   }, [code, myId]);
 
   useEffect(() => {
@@ -738,40 +646,10 @@ export default function App() {
     setToast(msg);
     setToastOn(true);
     clearTimeout(toastRef.current);
-    toastRef.current = setTimeout(() => setToastOn(false), 3200);
+    toastRef.current = setTimeout(() => setToastOn(false), 3400);
   }, []);
 
-  // ── SESSION AUTO-EXPIRY ──────────────────────────────────────────
-  // Checks every minute if the session has exceeded SESSION_MAX_MS.
-  // Shows a warning toast at SESSION_WARN_MS, then deletes the room at SESSION_MAX_MS.
-  // This keeps Firebase clean and prevents stale data accumulating.
-  useEffect(() => {
-    if (screen !== "game" || !roomData?.createdAt) return;
-    clearInterval(sessionCheckRef.current);
-    sessionCheckRef.current = setInterval(async () => {
-      const age = Date.now() - roomData.createdAt;
-      if (age >= SESSION_MAX_MS) {
-        clearInterval(sessionCheckRef.current);
-        await remove(ref(db, `rooms/${code}`));
-        setScreen("join");
-        setRoomData(null);
-        setSessionWarning(false);
-        showToast(
-          "⏰ Session ended automatically after 3 hours. See you next sprint!",
-        );
-      } else if (age >= SESSION_WARN_MS && !sessionWarning) {
-        setSessionWarning(true);
-        showToast(
-          "⚠️ Session will auto-end in 10 minutes. Wrap up your planning!",
-        );
-      }
-    }, 60 * 1000); // check every minute
-    return () => clearInterval(sessionCheckRef.current);
-  }, [screen, roomData?.createdAt, code, sessionWarning]); // eslint-disable-line
-
   const handleCreate = async (name, role) => {
-    // FIXED ROOM MODE: Always joins FIXED_ROOM_CODE. Creates room if it doesn't exist yet.
-    // To re-enable dynamic rooms: replace FIXED_ROOM_CODE with mkCode(), add URL replaceState
     const c = FIXED_ROOM_CODE;
     setMyRole(role);
     setCode(c);
@@ -817,8 +695,7 @@ export default function App() {
       voted: false,
       vote: null,
     });
-    // DYNAMIC ROOM MODE: uncomment below to update URL with room code
-    // window.history.replaceState({}, "", `?room=${c}`);
+    // window.history.replaceState({}, "", `?room=${c}`); // dynamic rooms
     setScreen("game");
   };
 
@@ -853,7 +730,7 @@ export default function App() {
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
-    showToast("✅ Story done! Please vote on the next user story.");
+    showToast("✅ Story done! Vote on the next user story.");
   }, [code, roomData, showToast]);
 
   const resetSession = useCallback(async () => {
@@ -869,12 +746,9 @@ export default function App() {
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
-    showToast(
-      "🔄 New sprint session started! Everyone's votes have been cleared.",
-    );
+    showToast("🔄 New sprint session — everyone's votes cleared.");
   }, [code, roomData, showToast]);
 
-  // Ends the session completely — deletes all Firebase data for this room
   const endSession = useCallback(async () => {
     clearInterval(sessionCheckRef.current);
     await remove(ref(db, `rooms/${code}`));
@@ -917,7 +791,7 @@ export default function App() {
         {screen === "game" && !roomData && (
           <div className="loading">
             <div className="spinner" />
-            <div style={{ color: "rgba(244,236,216,.3)", fontSize: ".9rem" }}>
+            <div style={{ color: "rgba(240,230,208,.28)", fontSize: ".88rem" }}>
               Connecting…
             </div>
           </div>
@@ -934,9 +808,9 @@ export default function App() {
             onReveal={revealVotes}
             onNewRound={newRound}
             onReset={resetSession}
+            onEndSession={endSession}
             onStart={startTimer}
             onStop={stopTimer}
-            onEndSession={endSession}
             sessionWarning={sessionWarning}
             toast={showToast}
           />
@@ -947,14 +821,10 @@ export default function App() {
   );
 }
 
-/* ─────────────────────── JOIN SCREEN ────────────────────── */
-// FIXED ROOM MODE: Simplified join screen - just name + role, no room code needed.
-// To re-enable room creation/joining tabs and room code input, restore:
-//   - tab-row with "Create Room" / "Join Room" buttons
-//   - room code input field shown when tab === "join"
-//   - tab state and rc state
-//   - go() logic that checks tab === "create" vs "join"
-function JoinScreen({ onCreate, onJoin, initCode }) {
+/* ═══════════════════════ JOIN SCREEN ═══════════════════════ */
+// FIXED ROOM MODE: No room code needed — just name + role.
+// To re-enable: restore tab-row, room code input, tab/rc state, and go() logic.
+function JoinScreen({ onCreate }) {
   const [name, setName] = useState("");
   const [role, setRole] = useState("voter");
   const [err, setErr] = useState("");
@@ -1023,7 +893,7 @@ function JoinScreen({ onCreate, onJoin, initCode }) {
   );
 }
 
-/* ─────────────────────── GAME SCREEN ────────────────────── */
+/* ═══════════════════════ GAME SCREEN ═══════════════════════ */
 function GameScreen({
   rd,
   myId,
@@ -1035,9 +905,9 @@ function GameScreen({
   onReveal,
   onNewRound,
   onReset,
+  onEndSession,
   onStart,
   onStop,
-  onEndSession,
   sessionWarning,
   toast,
 }) {
@@ -1046,8 +916,7 @@ function GameScreen({
   const players = Object.values(rd.players || {});
   const voters = players.filter((p) => p.role === "voter");
   const observers = players.filter((p) => p.role === "observer");
-  const me = rd.players?.[myId];
-  const myVote = me?.vote || null;
+  const myVote = rd.players?.[myId]?.vote || null;
   const isObs = myRole === "observer";
   const revealed = rd.revealed || false;
   const round = rd.round || 1;
@@ -1055,9 +924,9 @@ function GameScreen({
   const timer = rd.timer || { running: false, duration: 30, remaining: 30 };
   const hasVotes = voters.some((p) => p.voted);
   const votedCount = voters.filter((p) => p.voted).length;
+  const notVoted = voters.filter((p) => !p.voted);
 
   const voted = voters.filter((p) => p.voted);
-  const noVoted = voters.filter((p) => !p.voted);
   const nums = voted
     .map((p) => p.vote)
     .filter((v) => v !== "?")
@@ -1080,24 +949,19 @@ function GameScreen({
 
   return (
     <>
-      {/* HEADER */}
       <header className="hdr">
         <div className="hdr-in">
           <div className="hdr-l">
             <button className="btn-back" onClick={onBack}>
-              ← Back
+              ← Leave
             </button>
-            <button className="logo-btn" onClick={onBack}>
-              Planning <span>Poker</span>
-            </button>
+            <span className="logo-txt">Planning Poker</span>
           </div>
           <div className="hdr-c">
-            <div className="room-badge">
-              <span className="rl2">Room</span>
-              <span className="rc">{code}</span>
-            </div>
             <div className="badge">Round {round}</div>
-            <div className="badge badge-gold">🎲 {storiesDone} stories</div>
+            <div className="badge badge-gold">
+              🎲 {storiesDone} stories estimated
+            </div>
           </div>
           <div className="hdr-r">
             <button
@@ -1113,26 +977,23 @@ function GameScreen({
         </div>
       </header>
 
-      {/* BODY */}
       <div className="game-body">
-        {/* Session expiry warning — shown to everyone 10 mins before auto-end */}
         {sessionWarning && (
-          <div className="session-warn-banner" style={{ marginBottom: 16 }}>
-            <span className="session-warn-icon">⚠️</span>
+          <div className="session-warn-banner">
+            <span>⚠️</span>
             <div className="session-warn-text">
-              <strong>Session ending soon!</strong> This planning session will
-              automatically close in ~10 minutes. Please wrap up your current
-              story.
+              <strong>Session ending soon!</strong> Auto-closes in ~10 minutes.
+              Please wrap up your current story.
             </div>
           </div>
         )}
+
         <div className="game-grid">
-          {/* LEFT */}
+          {/* LEFT COLUMN */}
           <div className="lcol">
-            {/* Timer Panel */}
+            {/* Timer */}
             <div className="panel panel-gold">
               <span className="ptitle">Estimation Timer</span>
-
               {isObs ? (
                 <>
                   {!timer.running && !revealed && (
@@ -1154,25 +1015,24 @@ function GameScreen({
                         className="start-btn"
                         onClick={() => onStart(tsel)}
                       >
-                        <span className="ico">🃏</span> Start Voting — {tsel}s
+                        <span>🃏</span> Start Voting — {tsel}s
                       </button>
                     </>
                   )}
-
                   {timer.running && (
                     <div className={`ring-area${urgent ? " urgent" : ""}`}>
                       <div className="ring-wrap">
                         <svg
                           className="rsv"
-                          width="82"
-                          height="82"
-                          viewBox="0 0 82 82"
+                          width="80"
+                          height="80"
+                          viewBox="0 0 80 80"
                         >
-                          <circle className="rt" cx="41" cy="41" r="32" />
+                          <circle className="rt" cx="40" cy="40" r="32" />
                           <circle
                             className="rp"
-                            cx="41"
-                            cy="41"
+                            cx="40"
+                            cy="40"
                             r="32"
                             strokeDasharray={CIRC}
                             strokeDashoffset={offset}
@@ -1180,7 +1040,6 @@ function GameScreen({
                           />
                         </svg>
                         <div
-                          className="rnum-wrap"
                           style={{
                             position: "absolute",
                             inset: 0,
@@ -1211,10 +1070,9 @@ function GameScreen({
                       </div>
                     </div>
                   )}
-
                   {revealed && (
                     <div className="waiting-hint">
-                      Round complete — start a new round below
+                      Round complete — start the next story below
                     </div>
                   )}
                 </>
@@ -1225,15 +1083,15 @@ function GameScreen({
                       <div className="ring-wrap">
                         <svg
                           className="rsv"
-                          width="82"
-                          height="82"
-                          viewBox="0 0 82 82"
+                          width="80"
+                          height="80"
+                          viewBox="0 0 80 80"
                         >
-                          <circle className="rt" cx="41" cy="41" r="32" />
+                          <circle className="rt" cx="40" cy="40" r="32" />
                           <circle
                             className="rp"
-                            cx="41"
-                            cy="41"
+                            cx="40"
+                            cy="40"
                             r="32"
                             strokeDasharray={CIRC}
                             strokeDashoffset={offset}
@@ -1272,8 +1130,8 @@ function GameScreen({
                   ) : (
                     <div className="waiting-hint">
                       {revealed
-                        ? "✓ Cards revealed — see results below"
-                        : "Waiting for facilitator to start the timer…"}
+                        ? "✓ Cards revealed — results below"
+                        : "Waiting for facilitator to start…"}
                     </div>
                   )}
                 </>
@@ -1283,14 +1141,14 @@ function GameScreen({
             {/* Cards */}
             <div className="panel">
               <span className="ptitle">
-                {isObs ? "Votes Overview" : "Your Estimate"}
+                {isObs ? "Your Role" : "Your Estimate"}
               </span>
               {isObs ? (
                 <div className="obs-box">
                   <span style={{ fontSize: "1.3rem" }}>👁</span>
                   <span>
-                    You're observing this session. Use the controls to reveal
-                    cards and manage rounds.
+                    You're the facilitator. Use the controls below to manage the
+                    session.
                   </span>
                 </div>
               ) : (
@@ -1329,7 +1187,7 @@ function GameScreen({
                   style={{ marginTop: 10 }}
                 >
                   {myVote && !revealed
-                    ? `✓ You voted ${myVote} — waiting for reveal…`
+                    ? `✓ You picked ${myVote} — waiting for reveal…`
                     : !revealed
                       ? "Pick a card to cast your vote"
                       : ""}
@@ -1339,10 +1197,9 @@ function GameScreen({
 
             {/* Results */}
             {revealed && (
-              <div className="panel panel-gold results-panel">
+              <div className="panel panel-gold">
                 {voted.length > 0 && (
                   <>
-                    {/* Hero Average — big and impossible to miss */}
                     <div className="avg-hero">
                       <div className="avg-hero-label">
                         Team Average Story Points
@@ -1350,12 +1207,11 @@ function GameScreen({
                       <div className="avg-hero-num">{avgDisp}</div>
                       {allSame ? (
                         <div className="avg-hero-consensus">
-                          🎉 Perfect consensus! Everyone agreed on{" "}
-                          {voted[0].vote}
+                          🎉 Perfect consensus — everyone picked {voted[0].vote}
                         </div>
                       ) : (
                         <div className="avg-hero-sub">
-                          Team voted — see individual estimates below
+                          See individual votes below
                         </div>
                       )}
                       {!allSame && minV !== null && (
@@ -1384,8 +1240,7 @@ function GameScreen({
                       )}
                     </div>
 
-                    {/* Individual vote cards — who picked what */}
-                    <div style={{ marginBottom: 8 }}>
+                    <div className="who-section">
                       <span className="ptitle">Who Picked What</span>
                     </div>
                     <div className="revealed-grid">
@@ -1416,10 +1271,8 @@ function GameScreen({
                                 {p.vote}
                               </span>
                             </div>
-                            <div className="rv-name">
-                              {p.name}
-                              {isMe ? " (you)" : ""}
-                            </div>
+                            <div className="rv-name">{p.name}</div>
+                            {isMe && <span className="rv-you-tag">you</span>}
                             {isHigh && (
                               <span className="outlier-tag high">Highest</span>
                             )}
@@ -1440,9 +1293,10 @@ function GameScreen({
                         );
                       })}
                     </div>
-                    {noVoted.length > 0 && (
+
+                    {notVoted.length > 0 && (
                       <div className="no-vote">
-                        ⚠️ Didn't vote: {noVoted.map((p) => p.name).join(", ")}
+                        ⚠️ Didn't vote: {notVoted.map((p) => p.name).join(", ")}
                       </div>
                     )}
                   </>
@@ -1450,7 +1304,7 @@ function GameScreen({
               </div>
             )}
 
-            {/* Observer actions */}
+            {/* Observer Controls */}
             {isObs && (
               <div className="obs-controls">
                 <button
@@ -1463,8 +1317,8 @@ function GameScreen({
                 {!revealed && (
                   <div className="btn-hint">
                     {hasVotes
-                      ? "Ready to reveal — cards are in!"
-                      : "Waiting for team to vote before you can reveal…"}
+                      ? "Ready — all votes are in!"
+                      : "Waiting for team to finish voting…"}
                   </div>
                 )}
                 <div className="obs-secondary-row">
@@ -1476,20 +1330,20 @@ function GameScreen({
                   </button>
                 </div>
                 <div className="btn-hint">
-                  "Story Done" resets votes for the next user story
-                  &nbsp;·&nbsp; "New Sprint" resets everything
+                  "Story Done" keeps the team, resets votes · "New Sprint"
+                  resets everything
                 </div>
                 <button className="btn-end-session" onClick={onEndSession}>
-                  🔴 End Session — Close Planning Poker for Everyone
+                  🔴 End Session — Disconnect Everyone
                 </button>
                 <div className="end-session-hint">
-                  This will remove all data and disconnect the whole team
+                  Deletes all data and sends everyone back to the home screen
                 </div>
               </div>
             )}
           </div>
 
-          {/* RIGHT */}
+          {/* RIGHT COLUMN */}
           <div className="rcol">
             {/* Players */}
             <div className="panel">
@@ -1497,10 +1351,10 @@ function GameScreen({
               {voters.length > 0 && !revealed && (
                 <>
                   <div className="vp-head">
-                    <span>Votes in</span>
                     <span>
-                      {votedCount} / {voters.length}
+                      {votedCount} of {voters.length} voted
                     </span>
+                    <span>{voters.length - votedCount} waiting</span>
                   </div>
                   <div className="vp-bar">
                     <div
@@ -1517,14 +1371,25 @@ function GameScreen({
               )}
               <div className="plist">
                 {voters.map((p) => (
-                  <div key={p.id} className={`prow${p.voted ? " voted" : ""}`}>
+                  <div
+                    key={p.id}
+                    className={`prow${p.voted ? " voted" : " not-voted-yet"}`}
+                  >
                     <div className="pav">{ini(p.name)}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="pname">
                         {p.name}
                         {p.id === myId ? " (you)" : ""}
                       </div>
-                      <div className="prole">Voter</div>
+                      <div className="prole">
+                        {p.voted ? (
+                          <span className="voted-label">✓ Voted</span>
+                        ) : (
+                          <span className="waiting-label">
+                            ⏳ Hasn't voted yet
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {revealed && p.voted ? (
                       <div className="vchip">{p.vote}</div>
@@ -1562,7 +1427,7 @@ function GameScreen({
                 </div>
                 <div className="ss-chip">
                   <span className="ss-v">{round}</span>
-                  <span className="ss-l">Current Round</span>
+                  <span className="ss-l">Round</span>
                 </div>
                 <div className="ss-chip">
                   <span className="ss-v">{voters.length}</span>
@@ -1579,7 +1444,7 @@ function GameScreen({
                 className="btn-inv"
                 onClick={() => {
                   navigator.clipboard.writeText(shareUrl);
-                  toast("🔗 Link copied! Share with your team.");
+                  toast("🔗 Link copied!");
                 }}
               >
                 🔗 Copy Invite Link
