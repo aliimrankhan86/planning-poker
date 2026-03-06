@@ -599,6 +599,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--felt2);min-height:100vh;c
 }
 .btn-new-session:hover{background:rgba(192,57,43,.16);border-color:rgba(192,57,43,.35);color:#e74c3c}
 .btn-hint{font-size:.62rem;color:rgba(244,236,216,.2);text-align:center;margin-top:2px;font-style:italic}
+
+/* ── SESSION WARNING BANNER ── */
+.session-warn-banner{
+  background:linear-gradient(135deg,rgba(230,126,34,.18),rgba(192,57,43,.12));
+  border:1.5px solid rgba(230,126,34,.4);border-radius:14px;
+  padding:12px 18px;display:flex;align-items:center;gap:12px;
+  animation:urgentBg 2s ease infinite;margin-bottom:4px;
+}
+.session-warn-icon{font-size:1.3rem;flex-shrink:0}
+.session-warn-text{flex:1;font-size:.82rem;color:rgba(244,236,216,.8);font-weight:500}
+.session-warn-text strong{color:#e67e22;font-weight:700}
+
+/* ── END SESSION BUTTON ── */
+.btn-end-session{
+  width:100%;padding:13px 18px;border-radius:13px;
+  background:rgba(192,57,43,.08);border:1.5px solid rgba(192,57,43,.25);
+  color:rgba(231,76,60,.75);font-family:'DM Sans',sans-serif;
+  font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:6px;
+}
+.btn-end-session:hover{background:rgba(192,57,43,.18);border-color:rgba(192,57,43,.4);color:#e74c3c}
+.end-session-hint{font-size:.6rem;color:rgba(244,236,216,.18);text-align:center;margin-top:4px;font-style:italic}
 `;
 
 /* ─────────────────────── FIXED ROOM CONFIG ───────────────────────── */
@@ -611,6 +634,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--felt2);min-height:100vh;c
 //   5. In goBack, uncomment window.history.replaceState
 //   6. In JoinScreen, re-add the tab-row (Create/Join tabs) and room code input
 const FIXED_ROOM_CODE = "SPRINTROOM";
+const SESSION_MAX_MS = 3 * 60 * 60 * 1000; // 3 hours — auto-expire
+const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 mins before
 
 /* ─────────────────────── MAIN APP ───────────────────────── */
 export default function App() {
@@ -622,7 +647,9 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [toastOn, setToastOn] = useState(false);
   const [timerIv, setTimerIv] = useState(null);
+  const [sessionWarning, setSessionWarning] = useState(false);
   const toastRef = useRef(null);
+  const sessionCheckRef = useRef(null);
 
   // DYNAMIC ROOM MODE (disabled): Uncomment below to read room code from URL
   // useEffect(() => {
@@ -713,6 +740,34 @@ export default function App() {
     clearTimeout(toastRef.current);
     toastRef.current = setTimeout(() => setToastOn(false), 3200);
   }, []);
+
+  // ── SESSION AUTO-EXPIRY ──────────────────────────────────────────
+  // Checks every minute if the session has exceeded SESSION_MAX_MS.
+  // Shows a warning toast at SESSION_WARN_MS, then deletes the room at SESSION_MAX_MS.
+  // This keeps Firebase clean and prevents stale data accumulating.
+  useEffect(() => {
+    if (screen !== "game" || !roomData?.createdAt) return;
+    clearInterval(sessionCheckRef.current);
+    sessionCheckRef.current = setInterval(async () => {
+      const age = Date.now() - roomData.createdAt;
+      if (age >= SESSION_MAX_MS) {
+        clearInterval(sessionCheckRef.current);
+        await remove(ref(db, `rooms/${code}`));
+        setScreen("join");
+        setRoomData(null);
+        setSessionWarning(false);
+        showToast(
+          "⏰ Session ended automatically after 3 hours. See you next sprint!",
+        );
+      } else if (age >= SESSION_WARN_MS && !sessionWarning) {
+        setSessionWarning(true);
+        showToast(
+          "⚠️ Session will auto-end in 10 minutes. Wrap up your planning!",
+        );
+      }
+    }, 60 * 1000); // check every minute
+    return () => clearInterval(sessionCheckRef.current);
+  }, [screen, roomData?.createdAt, code, sessionWarning]); // eslint-disable-line
 
   const handleCreate = async (name, role) => {
     // FIXED ROOM MODE: Always joins FIXED_ROOM_CODE. Creates room if it doesn't exist yet.
@@ -819,6 +874,15 @@ export default function App() {
     );
   }, [code, roomData, showToast]);
 
+  // Ends the session completely — deletes all Firebase data for this room
+  const endSession = useCallback(async () => {
+    clearInterval(sessionCheckRef.current);
+    await remove(ref(db, `rooms/${code}`));
+    setScreen("join");
+    setRoomData(null);
+    setSessionWarning(false);
+  }, [code]);
+
   const startTimer = useCallback(
     async (sec) => {
       await update(ref(db, `rooms/${code}/timer`), {
@@ -872,6 +936,8 @@ export default function App() {
             onReset={resetSession}
             onStart={startTimer}
             onStop={stopTimer}
+            onEndSession={endSession}
+            sessionWarning={sessionWarning}
             toast={showToast}
           />
         )}
@@ -971,6 +1037,8 @@ function GameScreen({
   onReset,
   onStart,
   onStop,
+  onEndSession,
+  sessionWarning,
   toast,
 }) {
   const [tsel, setTsel] = useState(30);
@@ -1047,6 +1115,17 @@ function GameScreen({
 
       {/* BODY */}
       <div className="game-body">
+        {/* Session expiry warning — shown to everyone 10 mins before auto-end */}
+        {sessionWarning && (
+          <div className="session-warn-banner" style={{ marginBottom: 16 }}>
+            <span className="session-warn-icon">⚠️</span>
+            <div className="session-warn-text">
+              <strong>Session ending soon!</strong> This planning session will
+              automatically close in ~10 minutes. Please wrap up your current
+              story.
+            </div>
+          </div>
+        )}
         <div className="game-grid">
           {/* LEFT */}
           <div className="lcol">
@@ -1399,6 +1478,12 @@ function GameScreen({
                 <div className="btn-hint">
                   "Story Done" resets votes for the next user story
                   &nbsp;·&nbsp; "New Sprint" resets everything
+                </div>
+                <button className="btn-end-session" onClick={onEndSession}>
+                  🔴 End Session — Close Planning Poker for Everyone
+                </button>
+                <div className="end-session-hint">
+                  This will remove all data and disconnect the whole team
                 </div>
               </div>
             )}
