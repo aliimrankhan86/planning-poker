@@ -534,7 +534,6 @@ export default function App() {
   const [roomData, setRoomData] = useState(null);
   const [toast, setToast] = useState("");
   const [toastOn, setToastOn] = useState(false);
-  const [timerIv, setTimerIv] = useState(null);
   const [sessionWarning, setSessionWarning] = useState(false);
   const toastRef = useRef(null);
   const sessionCheckRef = useRef(null);
@@ -549,28 +548,52 @@ export default function App() {
   useEffect(() => {
     if (!code || screen !== "game") return;
     const unsub = onValue(ref(db, `rooms/${code}`), (snap) => {
-      if (snap.exists()) setRoomData(snap.val());
-      else {
-        showToast("Room not found.");
-        goBack();
+      if (snap.exists()) {
+        setRoomData(snap.val());
+      } else {
+        // Room deleted (end session / expired) — go home without stale goBack closure
+        setRoomData(null);
+        setScreen("join");
       }
     });
     return () => unsub();
   }, [code, screen]); // eslint-disable-line
 
+  // ── TIMER EFFECT ──────────────────────────────────────────────────
+  // Uses refs to avoid the Firebase write → roomData update → effect re-run loop.
+  // Only the person who clicked "Start" drives the countdown locally.
+  // Everyone else reads Firebase reactively for display.
+  const timerRef = useRef(null);
+  const remainingRef = useRef(null);
+
   useEffect(() => {
-    if (!roomData?.timer?.running) {
-      clearInterval(timerIv);
-      setTimerIv(null);
+    const isRunning = roomData?.timer?.running;
+    const startedByMe = roomData?.timer?.startedBy === myId;
+
+    if (!isRunning || !startedByMe) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+        remainingRef.current = null;
+      }
       return;
     }
-    if (roomData.timer.startedBy !== myId) return;
-    if (timerIv) return;
+
+    // Already ticking locally — don't restart
+    if (timerRef.current) return;
+
+    // Seed from Firebase only when starting fresh
+    remainingRef.current =
+      roomData.timer.remaining ?? roomData.timer.duration ?? 30;
+
     const iv = setInterval(async () => {
-      const r = (roomData.timer.remaining ?? 1) - 1;
+      remainingRef.current = (remainingRef.current ?? 1) - 1;
+      const r = remainingRef.current;
+
       if (r <= 0) {
-        clearInterval(iv);
-        setTimerIv(null);
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+        remainingRef.current = null;
         await update(ref(db, `rooms/${code}/timer`), {
           running: false,
           remaining: 0,
@@ -581,10 +604,11 @@ export default function App() {
         await update(ref(db, `rooms/${code}/timer`), { remaining: r });
       }
     }, 1000);
-    setTimerIv(iv);
-    return () => clearInterval(iv);
-  }, [roomData?.timer?.running, roomData?.timer?.startedBy, myId, code]); // eslint-disable-line
 
+    timerRef.current = iv;
+  }, [roomData?.timer?.running, roomData?.timer?.startedBy]); // eslint-disable-line
+
+  const autoRevealRef = useRef(null);
   useEffect(() => {
     if (!roomData || roomData.revealed) return;
     const voters = Object.values(roomData.players || {}).filter(
@@ -592,23 +616,41 @@ export default function App() {
     );
     if (!voters.length) return;
     if (voters.every((p) => p.voted)) {
-      setTimeout(async () => {
-        const fresh = Object.values(roomData.players || {}).filter(
+      // Small delay so the last voter's card animates before reveal
+      // Use a fresh Firebase read rather than the stale closure value
+      clearTimeout(autoRevealRef.current);
+      autoRevealRef.current = setTimeout(async () => {
+        const snap = await new Promise((res) =>
+          onValue(ref(db, `rooms/${code}`), res, { onlyOnce: true }),
+        );
+        if (!snap.exists()) return;
+        const fresh = snap.val();
+        const freshVoters = Object.values(fresh.players || {}).filter(
           (p) => p.role === "voter",
         );
-        if (fresh.every((p) => p.voted) && !roomData.revealed) {
+        if (freshVoters.every((p) => p.voted) && !fresh.revealed) {
           await update(ref(db, `rooms/${code}`), { revealed: true });
           showToast("🃏 All voted — revealing cards!");
         }
       }, 700);
     }
+    return () => clearTimeout(autoRevealRef.current);
   }, [roomData, code]); // eslint-disable-line
+
+  // Store createdAt in a ref so the interval always has the real value,
+  // not a snapshot from when the effect last ran.
+  const createdAtRef = useRef(null);
+  useEffect(() => {
+    if (roomData?.createdAt) createdAtRef.current = roomData.createdAt;
+  }, [roomData?.createdAt]); // eslint-disable-line
 
   useEffect(() => {
     if (screen !== "game" || !roomData?.createdAt) return;
     clearInterval(sessionCheckRef.current);
     sessionCheckRef.current = setInterval(async () => {
-      const age = Date.now() - roomData.createdAt;
+      const start = createdAtRef.current;
+      if (!start) return;
+      const age = Date.now() - start;
       if (age >= SESSION_MAX_MS) {
         clearInterval(sessionCheckRef.current);
         await remove(ref(db, `rooms/${code}`));
@@ -632,14 +674,12 @@ export default function App() {
   }, [code, myId]);
 
   useEffect(() => {
+    // Only remove player on actual browser close/refresh, not on React cleanup
     const cleanup = () => {
       if (code && myId) remove(ref(db, `rooms/${code}/players/${myId}`));
     };
     window.addEventListener("beforeunload", cleanup);
-    return () => {
-      cleanup();
-      window.removeEventListener("beforeunload", cleanup);
-    };
+    return () => window.removeEventListener("beforeunload", cleanup);
   }, [code, myId]);
 
   const showToast = useCallback((msg) => {
@@ -678,26 +718,14 @@ export default function App() {
     showToast(`🎲 Welcome, ${name}!`);
   };
 
-  const handleJoin = async (name, role, c) => {
-    setMyRole(role);
-    setCode(c);
-    const snap = await new Promise((res) =>
-      onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
-    );
-    if (!snap.exists()) {
-      showToast(`Room "${c}" not found.`);
-      return;
-    }
-    await update(ref(db, `rooms/${c}/players/${myId}`), {
-      id: myId,
-      name,
-      role,
-      voted: false,
-      vote: null,
-    });
-    // window.history.replaceState({}, "", `?room=${c}`); // dynamic rooms
-    setScreen("game");
-  };
+  // DYNAMIC ROOM MODE — uncomment handleJoin and wire to JoinScreen's onJoin prop:
+  // const handleJoin = async (name, role, c) => {
+  //   setMyRole(role); setCode(c);
+  //   const snap = await new Promise(res => onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }));
+  //   if (!snap.exists()) { showToast(`Room "${c}" not found.`); return; }
+  //   await update(ref(db, `rooms/${c}/players/${myId}`), { id: myId, name, role, voted: false, vote: null });
+  //   setScreen("game");
+  // };
 
   const selectCard = useCallback(
     async (val) => {
@@ -770,10 +798,13 @@ export default function App() {
   );
 
   const stopTimer = useCallback(async () => {
-    clearInterval(timerIv);
-    setTimerIv(null);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    remainingRef.current = null;
     await update(ref(db, `rooms/${code}/timer`), { running: false });
-  }, [code, timerIv]);
+  }, [code]);
 
   const shareUrl = `${window.location.origin}${window.location.pathname}?room=${code}`;
 
@@ -781,13 +812,7 @@ export default function App() {
     <>
       <style>{CSS}</style>
       <div className="app">
-        {screen === "join" && (
-          <JoinScreen
-            onCreate={handleCreate}
-            onJoin={handleJoin}
-            initCode={code}
-          />
-        )}
+        {screen === "join" && <JoinScreen onCreate={handleCreate} />}
         {screen === "game" && !roomData && (
           <div className="loading">
             <div className="spinner" />
