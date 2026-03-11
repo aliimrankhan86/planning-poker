@@ -91,7 +91,38 @@ body::before {
 @keyframes glow     { 0%,100% { box-shadow:0 0 20px rgba(201,145,42,.25); } 50% { box-shadow:0 0 40px rgba(201,145,42,.6), 0 0 80px rgba(201,145,42,.15); } }
 @keyframes urgentBg { 0%,100% { background:rgba(192,57,43,.1); } 50% { background:rgba(192,57,43,.22); } }
 @keyframes heroIn   { from { opacity:0; transform:scale(.92) translateY(12px); } to { opacity:1; transform:none; } }
-@keyframes badgePop { 0% { transform:scale(0.7); opacity:0; } 70% { transform:scale(1.08); } 100% { transform:scale(1); opacity:1; } }
+@keyframes badgePop  { 0% { transform:scale(0.7); opacity:0; } 70% { transform:scale(1.08); } 100% { transform:scale(1); opacity:1; } }
+@keyframes consensusIn { 0% { opacity:0; transform:scale(.88) translateY(16px); } 60% { transform:scale(1.03) translateY(-4px); } 100% { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes starBurst   { 0% { transform:scale(0) rotate(0deg); opacity:1; } 100% { transform:scale(1.6) rotate(180deg); opacity:0; } }
+
+/* ══════════════════════ CONFETTI CANVAS ══════════════════════ */
+.confetti-canvas {
+  position: fixed; inset: 0; z-index: 999;
+  pointer-events: none; width: 100%; height: 100%;
+}
+
+/* ══════════════════════ CONSENSUS OVERLAY ══════════════════════ */
+.consensus-overlay {
+  position: fixed; inset: 0; z-index: 998;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.consensus-burst {
+  text-align: center;
+  animation: consensusIn .55s cubic-bezier(.34,1.56,.64,1) both;
+}
+.consensus-burst-emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
+.consensus-burst-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.4rem; font-weight: 700; color: var(--gold2);
+  text-shadow: 0 0 40px rgba(201,145,42,.8), 0 4px 20px rgba(0,0,0,.8);
+  line-height: 1.1;
+}
+.consensus-burst-sub {
+  font-size: .9rem; color: rgba(240,230,208,.65);
+  margin-top: 6px; font-weight: 300; letter-spacing: .5px;
+  text-shadow: 0 2px 8px rgba(0,0,0,.9);
+}
 
 /* ══════════════════════ JOIN SCREEN ══════════════════════ */
 .join-wrap {
@@ -276,39 +307,54 @@ body::before {
 /* ══════════════════════ VOTE CARDS ══════════════════════ */
 .cards-grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 0; }
 .pcard {
-  width: 80px; height: 114px; position: relative;
+  width: 96px; height: 136px; position: relative;
   cursor: pointer; user-select: none;
   animation: dealIn .35s ease both;
   transition: transform .2s cubic-bezier(.34,1.56,.64,1), filter .2s;
 }
-.pcard:hover:not(.locked) { transform: translateY(-14px) scale(1.06); filter: drop-shadow(0 20px 16px rgba(0,0,0,.55)); }
-.pcard.sel { transform: translateY(-16px) scale(1.08); filter: drop-shadow(0 0 14px rgba(201,145,42,.9)) drop-shadow(0 18px 20px rgba(0,0,0,.6)); }
+.pcard:hover:not(.locked) { transform: translateY(-16px) scale(1.06); filter: drop-shadow(0 22px 18px rgba(0,0,0,.55)); }
+.pcard.sel { transform: translateY(-18px) scale(1.08); filter: drop-shadow(0 0 16px rgba(201,145,42,.9)) drop-shadow(0 20px 22px rgba(0,0,0,.6)); }
 .pcard.locked { cursor: default; }
 .pcard-inner {
   width: 100%; height: 100%;
-  background: linear-gradient(160deg, #fff 0%, #fdf8ee 100%);
-  border-radius: 10px; border: 1px solid rgba(0,0,0,.1);
-  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 8px 22px rgba(0,0,0,.4);
+  background: linear-gradient(160deg, #ffffff 0%, #fdf6e8 100%);
+  border-radius: 12px; border: 1px solid rgba(0,0,0,.12);
+  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px rgba(0,0,0,.45);
   position: relative; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   transition: background .15s;
 }
-.pcard.sel .pcard-inner { background: linear-gradient(160deg, #fffde8 0%, #fff8d0 100%); border-color: rgba(201,145,42,.6); box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 8px 22px rgba(0,0,0,.5), 0 0 0 2.5px rgba(201,145,42,.85); }
-.pcard-tl { position: absolute; top: 6px; left: 7px; display: flex; flex-direction: column; align-items: center; line-height: 1; }
-.pcard-br { position: absolute; bottom: 6px; right: 7px; display: flex; flex-direction: column; align-items: center; line-height: 1; transform: rotate(180deg); }
-.pcard-num { font-family: 'Cormorant Garamond', serif; font-size: .78rem; font-weight: 700; color: #1a1208; line-height: 1; }
-.pcard-suit-sm { font-size: .62rem; line-height: 1; margin-top: 1px; }
-.pcard-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-.pcard-bignum { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; line-height: 1; color: #1a1208; }
-.pcard-bigsuit { font-size: 1rem; line-height: 1; margin-top: 1px; }
-.pcard.red .pcard-num, .pcard.red .pcard-bignum { color: #b01020; }
-.pcard.red .pcard-suit-sm, .pcard.red .pcard-bigsuit { color: #b01020; }
+.pcard.sel .pcard-inner {
+  background: linear-gradient(160deg, #fffde8 0%, #fff6c0 100%);
+  border-color: rgba(201,145,42,.65);
+  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px rgba(0,0,0,.5), 0 0 0 2.5px rgba(201,145,42,.9);
+}
+/* Corner pip — top-left */
+.pcard-tl {
+  position: absolute; top: 7px; left: 8px;
+  display: flex; flex-direction: column; align-items: center; line-height: 1;
+}
+/* Corner pip — bottom-right (rotated) */
+.pcard-br {
+  position: absolute; bottom: 7px; right: 8px;
+  display: flex; flex-direction: column; align-items: center; line-height: 1;
+  transform: rotate(180deg);
+}
+.pcard-num      { font-family: 'Cormorant Garamond', serif; font-size: .95rem; font-weight: 700; color: #1a1208; line-height: 1; }
+.pcard-suit-sm  { font-size: .78rem; line-height: 1; margin-top: 2px; }
+.pcard-center   { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.pcard-bignum   { font-family: 'Cormorant Garamond', serif; font-size: 2.6rem; font-weight: 700; line-height: 1; color: #1a1208; }
+.pcard-bigsuit  { font-size: 1.3rem; line-height: 1; margin-top: 2px; }
+/* Colour variants */
+.pcard.red .pcard-num,     .pcard.red .pcard-bignum   { color: #b01020; }
+.pcard.red .pcard-suit-sm, .pcard.red .pcard-bigsuit  { color: #b01020; }
 .pcard:not(.red) .pcard-suit-sm, .pcard:not(.red) .pcard-bigsuit { color: #1a1208; }
-.pcard.wild .pcard-bignum { font-size: 1.7rem; color: #6b3fa0; }
-.pcard.wild .pcard-bigsuit { color: #6b3fa0; font-size: .85rem; }
-.pcard.wild .pcard-num { color: #6b3fa0; }
+/* Wild (?) card */
+.pcard.wild .pcard-bignum  { font-size: 2.2rem; color: #6b3fa0; }
+.pcard.wild .pcard-bigsuit { color: #6b3fa0; font-size: 1.1rem; }
+.pcard.wild .pcard-num     { color: #6b3fa0; }
 .pcard.wild .pcard-suit-sm { color: #6b3fa0; }
-.pcard.wild .pcard-inner { background: linear-gradient(160deg, #fdfaff 0%, #f5eeff 100%); }
+.pcard.wild .pcard-inner   { background: linear-gradient(160deg, #fdfaff 0%, #f0e8ff 100%); }
 .obs-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(41,128,185,.08); border: 1px solid rgba(41,128,185,.2); border-radius: 10px; color: #5dade2; font-size: .86rem; }
 .vstatus { text-align: center; font-size: .82rem; padding: 8px 0; }
 .vstatus.voted { color: rgba(201,145,42,.7); }
@@ -501,15 +547,18 @@ body::before {
   .hdr-c { order: 3; width: 100%; justify-content: center; padding-bottom: 6px; }
   .hdr-r { display: none; }
   .cards-grid { justify-content: center; }
-  .pcard { width: 70px; height: 100px; }
-  .pcard-bignum { font-size: 1.7rem; }
+  .pcard { width: 82px; height: 118px; }
+  .pcard-bignum { font-size: 2.2rem; }
+  .pcard-bigsuit { font-size: 1.1rem; }
   .game-body { padding: 16px 16px 60px; }
   .obs-secondary-row { flex-direction: column; }
   .join-box { padding: 36px 24px 32px; }
 }
 @media (max-width: 420px) {
   .join-title { font-size: 2.1rem; }
-  .pcard { width: 62px; height: 88px; }
+  .pcard { width: 70px; height: 100px; }
+  .pcard-bignum { font-size: 1.9rem; }
+  .pcard-num { font-size: .82rem; }
   .avg-hero-num { font-size: 4rem; }
 }
 `;
@@ -846,6 +895,130 @@ export default function App() {
   );
 }
 
+/* ═══════════════════════ CONFETTI ═══════════════════════
+   Pure-canvas confetti — no external deps.
+   Fires once, runs for ~4 seconds, then self-destructs.
+   Props:
+     active  {boolean}  — mount/unmount to trigger a burst
+     onDone  {function} — called when animation finishes
+═══════════════════════════════════════════════════════════ */
+const CONFETTI_COLORS = [
+  "#e8b84b",
+  "#f5d07a",
+  "#c9912a", // golds
+  "#e74c3c",
+  "#e67e22", // reds/orange
+  "#2ecc71",
+  "#3498db", // green/blue
+  "#9b59b6",
+  "#f39c12", // purple/amber
+];
+const PARTICLE_COUNT = 120;
+const GRAVITY = 0.25;
+const DRAG = 0.985;
+
+function Confetti({ onDone }) {
+  const canvasRef = useRef(null);
+  const rafRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    // Size canvas to viewport
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Spawn particles from top-centre, two angled cannons
+    const particles = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
+      const fromLeft = i < PARTICLE_COUNT / 2;
+      const angle = fromLeft
+        ? (Math.random() * 60 + 210) * (Math.PI / 180) // left cannon → right-upward
+        : (Math.random() * 60 + 270) * (Math.PI / 180); // right cannon → left-upward
+      const speed = Math.random() * 14 + 8;
+      return {
+        x: fromLeft ? canvas.width * 0.25 : canvas.width * 0.75,
+        y: canvas.height * 0.35,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        w: Math.random() * 10 + 6,
+        h: Math.random() * 6 + 3,
+        color:
+          CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+        rot: Math.random() * Math.PI * 2,
+        rotV: (Math.random() - 0.5) * 0.25,
+        alpha: 1,
+        shape: Math.random() > 0.4 ? "rect" : "circle",
+      };
+    });
+
+    let frame = 0;
+    const FADE_START = 120; // ~2s at 60fps before alpha fade begins
+    const TOTAL = 240; // ~4s total
+
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      frame++;
+
+      let allGone = true;
+      for (const p of particles) {
+        if (p.alpha <= 0) continue;
+        allGone = false;
+
+        p.vy += GRAVITY;
+        p.vx *= DRAG;
+        p.vy *= DRAG;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.rotV;
+
+        if (frame > FADE_START) {
+          p.alpha = Math.max(
+            0,
+            1 - (frame - FADE_START) / (TOTAL - FADE_START),
+          );
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        if (p.shape === "circle") {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        }
+        ctx.restore();
+      }
+
+      if (allGone || frame > TOTAL) {
+        onDone();
+        return;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", resize);
+    };
+  }, []); // eslint-disable-line
+
+  return (
+    <canvas ref={canvasRef} className="confetti-canvas" aria-hidden="true" />
+  );
+}
+
 /* ═══════════════════════ JOIN SCREEN ═══════════════════════ */
 // FIXED ROOM MODE: No room code needed — just name + role.
 // To re-enable: restore tab-row, room code input, tab/rc state, and go() logic.
@@ -937,6 +1110,10 @@ function GameScreen({
   toast,
 }) {
   const [tsel, setTsel] = useState(30);
+  // Confetti fires once per consensus reveal, keyed by round number
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showConsensus, setShowConsensus] = useState(false);
+  const confettiFiredForRoundRef = useRef(null);
 
   const players = Object.values(rd.players || {});
   const voters = players.filter((p) => p.role === "voter");
@@ -966,6 +1143,23 @@ function GameScreen({
   const minV = nums.length ? Math.min(...nums) : null;
   const maxV = nums.length ? Math.max(...nums) : null;
 
+  // Fire confetti + consensus banner exactly once per consensus reveal
+  useEffect(() => {
+    if (revealed && allSame && confettiFiredForRoundRef.current !== round) {
+      confettiFiredForRoundRef.current = round;
+      setShowConfetti(true);
+      setShowConsensus(true);
+      // Dismiss the overlay banner after 3.5s — confetti handles its own teardown
+      const t = setTimeout(() => setShowConsensus(false), 3500);
+      return () => clearTimeout(t);
+    }
+    // Reset when a new round starts
+    if (!revealed) {
+      setShowConfetti(false);
+      setShowConsensus(false);
+    }
+  }, [revealed, allSame, round]);
+
   const prog = timer.running ? timer.remaining / timer.duration : 1;
   const offset = CIRC * (1 - prog);
   const urgent = timer.remaining <= 5;
@@ -974,6 +1168,20 @@ function GameScreen({
 
   return (
     <>
+      {/* Confetti — mounts when consensus detected, canvas self-destructs when done */}
+      {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
+      {/* Full-screen burst banner — auto-dismisses after 3.5s */}
+      {showConsensus && voted.length > 0 && (
+        <div className="consensus-overlay" aria-live="polite">
+          <div className="consensus-burst">
+            <span className="consensus-burst-emoji">🎉</span>
+            <div className="consensus-burst-text">Perfect Consensus!</div>
+            <div className="consensus-burst-sub">
+              Everyone picked {voted[0].vote} — the team agrees
+            </div>
+          </div>
+        </div>
+      )}
       <header className="hdr">
         <div className="hdr-in">
           <div className="hdr-l">
