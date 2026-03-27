@@ -7,6 +7,7 @@ import {
   update,
   remove,
   serverTimestamp,
+  onDisconnect,
 } from "firebase/database";
 
 const CARDS = [
@@ -587,6 +588,21 @@ export default function App() {
   const toastRef = useRef(null);
   const sessionCheckRef = useRef(null);
 
+  // ── STABLE REFS ──────────────────────────────────────────────────
+  // roomDataRef: always holds the latest roomData for use in goBack /
+  // beforeunload handlers without creating stale closures.
+  const roomDataRef = useRef(null);
+  useEffect(() => {
+    roomDataRef.current = roomData;
+  }, [roomData]);
+
+  // sessionWarningRef: prevents the session-check interval from restarting
+  // every time the sessionWarning flag flips, eliminating unnecessary churn.
+  const sessionWarningRef = useRef(false);
+  useEffect(() => {
+    sessionWarningRef.current = sessionWarning;
+  }, [sessionWarning]);
+
   // DYNAMIC ROOM MODE (disabled) — uncomment to read room from URL:
   // useEffect(() => {
   //   const p = new URLSearchParams(window.location.search);
@@ -598,9 +614,23 @@ export default function App() {
     if (!code || screen !== "game") return;
     const unsub = onValue(ref(db, `rooms/${code}`), (snap) => {
       if (snap.exists()) {
-        setRoomData(snap.val());
+        const data = snap.val();
+
+        // ── ORPHANED TIMER GUARD ──────────────────────────────────
+        // If the player who started the timer has left the room,
+        // stop the timer so remaining participants aren't left with
+        // a frozen countdown that never reaches zero.
+        if (
+          data?.timer?.running &&
+          data.timer.startedBy &&
+          !data.players?.[data.timer.startedBy]
+        ) {
+          update(ref(db, `rooms/${code}/timer`), { running: false });
+        }
+
+        setRoomData(data);
       } else {
-        // Room deleted (end session / expired) — go home without stale goBack closure
+        // Room deleted (end session / expired) — go home
         setRoomData(null);
         setScreen("join");
       }
@@ -665,8 +695,8 @@ export default function App() {
     );
     if (!voters.length) return;
     if (voters.every((p) => p.voted)) {
-      // Small delay so the last voter's card animates before reveal
-      // Use a fresh Firebase read rather than the stale closure value
+      // Small delay so the last voter's card animates before reveal.
+      // Use a fresh Firebase read rather than the stale closure value.
       clearTimeout(autoRevealRef.current);
       autoRevealRef.current = setTimeout(async () => {
         const snap = await new Promise((res) =>
@@ -693,6 +723,10 @@ export default function App() {
     if (roomData?.createdAt) createdAtRef.current = roomData.createdAt;
   }, [roomData?.createdAt]); // eslint-disable-line
 
+  // ── SESSION EXPIRY CHECK ──────────────────────────────────────────
+  // sessionWarning is intentionally NOT in the dependency array — we
+  // read it via sessionWarningRef instead so the interval doesn't
+  // restart every time the warning flag flips (previously caused churn).
   useEffect(() => {
     if (screen !== "game" || !roomData?.createdAt) return;
     clearInterval(sessionCheckRef.current);
@@ -707,25 +741,70 @@ export default function App() {
         setRoomData(null);
         setSessionWarning(false);
         showToast("⏰ Session ended after 3 hours. See you next sprint!");
-      } else if (age >= SESSION_WARN_MS && !sessionWarning) {
+      } else if (age >= SESSION_WARN_MS && !sessionWarningRef.current) {
         setSessionWarning(true);
         showToast("⚠️ Session ending in ~10 minutes. Wrap up your planning!");
       }
     }, 60 * 1000);
     return () => clearInterval(sessionCheckRef.current);
-  }, [screen, roomData?.createdAt, code, sessionWarning]); // eslint-disable-line
+  }, [screen, roomData?.createdAt, code]); // eslint-disable-line
 
+  // ── LEAVE / GO BACK ───────────────────────────────────────────────
+  // Reads roomDataRef (not roomData) so the callback stays stable —
+  // only code + myId in deps — yet always acts on current room state.
   const goBack = useCallback(() => {
-    if (code && myId) remove(ref(db, `rooms/${code}/players/${myId}`));
+    const rd = roomDataRef.current;
+
+    // Clear local timer interval before leaving
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    remainingRef.current = null;
+
+    if (code && myId) {
+      // If this user started the timer, stop it in Firebase so the
+      // remaining players aren't stuck watching a frozen countdown.
+      if (rd?.timer?.running && rd?.timer?.startedBy === myId) {
+        update(ref(db, `rooms/${code}/timer`), { running: false });
+      }
+
+      const allPlayerIds = Object.keys(rd?.players || {});
+      const remainingAfterLeave = allPlayerIds.filter((id) => id !== myId);
+
+      if (remainingAfterLeave.length === 0) {
+        // Last person leaving — remove the entire room to keep Firebase lean.
+        remove(ref(db, `rooms/${code}`));
+      } else {
+        remove(ref(db, `rooms/${code}/players/${myId}`));
+      }
+    }
+
     setScreen("join");
     setRoomData(null);
     // window.history.replaceState({}, "", window.location.pathname); // dynamic rooms
   }, [code, myId]);
 
+  // ── BROWSER CLOSE / REFRESH CLEANUP ──────────────────────────────
+  // Uses roomDataRef for the same stale-closure reason as goBack.
+  // Also stops orphaned timers and cleans up empty rooms.
   useEffect(() => {
-    // Only remove player on actual browser close/refresh, not on React cleanup
     const cleanup = () => {
-      if (code && myId) remove(ref(db, `rooms/${code}/players/${myId}`));
+      const rd = roomDataRef.current;
+      if (!code || !myId) return;
+
+      if (rd?.timer?.running && rd?.timer?.startedBy === myId) {
+        update(ref(db, `rooms/${code}/timer`), { running: false });
+      }
+
+      const allPlayerIds = Object.keys(rd?.players || {});
+      const remainingAfterLeave = allPlayerIds.filter((id) => id !== myId);
+
+      if (remainingAfterLeave.length === 0) {
+        remove(ref(db, `rooms/${code}`));
+      } else {
+        remove(ref(db, `rooms/${code}/players/${myId}`));
+      }
     };
     window.addEventListener("beforeunload", cleanup);
     return () => window.removeEventListener("beforeunload", cleanup);
@@ -763,6 +842,12 @@ export default function App() {
         vote: null,
       });
     }
+
+    // Register a server-side disconnect handler so the player node is
+    // removed from Firebase even if the browser crashes without firing
+    // the beforeunload event (e.g. power loss, mobile tab kill).
+    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
+
     setScreen("game");
     showToast(`🎲 Welcome, ${name}!`);
   };
@@ -773,6 +858,7 @@ export default function App() {
   //   const snap = await new Promise(res => onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }));
   //   if (!snap.exists()) { showToast(`Room "${c}" not found.`); return; }
   //   await update(ref(db, `rooms/${c}/players/${myId}`), { id: myId, name, role, voted: false, vote: null });
+  //   onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
   //   setScreen("game");
   // };
 
@@ -827,6 +913,14 @@ export default function App() {
   }, [code, roomData, showToast]);
 
   const endSession = useCallback(async () => {
+    // Explicitly clear the local timer interval before tearing down the room.
+    // Without this, the interval could fire one more tick after the room is
+    // deleted, resulting in a harmless but unnecessary Firebase write attempt.
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    remainingRef.current = null;
     clearInterval(sessionCheckRef.current);
     await remove(ref(db, `rooms/${code}`));
     setScreen("join");
@@ -898,6 +992,7 @@ export default function App() {
 /* ═══════════════════════ CONFETTI ═══════════════════════
    Pure-canvas confetti — no external deps.
    Fires once, runs for ~4 seconds, then self-destructs.
+
    Props:
      active  {boolean}  — mount/unmount to trigger a burst
      onDone  {function} — called when animation finishes
