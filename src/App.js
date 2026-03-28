@@ -3,6 +3,7 @@ import { db } from "./firebase";
 import {
   ref,
   set,
+  get,
   onValue,
   update,
   remove,
@@ -271,6 +272,7 @@ body::before {
 .tab-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(239,242,247,.75); font-family: 'Outfit', sans-serif; font-size: .875rem; font-weight: 500; cursor: pointer; transition: all .2s; }
 .tab-btn.active { background: var(--goldB); border-color: rgba(201,145,42,.3); color: var(--gold2); }
 .tab-btn:hover:not(.active) { background: var(--surface); color: rgba(239,242,247,.90); border-color: var(--border2); }
+.pro-tab-badge { font-size: .52rem; font-weight: 700; letter-spacing: .08em; background: var(--gold); color: var(--ink); border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
 
 /* Team Room preview chip */
 .team-code-preview { display: inline-flex; align-items: center; gap: 8px; background: var(--goldB); border: 1px solid rgba(201,145,42,.22); border-radius: 8px; padding: 8px 12px; margin-bottom: 18px; width: 100%; }
@@ -872,20 +874,36 @@ body::before {
   text-align: center; color: rgba(239,242,247,.65);
   font-size: .82rem; margin-bottom: 24px; font-weight: 300;
 }
+/* Billing toggle */
+.billing-toggle-row {
+  display: flex; justify-content: center; gap: 4px;
+  background: rgba(255,255,255,.04); border: 1px solid var(--border);
+  border-radius: 100px; padding: 4px; margin: 0 auto 18px; width: fit-content;
+}
+.billing-btn {
+  padding: 7px 22px; border-radius: 100px; border: none; background: transparent;
+  color: rgba(239,242,247,.60); font-family: 'Outfit', sans-serif;
+  font-size: .84rem; font-weight: 500; cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 7px;
+}
+.billing-btn.active {
+  background: var(--goldB); color: var(--gold2); font-weight: 600;
+}
+.billing-save {
+  font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  background: rgba(46,204,113,.18); color: #2ecc71; border-radius: 100px; padding: 2px 7px;
+}
+.billing-save.dim { background: rgba(255,255,255,.06); color: rgba(239,242,247,.40); }
 /* Currency switcher */
 .currency-row {
-  display: flex; justify-content: center; gap: 6px; margin-bottom: 28px;
+  display: flex; justify-content: center; gap: 6px; margin-bottom: 24px;
 }
 .currency-btn {
-  padding: 7px 18px; border-radius: 100px;
-  border: 1px solid var(--border); background: transparent;
-  color: rgba(239,242,247,.65); font-family: 'Outfit', sans-serif;
-  font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .2s;
+  padding: 6px 16px; border-radius: 100px; border: 1px solid var(--border);
+  background: transparent; color: rgba(239,242,247,.65); font-family: 'Outfit', sans-serif;
+  font-size: .80rem; font-weight: 500; cursor: pointer; transition: all .2s;
 }
-.currency-btn.active {
-  background: var(--goldB); border-color: rgba(201,146,42,.4);
-  color: var(--gold2); font-weight: 600;
-}
+.currency-btn.active { background: var(--goldB); border-color: rgba(201,146,42,.4); color: var(--gold2); font-weight: 600; }
 .currency-btn:hover:not(.active) { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
 /* Pricing cards */
 .pricing-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
@@ -936,8 +954,46 @@ body::before {
   box-shadow: 0 4px 20px rgba(201,146,42,.35);
 }
 .pricing-cta.pro-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,146,42,.5); }
-.pricing-footer { text-align: center; font-size: .72rem; color: rgba(239,242,247,.45); line-height: 1.6; }
+/* Billing note below price */
+.pricing-billing-note { font-size: .72rem; color: rgba(239,242,247,.45); margin-bottom: 14px; line-height: 1.4; }
+/* Trial note below CTA */
+.pricing-trial-note { font-size: .66rem; color: rgba(239,242,247,.38); text-align: center; margin-top: 7px; }
+/* Pro key activation */
+.pro-key-section {
+  border-top: 1px solid rgba(255,255,255,.07); margin-top: 20px; padding-top: 16px;
+}
+.pro-key-toggle {
+  background: none; border: none; color: rgba(239,242,247,.50); font-family: 'Outfit', sans-serif;
+  font-size: .78rem; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 6px;
+  transition: color .2s;
+}
+.pro-key-toggle:hover { color: var(--gold2); }
+.pro-key-body { margin-top: 12px; }
+.pro-key-row { display: flex; gap: 8px; }
+.pro-key-input {
+  flex: 1; padding: 10px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border2); background: var(--surface);
+  color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .84rem;
+  letter-spacing: .08em; font-weight: 500;
+  outline: none; transition: border-color .2s;
+}
+.pro-key-input:focus { border-color: rgba(201,146,42,.5); }
+.pro-key-input::placeholder { color: rgba(239,242,247,.25); letter-spacing: .04em; font-weight: 300; }
+.pro-key-btn {
+  padding: 10px 18px; border-radius: var(--radius-sm);
+  background: var(--goldB); border: 1px solid rgba(201,146,42,.3);
+  color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .84rem;
+  font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.pro-key-btn:hover:not(:disabled) { background: rgba(201,145,42,.18); border-color: rgba(201,146,42,.55); }
+.pro-key-btn:disabled { opacity: .5; cursor: not-allowed; }
+.pro-key-status { font-size: .76rem; margin-top: 8px; line-height: 1.45; }
+.pro-key-status.success { color: #2ecc71; }
+.pro-key-status.error   { color: #e74c3c; }
+.pro-key-status a { color: var(--gold2); text-decoration: none; }
+.pricing-footer { text-align: center; font-size: .72rem; color: rgba(239,242,247,.45); line-height: 1.6; margin-top: 18px; }
 .pricing-footer a { color: var(--gold2); text-decoration: none; }
+.pricing-footer a:hover { text-decoration: underline; }
 /* Pricing button on join screen */
 .btn-pricing {
   display: block; margin: 0 auto 20px;
@@ -1001,12 +1057,14 @@ function CookieBanner({ onAccept }) {
       <div className="cookie-inner">
         <p className="cookie-text">
           <strong>This site uses cookies.</strong>{" "}
-          We use functional cookies required for Firebase (real-time sessions) and Google Fonts for typography.
-          No advertising or analytics cookies are used. See our{" "}
-          <a href="/privacy" className="cookie-link">Privacy Policy</a>.
+          We use functional cookies required for Firebase (real-time sessions) only.
+          No advertising, tracking, or analytics cookies are used. See our{" "}
+          <a href="/privacy" className="cookie-link">Privacy Policy</a> and{" "}
+          <a href="/terms" className="cookie-link">Terms of Service</a>.
         </p>
         <div className="cookie-actions">
-          <a href="/privacy" className="cookie-link">Privacy Policy</a>
+          <a href="/privacy" className="cookie-link">Privacy</a>
+          <a href="/terms" className="cookie-link">Terms</a>
           <button className="cookie-accept" onClick={onAccept}>Accept &amp; Continue</button>
         </div>
       </div>
@@ -1018,6 +1076,8 @@ export default function App() {
   const [screen, setScreen] = useState("join");
   const [myId] = useState(uid);
   const [myRole, setMyRole] = useState("voter");
+  // Pro status — derived from localStorage on mount; updated on key activation via page reload
+  const [proMode] = useState(() => readProStatus());
   const [cookieAccepted, setCookieAccepted] = useState(
     () => {
       try { return localStorage.getItem("pp_cookie_ok") === "1"; }
@@ -1287,7 +1347,7 @@ export default function App() {
       streak: 0,
       consensusCount: 0,
       deck,
-      plan: "free",
+      plan: proMode ? "pro" : "free",
       timer: { running: false, duration: 30, remaining: 30 },
       players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
     });
@@ -1527,6 +1587,7 @@ export default function App() {
             onTeamRoom={handleTeamRoom}
             prefillCode={code}
             prefillTeam={prefillTeam}
+            proMode={proMode}
           />
         )}
         {screen === "game" && !roomData && (
@@ -1697,35 +1758,89 @@ function Confetti({ onDone, big }) {
 
 /* ═══════════════════════ PRICING MODAL ═══════════════════════ */
 const PRICING = {
-  USD: { symbol: "$", free: "0", pro: "8",  proAnnual: "6"  },
-  GBP: { symbol: "£", free: "0", pro: "6",  proAnnual: "5"  },
-  EUR: { symbol: "€", free: "0", pro: "7",  proAnnual: "6"  },
+  USD: { symbol: "$",  pro: 8,  proAnnual: 6  },
+  GBP: { symbol: "£",  pro: 6,  proAnnual: 5  },
+  EUR: { symbol: "€",  pro: 7,  proAnnual: 6  },
 };
 
-function PricingModal({ onClose }) {
-  const [currency, setCurrency] = useState("GBP");
-  const p = PRICING[currency];
+// ── Stripe Payment Links ─────────────────────────────────────────────────────
+// Replace placeholder values with real Stripe Payment Link URLs after setup.
+// Format: https://buy.stripe.com/XXXXXXXX
+const STRIPE_LINKS = {
+  monthly: { GBP: "#upgrade", USD: "#upgrade", EUR: "#upgrade" },
+  annual:  { GBP: "#upgrade", USD: "#upgrade", EUR: "#upgrade" },
+};
+
+// ── Pro status ───────────────────────────────────────────────────────────────
+const PRO_KEY_REGEX = /^PPRO-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+
+function readProStatus() {
+  try {
+    const raw = localStorage.getItem("pp_pro");
+    if (!raw) return false;
+    const { key } = JSON.parse(raw);
+    return PRO_KEY_REGEX.test(key);
+  } catch { return false; }
+}
+
+async function validateAndSavePro(key) {
+  const formatted = key.trim().toUpperCase();
+  if (!PRO_KEY_REGEX.test(formatted)) return "invalid";
+  try {
+    // Check Firebase license store: /licenses/{key}
+    const snap = await get(ref(db, `licenses/${formatted}`));
+    if (!snap.exists() || snap.val().active !== true) return "invalid";
+    localStorage.setItem("pp_pro", JSON.stringify({ key: formatted, activatedAt: Date.now() }));
+    return "ok";
+  } catch {
+    // Firebase unreachable — fail closed (require real validation)
+    return "error";
+  }
+}
+
+function PricingModal({ onClose, onProActivated }) {
+  const [currency, setCurrency]   = useState("GBP");
+  const [billing,  setBilling]    = useState("annual");  // "monthly" | "annual"
+  const [keyInput, setKeyInput]   = useState("");
+  const [keyStatus, setKeyStatus] = useState(null);      // null | "checking" | "ok" | "invalid" | "error"
+  const [showKey,  setShowKey]    = useState(false);
+
+  const p       = PRICING[currency];
+  const isAnn   = billing === "annual";
+  const price   = isAnn ? p.proAnnual : p.pro;
+  const annTotal = p.proAnnual * 12;
+  const savePct = Math.round((1 - p.proAnnual / p.pro) * 100);
+  const stripeUrl = STRIPE_LINKS[billing][currency];
+  const support   = process.env.REACT_APP_SUPPORT_EMAIL || "support@planningpoker.app";
 
   const FREE_FEATURES = [
-    { yes: true,  text: "Up to 6 participants per room"                         },
-    { yes: true,  text: "All card decks — Fibonacci, T-Shirt, Powers of 2"     },
-    { yes: true,  text: "Real-time voting with simultaneous reveal"             },
-    { yes: true,  text: "Story queue — work through your full backlog"          },
-    { yes: true,  text: "Session summary — copy all estimates to clipboard"     },
-    { yes: true,  text: "Observer mode with team analytics"                     },
-    { yes: false, text: "Team Room — your own permanent link"                   },
-    { yes: false, text: "Up to 20 participants per room"                        },
+    { yes: true,  text: `Up to ${FREE_MAX_PLAYERS} participants per session`     },
+    { yes: true,  text: "All card decks — Fibonacci, T-Shirt, Powers of 2"      },
+    { yes: true,  text: "Simultaneous reveal with live vote breakdown"           },
+    { yes: true,  text: "Story queue and session summary export"                 },
+    { yes: true,  text: "Observer mode and sprint analytics"                     },
+    { yes: false, text: "Permanent Team Room with your own URL"                  },
+    { yes: false, text: `Up to ${PRO_MAX_PLAYERS} participants per session`      },
+    { yes: false, text: "Priority support"                                       },
   ];
 
   const PRO_FEATURES = [
-    { yes: true, text: "Everything in Free, always"                             },
-    { yes: true, text: "Team Room — one permanent URL, reused every sprint"     },
-    { yes: true, text: "Up to 20 participants per room"                         },
-    { yes: true, text: "No link sharing — team just types the team name"        },
-    { yes: true, text: "Custom countdown timer per session"                     },
-    { yes: true, text: "Estimation Spree & alignment analytics"                 },
-    { yes: true, text: "Priority support"                                       },
+    { yes: true, text: "Everything in Free, always"                              },
+    { yes: true, text: "Permanent Team Room — same URL every sprint"             },
+    { yes: true, text: `Up to ${PRO_MAX_PLAYERS} participants per session`       },
+    { yes: true, text: "Team joins by name — no link sharing needed"             },
+    { yes: true, text: "Custom countdown timer and facilitator controls"         },
+    { yes: true, text: "Estimation Spree streak and alignment analytics"         },
+    { yes: true, text: "Priority support via email"                              },
   ];
+
+  const handleActivate = async () => {
+    if (!keyInput.trim()) return;
+    setKeyStatus("checking");
+    const result = await validateAndSavePro(keyInput);
+    setKeyStatus(result);
+    if (result === "ok" && onProActivated) onProActivated();
+  };
 
   return (
     <div className="pricing-overlay" onClick={onClose}>
@@ -1733,23 +1848,41 @@ function PricingModal({ onClose }) {
         <button className="pricing-close" onClick={onClose} aria-label="Close pricing">✕</button>
 
         <h2 className="pricing-title">Simple, Transparent Pricing</h2>
-        <p className="pricing-sub">Free forever for small teams. Upgrade for your permanent team space.</p>
+        <p className="pricing-sub">Free forever for small teams. Upgrade for your permanent team room.</p>
 
-        {/* Currency switcher */}
+        {/* ── Billing toggle ── */}
+        <div className="billing-toggle-row">
+          <button
+            className={`billing-btn${billing === "monthly" ? " active" : ""}`}
+            onClick={() => setBilling("monthly")}
+          >Monthly</button>
+          <button
+            className={`billing-btn${billing === "annual" ? " active" : ""}`}
+            onClick={() => setBilling("annual")}
+          >
+            Annual
+            {billing === "annual"
+              ? <span className="billing-save">Save {savePct}%</span>
+              : <span className="billing-save dim">Save {savePct}%</span>}
+          </button>
+        </div>
+
+        {/* ── Currency switcher ── */}
         <div className="currency-row">
-          {["USD", "GBP", "EUR"].map(c => (
+          {["GBP", "USD", "EUR"].map(c => (
             <button
               key={c}
               className={`currency-btn${currency === c ? " active" : ""}`}
               onClick={() => setCurrency(c)}
             >
-              {c === "USD" ? "🇺🇸 USD" : c === "GBP" ? "🇬🇧 GBP" : "🇪🇺 EUR"}
+              {c === "GBP" ? "🇬🇧 GBP" : c === "USD" ? "🇺🇸 USD" : "🇪🇺 EUR"}
             </button>
           ))}
         </div>
 
-        {/* Pricing cards */}
+        {/* ── Pricing cards ── */}
         <div className="pricing-cards">
+
           {/* Free */}
           <div className="pricing-card">
             <div className="pricing-tier">Free</div>
@@ -1757,11 +1890,13 @@ function PricingModal({ onClose }) {
               <span className="pricing-amount">{p.symbol}0</span>
               <span className="pricing-period">/ forever</span>
             </div>
-            <p className="pricing-desc">No account needed. Get your team estimating in under 10 seconds — free forever.</p>
+            <p className="pricing-desc">
+              No account, no credit card. Get your team estimating in under 10 seconds.
+            </p>
             <div className="pricing-features">
               {FREE_FEATURES.map((f, i) => (
                 <div className="pricing-feature" key={i}>
-                  <span className={`pf-icon ${f.yes ? "yes" : "no"}`}>{f.yes ? "✓" : "✕"}</span>
+                  <span className={`pf-icon ${f.yes ? "yes" : "no"}`}>{f.yes ? "✓" : "–"}</span>
                   <span>{f.text}</span>
                 </div>
               ))}
@@ -1771,14 +1906,20 @@ function PricingModal({ onClose }) {
 
           {/* Pro */}
           <div className="pricing-card pro">
-            <span className="pricing-badge">Most Popular</span>
+            <span className="pricing-badge">{isAnn ? "Best Value" : "Most Popular"}</span>
             <div className="pricing-tier">Pro</div>
+
             <div className="pricing-price">
-              <span className="pricing-amount">{p.symbol}{p.pro}</span>
-              <span className="pricing-period">/ month</span>
+              <span className="pricing-amount">{p.symbol}{price}</span>
+              <span className="pricing-period">/ mo</span>
             </div>
+
+            {isAnn
+              ? <p className="pricing-billing-note">Billed as {p.symbol}{annTotal}/year</p>
+              : <p className="pricing-billing-note">Switch to annual and save {p.symbol}{p.pro - p.proAnnual}/mo</p>}
+
             <p className="pricing-desc">
-              One permanent room your team reuses every sprint. No more sending links before every session. Save {p.symbol}{Number(p.pro) - Number(p.proAnnual)}/mo with annual billing.
+              One permanent room your team reuses every sprint — no link sharing before every session.
             </p>
             <div className="pricing-features">
               {PRO_FEATURES.map((f, i) => (
@@ -1788,15 +1929,78 @@ function PricingModal({ onClose }) {
                 </div>
               ))}
             </div>
-            <button className="pricing-cta pro-cta" onClick={onClose}>
-              Start Free Trial — 14 days
-            </button>
+
+            <a
+              className="pricing-cta pro-cta"
+              href={stripeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Start 14-day Free Trial →
+            </a>
+            <p className="pricing-trial-note">No card needed during trial · Cancel anytime</p>
           </div>
         </div>
 
+        {/* ── Pro key activation ── */}
+        <div className="pro-key-section">
+          <button
+            className="pro-key-toggle"
+            onClick={() => setShowKey(v => !v)}
+            aria-expanded={showKey}
+          >
+            {showKey ? "▾" : "▸"} Already have a Pro activation key?
+          </button>
+          {showKey && (
+            <div className="pro-key-body">
+              <div className="pro-key-row">
+                <input
+                  type="text"
+                  className="pro-key-input"
+                  placeholder="PPRO-XXXX-XXXX-XXXX"
+                  value={keyInput}
+                  onChange={e => {
+                    setKeyInput(e.target.value.toUpperCase());
+                    setKeyStatus(null);
+                  }}
+                  maxLength={19}
+                  spellCheck={false}
+                />
+                <button
+                  className="pro-key-btn"
+                  onClick={handleActivate}
+                  disabled={keyStatus === "checking" || !keyInput.trim()}
+                >
+                  {keyStatus === "checking" ? "…" : "Activate"}
+                </button>
+              </div>
+              {keyStatus === "ok" && (
+                <p className="pro-key-status success">
+                  ✓ Pro activated — your permanent team room is unlocked. Refresh to continue.
+                </p>
+              )}
+              {keyStatus === "invalid" && (
+                <p className="pro-key-status error">
+                  Key not recognised. Check your confirmation email or{" "}
+                  <a href={`mailto:${support}`}>contact support</a>.
+                </p>
+              )}
+              {keyStatus === "error" && (
+                <p className="pro-key-status error">
+                  Could not reach our servers. Check your connection and try again.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         <p className="pricing-footer">
-          No credit card required for free tier · Cancel anytime · Prices ex. VAT<br />
-          Questions? <a href={`mailto:${process.env.REACT_APP_SUPPORT_EMAIL || "support@planningpoker.app"}`}>Contact us</a>
+          Prices shown ex. VAT · VAT added at checkout where applicable<br />
+          <a href={`mailto:${support}`}>Contact support</a>
+          {" · "}
+          <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+          {" · "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
         </p>
       </div>
     </div>
@@ -1804,7 +2008,7 @@ function PricingModal({ onClose }) {
 }
 
 /* ═══════════════════════ JOIN SCREEN ═══════════════════════ */
-function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) {
+function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, proMode }) {
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
   const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : "create");
   const [name, setName] = useState("");
@@ -1855,7 +2059,12 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
         </button>
 
         {/* Pricing modal */}
-        {showPricing && <PricingModal onClose={() => setShowPricing(false)} />}
+        {showPricing && (
+          <PricingModal
+            onClose={() => setShowPricing(false)}
+            onProActivated={() => { setShowPricing(false); window.location.reload(); }}
+          />
+        )}
 
         {/* Three-tab navigation */}
         <div className="tab-row">
@@ -1876,6 +2085,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
             onClick={() => { setTab("team"); clearErr(); }}
           >
             Team Room
+            {proMode && <span className="pro-tab-badge">PRO</span>}
           </button>
         </div>
 
