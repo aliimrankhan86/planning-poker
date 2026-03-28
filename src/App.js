@@ -7,9 +7,38 @@ import {
   onValue,
   update,
   remove,
+  runTransaction,
   serverTimestamp,
   onDisconnect,
 } from "firebase/database";
+
+// ── ANONYMOUS USAGE ANALYTICS ────────────────────────────────────
+// Privacy-first, cookie-free analytics.
+// Writes daily increment counters to Firebase /analytics/daily/{date}/{event}.
+// NO personal data, NO user IDs, NO cookies, NO IP addresses stored.
+// Data is aggregate counts only — safe to disclose in privacy policy.
+//
+// Events tracked:
+//   room_created_free / room_created_pro   — room creation by plan
+//   player_joined / observer_joined        — role on join
+//   stories_estimated                      — incremented per story completion
+//   pricing_opened                         — intent to upgrade
+//   pro_activated                          — successful key activation
+//   login_modal_opened                     — engagement with auth flow
+//   timer_used                             — feature adoption: timer
+//   story_queue_used                       — feature adoption: story queue
+//   invite_copied                          — virality signal
+const _analyticsDate = () => new Date().toISOString().slice(0, 10); // "2025-03-28"
+async function track(eventName) {
+  try {
+    await runTransaction(
+      ref(db, `analytics/daily/${_analyticsDate()}/${eventName}`),
+      (current) => (current || 0) + 1,
+    );
+  } catch {
+    // Analytics must never break the main app — swallow all errors silently
+  }
+}
 
 // ── CARD DECKS ────────────────────────────────────────────────────
 // Each deck is an array of card objects. The facilitator selects a deck
@@ -1408,6 +1437,7 @@ function LoginModal({ onClose, onProActivated }) {
     setKeyStatus("loading");
     const result = await validateAndSavePro(keyInput.trim());
     if (result === "ok") {
+      track("pro_activated");
       setKeyStatus("ok");
       setTimeout(onProActivated, 900);
     } else if (result === "invalid") {
@@ -1490,8 +1520,9 @@ function CookieBanner({ onAccept }) {
       <div className="cookie-inner">
         <p className="cookie-text">
           <strong>This site uses cookies.</strong>{" "}
-          We use functional cookies required for Firebase (real-time sessions) only.
-          No advertising, tracking, or analytics cookies are used. See our{" "}
+          We use functional browser storage required for Firebase (real-time sessions) and
+          anonymous, cookie-free usage counts to improve the product. No advertising or
+          tracking cookies are used. See our{" "}
           <a href="/privacy" className="cookie-link">Privacy Policy</a> and{" "}
           <a href="/terms" className="cookie-link">Terms of Service</a>.
         </p>
@@ -1798,6 +1829,8 @@ export default function App() {
     // Update URL so the creator can copy/share the link immediately.
     window.history.replaceState({}, "", `?room=${c}`);
     setScreen("game");
+    track(proMode ? "room_created_pro" : "room_created_free");
+    if (role === "observer") track("observer_joined"); else track("player_joined");
     showToast(`🎲 Room ${c} created! Share the link to invite your team.`);
   };
 
@@ -1832,6 +1865,7 @@ export default function App() {
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
     window.history.replaceState({}, "", `?room=${c}`);
     setScreen("game");
+    track(role === "observer" ? "observer_joined" : "player_joined");
     showToast(`🎲 Welcome, ${name}!`);
   };
 
@@ -1884,6 +1918,8 @@ export default function App() {
     // rather than dropping teammates on the Join tab with a raw code.
     window.history.replaceState({}, "", `?team=${encodeURIComponent(teamName)}`);
     setScreen("game");
+    track(role === "observer" ? "observer_joined" : "player_joined");
+    if (!snap.exists()) track("room_created_pro"); // Team rooms are always Pro
     showToast(`🎲 Welcome to ${teamName}!`);
   };
 
@@ -1933,7 +1969,10 @@ export default function App() {
     }
 
     await update(ref(db), upd);
-    if (estimate !== null) showToast("✅ Story done! Vote on the next user story.");
+    if (estimate !== null) {
+      track("stories_estimated");
+      showToast("✅ Story done! Vote on the next user story.");
+    }
   }, [code, roomData, showToast]);
 
   // ── STORY QUEUE ───────────────────────────────────────────────────
@@ -1946,6 +1985,8 @@ export default function App() {
     if (!sanitised) return;
     const current = roomData?.stories || {};
     const idx = Object.keys(current).length;
+    // Track the first story added — signals the story queue feature is being used
+    if (idx === 0) track("story_queue_used");
     await update(ref(db, `rooms/${code}/stories/${idx}`), {
       name: sanitised,
       estimate: null,
@@ -1970,6 +2011,7 @@ export default function App() {
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
+    track("stories_estimated");
     showToast("✅ Estimate recorded. Voting on next story.");
   }, [code, roomData, showToast]);
 
@@ -2015,6 +2057,7 @@ export default function App() {
         remaining: sec,
         startedBy: myId,
       });
+      track("timer_used");
     },
     [code, myId],
   );
@@ -2039,8 +2082,8 @@ export default function App() {
         <NavBar
           screen={screen}
           onLogoClick={() => screen === "game" ? goBack() : window.scrollTo({ top: 0, behavior: "smooth" })}
-          onLogin={()    => setShowLoginModal(true)}
-          onRegister={()  => setShowPricingModal(true)}
+          onLogin={()    => { setShowLoginModal(true);   track("login_modal_opened");   }}
+          onRegister={()  => { setShowPricingModal(true); track("pricing_opened"); }}
         />
 
         <div className="app">
@@ -2052,7 +2095,7 @@ export default function App() {
               prefillCode={code}
               prefillTeam={prefillTeam}
               proMode={proMode}
-              onShowPricing={() => setShowPricingModal(true)}
+              onShowPricing={() => { setShowPricingModal(true); track("pricing_opened"); }}
             />
           )}
           {screen === "game" && !roomData && (
@@ -2321,7 +2364,10 @@ function PricingModal({ onClose, onProActivated }) {
     setKeyStatus("checking");
     const result = await validateAndSavePro(keyInput);
     setKeyStatus(result);
-    if (result === "ok" && onProActivated) onProActivated();
+    if (result === "ok") {
+      track("pro_activated");
+      if (onProActivated) onProActivated();
+    }
   };
 
   return (
@@ -2925,6 +2971,7 @@ function GameScreen({
               className="btn-sm"
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl);
+                track("invite_copied");
                 toast("🔗 Link copied!");
               }}
               aria-label="Copy invite link to clipboard"
@@ -3669,6 +3716,7 @@ function GameScreen({
                 className="btn-inv"
                 onClick={() => {
                   navigator.clipboard.writeText(shareUrl);
+                  track("invite_copied");
                   toast("🔗 Link copied!");
                 }}
               >

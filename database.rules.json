@@ -120,6 +120,24 @@
       }
     },
 
+    // ── ANALYTICS ─────────────────────────────────────────────────────────
+    // Anonymous daily usage counters — no PII, no personal data.
+    // Structure: /analytics/daily/{date}/{eventName} → integer count.
+    // Clients can write (increment) but NEVER read — aggregate data
+    // is only accessible by the owner via Firebase Console.
+    // Validate: date is YYYY-MM-DD, eventName is a known safe string.
+    "analytics": {
+      "daily": {
+        "$date": {
+          ".read": false,
+          "$event": {
+            ".write": true,
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          }
+        }
+      }
+    },
+
     // Block all reads/writes to any path not explicitly defined above.
     // This prevents abuse of arbitrary Firebase paths.
     "$other": {

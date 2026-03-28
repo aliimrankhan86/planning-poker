@@ -86,11 +86,13 @@
       <li><strong>Vote values</strong> — the card you select during estimation. Visible to all participants after the facilitator reveals cards.</li>
       <li><strong>Room and session data</strong> — room code, story names (if added), estimates, and round results. Stored temporarily in Firebase Realtime Database.</li>
       <li><strong>Cookie preference</strong> — a single value stored in your browser's localStorage to remember that you have accepted this notice. No personal data is stored in this entry.</li>
+      <li><strong>Anonymous usage counts</strong> — we record aggregated, anonymous daily counters of feature usage (for example: number of rooms created, stories estimated, and invites copied). These are integer counts only. No user identity, name, IP address, device ID, or session identifier is associated with these counts. They are used solely to understand how the product is being used and to improve it.</li>
     </ul>
     <p>
       We do <strong>not</strong> collect email addresses, account credentials, IP addresses,
       device identifiers, or any information that identifies you outside of a session.
-      No advertising or tracking cookies are used.
+      No advertising or tracking cookies are used. The anonymous usage counters described above
+      do not use cookies and do not identify individual users.
     </p>
 
     <h2>How data is stored</h2>
@@ -114,16 +116,20 @@
 
     <h2>Cookies and local storage</h2>
     <p>
-      We use <strong>no advertising, analytics, or tracking cookies</strong>.
+      We use <strong>no advertising or tracking cookies</strong>.
       The only browser storage used is:
     </p>
     <ul>
-      <li><strong>localStorage</strong> — to store your cookie consent preference (<code>pp_cookie_ok</code>).
-      This entry contains no personal data and is never sent to any server.</li>
+      <li><strong>localStorage</strong> — to store your cookie consent preference (<code>pp_cookie_ok</code>) and, if you activate a Pro key, a record that your key is valid (<code>pp_pro</code>). These entries contain no personal data beyond the key itself and are never sent to any server except during initial validation against our Firebase key store.</li>
       <li><strong>Firebase session tokens</strong> — Firebase may write functional data to
       localStorage to maintain your real-time connection. This is required for the product
       to work and does not contain personally identifiable information.</li>
     </ul>
+    <p>
+      We collect anonymous, aggregate usage counts (see "What data we collect" above). These
+      are written directly to Firebase and do not use cookies or browser storage.
+      You can reset your cookie consent at any time using the Cookie Settings option in the site footer.
+    </p>
 
     <h2>Third-party services</h2>
     <p>The only third-party service used is Firebase (Google LLC) for real-time data sync.
