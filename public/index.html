@@ -2,17 +2,105 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Planning Poker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <!-- ── Primary SEO ──────────────────────────────────────────── -->
+    <title>Planning Poker — Free Agile Estimation Tool for Scrum Teams</title>
+    <meta name="description" content="Free online planning poker for agile and scrum teams. Estimate user stories together using Fibonacci, T-Shirt or Powers of 2 cards. No account needed — start in seconds." />
+    <meta name="keywords" content="planning poker, agile estimation, scrum poker, sprint planning, story points, fibonacci estimation, team estimation, free planning poker" />
+    <meta name="author" content="Planning Poker" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://YOUR_DOMAIN_HERE" />
+
+    <!-- ── Open Graph (LinkedIn, Facebook, WhatsApp, Slack) ────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://YOUR_DOMAIN_HERE" />
+    <meta property="og:title" content="Planning Poker — Free Agile Estimation Tool" />
+    <meta property="og:description" content="Run your sprint planning sessions online. Estimate user stories collaboratively with your team — free, instant, no sign-up required." />
+    <meta property="og:image" content="https://YOUR_DOMAIN_HERE/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Planning Poker" />
+    <meta property="og:locale" content="en_GB" />
+
+    <!-- ── Twitter / X Card ─────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Planning Poker — Free Agile Estimation Tool" />
+    <meta name="twitter:description" content="Run your sprint planning sessions online. Estimate user stories collaboratively with your team — free, instant, no sign-up required." />
+    <meta name="twitter:image" content="https://YOUR_DOMAIN_HERE/og-image.png" />
+
+    <!-- ── Theme & PWA ───────────────────────────────────────────── -->
+    <meta name="theme-color" content="#0c1a0f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Planning Poker" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- ── Favicons ──────────────────────────────────────────────── -->
     <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg" />
-    <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.svg" />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+
+    <!-- ── Fonts ─────────────────────────────────────────────────── -->
+    <!-- Both fonts are self-hosted — no Google Fonts dependency. -->
+    <link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" />
+
+    <!-- ── Critical inline styles (prevents flash before React loads) ── -->
     <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background: #183d2c; }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-size: 16px; }
+      body {
+        background: #0c1a0f;
+        font-family: 'Outfit', 'Segoe UI', sans-serif;
+        color: #eff2f7;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+      #root { min-height: 100vh; }
     </style>
+
+    <!-- ── JSON-LD Structured Data ───────────────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Planning Poker",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "description": "Free online planning poker for agile and scrum teams. Estimate user stories collaboratively using Fibonacci, T-Shirt or Powers of 2 cards.",
+      "offers": [
+        {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "GBP",
+          "name": "Free"
+        },
+        {
+          "@type": "Offer",
+          "price": "6",
+          "priceCurrency": "GBP",
+          "name": "Pro",
+          "billingIncrement": "P1M"
+        }
+      ],
+      "url": "https://YOUR_DOMAIN_HERE",
+      "featureList": [
+        "Fibonacci estimation cards",
+        "T-Shirt sizing cards",
+        "Powers of 2 cards",
+        "Real-time voting",
+        "Story queue management",
+        "Session summary",
+        "Team rooms with persistent URLs",
+        "No account required for free tier"
+      ]
+    }
+    </script>
   </head>
   <body>
+    <noscript>Planning Poker requires JavaScript to run. Please enable JavaScript in your browser.</noscript>
     <div id="root"></div>
   </body>
 </html>

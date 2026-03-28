@@ -23,3 +23,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vercel
+
+# Internal AI context — never commit
+CLAUDE.md
+STRATEGY.md

@@ -698,6 +698,63 @@ body::before {
 .btn-inv { width: 100%; padding: 10px; background: var(--goldB); border: 1px solid rgba(201,145,42,.2); border-radius: 9px; color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .2s; }
 .btn-inv:hover { background: rgba(201,145,42,.14); }
 
+/* ══════════════════════ SESSION ANALYTICS ══════════════════════ */
+.analytics-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;
+}
+.analytics-stat {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px; padding: 10px 12px;
+}
+.analytics-stat-v {
+  font-size: 1.3rem; font-weight: 700;
+  color: var(--gold2); line-height: 1.1; display: block;
+}
+.analytics-stat-l {
+  font-size: .68rem; color: rgba(239,242,247,.60);
+  margin-top: 2px; display: block; font-weight: 300;
+}
+.analytics-bar-row { margin-top: 14px; }
+.analytics-bar-label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: .72rem; margin-bottom: 5px;
+}
+.analytics-bar-label-l { color: rgba(239,242,247,.72); font-weight: 500; }
+.analytics-bar-label-r { color: rgba(239,242,247,.55); font-weight: 300; }
+.analytics-bar-track {
+  height: 6px; border-radius: 3px;
+  background: rgba(255,255,255,.08); overflow: hidden;
+}
+.analytics-bar-fill {
+  height: 100%; border-radius: 3px;
+  transition: width .6s ease;
+}
+.analytics-bar-fill.good   { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+.analytics-bar-fill.ok     { background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+.analytics-bar-fill.low    { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+.analytics-insight {
+  font-size: .72rem; color: rgba(239,242,247,.60);
+  margin-top: 10px; line-height: 1.55; font-style: italic;
+}
+
+/* ══════════════════════ STREAK / ESTIMATION SPREE ══════════════════════ */
+.streak-panel {
+  background: linear-gradient(135deg, rgba(201,145,42,.09) 0%, rgba(201,145,42,.04) 100%);
+  border: 1px solid rgba(201,145,42,.28);
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  display: flex; align-items: center; gap: 12px;
+  animation: fadeUp .35s ease;
+}
+.streak-panel.streak-hot {
+  border-color: rgba(230,126,34,.40);
+  background: linear-gradient(135deg, rgba(230,126,34,.12) 0%, rgba(201,145,42,.05) 100%);
+}
+.streak-fire  { font-size: 1.45rem; flex-shrink: 0; line-height: 1; }
+.streak-body  { flex: 1; min-width: 0; }
+.streak-count { font-size: .88rem; font-weight: 700; color: var(--gold2); letter-spacing: .2px; }
+.streak-label { font-size: .72rem; color: rgba(239,242,247,.62); margin-top: 2px; font-weight: 300; }
+
 /* ══════════════════════ TOAST ══════════════════════ */
 .toast {
   position: fixed; bottom: 28px; left: 50%;
@@ -711,6 +768,47 @@ body::before {
   transition: transform .32s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity: 0;
 }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ══════════════════════ COOKIE CONSENT ══════════════════════ */
+.cookie-banner {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+  background: rgba(7,14,8,.97); backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(201,145,42,.22);
+  padding: 16px 24px;
+  animation: fadeIn .3s ease;
+}
+.cookie-inner {
+  max-width: 900px; margin: 0 auto;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.cookie-text {
+  flex: 1; min-width: 200px;
+  font-size: .78rem; line-height: 1.6;
+  color: rgba(239,242,247,.72); font-weight: 300;
+}
+.cookie-text strong { color: rgba(239,242,247,.90); font-weight: 600; }
+.cookie-actions {
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.cookie-link {
+  font-size: .75rem; color: var(--gold2); text-decoration: underline;
+  text-decoration-color: rgba(232,184,75,.4); white-space: nowrap;
+  font-family: 'Outfit', sans-serif; cursor: pointer; background: none; border: none;
+}
+.cookie-link:hover { color: var(--gold3); }
+.cookie-accept {
+  padding: 9px 20px; border: none; border-radius: 8px;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--ink); font-family: 'Outfit', sans-serif;
+  font-size: .82rem; font-weight: 700; cursor: pointer;
+  white-space: nowrap; transition: all .2s;
+  box-shadow: 0 3px 12px rgba(201,145,42,.3);
+}
+.cookie-accept:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(201,145,42,.45); }
+@media (max-width: 600px) {
+  .cookie-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .cookie-actions { width: 100%; justify-content: space-between; }
+}
 
 /* ══════════════════════ LOADING ══════════════════════ */
 .loading { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
@@ -877,10 +975,39 @@ const isFounderRoom = (code) => {
 };
 
 /* ═══════════════════════ MAIN APP ═══════════════════════ */
+function CookieBanner({ onAccept }) {
+  return (
+    <div className="cookie-banner" role="dialog" aria-label="Cookie notice" aria-live="polite">
+      <div className="cookie-inner">
+        <p className="cookie-text">
+          <strong>This site uses cookies.</strong>{" "}
+          We use functional cookies required for Firebase (real-time sessions) and Google Fonts for typography.
+          No advertising or analytics cookies are used. See our{" "}
+          <a href="/privacy" className="cookie-link">Privacy Policy</a>.
+        </p>
+        <div className="cookie-actions">
+          <a href="/privacy" className="cookie-link">Privacy Policy</a>
+          <button className="cookie-accept" onClick={onAccept}>Accept &amp; Continue</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [screen, setScreen] = useState("join");
   const [myId] = useState(uid);
   const [myRole, setMyRole] = useState("voter");
+  const [cookieAccepted, setCookieAccepted] = useState(
+    () => {
+      try { return localStorage.getItem("pp_cookie_ok") === "1"; }
+      catch { return false; }
+    }
+  );
+  const acceptCookies = () => {
+    try { localStorage.setItem("pp_cookie_ok", "1"); } catch {}
+    setCookieAccepted(true);
+  };
   // Initialise room code and team name synchronously from the URL so JoinScreen
   // receives the correct prefill on the very first render — no flash or double-update.
   // ?room=CODE  → Join Room tab pre-filled with code
@@ -1133,6 +1260,8 @@ export default function App() {
       revealed: false,
       round: 1,
       storiesDone: 0,
+      streak: 0,
+      consensusCount: 0,
       deck,
       plan: "free",
       timer: { running: false, duration: 30, remaining: 30 },
@@ -1212,6 +1341,8 @@ export default function App() {
         revealed: false,
         round: 1,
         storiesDone: 0,
+        streak: 0,
+        consensusCount: 0,
         deck,
         plan,
         teamName,
@@ -1250,7 +1381,7 @@ export default function App() {
     await update(ref(db, `rooms/${code}/timer`), { running: false });
   }, [code]);
 
-  const newRound = useCallback(async () => {
+  const newRound = useCallback(async (isConsensus = false) => {
     const players = roomData?.players || {};
     const upd = {};
     Object.keys(players).forEach((id) => {
@@ -1260,6 +1391,7 @@ export default function App() {
     upd[`rooms/${code}/revealed`] = false;
     upd[`rooms/${code}/round`] = (roomData?.round || 1) + 1;
     upd[`rooms/${code}/storiesDone`] = (roomData?.storiesDone || 0) + 1;
+    upd[`rooms/${code}/streak`] = isConsensus ? (roomData?.streak || 0) + 1 : 0;
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
@@ -1280,7 +1412,7 @@ export default function App() {
     });
   }, [code, roomData]);
 
-  const recordAndNextStory = useCallback(async (estimate) => {
+  const recordAndNextStory = useCallback(async (estimate, isConsensus = false) => {
     const idx = roomData?.activeStory ?? 0;
     const players = roomData?.players || {};
     const upd = {};
@@ -1293,6 +1425,8 @@ export default function App() {
     upd[`rooms/${code}/revealed`] = false;
     upd[`rooms/${code}/round`] = (roomData?.round || 1) + 1;
     upd[`rooms/${code}/storiesDone`] = (roomData?.storiesDone || 0) + 1;
+    upd[`rooms/${code}/streak`] = isConsensus ? (roomData?.streak || 0) + 1 : 0;
+    upd[`rooms/${code}/consensusCount`] = (roomData?.consensusCount || 0) + (isConsensus ? 1 : 0);
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
@@ -1309,6 +1443,8 @@ export default function App() {
     upd[`rooms/${code}/revealed`] = false;
     upd[`rooms/${code}/round`] = 1;
     upd[`rooms/${code}/storiesDone`] = 0;
+    upd[`rooms/${code}/streak`] = 0;
+    upd[`rooms/${code}/consensusCount`] = 0;
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
@@ -1399,6 +1535,7 @@ export default function App() {
         )}
         <div className={`toast${toastOn ? " show" : ""}`}>{toast}</div>
       </div>
+      {!cookieAccepted && <CookieBanner onAccept={acceptCookies} />}
     </>
   );
 }
@@ -1422,11 +1559,10 @@ const CONFETTI_COLORS = [
   "#9b59b6",
   "#f39c12", // purple/amber
 ];
-const PARTICLE_COUNT = 120;
 const GRAVITY = 0.25;
 const DRAG = 0.985;
 
-function Confetti({ onDone }) {
+function Confetti({ onDone, big }) {
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
 
@@ -1443,32 +1579,37 @@ function Confetti({ onDone }) {
     resize();
     window.addEventListener("resize", resize);
 
+    // big=true (consensus) → more particles, bigger pieces, faster, longer
+    const count    = big ? 220 : 120;
+    const FADE_START = big ? 160 : 120;
+    const TOTAL      = big ? 310 : 240;
+
     // Spawn particles from top-centre, two angled cannons
-    const particles = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
-      const fromLeft = i < PARTICLE_COUNT / 2;
+    const particles = Array.from({ length: count }, (_, i) => {
+      const fromLeft = i < count / 2;
       const angle = fromLeft
         ? (Math.random() * 60 + 210) * (Math.PI / 180) // left cannon → right-upward
         : (Math.random() * 60 + 270) * (Math.PI / 180); // right cannon → left-upward
-      const speed = Math.random() * 14 + 8;
+      const speed = big
+        ? Math.random() * 18 + 12  // big: 12–30
+        : Math.random() * 14 + 8;  // normal: 8–22
       return {
         x: fromLeft ? canvas.width * 0.25 : canvas.width * 0.75,
         y: canvas.height * 0.35,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        w: Math.random() * 10 + 6,
-        h: Math.random() * 6 + 3,
+        w: big ? Math.random() * 16 + 10 : Math.random() * 10 + 6,
+        h: big ? Math.random() * 10 + 5  : Math.random() * 6 + 3,
         color:
           CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
         rot: Math.random() * Math.PI * 2,
-        rotV: (Math.random() - 0.5) * 0.25,
+        rotV: (Math.random() - 0.5) * (big ? 0.32 : 0.25),
         alpha: 1,
         shape: Math.random() > 0.4 ? "rect" : "circle",
       };
     });
 
     let frame = 0;
-    const FADE_START = 120; // ~2s at 60fps before alpha fade begins
-    const TOTAL = 240; // ~4s total
 
     const tick = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1959,6 +2100,8 @@ function GameScreen({
   const revealed = rd.revealed || false;
   const round = rd.round || 1;
   const storiesDone = rd.storiesDone || 0;
+  const streak = rd.streak || 0;
+  const consensusCount = rd.consensusCount || 0;
 
   // Story queue — derived from Firebase room data
   const stories = rd.stories ? Object.values(rd.stories) : [];
@@ -2026,7 +2169,7 @@ function GameScreen({
   return (
     <>
       {/* Confetti — mounts when consensus detected, canvas self-destructs when done */}
-      {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
+      {showConfetti && <Confetti onDone={() => setShowConfetti(false)} big={allSame} />}
       {/* Full-screen burst banner — auto-dismisses after 3.5s */}
       {showConsensus && voted.length > 0 && (
         <div className="consensus-overlay" aria-live="polite">
@@ -2493,14 +2636,14 @@ function GameScreen({
                 {hasStories && !allStoriesDone && revealed && (
                   <button
                     className="btn-record-next"
-                    onClick={() => onRecordStory(avgDisp !== "—" ? avgDisp : (allSame ? voted[0]?.vote : "?"))}
+                    onClick={() => onRecordStory(avgDisp !== "—" ? avgDisp : (allSame ? voted[0]?.vote : "?"), allSame)}
                   >
                     ✅ Record {avgDisp !== "—" ? `${avgDisp} pts` : "estimate"} &amp; Next Story
                   </button>
                 )}
 
                 <div className="obs-secondary-row">
-                  <button className="btn-next-round" onClick={onNewRound}>
+                  <button className="btn-next-round" onClick={() => onNewRound(allSame)}>
                     ↺ Next Round (no estimate)
                   </button>
                   <button className="btn-new-session" onClick={onReset}>
@@ -2594,24 +2737,87 @@ function GameScreen({
               </div>
             </div>
 
-            {/* Session Stats */}
-            <div className="panel">
-              <span className="ptitle">Session Stats</span>
-              <div className="ss-grid">
-                <div className="ss-chip">
-                  <span className="ss-v">{storiesDone}</span>
-                  <span className="ss-l">Stories Done</span>
+            {/* Session Analytics */}
+            {(() => {
+              const estimatedStories = stories.filter(
+                (s) => s.estimate != null && s.estimate !== "?" && !isNaN(Number(s.estimate))
+              );
+              const totalSP = estimatedStories.reduce((sum, s) => sum + Number(s.estimate), 0);
+              const avgSP = estimatedStories.length
+                ? (totalSP / estimatedStories.length).toFixed(1)
+                : null;
+              const consensusRate = storiesDone > 0
+                ? Math.round((consensusCount / storiesDone) * 100)
+                : null;
+              // Re-vote rounds = total rounds - stories done (each story = 1 round minimum)
+              const extraRounds = round - 1 - storiesDone;
+              const fillClass = consensusRate === null ? "ok"
+                : consensusRate >= 70 ? "good"
+                : consensusRate >= 40 ? "ok" : "low";
+              const insightText = consensusRate === null
+                ? "Record your first story to start tracking team alignment."
+                : consensusRate >= 80
+                ? "Excellent backlog clarity — the team is well aligned."
+                : consensusRate >= 60
+                ? "Good alignment. A few stories needed discussion."
+                : consensusRate >= 40
+                ? "Mixed alignment. Consider refining stories before the next sprint."
+                : "Low consensus — stories may need more definition and acceptance criteria.";
+              return (
+                <div className="panel">
+                  <span className="ptitle">Session Analytics</span>
+                  <div className="analytics-grid">
+                    <div className="analytics-stat">
+                      <span className="analytics-stat-v">{storiesDone}</span>
+                      <span className="analytics-stat-l">Stories estimated</span>
+                    </div>
+                    <div className="analytics-stat">
+                      <span className="analytics-stat-v">{voters.length}</span>
+                      <span className="analytics-stat-l">Participants</span>
+                    </div>
+                    <div className="analytics-stat">
+                      <span className="analytics-stat-v">{totalSP > 0 ? totalSP : "—"}</span>
+                      <span className="analytics-stat-l">Total story points</span>
+                    </div>
+                    <div className="analytics-stat">
+                      <span className="analytics-stat-v">{avgSP !== null ? avgSP : "—"}</span>
+                      <span className="analytics-stat-l">Avg points / story</span>
+                    </div>
+                  </div>
+                  <div className="analytics-bar-row">
+                    <div className="analytics-bar-label">
+                      <span className="analytics-bar-label-l">Team Alignment</span>
+                      <span className="analytics-bar-label-r">
+                        {consensusRate !== null
+                          ? `${consensusCount} of ${storiesDone} first-round consensus (${consensusRate}%)`
+                          : "No stories recorded yet"}
+                      </span>
+                    </div>
+                    <div className="analytics-bar-track">
+                      <div
+                        className={`analytics-bar-fill ${fillClass}`}
+                        style={{ width: `${consensusRate ?? 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  {extraRounds > 0 && (
+                    <div className="analytics-bar-row">
+                      <div className="analytics-bar-label">
+                        <span className="analytics-bar-label-l">Re-vote rounds</span>
+                        <span className="analytics-bar-label-r">{extraRounds} extra round{extraRounds !== 1 ? "s" : ""}</span>
+                      </div>
+                      <div className="analytics-bar-track">
+                        <div
+                          className="analytics-bar-fill ok"
+                          style={{ width: `${Math.min((extraRounds / Math.max(round - 1, 1)) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="analytics-insight">{insightText}</div>
                 </div>
-                <div className="ss-chip">
-                  <span className="ss-v">{round}</span>
-                  <span className="ss-l">Round</span>
-                </div>
-                <div className="ss-chip">
-                  <span className="ss-v">{voters.length}</span>
-                  <span className="ss-l">Participants</span>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Invite */}
             <div className="panel inv-panel">
@@ -2627,6 +2833,31 @@ function GameScreen({
                 🔗 Copy Invite Link
               </button>
             </div>
+
+            {/* Estimation Spree — shown when streak ≥ 1, all players saw same consensus */}
+            {streak > 0 && (
+              <div className={`streak-panel${streak >= 3 ? " streak-hot" : ""}`}>
+                <div className="streak-fire">
+                  {streak >= 5 ? "🔥🔥🔥" : streak >= 3 ? "🔥🔥" : "🔥"}
+                </div>
+                <div className="streak-body">
+                  <div className="streak-count">
+                    {streak === 1
+                      ? "Estimation Spree!"
+                      : `${streak}-round spree!`}
+                  </div>
+                  <div className="streak-label">
+                    {streak >= 5
+                      ? "Unstoppable — team is perfectly aligned 🚀"
+                      : streak >= 3
+                      ? "Team is locked in — great backlog clarity"
+                      : streak === 2
+                      ? "Two in a row — team understands the work"
+                      : "First consensus — everyone on the same page"}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Session summary — appears once stories have estimates */}
             {hasStories && stories.some((s) => s.estimate != null) && (
