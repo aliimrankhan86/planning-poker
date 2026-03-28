@@ -10,18 +10,62 @@ import {
   onDisconnect,
 } from "firebase/database";
 
-const CARDS = [
-  { val: "1", suit: "♠", red: false },
-  { val: "2", suit: "♣", red: false },
-  { val: "3", suit: "♠", red: false },
-  { val: "5", suit: "♥", red: true },
-  { val: "8", suit: "♦", red: true },
-  { val: "13", suit: "♣", red: false },
-  { val: "?", suit: "★", red: false },
-];
+// ── CARD DECKS ────────────────────────────────────────────────────
+// Each deck is an array of card objects. The facilitator selects a deck
+// when creating a room; the choice is stored in Firebase so all players
+// see the same cards automatically.
+const DECK_DEFINITIONS = {
+  fibonacci: {
+    label: "Fibonacci",
+    desc: "1, 2, 3, 5, 8, 13, ?",
+    cards: [
+      { val: "1",  suit: "♠", red: false },
+      { val: "2",  suit: "♣", red: false },
+      { val: "3",  suit: "♠", red: false },
+      { val: "5",  suit: "♥", red: true  },
+      { val: "8",  suit: "♦", red: true  },
+      { val: "13", suit: "♣", red: false },
+      { val: "?",  suit: "★", red: false },
+    ],
+  },
+  tshirt: {
+    label: "T-Shirt",
+    desc: "XS, S, M, L, XL, XXL",
+    cards: [
+      { val: "XS",  suit: "♠", red: false },
+      { val: "S",   suit: "♣", red: false },
+      { val: "M",   suit: "♥", red: true  },
+      { val: "L",   suit: "♦", red: true  },
+      { val: "XL",  suit: "♠", red: false },
+      { val: "XXL", suit: "♣", red: false },
+      { val: "?",   suit: "★", red: false },
+    ],
+  },
+  powers: {
+    label: "Powers of 2",
+    desc: "1, 2, 4, 8, 16, 32, ?",
+    cards: [
+      { val: "1",  suit: "♠", red: false },
+      { val: "2",  suit: "♣", red: false },
+      { val: "4",  suit: "♠", red: false },
+      { val: "8",  suit: "♥", red: true  },
+      { val: "16", suit: "♦", red: true  },
+      { val: "32", suit: "♣", red: false },
+      { val: "?",  suit: "★", red: false },
+    ],
+  },
+};
+const DECK_KEYS = Object.keys(DECK_DEFINITIONS);
+// Derive cards for a given deck key, falling back to Fibonacci.
+const getCards = (deckKey) =>
+  (DECK_DEFINITIONS[deckKey] || DECK_DEFINITIONS.fibonacci).cards;
 const CIRC = 201.1;
 const uid = () => Math.random().toString(36).slice(2, 10);
-// const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase(); // re-enable for dynamic rooms
+const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
+// Derives a stable, memorable room code from a team name.
+// "RPA Dev Team" → "RPADEVTEAM" — same name always yields the same code.
+const teamCode = (name) =>
+  name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12) || "TEAM";
 const ini = (n = "") =>
   n
     .split(" ")
@@ -201,6 +245,26 @@ body::before {
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,145,42,.5); }
 .btn-primary:active { transform: none; }
 
+/* Tab row on Join screen */
+.tab-row { display: flex; gap: 6px; margin-bottom: 22px; }
+.tab-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(240,230,208,.35); font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .2s; }
+.tab-btn.active { background: var(--goldB); border-color: rgba(201,145,42,.3); color: var(--gold2); }
+.tab-btn:hover:not(.active) { background: var(--surface); color: rgba(240,230,208,.7); border-color: var(--border2); }
+
+/* Team Room preview chip */
+.team-code-preview { display: inline-flex; align-items: center; gap: 8px; background: var(--goldB); border: 1px solid rgba(201,145,42,.22); border-radius: 8px; padding: 8px 12px; margin-bottom: 18px; width: 100%; }
+.tcp-label { font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(240,230,208,.3); white-space: nowrap; }
+.tcp-code { font-family: monospace; font-size: .9rem; font-weight: 700; color: var(--gold2); letter-spacing: .1em; flex: 1; }
+
+/* Deck picker on Create tab */
+.deck-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
+.deck-btn { padding: 10px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(240,230,208,.45); font-family: 'Outfit', sans-serif; cursor: pointer; transition: all .2s; text-align: center; }
+.deck-btn .dk-label { display: block; font-size: .78rem; font-weight: 600; margin-bottom: 2px; }
+.deck-btn .dk-desc  { display: block; font-size: .62rem; color: rgba(240,230,208,.25); }
+.deck-btn.active { background: var(--goldB); border-color: rgba(201,145,42,.3); color: var(--gold2); }
+.deck-btn.active .dk-desc { color: rgba(201,145,42,.5); }
+.deck-btn:hover:not(.active) { background: var(--surface); color: rgba(240,230,208,.7); border-color: var(--border2); }
+
 /* ══════════════════════ HEADER ══════════════════════ */
 .hdr {
   background: rgba(8,12,10,.92);
@@ -305,7 +369,7 @@ body::before {
 .btn-stop:hover { background: var(--surface2); color: var(--cream); }
 .waiting-hint { font-size: .8rem; color: rgba(240,230,208,.22); font-style: italic; text-align: center; padding: 8px 0; }
 
-/* ══════════════════════ VOTE CARDS ══════════════════════ */
+/* ══════════════════════ PLAYING CARDS ══════════════════════ */
 .cards-grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 0; }
 .pcard {
   width: 96px; height: 136px; position: relative;
@@ -456,6 +520,30 @@ body::before {
 .btn-end-session:hover { background: rgba(192,57,43,.1); border-color: rgba(192,57,43,.35); color: #e74c3c; }
 .end-session-hint { font-size: .58rem; color: rgba(240,230,208,.15); text-align: center; margin-top: 3px; font-style: italic; }
 
+/* Story queue panel */
+.story-panel { background: rgba(0,0,0,.18); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; }
+.story-panel-title { font-size: .65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(240,230,208,.3); margin-bottom: 10px; }
+.story-active { font-size: .92rem; font-weight: 600; color: var(--cream); margin-bottom: 6px; line-height: 1.35; }
+.story-progress { font-size: .68rem; color: rgba(240,230,208,.3); margin-bottom: 10px; }
+.story-add-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.story-inp { flex: 1; padding: 8px 10px; background: rgba(0,0,0,.3); border: 1px solid var(--border2); border-radius: 8px; color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .8rem; }
+.story-inp::placeholder { color: rgba(240,230,208,.18); }
+.story-inp:focus { outline: none; border-color: var(--gold); }
+.btn-story-add { padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(201,145,42,.25); background: var(--goldB); color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .2s; }
+.btn-story-add:hover { background: rgba(201,145,42,.18); }
+.story-list { max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+.story-item { font-size: .75rem; padding: 4px 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+.story-item.done { color: rgba(240,230,208,.28); text-decoration: line-through; }
+.story-item.active { background: var(--goldB); color: var(--gold2); font-weight: 600; }
+.story-item.queued { color: rgba(240,230,208,.4); }
+.story-est { font-size: .68rem; opacity: .7; }
+.btn-record-next { width: 100%; padding: 11px; border-radius: var(--radius-sm); border: none; background: linear-gradient(135deg, rgba(39,174,96,.7), rgba(39,174,96,.5)); color: #fff; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .2s; margin-top: 4px; }
+.btn-record-next:hover { background: linear-gradient(135deg, rgba(39,174,96,.85), rgba(39,174,96,.65)); }
+.btn-record-next:disabled { opacity: .3; cursor: not-allowed; }
+.story-name-banner { background: rgba(201,145,42,.07); border: 1px solid rgba(201,145,42,.15); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; }
+.story-name-label { font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(240,230,208,.3); display: block; margin-bottom: 3px; }
+.story-name-text { font-size: .9rem; font-weight: 600; color: var(--cream); line-height: 1.3; }
+
 /* ══════════════════════ PLAYERS PANEL ══════════════════════ */
 .vp-head { display: flex; justify-content: space-between; font-size: .7rem; color: rgba(240,230,208,.3); margin-bottom: 8px; }
 .vp-bar { background: rgba(255,255,255,.05); border-radius: 100px; height: 4px; overflow: hidden; margin-bottom: 14px; }
@@ -564,14 +652,11 @@ body::before {
 }
 `;
 
-/* ═══════════════════════ FIXED ROOM CONFIG ═══════════════════════ */
-// FIXED ROOM MODE: Everyone joins the same room automatically.
-// To re-enable dynamic rooms with shareable links:
-//   1. Remove FIXED_ROOM_CODE constant below
-//   2. Uncomment the URL param useEffect in App()
-//   3. Uncomment window.history.replaceState in handleCreate, handleJoin, goBack
-//   4. Restore the tab-row + room code input in JoinScreen
-const FIXED_ROOM_CODE = "SPRINTROOM";
+/* ═══════════════════════ ROOM CONFIG ═══════════════════════ */
+// Dynamic rooms: each Create generates a unique 5-char code.
+// URL is updated via replaceState so links can be shared directly.
+// Capacity: max 11 players per room (host + 10 team members).
+const MAX_PLAYERS = 11;
 const SESSION_MAX_MS = 3 * 60 * 60 * 1000;
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000;
 
@@ -580,7 +665,20 @@ export default function App() {
   const [screen, setScreen] = useState("join");
   const [myId] = useState(uid);
   const [myRole, setMyRole] = useState("voter");
-  const [code, setCode] = useState(FIXED_ROOM_CODE);
+  // Initialise room code and team name synchronously from the URL so JoinScreen
+  // receives the correct prefill on the very first render — no flash or double-update.
+  // ?room=CODE  → Join Room tab pre-filled with code
+  // ?team=NAME  → Team Room tab pre-filled with team name
+  const [code, setCode] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    const r = p.get("room");
+    return r ? r.toUpperCase() : "";
+  });
+  const [prefillTeam] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    const t = p.get("team");
+    return t ? decodeURIComponent(t) : "";
+  });
   const [roomData, setRoomData] = useState(null);
   const [toast, setToast] = useState("");
   const [toastOn, setToastOn] = useState(false);
@@ -602,13 +700,6 @@ export default function App() {
   useEffect(() => {
     sessionWarningRef.current = sessionWarning;
   }, [sessionWarning]);
-
-  // DYNAMIC ROOM MODE (disabled) — uncomment to read room from URL:
-  // useEffect(() => {
-  //   const p = new URLSearchParams(window.location.search);
-  //   const r = p.get("room");
-  //   if (r) setCode(r.toUpperCase());
-  // }, []);
 
   useEffect(() => {
     if (!code || screen !== "game") return;
@@ -782,7 +873,7 @@ export default function App() {
 
     setScreen("join");
     setRoomData(null);
-    // window.history.replaceState({}, "", window.location.pathname); // dynamic rooms
+    window.history.replaceState({}, "", window.location.pathname);
   }, [code, myId]);
 
   // ── BROWSER CLOSE / REFRESH CLEANUP ──────────────────────────────
@@ -817,50 +908,99 @@ export default function App() {
     toastRef.current = setTimeout(() => setToastOn(false), 3400);
   }, []);
 
-  const handleCreate = async (name, role) => {
-    const c = FIXED_ROOM_CODE;
+  const handleCreate = async (name, role, deck = "fibonacci") => {
+    const c = mkCode();
     setMyRole(role);
     setCode(c);
+    await set(ref(db, `rooms/${c}`), {
+      createdAt: serverTimestamp(),
+      revealed: false,
+      round: 1,
+      storiesDone: 0,
+      deck,
+      timer: { running: false, duration: 30, remaining: 30 },
+      players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
+    });
+
+    // Server-side cleanup if browser crashes (power loss, mobile tab kill).
+    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
+
+    // Update URL so the creator can copy/share the link immediately.
+    window.history.replaceState({}, "", `?room=${c}`);
+    setScreen("game");
+    showToast(`🎲 Room ${c} created! Share the link to invite your team.`);
+  };
+
+  const handleJoin = async (name, role, c) => {
     const snap = await new Promise((res) =>
       onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
     );
+    if (!snap.exists()) {
+      showToast(`Room "${c}" not found. Check the code and try again.`);
+      return;
+    }
+    const data = snap.val();
+    const currentCount = Object.keys(data.players || {}).length;
+    if (currentCount >= MAX_PLAYERS) {
+      showToast(`This room is full (max ${MAX_PLAYERS} players).`);
+      return;
+    }
+    setMyRole(role);
+    setCode(c);
+    await update(ref(db, `rooms/${c}/players/${myId}`), {
+      id: myId,
+      name,
+      role,
+      voted: false,
+      vote: null,
+    });
+    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
+    window.history.replaceState({}, "", `?room=${c}`);
+    setScreen("game");
+    showToast(`🎲 Welcome, ${name}!`);
+  };
+
+  // ── TEAM ROOM ─────────────────────────────────────────────────────
+  // Team rooms use a stable code derived from the team name so the same
+  // team always lands in the same room without needing to share a link.
+  // The room is created fresh if nobody is there, or joined if active.
+  const handleTeamRoom = async (name, role, teamName, deck = "fibonacci") => {
+    const c = teamCode(teamName);
+    const snap = await new Promise((res) =>
+      onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
+    );
+    const currentCount = snap.exists()
+      ? Object.keys(snap.val().players || {}).length
+      : 0;
+    if (currentCount >= MAX_PLAYERS) {
+      showToast(`This room is full (max ${MAX_PLAYERS} players).`);
+      return;
+    }
+    setMyRole(role);
+    setCode(c);
     if (!snap.exists()) {
       await set(ref(db, `rooms/${c}`), {
         createdAt: serverTimestamp(),
         revealed: false,
         round: 1,
         storiesDone: 0,
+        deck,
+        teamName,
         timer: { running: false, duration: 30, remaining: 30 },
         players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
       });
     } else {
       await update(ref(db, `rooms/${c}/players/${myId}`), {
-        id: myId,
-        name,
-        role,
-        voted: false,
-        vote: null,
+        id: myId, name, role, voted: false, vote: null,
       });
     }
-
-    // Register a server-side disconnect handler so the player node is
-    // removed from Firebase even if the browser crashes without firing
-    // the beforeunload event (e.g. power loss, mobile tab kill).
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
-
+    // Use ?team= so shared links open the Team Room tab with the name pre-filled,
+    // rather than dropping teammates on the Join tab with a raw code.
+    window.history.replaceState({}, "", `?team=${encodeURIComponent(teamName)}`);
     setScreen("game");
-    showToast(`🎲 Welcome, ${name}!`);
+    showToast(`🎲 Welcome to ${teamName}!`);
   };
-
-  // DYNAMIC ROOM MODE — uncomment handleJoin and wire to JoinScreen's onJoin prop:
-  // const handleJoin = async (name, role, c) => {
-  //   setMyRole(role); setCode(c);
-  //   const snap = await new Promise(res => onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }));
-  //   if (!snap.exists()) { showToast(`Room "${c}" not found.`); return; }
-  //   await update(ref(db, `rooms/${c}/players/${myId}`), { id: myId, name, role, voted: false, vote: null });
-  //   onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
-  //   setScreen("game");
-  // };
 
   const selectCard = useCallback(
     async (val) => {
@@ -894,6 +1034,39 @@ export default function App() {
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     await update(ref(db), upd);
     showToast("✅ Story done! Vote on the next user story.");
+  }, [code, roomData, showToast]);
+
+  // ── STORY QUEUE ───────────────────────────────────────────────────
+  // Stories can be added at any time before or during a session.
+  // Stored in Firebase so all players see the active story name live.
+  const addStory = useCallback(async (name) => {
+    // Firebase returns stories as {0:{...}, 1:{...}} — an object, not an array.
+    // .length on an object is undefined, so use Object.keys to get the count.
+    const current = roomData?.stories || {};
+    const idx = Object.keys(current).length;
+    await update(ref(db, `rooms/${code}/stories/${idx}`), {
+      name: name.trim(),
+      estimate: null,
+    });
+  }, [code, roomData]);
+
+  const recordAndNextStory = useCallback(async (estimate) => {
+    const idx = roomData?.activeStory ?? 0;
+    const players = roomData?.players || {};
+    const upd = {};
+    upd[`rooms/${code}/stories/${idx}/estimate`] = estimate;
+    upd[`rooms/${code}/activeStory`] = idx + 1;
+    Object.keys(players).forEach((id) => {
+      upd[`rooms/${code}/players/${id}/voted`] = false;
+      upd[`rooms/${code}/players/${id}/vote`] = null;
+    });
+    upd[`rooms/${code}/revealed`] = false;
+    upd[`rooms/${code}/round`] = (roomData?.round || 1) + 1;
+    upd[`rooms/${code}/storiesDone`] = (roomData?.storiesDone || 0) + 1;
+    upd[`rooms/${code}/timer/running`] = false;
+    upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
+    await update(ref(db), upd);
+    showToast("✅ Estimate recorded. Voting on next story.");
   }, [code, roomData, showToast]);
 
   const resetSession = useCallback(async () => {
@@ -955,7 +1128,15 @@ export default function App() {
     <>
       <style>{CSS}</style>
       <div className="app">
-        {screen === "join" && <JoinScreen onCreate={handleCreate} />}
+        {screen === "join" && (
+          <JoinScreen
+            onCreate={handleCreate}
+            onJoin={handleJoin}
+            onTeamRoom={handleTeamRoom}
+            prefillCode={code}
+            prefillTeam={prefillTeam}
+          />
+        )}
         {screen === "game" && !roomData && (
           <div className="loading">
             <div className="spinner" />
@@ -970,6 +1151,7 @@ export default function App() {
             myId={myId}
             myRole={myRole}
             code={code}
+            deck={roomData.deck || "fibonacci"}
             shareUrl={shareUrl}
             onBack={goBack}
             onCard={selectCard}
@@ -979,6 +1161,8 @@ export default function App() {
             onEndSession={endSession}
             onStart={startTimer}
             onStop={stopTimer}
+            onAddStory={addStory}
+            onRecordStory={recordAndNextStory}
             sessionWarning={sessionWarning}
             toast={showToast}
           />
@@ -1115,20 +1299,38 @@ function Confetti({ onDone }) {
 }
 
 /* ═══════════════════════ JOIN SCREEN ═══════════════════════ */
-// FIXED ROOM MODE: No room code needed — just name + role.
-// To re-enable: restore tab-row, room code input, tab/rc state, and go() logic.
-function JoinScreen({ onCreate }) {
+function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) {
+  // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
+  const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : "create");
   const [name, setName] = useState("");
   const [role, setRole] = useState("voter");
+  const [deck, setDeck] = useState("fibonacci");
+  const [rc, setRc] = useState(prefillCode || "");
+  const [teamName, setTeamName] = useState(prefillTeam || "");
   const [err, setErr] = useState("");
 
+  const clearErr = () => setErr("");
+  // Live preview of the room code a team name would produce
+  const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
+
   const go = () => {
-    if (!name.trim()) {
-      setErr("Please enter your name");
-      return;
+    if (!name.trim()) { setErr("Please enter your name"); return; }
+    if (tab === "create") {
+      onCreate(name.trim(), role, deck);
+    } else if (tab === "join") {
+      if (!rc.trim()) { setErr("Please enter a room code"); return; }
+      onJoin(name.trim(), role, rc.trim().toUpperCase());
+    } else {
+      // team room
+      if (!teamName.trim()) { setErr("Please enter your team name"); return; }
+      onTeamRoom(name.trim(), role, teamName.trim(), deck);
     }
-    onCreate(name.trim(), role);
   };
+
+  const ROLES = [
+    { r: "voter",    icon: "🃏", l: "Participant", s: "Votes on each story"    },
+    { r: "observer", icon: "👁", l: "Observer",    s: "Watches without voting" },
+  ];
 
   return (
     <div className="join-wrap">
@@ -1139,32 +1341,84 @@ function JoinScreen({ onCreate }) {
           ))}
         </div>
         <h1 className="join-title">Planning Poker</h1>
-        <p className="join-sub">Sprint Planning · Enter your name to join</p>
+        <p className="join-sub">Sprint Planning · Agile Estimation</p>
 
+        {/* Three-tab navigation */}
+        <div className="tab-row">
+          <button
+            className={`tab-btn${tab === "create" ? " active" : ""}`}
+            onClick={() => { setTab("create"); clearErr(); }}
+          >
+            Create Room
+          </button>
+          <button
+            className={`tab-btn${tab === "join" ? " active" : ""}`}
+            onClick={() => { setTab("join"); clearErr(); }}
+          >
+            Join Room
+          </button>
+          <button
+            className={`tab-btn${tab === "team" ? " active" : ""}`}
+            onClick={() => { setTab("team"); clearErr(); }}
+          >
+            Team Room
+          </button>
+        </div>
+
+        {/* Your Name — always shown */}
         <label className="lbl">Your Name</label>
         <input
           className="inp"
-          placeholder="e.g. Alex Chen"
+          placeholder="e.g. Jahangir Ali"
           value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setErr("");
-          }}
+          onChange={(e) => { setName(e.target.value); clearErr(); }}
           onKeyDown={(e) => e.key === "Enter" && go()}
           autoFocus
         />
 
+        {/* Join Room: room code input */}
+        {tab === "join" && (
+          <>
+            <label className="lbl">Room Code</label>
+            <input
+              className="inp"
+              placeholder="e.g. A1B2C"
+              value={rc}
+              onChange={(e) => { setRc(e.target.value.toUpperCase()); clearErr(); }}
+              onKeyDown={(e) => e.key === "Enter" && go()}
+              maxLength={12}
+              style={{ letterSpacing: "0.12em", fontWeight: 600 }}
+            />
+          </>
+        )}
+
+        {/* Team Room: team name input + live code preview */}
+        {tab === "team" && (
+          <>
+            <label className="lbl">Team Name</label>
+            <input
+              className="inp"
+              placeholder="e.g. RPA Dev Team"
+              value={teamName}
+              onChange={(e) => { setTeamName(e.target.value); clearErr(); }}
+              onKeyDown={(e) => e.key === "Enter" && go()}
+            />
+            {previewCode && (
+              <div className="team-code-preview">
+                <span className="tcp-label">Room code</span>
+                <span className="tcp-code">{previewCode}</span>
+              </div>
+            )}
+            <p style={{ fontSize: ".72rem", color: "rgba(240,230,208,.28)", marginBottom: "18px", lineHeight: 1.5 }}>
+              Your team's permanent room. Anyone who types the same team name always joins the same space — no code sharing needed.
+            </p>
+          </>
+        )}
+
+        {/* Role picker — always shown */}
         <label className="lbl">Your Role</label>
         <div className="role-row">
-          {[
-            { r: "voter", icon: "🃏", l: "Voter", s: "Dev · QA · Designer" },
-            {
-              r: "observer",
-              icon: "👁",
-              l: "Observer",
-              s: "SM · PO · BA · Coach",
-            },
-          ].map(({ r, icon, l, s }) => (
+          {ROLES.map(({ r, icon, l, s }) => (
             <button
               key={r}
               className={`role-btn${role === r ? (r === "voter" ? " rv" : " ro") : ""}`}
@@ -1177,10 +1431,44 @@ function JoinScreen({ onCreate }) {
           ))}
         </div>
 
+        {/* Deck picker — shown on Create and Team tabs */}
+        {(tab === "create" || tab === "team") && (
+          <>
+            <label className="lbl">Card Deck</label>
+            <div className="deck-grid">
+              {DECK_KEYS.map((k) => {
+                const d = DECK_DEFINITIONS[k];
+                return (
+                  <button
+                    key={k}
+                    className={`deck-btn${deck === k ? " active" : ""}`}
+                    onClick={() => setDeck(k)}
+                  >
+                    <span className="dk-label">{d.label}</span>
+                    <span className="dk-desc">{d.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {err && <div className="err">{err}</div>}
         <button className="btn-primary" onClick={go}>
-          Join the Table →
+          {tab === "create" ? "Create Room →"
+            : tab === "join" ? "Join Room →"
+            : "Enter Team Room →"}
         </button>
+        {tab === "create" && (
+          <p style={{ fontSize: ".68rem", color: "rgba(240,230,208,.18)", textAlign: "center", marginTop: "10px" }}>
+            Up to 11 players per room · Share the link after creating
+          </p>
+        )}
+        {tab === "team" && (
+          <p style={{ fontSize: ".68rem", color: "rgba(240,230,208,.18)", textAlign: "center", marginTop: "10px" }}>
+            Persistent team space · No link sharing required
+          </p>
+        )}
       </div>
     </div>
   );
@@ -1192,6 +1480,7 @@ function GameScreen({
   myId,
   myRole,
   code,
+  deck,
   shareUrl,
   onBack,
   onCard,
@@ -1201,10 +1490,14 @@ function GameScreen({
   onEndSession,
   onStart,
   onStop,
+  onAddStory,
+  onRecordStory,
   sessionWarning,
   toast,
 }) {
+  const cards = getCards(deck);
   const [tsel, setTsel] = useState(30);
+  const [storyInput, setStoryInput] = useState("");
   // Confetti fires once per consensus reveal, keyed by round number
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConsensus, setShowConsensus] = useState(false);
@@ -1218,15 +1511,24 @@ function GameScreen({
   const revealed = rd.revealed || false;
   const round = rd.round || 1;
   const storiesDone = rd.storiesDone || 0;
+
+  // Story queue — derived from Firebase room data
+  const stories = rd.stories ? Object.values(rd.stories) : [];
+  const activeStoryIdx = rd.activeStory ?? 0;
+  const activeStory = stories[activeStoryIdx] || null;
+  const hasStories = stories.length > 0;
+  const allStoriesDone = hasStories && activeStoryIdx >= stories.length;
   const timer = rd.timer || { running: false, duration: 30, remaining: 30 };
   const hasVotes = voters.some((p) => p.voted);
   const votedCount = voters.filter((p) => p.voted).length;
   const notVoted = voters.filter((p) => !p.voted);
 
   const voted = voters.filter((p) => p.voted);
+  // Filter to numeric-only votes. T-shirt values (XS/S/M/L/XL/XXL) are
+  // intentionally excluded — they would produce NaN and corrupt stats.
   const nums = voted
     .map((p) => p.vote)
-    .filter((v) => v !== "?")
+    .filter((v) => v !== "?" && !isNaN(Number(v)) && v !== "")
     .map(Number);
   const avg = nums.length
     ? nums.reduce((a, b) => a + b, 0) / nums.length
@@ -1237,6 +1539,18 @@ function GameScreen({
     new Set(voted.map((p) => p.vote)).size === 1 && voted.length > 1;
   const minV = nums.length ? Math.min(...nums) : null;
   const maxV = nums.length ? Math.max(...nums) : null;
+  const medianV = nums.length
+    ? (() => {
+        const s = [...nums].sort((a, b) => a - b);
+        const m = Math.floor(s.length / 2);
+        return s.length % 2 === 0 ? (s[m - 1] + s[m]) / 2 : s[m];
+      })()
+    : null;
+  const medianDisp =
+    medianV !== null
+      ? Number.isInteger(medianV) ? medianV : medianV.toFixed(1)
+      : "—";
+  const spread = minV !== null && maxV !== null ? maxV - minV : null;
 
   // Fire confetti + consensus banner exactly once per consensus reveal
   useEffect(() => {
@@ -1316,6 +1630,22 @@ function GameScreen({
           </div>
         )}
 
+        {/* Current story banner — visible to all players */}
+        {activeStory && !allStoriesDone && (
+          <div className="story-name-banner">
+            <span className="story-name-label">
+              Now estimating · Story {activeStoryIdx + 1} of {stories.length}
+            </span>
+            <div className="story-name-text">{activeStory.name}</div>
+          </div>
+        )}
+        {allStoriesDone && (
+          <div className="story-name-banner" style={{ borderColor: "rgba(39,174,96,.3)", background: "rgba(39,174,96,.06)" }}>
+            <span className="story-name-label" style={{ color: "rgba(39,174,96,.5)" }}>Sprint backlog</span>
+            <div className="story-name-text" style={{ color: "#2ecc71" }}>All {stories.length} stories estimated ✓</div>
+          </div>
+        )}
+
         <div className="game-grid">
           {/* LEFT COLUMN */}
           <div className="lcol">
@@ -1335,7 +1665,7 @@ function GameScreen({
                           >
                             <option value={30}>30 seconds</option>
                             <option value={45}>45 seconds</option>
-                            <option value={60}>60 seconds</option>
+                            <option value={60}>1 minute</option>
                           </select>
                         </div>
                       </div>
@@ -1343,7 +1673,7 @@ function GameScreen({
                         className="start-btn"
                         onClick={() => onStart(tsel)}
                       >
-                        <span>🃏</span> Start Voting — {tsel}s
+                        <span>🃏</span> Start Voting — {tsel === 60 ? "1 min" : `${tsel}s`}
                       </button>
                     </>
                   )}
@@ -1481,7 +1811,7 @@ function GameScreen({
                 </div>
               ) : (
                 <div className="cards-grid">
-                  {CARDS.map((c, i) => {
+                  {cards.map((c, i) => {
                     const sel = myVote === c.val;
                     return (
                       <div
@@ -1543,28 +1873,35 @@ function GameScreen({
                         </div>
                       )}
                       {!allSame && minV !== null && (
-                        <div className="avg-hero-range">
-                          <div className="avg-hero-stat">
-                            <span className="v">{minV}</span>
-                            <span className="l">Lowest</span>
+                        <>
+                          <div className="avg-hero-range">
+                            <div className="avg-hero-stat">
+                              <span className="v">{minV}</span>
+                              <span className="l">Min</span>
+                            </div>
+                            <div className="avg-hero-stat">
+                              <span className="v" style={{ color: "rgba(240,230,208,.6)", fontSize: "1.4rem" }}>
+                                {medianDisp}
+                              </span>
+                              <span className="l">Median</span>
+                            </div>
+                            <div className="avg-hero-stat">
+                              <span className="v" style={{ color: "var(--gold2)", fontSize: "1.8rem" }}>
+                                {avgDisp}
+                              </span>
+                              <span className="l">Average</span>
+                            </div>
+                            <div className="avg-hero-stat">
+                              <span className="v">{maxV}</span>
+                              <span className="l">Max</span>
+                            </div>
                           </div>
-                          <div className="avg-hero-stat">
-                            <span
-                              className="v"
-                              style={{
-                                color: "var(--gold2)",
-                                fontSize: "1.8rem",
-                              }}
-                            >
-                              {avgDisp}
-                            </span>
-                            <span className="l">Average</span>
-                          </div>
-                          <div className="avg-hero-stat">
-                            <span className="v">{maxV}</span>
-                            <span className="l">Highest</span>
-                          </div>
-                        </div>
+                          {spread > 0 && (
+                            <div style={{ textAlign: "center", marginTop: "10px", fontSize: ".72rem", color: "rgba(240,230,208,.3)", letterSpacing: ".5px" }}>
+                              Spread: {spread} point{spread !== 1 ? "s" : ""} — discuss before finalising
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -1586,7 +1923,7 @@ function GameScreen({
                               ? "outlier-low"
                               : "";
                         const isRed = ["♥", "♦"].includes(
-                          CARDS.find((c) => c.val === p.vote)?.suit || "",
+                          cards.find((c) => c.val === p.vote)?.suit || "",
                         );
                         return (
                           <div
@@ -1635,6 +1972,60 @@ function GameScreen({
             {/* Observer Controls */}
             {isObs && (
               <div className="obs-controls">
+                {/* Story queue manager */}
+                <div className="story-panel">
+                  <div className="story-panel-title">📋 Story Queue</div>
+                  <div className="story-add-row">
+                    <input
+                      className="story-inp"
+                      placeholder="Add a story or ticket name…"
+                      value={storyInput}
+                      onChange={(e) => setStoryInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && storyInput.trim()) {
+                          onAddStory(storyInput.trim());
+                          setStoryInput("");
+                        }
+                      }}
+                    />
+                    <button
+                      className="btn-story-add"
+                      disabled={!storyInput.trim()}
+                      onClick={() => {
+                        if (storyInput.trim()) {
+                          onAddStory(storyInput.trim());
+                          setStoryInput("");
+                        }
+                      }}
+                    >
+                      + Add
+                    </button>
+                  </div>
+                  {hasStories && (
+                    <>
+                      <div className="story-progress">
+                        Story {Math.min(activeStoryIdx + 1, stories.length)} of {stories.length}
+                        {allStoriesDone ? " — all stories estimated!" : ""}
+                      </div>
+                      <div className="story-list">
+                        {stories.map((s, i) => {
+                          const state =
+                            i < activeStoryIdx ? "done" :
+                            i === activeStoryIdx ? "active" : "queued";
+                          return (
+                            <div key={i} className={`story-item ${state}`}>
+                              <span>{i + 1}. {s.name}</span>
+                              {s.estimate != null && (
+                                <span className="story-est">{s.estimate} pts</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 <button
                   className="btn-reveal-primary"
                   disabled={!hasVotes || revealed}
@@ -1649,17 +2040,27 @@ function GameScreen({
                       : "Waiting for team to finish voting…"}
                   </div>
                 )}
+
+                {/* Record estimate and advance to next story */}
+                {hasStories && !allStoriesDone && revealed && (
+                  <button
+                    className="btn-record-next"
+                    onClick={() => onRecordStory(avgDisp !== "—" ? avgDisp : (allSame ? voted[0]?.vote : "?"))}
+                  >
+                    ✅ Record {avgDisp !== "—" ? `${avgDisp} pts` : "estimate"} &amp; Next Story
+                  </button>
+                )}
+
                 <div className="obs-secondary-row">
                   <button className="btn-next-round" onClick={onNewRound}>
-                    ✅ Story Done — Next Story
+                    ↺ Next Round (no estimate)
                   </button>
                   <button className="btn-new-session" onClick={onReset}>
-                    🔄 New Sprint Session
+                    🔄 New Sprint
                   </button>
                 </div>
                 <div className="btn-hint">
-                  "Story Done" keeps the team, resets votes · "New Sprint"
-                  resets everything
+                  "Next Round" re-votes same story · "New Sprint" resets all votes
                 </div>
                 <button className="btn-end-session" onClick={onEndSession}>
                   🔴 End Session — Disconnect Everyone
@@ -1759,7 +2160,7 @@ function GameScreen({
                 </div>
                 <div className="ss-chip">
                   <span className="ss-v">{voters.length}</span>
-                  <span className="ss-l">Voters</span>
+                  <span className="ss-l">Participants</span>
                 </div>
               </div>
             </div>
@@ -1778,6 +2179,53 @@ function GameScreen({
                 🔗 Copy Invite Link
               </button>
             </div>
+
+            {/* Session summary — appears once stories have estimates */}
+            {hasStories && stories.some((s) => s.estimate != null) && (
+              <div className="panel">
+                <span className="ptitle">Sprint Summary</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", marginBottom: "12px" }}>
+                  {stories.map((s, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        padding: "6px 10px",
+                        borderRadius: "8px",
+                        background: s.estimate != null ? "rgba(201,145,42,.06)" : "rgba(255,255,255,.02)",
+                        border: "1px solid",
+                        borderColor: s.estimate != null ? "rgba(201,145,42,.14)" : "var(--border)",
+                      }}
+                    >
+                      <span style={{ fontSize: ".8rem", color: s.estimate != null ? "var(--cream)" : "rgba(240,230,208,.3)", flex: 1, paddingRight: "8px", lineHeight: 1.3 }}>
+                        {s.name}
+                      </span>
+                      <span style={{ fontSize: ".88rem", fontWeight: 700, color: s.estimate != null ? "var(--gold2)" : "rgba(240,230,208,.2)", whiteSpace: "nowrap" }}>
+                        {s.estimate != null ? `${s.estimate}` : "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  className="btn-inv"
+                  onClick={() => {
+                    const lines = ["Sprint Estimation Summary", "========================", ""];
+                    stories.forEach((s, i) => {
+                      lines.push(`${i + 1}. ${s.name}  →  ${s.estimate != null ? s.estimate + " pts" : "not estimated"}`);
+                    });
+                    lines.push("");
+                    lines.push(`Total stories: ${stories.length}`);
+                    lines.push(`Estimated: ${stories.filter((s) => s.estimate != null).length}`);
+                    navigator.clipboard.writeText(lines.join("\n"));
+                    toast("📋 Summary copied to clipboard!");
+                  }}
+                >
+                  📋 Copy Summary
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
