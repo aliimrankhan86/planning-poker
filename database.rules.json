@@ -2,13 +2,25 @@
   "rules": {
     "rooms": {
       "$roomId": {
-        // Anyone can read a room — needed to join and observe
+        // ── READ ──────────────────────────────────────────────────────────
+        // Anyone with the room code can read. Security is the code itself
+        // (random 5-char base-36 = ~60M combinations for free rooms;
+        //  team rooms use a slug derived from the team name).
         ".read": true,
 
-        // Room creation: allow if room doesn't exist yet and has required fields
-        ".write": "!data.exists() || data.exists()",
+        // ── WRITE ─────────────────────────────────────────────────────────
+        // No Firebase Auth on Spark plan — allow all writes to room paths.
+        // Data integrity is enforced by .validate rules below.
+        // Cross-room writes are prevented structurally: each client only
+        // knows and writes to the code stored in their own React state.
+        ".write": true,
 
+        // ── ROOT VALIDATION ───────────────────────────────────────────────
+        // On initial room creation all required top-level fields must be present.
+        // On subsequent updates the room already exists so newData always has them.
         ".validate": "newData.hasChildren(['createdAt', 'revealed', 'round', 'plan', 'players'])",
+
+        // ── FIELD VALIDATION ──────────────────────────────────────────────
 
         "plan": {
           ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro')"
@@ -26,39 +38,61 @@
           ".validate": "newData.isNumber() && newData.val() >= 1"
         },
 
+        "storiesDone": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+
+        "streak": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+
+        "consensusCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+
+        "activeStory": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+
+        // serverTimestamp() resolves to a number before validation runs —
+        // the string 'SERVER_TIMESTAMP' is never seen by the rules engine.
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "teamName": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+        },
+
+        "founderRoom": {
+          ".validate": "newData.isBoolean()"
+        },
+
+        // ── PLAYERS ───────────────────────────────────────────────────────
         "players": {
           "$playerId": {
-            // Players can join or update their own slot; anyone can remove on disconnect
             ".write": true,
-
             ".validate": "!newData.exists() || newData.hasChildren(['id', 'name', 'role'])",
 
-            "name": {
-              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
-            },
-
-            "role": {
-              ".validate": "newData.isString() && (newData.val() === 'voter' || newData.val() === 'observer')"
-            },
-
-            "vote": {
-              ".validate": "!newData.exists() || newData.isString()"
-            },
-
-            "voted": {
-              ".validate": "newData.isBoolean()"
-            }
+            "id":   { ".validate": "newData.isString() && newData.val().length > 0" },
+            "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+            "role": { ".validate": "newData.isString() && (newData.val() === 'voter' || newData.val() === 'observer')" },
+            "vote": { ".validate": "!newData.exists() || newData.isString()" },
+            "voted": { ".validate": "newData.isBoolean()" }
           }
         },
 
+        // ── TIMER ─────────────────────────────────────────────────────────
+        // No hasChildren() here — the app makes partial updates to timer
+        // sub-fields (e.g. timer/remaining only). Validate each field
+        // independently so partial writes don't fail validation.
         "timer": {
-          ".validate": "newData.hasChildren(['running', 'duration', 'remaining'])",
-
           "running":   { ".validate": "newData.isBoolean()" },
           "duration":  { ".validate": "newData.isNumber() && newData.val() >= 10 && newData.val() <= 300" },
           "remaining": { ".validate": "newData.isNumber() && newData.val() >= 0" }
         },
 
+        // ── STORIES ───────────────────────────────────────────────────────
         "stories": {
           "$storyIndex": {
             ".write": true,
@@ -70,17 +104,12 @@
               ".validate": "!newData.exists() || newData.isString()"
             }
           }
-        },
-
-        "activeStory":  { ".validate": "newData.isNumber() && newData.val() >= 0" },
-        "storiesDone":  { ".validate": "newData.isNumber() && newData.val() >= 0" },
-        "teamName":     { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60" },
-        "founderRoom":  { ".validate": "newData.isBoolean()" },
-        "createdAt":    { ".validate": "newData.isNumber() || newData.val() === 'SERVER_TIMESTAMP'" }
+        }
       }
     },
 
-    // Block all reads/writes to any path not explicitly defined above
+    // Block all reads/writes to any path not explicitly defined above.
+    // This prevents abuse of arbitrary Firebase paths.
     "$other": {
       ".read": false,
       ".write": false
