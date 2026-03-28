@@ -143,7 +143,8 @@ body::before {
   background-size: cover, cover, 200px 200px;
 }
 
-.app { min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1; }
+/* .app — child of .page-shell flex column; flex:1 ensures it fills available space */
+.app { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
 
 /* ── ANIMATIONS ── */
 @keyframes fadeUp   { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
@@ -353,12 +354,14 @@ body::before {
   .seo-section { margin-top: 40px; }
 }
 
-/* ══════════════════════ HEADER ══════════════════════ */
+/* ══════════════════════ ROOM HEADER (game view) ══════════════════════
+   Sits below the global NavBar — top: 64px keeps it stacked correctly.
+   Full .hdr override is in the new CSS block appended at end of CSS string. */
 .hdr {
   background: rgba(7,14,8,.95);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(20px);
-  position: sticky; top: 0; z-index: 100; padding: 0 24px;
+  position: sticky; top: 64px; z-index: 100; padding: 0 24px;
 }
 .hdr-in {
   max-width: 1160px; margin: 0 auto;
@@ -1030,6 +1033,198 @@ body::before {
   .pcard-num { font-size: .82rem; }
   .avg-hero-num { font-size: 4rem; }
 }
+
+/* ══════════════════════ PAGE SHELL ══════════════════════ */
+.page-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.app { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
+
+/* ══════════════════════ GLOBAL NAVBAR ══════════════════════ */
+.navbar {
+  background: rgba(7,14,8,.97);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  position: sticky; top: 0; z-index: 200;
+  padding: 0 24px;
+}
+.navbar-inner {
+  max-width: 1160px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px; gap: 16px;
+}
+.navbar-left  { display: flex; align-items: center; gap: 12px; }
+.navbar-right { display: flex; align-items: center; gap: 8px; }
+.navbar-brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem; font-weight: 700;
+  color: var(--gold2); letter-spacing: .3px;
+  cursor: pointer; text-decoration: none;
+  background: none; border: none; padding: 0;
+  font-family: 'Cormorant Garamond', serif;
+  transition: color .2s;
+}
+.navbar-brand:hover { color: var(--gold3); }
+
+/* Casino chip button */
+.chip-logo {
+  background: none; border: none; padding: 0;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; flex-shrink: 0;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1), filter .2s;
+}
+.chip-logo:hover  { transform: rotate(18deg) scale(1.1);  filter: drop-shadow(0 0 12px rgba(201,145,42,.65)); }
+.chip-logo:active { transform: rotate(12deg) scale(1.04); }
+
+/* Nav auth buttons */
+.nav-btn-login {
+  padding: 8px 18px; border-radius: 8px;
+  border: 1px solid var(--border2); background: transparent;
+  color: rgba(239,242,247,.80); font-family: 'Outfit', sans-serif;
+  font-size: .83rem; font-weight: 500; cursor: pointer;
+  transition: all .2s; letter-spacing: .2px;
+}
+.nav-btn-login:hover { background: var(--surface2); color: var(--cream); border-color: rgba(255,255,255,.35); }
+.nav-btn-register {
+  padding: 8px 20px; border-radius: 8px; border: none;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--ink); font-family: 'Outfit', sans-serif;
+  font-size: .83rem; font-weight: 700; cursor: pointer;
+  transition: all .2s; letter-spacing: .2px;
+  box-shadow: 0 2px 12px rgba(201,145,42,.35);
+}
+.nav-btn-register:hover { transform: translateY(-1px); box-shadow: 0 5px 20px rgba(201,145,42,.52); }
+.nav-btn-register:active { transform: none; }
+
+/* ── Sticky game header top already set in the .hdr block above; kept here for reference ── */
+
+/* ══════════════════════ SITE FOOTER ══════════════════════ */
+.site-footer {
+  background: rgba(5,10,5,.97);
+  border-top: 1px solid var(--border);
+  padding: 44px 24px 0;
+  flex-shrink: 0;
+}
+.footer-inner {
+  max-width: 1160px; margin: 0 auto;
+  display: grid; grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 40px; padding-bottom: 36px;
+}
+.footer-col-brand { display: flex; flex-direction: column; gap: 12px; }
+.footer-brand-row { display: flex; align-items: center; gap: 10px; }
+.footer-brand-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.15rem; font-weight: 700; color: var(--gold2);
+}
+.footer-brand-desc {
+  font-size: .78rem; color: rgba(239,242,247,.45); line-height: 1.65;
+  font-weight: 300; max-width: 280px;
+}
+.footer-col-links { display: flex; flex-direction: column; gap: 2px; }
+.footer-col-title {
+  font-size: .62rem; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: rgba(239,242,247,.38);
+  margin-bottom: 10px;
+}
+.footer-link {
+  color: rgba(239,242,247,.55); font-size: .83rem; text-decoration: none;
+  padding: 5px 0; transition: color .15s;
+  background: none; border: none; cursor: pointer;
+  font-family: 'Outfit', sans-serif; text-align: left;
+  display: inline-block;
+}
+.footer-link:hover { color: var(--gold2); }
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,.06);
+  padding: 18px 0 20px;
+  max-width: 1160px; margin: 0 auto;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.footer-copy {
+  font-size: .72rem; color: rgba(239,242,247,.28); font-weight: 300;
+  line-height: 1.5;
+}
+.footer-legal-note {
+  font-size: .68rem; color: rgba(239,242,247,.22); line-height: 1.6;
+  max-width: 480px; text-align: right;
+}
+
+/* ══════════════════════ LOGIN MODAL ══════════════════════ */
+.login-modal-backdrop {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; animation: fadeIn .2s ease;
+}
+.login-modal {
+  background: linear-gradient(160deg, rgba(14,32,18,.99) 0%, rgba(7,14,8,1) 100%);
+  border: 1px solid rgba(201,145,42,.28); border-radius: 20px;
+  padding: 40px 36px 36px; width: 100%; max-width: 400px;
+  box-shadow: 0 40px 100px rgba(0,0,0,.75), inset 0 1px 0 rgba(201,145,42,.12);
+  position: relative; animation: fadeUp .3s ease;
+}
+.login-modal::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 20px 20px 0 0;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--gold3), var(--gold), transparent);
+  background-size: 300% auto; animation: shimmer 3s linear infinite;
+}
+.login-modal-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; color: rgba(239,242,247,.45);
+  font-size: 1.3rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  transition: color .2s, background .2s;
+}
+.login-modal-close:hover { color: var(--cream); background: var(--surface2); }
+.login-modal-chip { display: flex; justify-content: center; margin-bottom: 20px; }
+.login-modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.9rem; font-weight: 700; color: var(--gold2);
+  text-align: center; margin-bottom: 6px;
+}
+.login-modal-sub {
+  font-size: .84rem; color: rgba(239,242,247,.60); text-align: center;
+  margin-bottom: 28px; font-weight: 300; line-height: 1.55;
+}
+.login-modal-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0; color: rgba(239,242,247,.28); font-size: .72rem;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.login-modal-divider::before, .login-modal-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.login-modal-coming {
+  background: rgba(255,255,255,.04); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; text-align: center;
+  font-size: .82rem; color: rgba(239,242,247,.45); line-height: 1.55;
+}
+.login-modal-coming strong { color: rgba(239,242,247,.70); font-weight: 600; }
+.login-modal-upgrade {
+  margin-top: 20px; text-align: center;
+  font-size: .82rem; color: rgba(239,242,247,.45);
+}
+.login-modal-upgrade a {
+  color: var(--gold2); text-decoration: none; font-weight: 600;
+  border-bottom: 1px solid rgba(201,145,42,.3); transition: border-color .2s;
+}
+.login-modal-upgrade a:hover { border-bottom-color: var(--gold2); }
+.pro-key-status { font-size: .8rem; margin-top: 8px; text-align: center; padding: 6px 0; border-radius: 6px; }
+.pro-key-status.success { color: #2ecc71; background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.18); }
+.pro-key-status.error   { color: #e74c3c; background: rgba(231,76,60,.06);  border: 1px solid rgba(231,76,60,.15);  }
+
+/* ══════════════════════ RESPONSIVE — FOOTER + NAV ══════════════════════ */
+@media (max-width: 780px) {
+  .footer-inner { grid-template-columns: 1fr 1fr; }
+  .footer-col-brand { grid-column: 1 / -1; }
+  .navbar-brand { display: none; }
+}
+@media (max-width: 520px) {
+  .footer-inner { grid-template-columns: 1fr; }
+  .footer-legal-note { text-align: left; max-width: 100%; }
+  .nav-btn-login { display: none; }
+  .nav-btn-register { font-size: .78rem; padding: 7px 14px; }
+  .login-modal { padding: 36px 22px 28px; }
+}
 `;
 
 /* ═══════════════════════ ROOM CONFIG ═══════════════════════ */
@@ -1049,6 +1244,244 @@ const isFounderRoom = (code) => {
   try { return _FC.some(h => atob(h) === code.toLowerCase()); }
   catch { return false; }
 };
+
+/* ═══════════════════════ CASINO CHIP LOGO ═══════════════════════
+   SVG casino chip — 8-segment outer ring, gold inner border, "PP" text.
+   Used in NavBar (44px) and LoginModal (52px).
+   onClick: optional handler — e.g. navigate home.
+═══════════════════════════════════════════════════════════════════ */
+function CasinoChip({ onClick, size = 44, label = "Go to home" }) {
+  // 8 alternating gold/dark-green segments around the rim (stroke-dasharray)
+  // r=34  →  circumference = 2π×34 ≈ 213.6  →  16 equal dashes ≈ 13.35 each
+  return (
+    <button className="chip-logo" onClick={onClick} aria-label={label}
+      style={{ width: size, height: size }}
+    >
+      <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
+        width={size} height={size} aria-hidden="true"
+      >
+        {/* Base disc */}
+        <circle cx="40" cy="40" r="39" fill="#0c1a0f"/>
+        {/* Outer gold ring */}
+        <circle cx="40" cy="40" r="39" fill="none" stroke="#c9922a" strokeWidth="1.5"/>
+        {/* 8 chip-edge segments — dashed stroke on dark gap ring */}
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#0c1a0f"  strokeWidth="10"/>
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#c9922a"  strokeWidth="9"
+          strokeDasharray="13.35 13.35"
+          transform="rotate(-11.25 40 40)"
+        />
+        {/* Felt inner disc */}
+        <circle cx="40" cy="40" r="28.5" fill="#12261a"/>
+        {/* Inner gold ring */}
+        <circle cx="40" cy="40" r="28.5" fill="none" stroke="#e8b84b" strokeWidth="1.5"/>
+        {/* Subtle radial highlight */}
+        <circle cx="40" cy="40" r="27" fill="url(#chipGlow)"/>
+        <defs>
+          <radialGradient id="chipGlow" cx="38%" cy="36%" r="55%">
+            <stop offset="0%"   stopColor="#1e4028" stopOpacity="1"/>
+            <stop offset="100%" stopColor="#0c1a0f" stopOpacity="1"/>
+          </radialGradient>
+        </defs>
+        {/* "PP" logotype */}
+        <text x="40" y="48" textAnchor="middle"
+          fontFamily="'Cormorant Garamond', Georgia, serif"
+          fontWeight="700" fontSize="22" fill="#e8b84b"
+          letterSpacing="1"
+        >PP</text>
+      </svg>
+    </button>
+  );
+}
+
+/* ═══════════════════════ GLOBAL NAVBAR ═══════════════════════
+   Persistent top bar shown on all screens.
+   - Left:  CasinoChip + "Planning Poker" brand name
+   - Right: Log in (ghost) + Get Pro (gold)
+   The "Log in" state is currently key-based (no Firebase Auth yet).
+═══════════════════════════════════════════════════════════════ */
+function NavBar({ screen, onLogoClick, onLogin, onRegister }) {
+  return (
+    <nav className="navbar" role="navigation" aria-label="Main navigation">
+      <div className="navbar-inner">
+        <div className="navbar-left">
+          <CasinoChip
+            onClick={onLogoClick}
+            size={44}
+            label="Planning Poker — go to home"
+          />
+          <button className="navbar-brand" onClick={onLogoClick}>
+            Planning Poker
+          </button>
+        </div>
+        <div className="navbar-right">
+          <button className="nav-btn-login" onClick={onLogin}>
+            Log in
+          </button>
+          <button className="nav-btn-register" onClick={onRegister}>
+            ✦ Get Pro
+          </button>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+/* ═══════════════════════ SITE FOOTER ═══════════════════════
+   Three-column footer: brand, legal links, product links.
+   onCookieSettings: resets cookie consent so the banner re-appears.
+═══════════════════════════════════════════════════════════════ */
+function SiteFooter({ onCookieSettings }) {
+  const year = new Date().getFullYear();
+  return (
+    <footer className="site-footer" aria-label="Site footer">
+      <div className="footer-inner">
+
+        {/* Column 1 — Brand */}
+        <div className="footer-col-brand">
+          <div className="footer-brand-row">
+            <CasinoChip size={36} label="Planning Poker"/>
+            <span className="footer-brand-name">Planning Poker</span>
+          </div>
+          <p className="footer-brand-desc">
+            Free, real-time estimation for agile and Scrum teams.
+            No sign-up required. Works in any browser.
+          </p>
+          <p className="footer-brand-desc" style={{ marginTop: 4 }}>
+            Built for Product Owners, Scrum Masters, and distributed teams
+            who need fast, structured story-point consensus.
+          </p>
+        </div>
+
+        {/* Column 2 — Legal */}
+        <div className="footer-col-links">
+          <div className="footer-col-title">Legal</div>
+          <a href="/terms"   className="footer-link">Terms of Service</a>
+          <a href="/privacy" className="footer-link">Privacy Policy</a>
+          <button className="footer-link" onClick={onCookieSettings}>
+            Cookie Settings
+          </button>
+          <a href="/privacy#data" className="footer-link">Data &amp; GDPR</a>
+        </div>
+
+        {/* Column 3 — Product */}
+        <div className="footer-col-links">
+          <div className="footer-col-title">Product</div>
+          <a href="/" className="footer-link">Free Planning Poker</a>
+          <a href="/#pricing" className="footer-link">Pro Plan</a>
+          <a href="/privacy#contact" className="footer-link">Contact &amp; Support</a>
+        </div>
+      </div>
+
+      {/* Bottom bar — copyright + legal note */}
+      <div className="footer-bottom">
+        <div className="footer-copy">
+          © {year} Planning Poker. All rights reserved.
+          Registered in England &amp; Wales.
+        </div>
+        <div className="footer-legal-note">
+          Planning Poker is provided "as-is" without warranty of any kind.
+          Use is subject to our{" "}
+          <a href="/terms" style={{ color: "rgba(239,242,247,.38)", textDecoration: "underline" }}>
+            Terms of Service
+          </a>
+          . Firebase, Vercel, and Stripe are third-party services and
+          are not affiliated with Planning Poker.
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ═══════════════════════ LOGIN MODAL ═══════════════════════
+   Shown when user clicks "Log in" in the NavBar.
+   Covers two states:
+   1. Pro key entry — activate an existing Pro key
+   2. "Coming soon" notice for email/password auth (Phase 1.2)
+   onProActivated: called after a valid key is saved → triggers reload.
+═══════════════════════════════════════════════════════════════ */
+function LoginModal({ onClose, onProActivated }) {
+  const [keyInput,  setKeyInput]  = useState("");
+  const [keyStatus, setKeyStatus] = useState(null); // null | "loading" | "ok" | "invalid" | "error"
+
+  const handleKey = async () => {
+    if (!keyInput.trim()) return;
+    setKeyStatus("loading");
+    const result = await validateAndSavePro(keyInput.trim());
+    if (result === "ok") {
+      setKeyStatus("ok");
+      setTimeout(onProActivated, 900);
+    } else if (result === "invalid") {
+      setKeyStatus("invalid");
+    } else {
+      setKeyStatus("error");
+    }
+  };
+
+  return (
+    <div className="login-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="login-modal" role="dialog" aria-modal="true" aria-label="Log in">
+        <button className="login-modal-close" onClick={onClose} aria-label="Close">×</button>
+
+        {/* Chip */}
+        <div className="login-modal-chip">
+          <CasinoChip size={52} label="Planning Poker"/>
+        </div>
+
+        <h2 className="login-modal-title">Log in</h2>
+        <p className="login-modal-sub">
+          Access your Pro features using your activation key below.
+          Email &amp; password sign-in is coming soon.
+        </p>
+
+        {/* Pro key entry */}
+        <label className="lbl">Pro Activation Key</label>
+        <input
+          className="inp"
+          placeholder="PPRO-XXXX-XXXX-XXXX"
+          value={keyInput}
+          onChange={(e) => { setKeyInput(e.target.value.toUpperCase()); setKeyStatus(null); }}
+          onKeyDown={(e) => e.key === "Enter" && handleKey()}
+          style={{ letterSpacing: "0.1em", fontFamily: "monospace", marginBottom: 8 }}
+          maxLength={19}
+          autoFocus
+        />
+        {keyStatus === "loading" && (
+          <div className="pro-key-status" style={{ color: "rgba(239,242,247,.55)" }}>Verifying…</div>
+        )}
+        {keyStatus === "ok" && (
+          <div className="pro-key-status success">✓ Pro activated — reloading…</div>
+        )}
+        {keyStatus === "invalid" && (
+          <div className="pro-key-status error">Key not recognised. Check the format: PPRO-XXXX-XXXX-XXXX</div>
+        )}
+        {keyStatus === "error" && (
+          <div className="pro-key-status error">Could not connect. Check your internet and try again.</div>
+        )}
+        <button
+          className="btn-primary"
+          style={{ marginTop: 12 }}
+          onClick={handleKey}
+          disabled={keyStatus === "loading" || keyStatus === "ok"}
+        >
+          {keyStatus === "loading" ? "Verifying…" : "Activate Pro"}
+        </button>
+
+        <div className="login-modal-divider">or</div>
+
+        <div className="login-modal-coming">
+          <strong>Email &amp; password sign-in</strong><br/>
+          Full account login is coming in a future update.
+          Your session and Pro access are managed via your key in the meantime.
+        </div>
+
+        <div className="login-modal-upgrade">
+          Don't have a key?{" "}
+          <a href="/#pricing" onClick={onClose}>See Pro plans ↗</a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ═══════════════════════ MAIN APP ═══════════════════════ */
 function CookieBanner({ onAccept }) {
@@ -1088,6 +1521,13 @@ export default function App() {
     try { localStorage.setItem("pp_cookie_ok", "1"); } catch {}
     setCookieAccepted(true);
   };
+  const resetCookieBanner = () => {
+    try { localStorage.removeItem("pp_cookie_ok"); } catch {}
+    setCookieAccepted(false);
+  };
+  // Global modal states — NavBar triggers these from any screen
+  const [showLoginModal,   setShowLoginModal]   = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
   // Initialise room code and team name synchronously from the URL so JoinScreen
   // receives the correct prefill on the very first render — no flash or double-update.
   // ?room=CODE  → Join Room tab pre-filled with code
@@ -1593,50 +2033,78 @@ export default function App() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="app">
-        {screen === "join" && (
-          <JoinScreen
-            onCreate={handleCreate}
-            onJoin={handleJoin}
-            onTeamRoom={handleTeamRoom}
-            prefillCode={code}
-            prefillTeam={prefillTeam}
-            proMode={proMode}
-          />
-        )}
-        {screen === "game" && !roomData && (
-          <div className="loading">
-            <div className="spinner" />
-            <div style={{ color: "rgba(239,242,247,.62)", fontSize: ".88rem" }}>
-              Connecting…
+
+      {/* ── Global shell — NavBar → content → Footer ── */}
+      <div className="page-shell">
+        <NavBar
+          screen={screen}
+          onLogoClick={() => screen === "game" ? goBack() : window.scrollTo({ top: 0, behavior: "smooth" })}
+          onLogin={()    => setShowLoginModal(true)}
+          onRegister={()  => setShowPricingModal(true)}
+        />
+
+        <div className="app">
+          {screen === "join" && (
+            <JoinScreen
+              onCreate={handleCreate}
+              onJoin={handleJoin}
+              onTeamRoom={handleTeamRoom}
+              prefillCode={code}
+              prefillTeam={prefillTeam}
+              proMode={proMode}
+              onShowPricing={() => setShowPricingModal(true)}
+            />
+          )}
+          {screen === "game" && !roomData && (
+            <div className="loading">
+              <div className="spinner" />
+              <div style={{ color: "rgba(239,242,247,.62)", fontSize: ".88rem" }}>
+                Connecting…
+              </div>
             </div>
-          </div>
-        )}
-        {screen === "game" && roomData && (
-          <GameScreen
-            rd={roomData}
-            myId={myId}
-            myRole={myRole}
-            code={code}
-            deck={roomData.deck || "fibonacci"}
-            shareUrl={shareUrl}
-            onBack={goBack}
-            onCard={selectCard}
-            onReveal={revealVotes}
-            onNewRound={newRound}
-            onReset={resetSession}
-            onEndSession={endSession}
-            onStart={startTimer}
-            onStop={stopTimer}
-            onAddStory={addStory}
-            onRecordStory={recordAndNextStory}
-            sessionWarning={sessionWarning}
-            toast={showToast}
-          />
-        )}
-        <div className={`toast${toastOn ? " show" : ""}`}>{toast}</div>
+          )}
+          {screen === "game" && roomData && (
+            <GameScreen
+              rd={roomData}
+              myId={myId}
+              myRole={myRole}
+              code={code}
+              deck={roomData.deck || "fibonacci"}
+              shareUrl={shareUrl}
+              onBack={goBack}
+              onCard={selectCard}
+              onReveal={revealVotes}
+              onNewRound={newRound}
+              onReset={resetSession}
+              onEndSession={endSession}
+              onStart={startTimer}
+              onStop={stopTimer}
+              onAddStory={addStory}
+              onRecordStory={recordAndNextStory}
+              sessionWarning={sessionWarning}
+              toast={showToast}
+            />
+          )}
+          <div className={`toast${toastOn ? " show" : ""}`}>{toast}</div>
+        </div>
+
+        <SiteFooter onCookieSettings={resetCookieBanner} />
       </div>
+
+      {/* ── Overlays ── */}
       {!cookieAccepted && <CookieBanner onAccept={acceptCookies} />}
+      {showLoginModal && (
+        <LoginModal
+          onClose={() => setShowLoginModal(false)}
+          onProActivated={() => { setShowLoginModal(false); window.location.reload(); }}
+        />
+      )}
+      {showPricingModal && (
+        <PricingModal
+          onClose={() => setShowPricingModal(false)}
+          onProActivated={() => { setShowPricingModal(false); window.location.reload(); }}
+        />
+      )}
     </>
   );
 }
@@ -2022,7 +2490,7 @@ function PricingModal({ onClose, onProActivated }) {
 }
 
 /* ═══════════════════════ JOIN SCREEN ═══════════════════════ */
-function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, proMode }) {
+function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, proMode, onShowPricing }) {
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
   const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : "create");
   const [name, setName] = useState("");
@@ -2031,7 +2499,6 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
   const [rc, setRc] = useState(prefillCode || "");
   const [teamName, setTeamName] = useState(prefillTeam || "");
   const [err, setErr] = useState("");
-  const [showPricing, setShowPricing] = useState(false);
 
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
@@ -2059,26 +2526,19 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
   return (
     <div className="join-wrap">
       <div className="join-box">
-        <div className="join-suits">
-          {["♠", "♥", "♣", "♦", "♠"].map((s, i) => (
-            <span key={i}>{s}</span>
-          ))}
-        </div>
-        <h1 className="join-title">Planning Poker</h1>
-        <p className="join-sub">Real-time estimation for agile teams · Free · No sign-up</p>
 
-        {/* Pricing CTA */}
-        <button className="btn-pricing" onClick={() => setShowPricing(true)}>
+        {/* Decorative chip — visual anchor inside the card */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          <CasinoChip size={56} label="Planning Poker"/>
+        </div>
+
+        <h1 className="join-title">Start Estimating</h1>
+        <p className="join-sub">Real-time planning poker for agile teams · Free · No sign-up</p>
+
+        {/* Pricing CTA — delegates to App-level modal via prop */}
+        <button className="btn-pricing" onClick={onShowPricing}>
           ✦ Free &amp; Pro Plans — See What's Included
         </button>
-
-        {/* Pricing modal */}
-        {showPricing && (
-          <PricingModal
-            onClose={() => setShowPricing(false)}
-            onProActivated={() => { setShowPricing(false); window.location.reload(); }}
-          />
-        )}
 
         {/* Three-tab navigation */}
         <div className="tab-row">
@@ -2441,19 +2901,24 @@ function GameScreen({
           </div>
         </div>
       )}
-      <header className="hdr">
+      <header className="hdr" role="banner">
         <div className="hdr-in">
           <div className="hdr-l">
-            <button className="btn-back" onClick={onBack}>
+            <button className="btn-back" onClick={onBack} aria-label="Leave room and return to home">
               ← Leave
             </button>
-            <span className="logo-txt">Planning Poker</span>
+            <CasinoChip size={34} onClick={onBack} label="Return to home"/>
           </div>
           <div className="hdr-c">
             <div className="badge">Round {round}</div>
             <div className="badge badge-gold">
-              🎲 {storiesDone} stories estimated
+              🎲 {storiesDone} {storiesDone === 1 ? "story" : "stories"} estimated
             </div>
+            {code && (
+              <div className="badge" style={{ fontFamily: "monospace", letterSpacing: ".12em", fontSize: ".66rem" }}>
+                {code}
+              </div>
+            )}
           </div>
           <div className="hdr-r">
             <button
@@ -2462,6 +2927,7 @@ function GameScreen({
                 navigator.clipboard.writeText(shareUrl);
                 toast("🔗 Link copied!");
               }}
+              aria-label="Copy invite link to clipboard"
             >
               🔗 Copy Link
             </button>
