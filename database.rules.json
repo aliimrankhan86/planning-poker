@@ -104,6 +104,18 @@
               ".validate": "!newData.exists() || newData.isString()"
             }
           }
+        },
+
+        // ── ROUNDS ────────────────────────────────────────────────────────
+        // Per-round estimates recorded by newRound (no-queue path).
+        // Keyed by storiesDone index at the time of recording.
+        "rounds": {
+          "$roundIndex": {
+            ".write": true,
+            ".validate": "newData.hasChildren(['estimate', 'isConsensus'])",
+            "estimate":    { ".validate": "newData.isString()" },
+            "isConsensus": { ".validate": "newData.isBoolean()" }
+          }
         }
       }
     },

@@ -1465,7 +1465,9 @@ export default function App() {
     await update(ref(db, `rooms/${code}/timer`), { running: false });
   }, [code]);
 
-  const newRound = useCallback(async (isConsensus = false) => {
+  // estimate !== null  → story is complete; persist estimate and advance counters
+  // estimate === null  → re-vote; clear votes only, counters unchanged
+  const newRound = useCallback(async (estimate = null, isConsensus = false) => {
     const players = roomData?.players || {};
     const upd = {};
     Object.keys(players).forEach((id) => {
@@ -1474,12 +1476,24 @@ export default function App() {
     });
     upd[`rooms/${code}/revealed`] = false;
     upd[`rooms/${code}/round`] = (roomData?.round || 1) + 1;
-    upd[`rooms/${code}/storiesDone`] = (roomData?.storiesDone || 0) + 1;
-    upd[`rooms/${code}/streak`] = isConsensus ? (roomData?.streak || 0) + 1 : 0;
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
+
+    if (estimate !== null) {
+      // Story complete — record estimate, advance counters, update alignment stats
+      const done = roomData?.storiesDone || 0;
+      upd[`rooms/${code}/storiesDone`] = done + 1;
+      upd[`rooms/${code}/streak`] = isConsensus ? (roomData?.streak || 0) + 1 : 0;
+      upd[`rooms/${code}/consensusCount`] = (roomData?.consensusCount || 0) + (isConsensus ? 1 : 0);
+      // Always persist the estimate so analytics shows SP totals even without a named queue
+      upd[`rooms/${code}/rounds/${done}`] = { estimate: String(estimate), isConsensus };
+    } else {
+      // Re-vote — reset streak (team didn't agree on this story)
+      upd[`rooms/${code}/streak`] = 0;
+    }
+
     await update(ref(db), upd);
-    showToast("✅ Story done! Vote on the next user story.");
+    if (estimate !== null) showToast("✅ Story done! Vote on the next user story.");
   }, [code, roomData, showToast]);
 
   // ── STORY QUEUE ───────────────────────────────────────────────────
@@ -2347,6 +2361,10 @@ function GameScreen({
   // Story queue — derived from Firebase room data
   const stories = rd.stories ? Object.values(rd.stories) : [];
   const activeStoryIdx = rd.activeStory ?? 0;
+  // Recorded rounds — estimates persisted by newRound (no-queue path), sorted by index
+  const rounds = rd.rounds
+    ? Object.entries(rd.rounds).sort((a, b) => Number(a[0]) - Number(b[0])).map(([, v]) => v)
+    : [];
   const activeStory = stories[activeStoryIdx] || null;
   const hasStories = stories.length > 0;
   const allStoriesDone = hasStories && activeStoryIdx >= stories.length;
@@ -2890,13 +2908,16 @@ function GameScreen({
                     ) : (
                       <button
                         className="btn-record-next"
-                        onClick={() => onNewRound(allSame)}
+                        onClick={() => onNewRound(
+                          avgDisp !== "—" ? avgDisp : (allSame ? voted[0]?.vote : "?"),
+                          allSame
+                        )}
                       >
-                        ✅ Agreed — Start Next Story
+                        ✅ Agreed{avgDisp !== "—" ? ` — ${avgDisp} pts` : ""} — Start Next Story
                       </button>
                     )}
                     <div className="obs-secondary-row" style={{ marginTop: 8 }}>
-                      <button className="btn-next-round" onClick={() => onNewRound(false)}>
+                      <button className="btn-next-round" onClick={() => onNewRound(null, false)}>
                         ↺ Re-vote this story
                       </button>
                       <button
@@ -3014,17 +3035,26 @@ function GameScreen({
               </div>
             </div>
 
-            {/* Session Analytics — observer only */}
+            {/* Sprint Analytics — observer only */}
             {isObs && (() => {
               const isTshirt = deck === "tshirt";
               const tshirtOrder = ["XS", "S", "M", "L", "XL", "XXL"];
 
-              // Stories with a numeric estimate recorded (for SP totals)
-              const spStories = stories.filter(
-                (s) => s.estimate != null && s.estimate !== "?" && !isNaN(Number(s.estimate))
+              // Stories from the named queue that have been recorded
+              const sizedQueueStories = stories.filter((s) => s.estimate != null && s.estimate !== "?");
+
+              // Rounds recorded via newRound (no-queue path) — numeric estimates only
+              const spRounds = rounds.filter(
+                (r) => r.estimate != null && r.estimate !== "?" && !isNaN(Number(r.estimate))
               );
-              // All stories with any estimate recorded (includes T-shirt sizes)
-              const sizedStories = stories.filter((s) => s.estimate != null && s.estimate !== "?");
+
+              // Prefer queue estimates; fall back to rounds (the two paths are mutually exclusive
+              // in normal usage — queue path uses recordAndNextStory, no-queue uses newRound)
+              const hasQueueData = sizedQueueStories.length > 0;
+              const spStories = hasQueueData
+                ? sizedQueueStories.filter((s) => !isNaN(Number(s.estimate)))
+                : spRounds;
+              const sizedStories = hasQueueData ? sizedQueueStories : spRounds;
 
               // Total and average story points (numeric decks only)
               const totalSP = spStories.reduce((sum, s) => sum + Number(s.estimate), 0);
@@ -3053,7 +3083,7 @@ function GameScreen({
                 : `${consensusCount} of ${storiesDone} ${storiesDone === 1 ? "story" : "stories"} agreed first round`
                   + (extraRounds > 0 ? ` · ${extraRounds} re-vote${extraRounds !== 1 ? "s" : ""}` : "");
 
-              // Deck breakdown — frequency map
+              // Deck breakdown — frequency map across all sized stories/rounds
               const freqMap = {};
               sizedStories.forEach((s) => {
                 freqMap[s.estimate] = (freqMap[s.estimate] || 0) + 1;
@@ -3068,8 +3098,7 @@ function GameScreen({
                 : "Powers of 2";
               const unitLabel = isTshirt ? "" : " sp";
 
-              // Stories that have been sized — shown in the per-story list
-              // Use queue names when available; fall back to "Story N"
+              // Per-story list — queue names when available, "Story N" otherwise
               const listedStories = sizedStories.map((s, i) => ({
                 name: s.name && s.name.trim() ? s.name.trim() : `Story ${i + 1}`,
                 estimate: s.estimate,
