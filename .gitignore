@@ -27,3 +27,4 @@ yarn-error.log*
 # Internal AI context — never commit
 CLAUDE.md
 STRATEGY.md
+AGENTS.md
