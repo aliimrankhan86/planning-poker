@@ -701,54 +701,58 @@ body::before {
 .btn-inv:hover { background: rgba(201,145,42,.14); }
 
 /* ══════════════════════ SESSION ANALYTICS ══════════════════════ */
-.analytics-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px;
-}
-.analytics-stat {
+/* Sprint Snapshot — 3-column KPI row */
+.a-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-top: 4px; }
+.a-kpi {
   background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 10px; padding: 10px 12px;
+  border-radius: 10px; padding: 9px 10px;
 }
-.analytics-stat-v {
-  font-size: 1.3rem; font-weight: 700;
-  color: var(--gold2); line-height: 1.1; display: block;
+.a-kpi-v { font-size: 1.22rem; font-weight: 700; color: var(--gold2); line-height: 1.1; display: block; }
+.a-kpi-l {
+  font-size: .60rem; color: rgba(239,242,247,.50); margin-top: 3px; display: block;
+  font-weight: 400; text-transform: uppercase; letter-spacing: .05em;
 }
-.analytics-stat-l {
-  font-size: .68rem; color: rgba(239,242,247,.60);
-  margin-top: 2px; display: block; font-weight: 300;
+/* Team Alignment */
+.a-align { margin-top: 14px; }
+.a-align-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+.a-align-title { font-size: .72rem; font-weight: 500; color: rgba(239,242,247,.72); }
+.a-align-score { font-size: 1.08rem; font-weight: 700; }
+.a-align-score.good { color: #2ecc71; }
+.a-align-score.ok   { color: var(--gold); }
+.a-align-score.low  { color: #e74c3c; }
+.a-align-bar-track { height: 5px; border-radius: 3px; background: rgba(255,255,255,.09); overflow: hidden; }
+.a-align-bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+.a-align-bar-fill.good { background: linear-gradient(90deg,#2ecc71,#27ae60); }
+.a-align-bar-fill.ok   { background: linear-gradient(90deg,var(--gold),var(--gold2)); }
+.a-align-bar-fill.low  { background: linear-gradient(90deg,#e74c3c,#c0392b); }
+.a-align-sub { font-size: .68rem; color: rgba(239,242,247,.48); margin-top: 5px; line-height: 1.4; }
+/* Per-story breakdown */
+.a-stories { margin-top: 14px; }
+.a-section-title {
+  font-size: .65rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
+  color: rgba(239,242,247,.40); margin-bottom: 4px;
 }
-.analytics-bar-row { margin-top: 14px; }
-.analytics-bar-label {
-  display: flex; justify-content: space-between; align-items: baseline;
-  font-size: .72rem; margin-bottom: 5px;
+.a-story-list { max-height: 180px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent; }
+.a-story-row { display: flex; align-items: center; padding: 5px 0; border-top: 1px solid rgba(255,255,255,.05); }
+.a-story-row:first-child { border-top: none; }
+.a-story-idx { font-size: .62rem; color: rgba(239,242,247,.28); width: 16px; flex-shrink: 0; font-weight: 400; text-align: right; }
+.a-story-name { flex: 1; font-size: .76rem; color: rgba(239,242,247,.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 8px; }
+.a-story-est {
+  font-size: .72rem; font-weight: 600; color: var(--gold2);
+  background: rgba(232,184,75,.10); border: 1px solid rgba(232,184,75,.22);
+  border-radius: 12px; padding: 2px 9px; flex-shrink: 0;
 }
-.analytics-bar-label-l { color: rgba(239,242,247,.72); font-weight: 500; }
-.analytics-bar-label-r { color: rgba(239,242,247,.55); font-weight: 300; }
-.analytics-bar-track {
-  height: 6px; border-radius: 3px;
-  background: rgba(255,255,255,.08); overflow: hidden;
-}
-.analytics-bar-fill {
-  height: 100%; border-radius: 3px;
-  transition: width .6s ease;
-}
-.analytics-bar-fill.good   { background: linear-gradient(90deg, #2ecc71, #27ae60); }
-.analytics-bar-fill.ok     { background: linear-gradient(90deg, var(--gold), var(--gold2)); }
-.analytics-bar-fill.low    { background: linear-gradient(90deg, #e74c3c, #c0392b); }
-.analytics-insight {
-  font-size: .72rem; color: rgba(239,242,247,.60);
-  margin-top: 10px; line-height: 1.55; font-style: italic;
-}
+.a-empty { font-size: .72rem; color: rgba(239,242,247,.36); font-style: italic; padding: 6px 0; }
+/* Estimate distribution chips */
 .analytics-breakdown { margin-top: 14px; }
 .analytics-breakdown-title {
-  font-size: .68rem; font-weight: 500; letter-spacing: .07em;
-  text-transform: uppercase; color: rgba(239,242,247,.45); margin-bottom: 8px;
+  font-size: .65rem; font-weight: 500; letter-spacing: .08em;
+  text-transform: uppercase; color: rgba(239,242,247,.40); margin-bottom: 7px;
 }
 .analytics-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .analytics-chip {
-  display: flex; align-items: center; gap: 5px;
-  padding: 4px 11px; border-radius: 20px;
-  background: rgba(255,255,255,.05); border: 1px solid var(--border);
-  font-size: .78rem; line-height: 1;
+  display: flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px;
+  background: rgba(255,255,255,.05); border: 1px solid var(--border); font-size: .78rem; line-height: 1;
 }
 .analytics-chip-val { font-weight: 600; color: var(--gold2); }
 .analytics-chip-cnt { color: rgba(239,242,247,.50); font-weight: 300; }
@@ -2804,33 +2808,44 @@ function GameScreen({
             {isObs && (() => {
               const isTshirt = deck === "tshirt";
               const tshirtOrder = ["XS", "S", "M", "L", "XL", "XXL"];
-              const estimatedStories = stories.filter(
+
+              // Stories with a numeric estimate recorded (for SP totals)
+              const spStories = stories.filter(
                 (s) => s.estimate != null && s.estimate !== "?" && !isNaN(Number(s.estimate))
               );
-              const allRecorded = stories.filter((s) => s.estimate != null && s.estimate !== "?");
-              const totalSP = estimatedStories.reduce((sum, s) => sum + Number(s.estimate), 0);
-              const avgSP = estimatedStories.length
-                ? (totalSP / estimatedStories.length).toFixed(1)
+              // All stories with any estimate recorded (includes T-shirt sizes)
+              const sizedStories = stories.filter((s) => s.estimate != null && s.estimate !== "?");
+
+              // Total and average story points (numeric decks only)
+              const totalSP = spStories.reduce((sum, s) => sum + Number(s.estimate), 0);
+              const avgSP = spStories.length
+                ? Number((totalSP / spStories.length).toFixed(1))
                 : null;
+
+              // Team Alignment — % of stories agreed in the first round
               const consensusRate = storiesDone > 0
                 ? Math.round((consensusCount / storiesDone) * 100)
                 : null;
-              const extraRounds = round - 1 - storiesDone;
+              const extraRounds = Math.max(0, round - 1 - storiesDone);
+
               const fillClass = consensusRate === null ? "ok"
                 : consensusRate >= 70 ? "good"
                 : consensusRate >= 40 ? "ok" : "low";
-              const insightText = consensusRate === null
-                ? "Record your first story to start tracking team alignment."
-                : consensusRate >= 80
-                ? "Excellent backlog clarity — the team is well aligned."
-                : consensusRate >= 60
-                ? "Good alignment. A few stories needed discussion."
-                : consensusRate >= 40
-                ? "Mixed alignment. Consider refining stories before the next sprint."
-                : "Low consensus — stories may need more definition and acceptance criteria.";
-              // Deck breakdown — frequency map of recorded estimates
+
+              const alignLabel = consensusRate === null ? null
+                : consensusRate >= 80 ? "Excellent"
+                : consensusRate >= 60 ? "Good"
+                : consensusRate >= 40 ? "Fair"
+                : "Needs work";
+
+              const alignSub = consensusRate === null
+                ? "Record your first story to start tracking alignment."
+                : `${consensusCount} of ${storiesDone} ${storiesDone === 1 ? "story" : "stories"} agreed first round`
+                  + (extraRounds > 0 ? ` · ${extraRounds} re-vote${extraRounds !== 1 ? "s" : ""}` : "");
+
+              // Deck breakdown — frequency map
               const freqMap = {};
-              allRecorded.forEach((s) => {
+              sizedStories.forEach((s) => {
                 freqMap[s.estimate] = (freqMap[s.estimate] || 0) + 1;
               });
               const breakdown = Object.entries(freqMap).sort((a, b) =>
@@ -2839,63 +2854,94 @@ function GameScreen({
                   : Number(a[0]) - Number(b[0])
               );
               const deckLabel = deck === "fibonacci" ? "Fibonacci"
-                : deck === "tshirt" ? "T-Shirt"
+                : deck === "tshirt" ? "T-Shirt sizes"
                 : "Powers of 2";
               const unitLabel = isTshirt ? "" : " sp";
+
+              // Stories that have been sized — shown in the per-story list
+              // Use queue names when available; fall back to "Story N"
+              const listedStories = sizedStories.map((s, i) => ({
+                name: s.name && s.name.trim() ? s.name.trim() : `Story ${i + 1}`,
+                estimate: s.estimate,
+              }));
+
+              // Sprint scope display
+              const scopeDisp = totalSP > 0
+                ? `${totalSP} sp`
+                : isTshirt && sizedStories.length > 0
+                  ? `${sizedStories.length} sized`
+                  : "—";
+              const avgDisp2 = avgSP !== null ? `${avgSP} sp` : isTshirt ? "—" : "—";
+
               return (
                 <div className="panel">
-                  <span className="ptitle">Session Analytics</span>
-                  <div className="analytics-grid">
-                    <div className="analytics-stat">
-                      <span className="analytics-stat-v">{storiesDone}</span>
-                      <span className="analytics-stat-l">Stories estimated</span>
+                  <span className="ptitle">Sprint Analytics</span>
+
+                  {/* ── Section 1: Sprint Snapshot ── */}
+                  <div className="a-kpis">
+                    <div className="a-kpi">
+                      <span className="a-kpi-v">{storiesDone}</span>
+                      <span className="a-kpi-l">Stories sized</span>
                     </div>
-                    <div className="analytics-stat">
-                      <span className="analytics-stat-v">{voters.length}</span>
-                      <span className="analytics-stat-l">Participants</span>
+                    <div className="a-kpi">
+                      <span className="a-kpi-v">{scopeDisp}</span>
+                      <span className="a-kpi-l">Sprint scope</span>
                     </div>
-                    <div className="analytics-stat">
-                      <span className="analytics-stat-v">{totalSP > 0 ? totalSP : "—"}</span>
-                      <span className="analytics-stat-l">Total story points</span>
-                    </div>
-                    <div className="analytics-stat">
-                      <span className="analytics-stat-v">{avgSP !== null ? avgSP : "—"}</span>
-                      <span className="analytics-stat-l">Avg points / story</span>
+                    <div className="a-kpi">
+                      <span className="a-kpi-v">{avgDisp2}</span>
+                      <span className="a-kpi-l">Avg / story</span>
                     </div>
                   </div>
-                  <div className="analytics-bar-row">
-                    <div className="analytics-bar-label">
-                      <span className="analytics-bar-label-l">Team Alignment</span>
-                      <span className="analytics-bar-label-r">
-                        {consensusRate !== null
-                          ? `${consensusCount} of ${storiesDone} first-round consensus (${consensusRate}%)`
-                          : "No stories recorded yet"}
-                      </span>
+
+                  {/* ── Section 2: Team Alignment ── */}
+                  <div className="a-align">
+                    <div className="a-align-head">
+                      <span className="a-align-title">Team Alignment</span>
+                      {consensusRate !== null && (
+                        <span className={`a-align-score ${fillClass}`}>
+                          {alignLabel} · {consensusRate}%
+                        </span>
+                      )}
                     </div>
-                    <div className="analytics-bar-track">
+                    <div className="a-align-bar-track">
                       <div
-                        className={`analytics-bar-fill ${fillClass}`}
+                        className={`a-align-bar-fill ${fillClass}`}
                         style={{ width: `${consensusRate ?? 0}%` }}
                       ></div>
                     </div>
+                    <div className="a-align-sub">{alignSub}</div>
                   </div>
-                  {extraRounds > 0 && (
-                    <div className="analytics-bar-row">
-                      <div className="analytics-bar-label">
-                        <span className="analytics-bar-label-l">Re-vote rounds</span>
-                        <span className="analytics-bar-label-r">{extraRounds} extra round{extraRounds !== 1 ? "s" : ""}</span>
-                      </div>
-                      <div className="analytics-bar-track">
-                        <div
-                          className="analytics-bar-fill ok"
-                          style={{ width: `${Math.min((extraRounds / Math.max(round - 1, 1)) * 100, 100)}%` }}
-                        ></div>
-                      </div>
+
+                  {/* ── Section 3: Sized this sprint ── */}
+                  <div className="a-stories">
+                    <div className="a-section-title">
+                      Sized this sprint{listedStories.length > 0 ? ` (${listedStories.length})` : ""}
                     </div>
-                  )}
+                    {listedStories.length > 0 ? (
+                      <div className="a-story-list">
+                        {listedStories.map((s, i) => (
+                          <div className="a-story-row" key={i}>
+                            <span className="a-story-idx">{i + 1}</span>
+                            <span className="a-story-name" title={s.name}>{s.name}</span>
+                            <span className="a-story-est">{s.estimate}{unitLabel}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="a-empty">
+                        {storiesDone > 0
+                          ? "Add story names to your queue to track estimates here."
+                          : "No stories sized yet — estimates will appear here after the first round."}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Section 4: Estimate distribution ── */}
                   {breakdown.length > 0 && (
                     <div className="analytics-breakdown">
-                      <div className="analytics-breakdown-title">{deckLabel} — estimates this session</div>
+                      <div className="analytics-breakdown-title">
+                        {deckLabel} — point distribution
+                      </div>
                       <div className="analytics-chips">
                         {breakdown.map(([val, cnt]) => (
                           <div className="analytics-chip" key={val}>
@@ -2906,7 +2952,6 @@ function GameScreen({
                       </div>
                     </div>
                   )}
-                  <div className="analytics-insight">{insightText}</div>
                 </div>
               );
             })()}
