@@ -136,10 +136,10 @@ body::before {
   content: '';
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(20,70,30,0.55) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(100,60,20,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(20,70,30,0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 85% 95%, rgba(80,45,15,0.12) 0%, transparent 55%),
     url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-  background-size: cover, 200px 200px;
+  background-size: cover, cover, 200px 200px;
 }
 
 .app { min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1; }
@@ -190,8 +190,8 @@ body::before {
 
 /* ══════════════════════ JOIN SCREEN ══════════════════════ */
 .join-wrap {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  padding: 24px; animation: fadeIn .4s ease;
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 40px 24px 80px; animation: fadeIn .4s ease; overflow-y: auto;
 }
 .join-box {
   width: 100%; max-width: 440px;
@@ -221,13 +221,13 @@ body::before {
   margin-bottom: 4px; letter-spacing: .5px; line-height: 1.1;
 }
 .join-sub {
-  text-align: center; color: rgba(239,242,247,.72);
-  font-size: .8rem; margin-bottom: 36px; font-weight: 300; letter-spacing: .5px;
+  text-align: center; color: rgba(239,242,247,.75);
+  font-size: .92rem; margin-bottom: 36px; font-weight: 300; letter-spacing: .5px;
 }
 .lbl {
-  display: block; font-size: .65rem; font-weight: 600;
-  letter-spacing: 2px; text-transform: uppercase;
-  color: rgba(239,242,247,.72); margin-bottom: 8px;
+  display: block; font-size: .72rem; font-weight: 600;
+  letter-spacing: 1.8px; text-transform: uppercase;
+  color: rgba(239,242,247,.75); margin-bottom: 8px;
 }
 .inp {
   width: 100%; padding: 13px 16px;
@@ -249,8 +249,8 @@ body::before {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
 }
 .role-btn .ri { font-size: 1.25rem; }
-.role-btn .rl { font-weight: 600; font-size: .85rem; }
-.role-btn .rs { font-size: .62rem; opacity: .78; font-weight: 300; }
+.role-btn .rl { font-weight: 600; font-size: .88rem; }
+.role-btn .rs { font-size: .78rem; color: rgba(239,242,247,.68); font-weight: 300; }
 .role-btn:hover:not(.rv):not(.ro) { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
 .role-btn.rv { border-color: var(--gold); background: var(--goldB); color: var(--gold2); }
 .role-btn.ro { border-color: rgba(68,153,232,.5); background: rgba(68,153,232,.10); color: #6ab8f7; }
@@ -268,7 +268,7 @@ body::before {
 
 /* Tab row on Join screen */
 .tab-row { display: flex; gap: 6px; margin-bottom: 22px; }
-.tab-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(239,242,247,.72); font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .2s; }
+.tab-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(239,242,247,.75); font-family: 'Outfit', sans-serif; font-size: .875rem; font-weight: 500; cursor: pointer; transition: all .2s; }
 .tab-btn.active { background: var(--goldB); border-color: rgba(201,145,42,.3); color: var(--gold2); }
 .tab-btn:hover:not(.active) { background: var(--surface); color: rgba(239,242,247,.90); border-color: var(--border2); }
 
@@ -280,11 +280,76 @@ body::before {
 /* Deck picker on Create tab */
 .deck-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
 .deck-btn { padding: 10px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(239,242,247,.80); font-family: 'Outfit', sans-serif; cursor: pointer; transition: all .2s; text-align: center; }
-.deck-btn .dk-label { display: block; font-size: .78rem; font-weight: 600; margin-bottom: 2px; }
-.deck-btn .dk-desc  { display: block; font-size: .62rem; color: rgba(239,242,247,.60); }
+.deck-btn .dk-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 3px; }
+.deck-btn .dk-desc  { display: block; font-size: .75rem; color: rgba(239,242,247,.62); }
 .deck-btn.active { background: var(--goldB); border-color: rgba(201,145,42,.3); color: var(--gold2); }
-.deck-btn.active .dk-desc { color: rgba(201,145,42,.5); }
+.deck-btn.active .dk-desc { color: rgba(201,145,42,.55); }
 .deck-btn:hover:not(.active) { background: var(--surface); color: rgba(239,242,247,.90); border-color: var(--border2); }
+
+/* ══════════════════════ SEO CONTENT SECTION ══════════════════════ */
+.seo-section {
+  width: 100%; max-width: 860px; margin-top: 56px;
+  color: rgba(239,242,247,.82); font-family: 'Outfit', sans-serif;
+}
+.seo-section h2.seo-h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.85rem; font-weight: 700;
+  color: var(--gold2); text-align: center;
+  margin-bottom: 16px; letter-spacing: .3px; line-height: 1.25;
+}
+.seo-intro {
+  text-align: center; font-size: .95rem; line-height: 1.7;
+  color: rgba(239,242,247,.72); max-width: 640px;
+  margin: 0 auto 48px; font-weight: 300;
+}
+.seo-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 44px;
+}
+.seo-card {
+  background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px; padding: 28px 24px;
+}
+.seo-section h3.seo-h3 {
+  font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700;
+  color: var(--gold3); margin-bottom: 12px; letter-spacing: .3px;
+}
+.seo-section h4.seo-h4 {
+  font-family: 'Outfit', sans-serif; font-size: .9rem; font-weight: 600;
+  color: rgba(239,242,247,.90); margin-bottom: 8px;
+}
+.seo-p {
+  font-size: .875rem; line-height: 1.75; color: rgba(239,242,247,.68);
+  margin-bottom: 0; font-weight: 300;
+}
+.seo-ol, .seo-ul {
+  font-size: .875rem; line-height: 1.8; color: rgba(239,242,247,.68);
+  margin: 0; padding-left: 1.3em; font-weight: 300;
+}
+.seo-ul { list-style: none; padding-left: 0; }
+.seo-ul li { padding-left: 1.4em; position: relative; margin-bottom: 6px; }
+.seo-ul li::before { content: "♦"; position: absolute; left: 0; color: var(--gold); font-size: .6rem; top: .35em; opacity: .7; }
+.seo-ul strong { color: rgba(239,242,247,.88); font-weight: 600; }
+.seo-features {
+  background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px; padding: 28px 24px; margin-bottom: 44px;
+}
+.seo-faq { margin-top: 0; }
+.seo-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+.seo-faq-item {
+  background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding: 20px 18px;
+}
+.seo-faq-item .seo-p { margin-top: 4px; }
+.seo-divider {
+  width: 60px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 44px auto;
+}
+@media (max-width: 680px) {
+  .seo-grid, .seo-faq-grid { grid-template-columns: 1fr; }
+  .seo-section h2.seo-h2 { font-size: 1.5rem; }
+  .seo-section { margin-top: 40px; }
+}
 
 /* ══════════════════════ HEADER ══════════════════════ */
 .hdr {
@@ -589,7 +654,7 @@ body::before {
 .prow.voted .pav { background: var(--gold); color: var(--ink); }
 .prow.obs   .pav { background: rgba(41,128,185,.4); }
 .pname { font-size: .84rem; font-weight: 500; color: var(--cream2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prole { font-size: .64rem; color: rgba(239,242,247,.60); margin-top: 1px; }
+.prole { font-size: .72rem; color: rgba(239,242,247,.60); margin-top: 1px; }
 .prow.obs .prole { color: rgba(93,173,226,.5); }
 .pdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .pdot.v { background: var(--gold); }
@@ -602,8 +667,8 @@ body::before {
   border: 1px solid var(--gold); min-width: 32px; text-align: center;
   animation: flip .3s ease both;
 }
-.voted-label { font-size: .62rem; color: rgba(201,145,42,.7); font-weight: 600; }
-.waiting-label { font-size: .62rem; color: rgba(231,76,60,.5); font-style: italic; }
+.voted-label { font-size: .72rem; color: rgba(201,145,42,.7); font-weight: 600; }
+.waiting-label { font-size: .72rem; color: rgba(231,76,60,.5); font-style: italic; }
 .sep { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
 .nobody { font-size: .78rem; color: rgba(239,242,247,.50); font-style: italic; text-align: center; padding: 10px 0; }
 
@@ -805,7 +870,7 @@ const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000;
 // Stored encoded so the team code isn't readable as plain text
 // in the compiled bundle. Not a guarantee, but raises the bar.
 // Encoded value is: btoa("<teamCode>") — never commit the raw name.
-const _FC = ["cnBhYnVpbGR0ZWFt"]; // rpabuildteam
+const _FC = ["cnBhLWJ1aWxkLXRlYW0="]; // rpa-build-team
 const isFounderRoom = (code) => {
   try { return _FC.some(h => atob(h) === code.toLowerCase()); }
   catch { return false; }
@@ -1564,7 +1629,7 @@ function PricingModal({ onClose }) {
 
         <p className="pricing-footer">
           No credit card required for free tier · Cancel anytime · Prices ex. VAT<br />
-          Questions? <a href="mailto:support@planningpoker.app">Contact us</a>
+          Questions? <a href={`mailto:${process.env.REACT_APP_SUPPORT_EMAIL || "support@planningpoker.app"}`}>Contact us</a>
         </p>
       </div>
     </div>
@@ -1691,8 +1756,8 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
                 <span className="tcp-code">{previewCode}</span>
               </div>
             )}
-            <p style={{ fontSize: ".72rem", color: "rgba(239,242,247,.62)", marginBottom: "18px", lineHeight: 1.5 }}>
-              Your team's permanent room. Anyone who types the same team name always joins the same space — no code sharing needed.
+            <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
+              Your team's permanent room. Anyone who types the same team name always joins the same space — no link sharing needed.
             </p>
           </>
         )}
@@ -1742,16 +1807,117 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
             : "Enter Team Room →"}
         </button>
         {tab === "create" && (
-          <p style={{ fontSize: ".68rem", color: "rgba(239,242,247,.50)", textAlign: "center", marginTop: "10px" }}>
-            Up to 11 players per room · Share the link after creating
+          <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
+            Free · Up to {FREE_MAX_PLAYERS} participants · Share the link after creating
           </p>
         )}
         {tab === "team" && (
-          <p style={{ fontSize: ".68rem", color: "rgba(239,242,247,.50)", textAlign: "center", marginTop: "10px" }}>
-            Persistent team space · No link sharing required
+          <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
+            Pro feature · Persistent team space · No link sharing needed
           </p>
         )}
       </div>
+
+      {/* ── SEO content — rendered in DOM for Googlebot, visible to users ── */}
+      <section className="seo-section" aria-label="About Planning Poker">
+        <h2 className="seo-h2">Free Online Planning Poker — No Sign-up Required</h2>
+        <p className="seo-intro">
+          A fast, free planning poker tool for agile and scrum teams. Run story points estimation
+          sessions in seconds — create a room, share the link, and start voting. No account needed.
+        </p>
+
+        <div className="seo-grid">
+          <div className="seo-card">
+            <h3 className="seo-h3">What Is Planning Poker?</h3>
+            <p className="seo-p">
+              Planning Poker (also called Scrum Poker) is a consensus-based estimation technique
+              used by agile and scrum teams. Each team member votes on the complexity of a user story
+              using Fibonacci cards (1, 2, 3, 5, 8, 13, 21, 34). Cards are revealed simultaneously
+              to prevent anchoring bias and encourage honest, independent story points estimation.
+            </p>
+          </div>
+          <div className="seo-card">
+            <h3 className="seo-h3">How It Works</h3>
+            <ol className="seo-ol">
+              <li>Create a free room — no account required</li>
+              <li>Share the room link with your sprint team</li>
+              <li>Add your user stories to the queue</li>
+              <li>Vote with Fibonacci, T-shirt, or Powers of 2 cards</li>
+              <li>Reveal all votes simultaneously — discuss and agree on story points</li>
+              <li>Move to the next story — estimates are saved automatically</li>
+            </ol>
+          </div>
+        </div>
+
+        <div className="seo-features">
+          <h3 className="seo-h3">Why Teams Use This Planning Poker Tool</h3>
+          <ul className="seo-ul">
+            <li><strong>No signup, no friction</strong> — create a room and share the link in under 10 seconds</li>
+            <li><strong>Real-time voting</strong> — all votes update live for every participant</li>
+            <li><strong>Multiple card decks</strong> — Fibonacci sequence, T-shirt sizing (XS–XXL), or Powers of 2</li>
+            <li><strong>Built-in countdown timer</strong> — keep estimation rounds focused and on track</li>
+            <li><strong>Story queue</strong> — add your full backlog and work through each item in order</li>
+            <li><strong>Session summary</strong> — copy all story point estimates at the end of your sprint planning</li>
+            <li><strong>Works for remote teams</strong> — designed for distributed agile teams across any time zone</li>
+            <li><strong>Team Room (Pro)</strong> — a persistent, shareable URL your team reuses every sprint</li>
+          </ul>
+        </div>
+
+        <div className="seo-divider" role="separator"></div>
+
+        <div className="seo-faq">
+          <h3 className="seo-h3" style={{ textAlign: "center", marginBottom: "20px" }}>Frequently Asked Questions</h3>
+          <div className="seo-faq-grid">
+            <div className="seo-faq-item">
+              <h4 className="seo-h4">Is this planning poker tool free?</h4>
+              <p className="seo-p">
+                Yes. The free tier supports up to {FREE_MAX_PLAYERS} participants per room, all card decks,
+                a full story queue, and session summaries — no credit card or account required.
+                Upgrade to Pro for a persistent Team Room and up to {PRO_MAX_PLAYERS} participants.
+              </p>
+            </div>
+            <div className="seo-faq-item">
+              <h4 className="seo-h4">Do I need to create an account?</h4>
+              <p className="seo-p">
+                No. Just enter your name, create a room, and share the link. There is no
+                registration required to run a planning poker session.
+              </p>
+            </div>
+            <div className="seo-faq-item">
+              <h4 className="seo-h4">What is the Fibonacci sequence in planning poker?</h4>
+              <p className="seo-p">
+                The Fibonacci sequence (1, 2, 3, 5, 8, 13, 21, 34) is the most widely used
+                card deck in planning poker. The growing gaps between numbers reflect the
+                increasing uncertainty of larger user stories, making it easy for teams to
+                distinguish small, medium, and large effort without false precision.
+              </p>
+            </div>
+            <div className="seo-faq-item">
+              <h4 className="seo-h4">Does this work for remote and distributed teams?</h4>
+              <p className="seo-p">
+                Yes. Share the room link in Slack, Teams, or Zoom and everyone joins instantly
+                from any browser — no install required. Ideal for remote sprint planning across
+                different time zones.
+              </p>
+            </div>
+            <div className="seo-faq-item">
+              <h4 className="seo-h4">What is T-shirt sizing in agile estimation?</h4>
+              <p className="seo-p">
+                T-shirt sizing uses XS, S, M, L, XL, XXL instead of numbers. It is useful
+                early in a project when precise numeric estimates are not yet meaningful.
+                This tool supports T-shirt sizing alongside Fibonacci and Powers of 2.
+              </p>
+            </div>
+            <div className="seo-faq-item">
+              <h4 className="seo-h4">How many people can join a planning poker session?</h4>
+              <p className="seo-p">
+                Free rooms support up to {FREE_MAX_PLAYERS} voters. Pro rooms support up to {PRO_MAX_PLAYERS}.
+                Observers can join in addition to voters and do not count towards the limit.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

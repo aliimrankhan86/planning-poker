@@ -10,9 +10,9 @@
 ---
 
 ## 📍 Current Status
-**Phase:** 1 — Technical Foundation
-**Active step:** 1.2 — Firebase Auth (custom email/password)
-**Blocked by:** Ali must enable Email/Password provider in Firebase Console before code changes begin
+**Phase:** 2 — SEO Overhaul (in progress, most steps now complete)
+**Active step:** 2.7 — Register Google Search Console + submit sitemap (Ali to do manually)
+**Remaining:** OG image creation (2.8), domain purchase, Firebase rules deployment
 
 ---
 
@@ -46,17 +46,17 @@
 
 ---
 
-## ⏳ PHASE 2 — SEO Overhaul (NOT STARTED)
+## 🔄 PHASE 2 — SEO Overhaul (IN PROGRESS)
 | Step | Task | Status | Notes |
 |------|------|--------|-------|
-| 2.1 | Update public/index.html — title, meta, OG tags | ⏳ Not started | |
-| 2.2 | Add JSON-LD structured data to index.html | ⏳ Not started | SoftwareApplication schema |
-| 2.3 | Add robots.txt to /public | ⏳ Not started | |
-| 2.4 | Add sitemap.xml to /public | ⏳ Not started | |
-| 2.5 | Add content section to JoinScreen (features, FAQ) | ⏳ Not started | Targets long-tail keywords |
-| 2.6 | Google Fonts preconnect + Core Web Vitals | ⏳ Not started | |
-| 2.7 | Register Google Search Console + submit sitemap | ⏳ Not started | Ali to do manually |
-| 2.8 | Create OG social image (1200×630px) | ⏳ Not started | |
+| 2.1 | Update public/index.html — title, meta, OG tags | ✅ Done | Session 7 |
+| 2.2 | Add JSON-LD structured data to index.html | ✅ Done | SoftwareApplication schema. Session 7 |
+| 2.3 | Add robots.txt to /public | ✅ Done | Session 7 |
+| 2.4 | Add sitemap.xml to /public | ✅ Done | Session 7. Update YOUR_DOMAIN_HERE after domain purchase |
+| 2.5 | Add content section to JoinScreen (features, FAQ) | ✅ Done | Session 8. Semantic HTML: h2/h3/h4/p/ol/ul/FAQ grid. Keyword-rich, WCAG compliant, responsive. |
+| 2.6 | Google Fonts preconnect + Core Web Vitals | ✅ Done | display=swap confirmed. Preconnect in index.html head. Session 7/8. |
+| 2.7 | Register Google Search Console + submit sitemap | ⏳ Not started | Ali to do manually after domain purchase |
+| 2.8 | Create OG social image (1200×630px) | ⏳ Not started | Referenced in index.html as /og-image.png |
 
 ---
 
@@ -85,12 +85,41 @@
 
 ---
 
+### Session 8b — 28 March 2026 (UX & background fixes)
+- **Background bug fixed:** `body::before` had 3 background layers but only 2 `background-size` values (`cover, 200px 200px`). Browser cycled values — second radial gradient rendered as a 200×200px tile instead of covering the viewport. Root cause of the "overstretched/broken" visual artifact. Fixed to `cover, cover, 200px 200px`. Also softened the bottom-right gradient (0.18→0.12 opacity).
+- **Font sizes lifted across the board:**
+  - `.join-sub` subtitle: `0.8rem` → `0.92rem`
+  - `.lbl` form labels: `0.65rem` → `0.72rem`
+  - `.role-btn .rs` (sub-text): `0.62rem` → `0.78rem` (was ~10px — critical fix)
+  - `.tab-btn`: `0.82rem` → `0.875rem`
+  - `.deck-btn .dk-label`: `0.78rem` → `0.85rem`
+  - `.deck-btn .dk-desc`: `0.62rem` → `0.75rem` (was ~10px — critical fix)
+  - `.prole`, `.voted-label`, `.waiting-label`: all lifted to `0.72rem`
+- **Copy updated:** Footer hint corrected to "Free · Up to {FREE_MAX_PLAYERS} participants" (was "11 players"). Team Room hint wording improved.
+- **12/12 verification checks passed.** App.js = 2684 lines.
+
+### Session 8 — 28 March 2026
+- **README.md rewritten:** Clean public-facing document. Removed all sensitive content (real names, team capacity details, SPRINTROOM architecture, Firebase Studio migration notice, AI notes). Now contains: features, tech stack, local dev setup, deployment, launch checklist.
+- **CLAUDE.md created:** All internal AI context moved here — architecture decisions, founder detection logic, Firebase schema, design system, SEO strategy, phase roadmap, session history pointer. Added to `.gitignore` + `STRATEGY.md` also gitignored.
+- **SEO content section added to JoinScreen:** Below the join card, a full semantic section renders in the DOM for Googlebot. Includes: h2 ("Free Online Planning Poker — No Sign-up Required"), intro paragraph, two-column feature grid ("What Is Planning Poker?" + "How It Works"), key features list with diamond bullets, divider, and 2×3 FAQ grid (6 questions covering free tier, no signup, Fibonacci, remote teams, T-shirt sizing, participant limits). Fully responsive (collapses to single column at 680px). Styled to match dark green theme.
+- **"11 players" hardcode fixed:** `Up to 11 players per room` → `Up to {FREE_MAX_PLAYERS} players free` — now correctly references the constant (6).
+- **font-display=swap confirmed:** Google Fonts URL in index.html uses `&display=swap`. Preconnect tags present.
+- **File:** App.js = 2683 lines. div/section balance verified ✅.
+- **Next action for Ali:** `git add src/App.js public/ database.rules.json README.md .gitignore PROGRESS.md && git commit -m "feat: SEO content section, clean README, CLAUDE.md, font verification" && git push`
+
+---
+
 ## 📎 Files Delivered So Far
 | File | Location | Description |
 |------|----------|-------------|
-| App.js (improved) | outputs/ | Fixed App.js with all 5 bugs resolved |
-| TEST-REPORT.md | outputs/ | Full audit findings and test results |
-| Planning-Poker-Launch-Plan.docx | outputs/ | Full strategy document |
+| App.js (improved) | src/ | Bug fixes, full theme overhaul, SEO content section, all features |
+| README.md | repo root | Clean public-facing docs — no sensitive data |
+| CLAUDE.md | repo root (gitignored) | Internal AI context — architecture, design, founder logic, SEO |
+| database.rules.json | repo root | Firebase security rules — deploy before launch |
+| public/index.html | public/ | SEO-optimised HTML shell — OG, JSON-LD, preconnect |
+| public/manifest.json | public/ | Fixed PWA manifest |
+| public/robots.txt | public/ | Crawl rules + sitemap pointer |
+| public/sitemap.xml | public/ | Sitemap — update YOUR_DOMAIN_HERE after domain purchase |
 | PROGRESS.md | repo root | This file |
 
 ---
@@ -111,6 +140,16 @@
 - Added 11-player capacity limit in handleJoin with clear error messaging
 - Planned Firebase Email/Password auth (Step 1.2) — Ali needs to enable provider in Firebase Console first
 - Next session should start with Step 1.2 (Firebase Email/Password auth)
+
+### Session 7 — 28 March 2026 (Production readiness)
+- **Founder hash fixed:** Updated to `cnBhLWJ1aWxkLXRlYW0=` (`rpa-build-team`). Team name "RPA Build Team" now correctly triggers `founderRoom: true` and `plan: "pro"` in Firebase.
+- **index.html rewritten:** Full SEO — title, meta description, OG tags (LinkedIn/WhatsApp/Slack preview), Twitter card, JSON-LD structured data (SoftwareApplication schema), font preconnect for performance, correct `#0c1a0f` theme colour, inline critical CSS to prevent flash on load, noscript fallback. Replace `YOUR_DOMAIN_HERE` with real domain before launch.
+- **manifest.json fixed:** Was "React App" / "Create React App Sample". Now "Planning Poker", correct theme/background colour `#0c1a0f`, maskable icons, proper categories.
+- **Firebase security rules:** `database.rules.json` created. Validates plan field (free/pro only), player names (max 40 chars), roles (voter/observer), timer bounds, story length. Blocks all paths outside `rooms/`. Must be deployed to Firebase Console (Rules tab) before going live.
+- **robots.txt:** Added `Sitemap:` reference.
+- **sitemap.xml:** Created in `public/`. Update URL after domain purchase.
+- **Pricing email:** Now reads from `REACT_APP_SUPPORT_EMAIL` env var — set it in Vercel environment variables.
+- **Production audit result:** 26/27 checks pass. Only open item: replace `YOUR_DOMAIN_HERE` across 3 files after buying domain.
 
 ### Session 6 — 28 March 2026
 - **Free/Pro tiers in code:** `MAX_PLAYERS` split into `FREE_MAX_PLAYERS = 6` and `PRO_MAX_PLAYERS = 20`.
