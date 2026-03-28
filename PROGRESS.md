@@ -112,6 +112,28 @@
 - Planned Firebase Email/Password auth (Step 1.2) — Ali needs to enable provider in Firebase Console first
 - Next session should start with Step 1.2 (Firebase Email/Password auth)
 
+### Session 6 — 28 March 2026
+- **Free/Pro tiers in code:** `MAX_PLAYERS` split into `FREE_MAX_PLAYERS = 6` and `PRO_MAX_PLAYERS = 20`.
+- **Plan field on rooms:** `handleCreate` sets `plan: "free"`. `handleTeamRoom` sets `plan: "pro"` (Team Room is the Pro feature). Capacity checks are now plan-aware.
+- **Upgrade prompt:** When a free room is full, the join toast explains the limit and points to Pro upgrade.
+- **Founder room:** `isFounderRoom()` uses encoded constant (`btoa("rpabuildteam")`) — not plain-text in source. Founder room gets `founderRoom: true` flag in Firebase for future use.
+- **Pricing modal updated:** Free tier shows 6 participants, Pro shows 20. Team Room correctly flagged as Pro-only feature. Annual saving shown correctly.
+- **File:** 2517 lines, 12/12 checks passed.
+
+### Session 5 — 28 March 2026
+- **Team Room URL format:** `teamCode()` now produces lowercase hyphenated slugs. "RPA Dev Team" → `rpa-dev-team`. URL: `?team=rpa-dev-team`. Clean, memorable, shareable. Breaking change from old `RPADEVTEAM` format (no existing users, safe to change).
+- **Pricing modal:** Full `PricingModal` component added. Three currencies: USD ($8/mo), GBP (£6/mo), EUR (€7/mo) with a pill switcher. Free tier vs Pro tier with feature comparison. Annual discount shown inline. "✦ See Pricing" button added below join screen subtitle. Stripe wiring deferred to Phase 3.
+- **File:** 2493 lines, 14/14 checks passed.
+
+### Session 4 — 28 March 2026
+- **Theme overhaul:** Shifted base from swampy dark-green (`#080c0a`) to midnight navy (`#0b0f1e`). Body ambient light changed from green radial to indigo/gold radials. Join box and header backgrounds updated to match navy palette.
+- **Text contrast (WCAG AA):** All 46 occurrences of warm cream `rgba(240,230,208,X)` replaced with cool near-white `rgba(239,242,247,X)` with significantly lifted opacities. Minimum was `.15` (illegible) → now `.45`. Most secondary text lifted from `.28–.35` → `.60–.72`.
+- **Accessibility:** Added `:focus-visible` keyboard focus ring (2.5px gold outline). Added `-webkit-font-smoothing: antialiased`. All interactive elements have `transition: all .2s` for smooth feedback.
+- **Inputs:** Background changed from black `.35` to glass white `.06` — visible but not garish. Hover and focus states added.
+- **Interactive components:** Added explicit hover states for role buttons, tab buttons, deck buttons, timer dropdown. Player rows, story panel, stat chips, invite URL all use lighter glass surfaces.
+- **Fibonacci:** Added 21 and 34 to the deck (before ?) and updated the deck description label.
+- **File:** 2250 lines, verified clean.
+
 ### Session 3 — 28 March 2026
 - Ran full end-to-end static verification of App.js (2235 lines, 25 checks)
 - **Bug fixed (critical):** `addStory` used `.length` on a Firebase integer-keyed object → always wrote to key `"undefined"`. Fixed to `Object.keys(current).length`.

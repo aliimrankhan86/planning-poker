@@ -17,7 +17,7 @@ import {
 const DECK_DEFINITIONS = {
   fibonacci: {
     label: "Fibonacci",
-    desc: "1, 2, 3, 5, 8, 13, ?",
+    desc: "1, 2, 3, 5, 8, 13, 21, 34, ?",
     cards: [
       { val: "1",  suit: "♠", red: false },
       { val: "2",  suit: "♣", red: false },
@@ -25,6 +25,8 @@ const DECK_DEFINITIONS = {
       { val: "5",  suit: "♥", red: true  },
       { val: "8",  suit: "♦", red: true  },
       { val: "13", suit: "♣", red: false },
+      { val: "21", suit: "♥", red: true  },
+      { val: "34", suit: "♦", red: true  },
       { val: "?",  suit: "★", red: false },
     ],
   },
@@ -62,10 +64,16 @@ const getCards = (deckKey) =>
 const CIRC = 201.1;
 const uid = () => Math.random().toString(36).slice(2, 10);
 const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
-// Derives a stable, memorable room code from a team name.
-// "RPA Dev Team" → "RPADEVTEAM" — same name always yields the same code.
+// Derives a stable, human-readable URL slug from a team name.
+// "RPA Dev Team" → "rpa-dev-team" — shareable, memorable, consistent.
 const teamCode = (name) =>
-  name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12) || "TEAM";
+  name.trim().toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")   // strip special chars
+    .replace(/\s+/g, "-")           // spaces → hyphens
+    .replace(/-{2,}/g, "-")         // collapse double-hyphens
+    .replace(/^-|-$/g, "")          // trim leading/trailing hyphens
+    .slice(0, 24)                   // max 24 chars
+  || "team";
 const ini = (n = "") =>
   n
     .split(" ")
@@ -81,45 +89,56 @@ const CSS = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:       #080c0a;
-  --bg2:      #0d1510;
-  --surface:  rgba(255,255,255,0.035);
-  --surface2: rgba(255,255,255,0.06);
-  --border:   rgba(255,255,255,0.08);
-  --border2:  rgba(255,255,255,0.14);
-  --gold:     #c9912a;
+  --bg:       #0c1a0f;
+  --bg2:      #122018;
+  --surface:  rgba(255,255,255,0.07);
+  --surface2: rgba(255,255,255,0.12);
+  --border:   rgba(255,255,255,0.13);
+  --border2:  rgba(255,255,255,0.24);
+  --gold:     #c9922a;
   --gold2:    #e8b84b;
   --gold3:    #f5d07a;
-  --goldA:    rgba(201,145,42,0.15);
-  --goldB:    rgba(201,145,42,0.08);
-  --cream:    #f0e6d0;
-  --cream2:   #c9bba0;
-  --red:      #c0392b;
-  --green:    #27ae60;
-  --blue:     #2980b9;
-  --ink:      #0d1007;
+  --goldA:    rgba(201,146,42,0.20);
+  --goldB:    rgba(201,146,42,0.13);
+  --cream:    #eef2ec;
+  --cream2:   #9db89e;
+  --red:      #e04848;
+  --green:    #3dba68;
+  --blue:     #4499e8;
+  --ink:      #080e09;
   --card-bg:  #fdfaf3;
   --radius:   16px;
   --radius-sm:10px;
-  --shadow:   0 20px 60px rgba(0,0,0,0.6);
+  --shadow:   0 20px 60px rgba(0,0,0,0.60);
 }
 
-html { font-size: 16px; }
+html { font-size: 16px; scroll-behavior: smooth; }
 body {
   font-family: 'Outfit', sans-serif;
   background: var(--bg);
   min-height: 100vh;
   color: var(--cream);
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Accessible focus ring — visible for keyboard, invisible for mouse */
+:focus-visible {
+  outline: 2.5px solid var(--gold2);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+:focus:not(:focus-visible) { outline: none; }
 
 /* Subtle felt texture */
 body::before {
   content: '';
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(20,60,30,0.5) 0%, transparent 60%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(20,70,30,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(100,60,20,0.18) 0%, transparent 55%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
   background-size: cover, 200px 200px;
 }
 
@@ -164,7 +183,7 @@ body::before {
   line-height: 1.1;
 }
 .consensus-burst-sub {
-  font-size: .9rem; color: rgba(240,230,208,.65);
+  font-size: .9rem; color: rgba(239,242,247,.90);
   margin-top: 6px; font-weight: 300; letter-spacing: .5px;
   text-shadow: 0 2px 8px rgba(0,0,0,.9);
 }
@@ -176,7 +195,7 @@ body::before {
 }
 .join-box {
   width: 100%; max-width: 440px;
-  background: linear-gradient(160deg, rgba(18,40,22,.97) 0%, rgba(8,14,10,.99) 100%);
+  background: linear-gradient(160deg, rgba(14,32,18,.98) 0%, rgba(7,14,8,.99) 100%);
   border: 1px solid rgba(201,145,42,.3);
   border-radius: 24px;
   padding: 48px 40px 44px;
@@ -202,37 +221,39 @@ body::before {
   margin-bottom: 4px; letter-spacing: .5px; line-height: 1.1;
 }
 .join-sub {
-  text-align: center; color: rgba(240,230,208,.35);
+  text-align: center; color: rgba(239,242,247,.72);
   font-size: .8rem; margin-bottom: 36px; font-weight: 300; letter-spacing: .5px;
 }
 .lbl {
   display: block; font-size: .65rem; font-weight: 600;
   letter-spacing: 2px; text-transform: uppercase;
-  color: rgba(240,230,208,.35); margin-bottom: 8px;
+  color: rgba(239,242,247,.72); margin-bottom: 8px;
 }
 .inp {
   width: 100%; padding: 13px 16px;
-  background: rgba(0,0,0,.35); border: 1px solid var(--border2);
+  background: rgba(255,255,255,.06); border: 1px solid var(--border2);
   border-radius: var(--radius-sm);
   font-family: 'Outfit', sans-serif; font-size: .95rem;
   color: var(--cream); outline: none; margin-bottom: 20px;
-  transition: border-color .2s, box-shadow .2s;
+  transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.inp:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,145,42,.12); }
-.inp::placeholder { color: rgba(240,230,208,.18); }
+.inp:focus { border-color: var(--gold2); background: rgba(255,255,255,.09); box-shadow: 0 0 0 3px rgba(232,184,75,.18); }
+.inp:hover:not(:focus) { background: rgba(255,255,255,.08); }
+.inp::placeholder { color: rgba(239,242,247,.50); }
 .role-row { display: flex; gap: 10px; margin-bottom: 28px; }
 .role-btn {
   flex: 1; padding: 14px 8px; border-radius: var(--radius-sm);
   border: 1px solid var(--border); background: var(--surface);
   font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 500;
-  cursor: pointer; color: rgba(240,230,208,.45); transition: all .2s;
+  cursor: pointer; color: rgba(239,242,247,.80); transition: all .2s;
   display: flex; flex-direction: column; align-items: center; gap: 5px;
 }
 .role-btn .ri { font-size: 1.25rem; }
 .role-btn .rl { font-weight: 600; font-size: .85rem; }
-.role-btn .rs { font-size: .62rem; opacity: .55; font-weight: 300; }
+.role-btn .rs { font-size: .62rem; opacity: .78; font-weight: 300; }
+.role-btn:hover:not(.rv):not(.ro) { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
 .role-btn.rv { border-color: var(--gold); background: var(--goldB); color: var(--gold2); }
-.role-btn.ro { border-color: rgba(41,128,185,.5); background: rgba(41,128,185,.08); color: #5dade2; }
+.role-btn.ro { border-color: rgba(68,153,232,.5); background: rgba(68,153,232,.10); color: #6ab8f7; }
 .err { color: #e74c3c; font-size: .78rem; margin-bottom: 12px; text-align: center; }
 .btn-primary {
   width: 100%; padding: 15px; border: none; border-radius: var(--radius-sm);
@@ -247,27 +268,27 @@ body::before {
 
 /* Tab row on Join screen */
 .tab-row { display: flex; gap: 6px; margin-bottom: 22px; }
-.tab-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(240,230,208,.35); font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .2s; }
+.tab-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(239,242,247,.72); font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .2s; }
 .tab-btn.active { background: var(--goldB); border-color: rgba(201,145,42,.3); color: var(--gold2); }
-.tab-btn:hover:not(.active) { background: var(--surface); color: rgba(240,230,208,.7); border-color: var(--border2); }
+.tab-btn:hover:not(.active) { background: var(--surface); color: rgba(239,242,247,.90); border-color: var(--border2); }
 
 /* Team Room preview chip */
 .team-code-preview { display: inline-flex; align-items: center; gap: 8px; background: var(--goldB); border: 1px solid rgba(201,145,42,.22); border-radius: 8px; padding: 8px 12px; margin-bottom: 18px; width: 100%; }
-.tcp-label { font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(240,230,208,.3); white-space: nowrap; }
+.tcp-label { font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.65); white-space: nowrap; }
 .tcp-code { font-family: monospace; font-size: .9rem; font-weight: 700; color: var(--gold2); letter-spacing: .1em; flex: 1; }
 
 /* Deck picker on Create tab */
 .deck-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
-.deck-btn { padding: 10px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(240,230,208,.45); font-family: 'Outfit', sans-serif; cursor: pointer; transition: all .2s; text-align: center; }
+.deck-btn { padding: 10px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: rgba(239,242,247,.80); font-family: 'Outfit', sans-serif; cursor: pointer; transition: all .2s; text-align: center; }
 .deck-btn .dk-label { display: block; font-size: .78rem; font-weight: 600; margin-bottom: 2px; }
-.deck-btn .dk-desc  { display: block; font-size: .62rem; color: rgba(240,230,208,.25); }
+.deck-btn .dk-desc  { display: block; font-size: .62rem; color: rgba(239,242,247,.60); }
 .deck-btn.active { background: var(--goldB); border-color: rgba(201,145,42,.3); color: var(--gold2); }
 .deck-btn.active .dk-desc { color: rgba(201,145,42,.5); }
-.deck-btn:hover:not(.active) { background: var(--surface); color: rgba(240,230,208,.7); border-color: var(--border2); }
+.deck-btn:hover:not(.active) { background: var(--surface); color: rgba(239,242,247,.90); border-color: var(--border2); }
 
 /* ══════════════════════ HEADER ══════════════════════ */
 .hdr {
-  background: rgba(8,12,10,.92);
+  background: rgba(7,14,8,.95);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(20px);
   position: sticky; top: 0; z-index: 100; padding: 0 24px;
@@ -282,7 +303,7 @@ body::before {
   display: flex; align-items: center; gap: 5px;
   padding: 7px 13px; border-radius: 8px;
   border: 1px solid var(--border); background: transparent;
-  color: rgba(240,230,208,.4); font-family: 'Outfit', sans-serif;
+  color: rgba(239,242,247,.75); font-family: 'Outfit', sans-serif;
   font-size: .78rem; cursor: pointer; transition: all .2s;
 }
 .btn-back:hover { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
@@ -292,10 +313,10 @@ body::before {
 }
 .hdr-c { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .badge {
-  background: var(--surface); border: 1px solid var(--border);
+  background: var(--surface2); border: 1px solid var(--border2);
   border-radius: 100px; padding: 5px 12px;
   font-size: .68rem; letter-spacing: 1.5px; text-transform: uppercase;
-  color: rgba(240,230,208,.3);
+  color: rgba(239,242,247,.80);
 }
 .badge-gold { background: var(--goldB); border-color: rgba(201,145,42,.22); color: rgba(232,184,77,.7); }
 .hdr-r { display: flex; align-items: center; gap: 8px; }
@@ -303,7 +324,7 @@ body::before {
   display: flex; align-items: center; gap: 5px;
   padding: 7px 13px; border-radius: 8px;
   border: 1px solid var(--border); background: transparent;
-  color: rgba(240,230,208,.45); font-family: 'Outfit', sans-serif;
+  color: rgba(239,242,247,.80); font-family: 'Outfit', sans-serif;
   font-size: .76rem; cursor: pointer; transition: all .2s;
 }
 .btn-sm:hover { background: var(--surface2); color: var(--cream); }
@@ -323,7 +344,7 @@ body::before {
 .panel-gold { border-color: rgba(201,145,42,.2); }
 .ptitle {
   font-size: .62rem; font-weight: 600; letter-spacing: 2.5px;
-  text-transform: uppercase; color: rgba(240,230,208,.28);
+  text-transform: uppercase; color: rgba(239,242,247,.62);
   margin-bottom: 14px; display: block;
 }
 
@@ -343,15 +364,16 @@ body::before {
 .tsel-wrap::after { content: '▾'; position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: .72rem; pointer-events: none; }
 .tsel {
   appearance: none; padding: 9px 30px 9px 13px;
-  background: rgba(0,0,0,.3); border: 1px solid rgba(201,145,42,.25);
+  background: rgba(255,255,255,.07); border: 1px solid rgba(201,146,42,.35);
   color: var(--gold2); border-radius: 8px;
   font-family: 'Outfit', sans-serif; font-size: .85rem;
-  cursor: pointer; outline: none;
+  cursor: pointer; outline: none; transition: border-color .2s, background .2s;
 }
-.tsel option { background: #0d1510; }
+.tsel:hover { background: rgba(255,255,255,.10); border-color: rgba(201,146,42,.55); }
+.tsel option { background: #122018; }
 .ring-area {
   display: flex; align-items: center; gap: 16px;
-  padding: 14px; background: rgba(0,0,0,.2);
+  padding: 14px; background: rgba(255,255,255,.04);
   border-radius: 12px; border: 1px solid var(--border);
 }
 .ring-area.urgent { animation: urgentBg 1s ease infinite; }
@@ -362,12 +384,12 @@ body::before {
 .rnum { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; color: var(--cream); }
 .rnum.urgent { color: #e74c3c; }
 .rtxt { flex: 1; }
-.rstatus { font-size: .72rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px; color: rgba(240,230,208,.35); }
+.rstatus { font-size: .72rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px; color: rgba(239,242,247,.72); }
 .rstatus.warn { color: #e67e22; } .rstatus.danger { color: #e74c3c; }
-.rhint { font-size: .7rem; color: rgba(240,230,208,.2); margin-top: 3px; }
-.btn-stop { margin-top: 8px; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border2); background: transparent; color: rgba(240,230,208,.4); font-family: 'Outfit', sans-serif; font-size: .73rem; cursor: pointer; transition: all .2s; }
+.rhint { font-size: .7rem; color: rgba(239,242,247,.52); margin-top: 3px; }
+.btn-stop { margin-top: 8px; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border2); background: transparent; color: rgba(239,242,247,.75); font-family: 'Outfit', sans-serif; font-size: .73rem; cursor: pointer; transition: all .2s; }
 .btn-stop:hover { background: var(--surface2); color: var(--cream); }
-.waiting-hint { font-size: .8rem; color: rgba(240,230,208,.22); font-style: italic; text-align: center; padding: 8px 0; }
+.waiting-hint { font-size: .8rem; color: rgba(239,242,247,.54); font-style: italic; text-align: center; padding: 8px 0; }
 
 /* ══════════════════════ PLAYING CARDS ══════════════════════ */
 .cards-grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 0; }
@@ -423,7 +445,7 @@ body::before {
 .obs-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(41,128,185,.08); border: 1px solid rgba(41,128,185,.2); border-radius: 10px; color: #5dade2; font-size: .86rem; }
 .vstatus { text-align: center; font-size: .82rem; padding: 8px 0; }
 .vstatus.voted { color: rgba(201,145,42,.7); }
-.vstatus.wait  { color: rgba(240,230,208,.2); font-style: italic; }
+.vstatus.wait  { color: rgba(239,242,247,.52); font-style: italic; }
 
 /* ══════════════════════ RESULTS HERO ══════════════════════ */
 .avg-hero {
@@ -435,7 +457,7 @@ body::before {
 }
 .avg-hero-label {
   font-size: .62rem; font-weight: 600; letter-spacing: 2.5px;
-  text-transform: uppercase; color: rgba(240,230,208,.38); margin-bottom: 10px;
+  text-transform: uppercase; color: rgba(239,242,247,.73); margin-bottom: 10px;
 }
 .avg-hero-num {
   font-family: 'Cormorant Garamond', serif;
@@ -443,7 +465,7 @@ body::before {
   line-height: 1; text-shadow: 0 0 50px rgba(201,145,42,.45);
   animation: heroIn .5s ease;
 }
-.avg-hero-sub { font-size: .8rem; color: rgba(240,230,208,.4); margin-top: 10px; }
+.avg-hero-sub { font-size: .8rem; color: rgba(239,242,247,.75); margin-top: 10px; }
 .avg-hero-consensus {
   display: inline-block; margin-top: 14px;
   background: rgba(201,145,42,.18); border: 1px solid rgba(201,145,42,.38);
@@ -454,7 +476,7 @@ body::before {
 .avg-hero-range { display: flex; justify-content: center; gap: 32px; margin-top: 18px; }
 .avg-hero-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .avg-hero-stat .v { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--cream); font-weight: 700; }
-.avg-hero-stat .l { font-size: .58rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(240,230,208,.28); }
+.avg-hero-stat .l { font-size: .58rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.62); }
 
 /* ══════════════════════ WHO PICKED WHAT ══════════════════════ */
 .who-section { margin-bottom: 8px; }
@@ -472,12 +494,12 @@ body::before {
 .rv-card-face.consensus    { border: 2px solid var(--gold); box-shadow: 0 6px 18px rgba(201,145,42,.4); }
 .rv-val { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; color: var(--ink); }
 .rv-val.red { color: #b01020; }
-.rv-name { font-size: .68rem; color: rgba(240,230,208,.55); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.rv-name { font-size: .68rem; color: rgba(239,242,247,.84); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .rv-you-tag { font-size: .58rem; color: var(--gold2); font-weight: 700; letter-spacing: .3px; }
 .outlier-tag { font-size: .55rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
 .outlier-tag.high { background: rgba(231,76,60,.18); color: #e74c3c; }
 .outlier-tag.low  { background: rgba(52,152,219,.18); color: #3498db; }
-.no-vote { text-align: center; color: rgba(240,230,208,.32); font-size: .77rem; padding: 6px 0; }
+.no-vote { text-align: center; color: rgba(239,242,247,.67); font-size: .77rem; padding: 6px 0; }
 
 /* ══════════════════════ OBSERVER CONTROLS ══════════════════════ */
 .obs-controls { display: flex; flex-direction: column; gap: 10px; }
@@ -509,7 +531,7 @@ body::before {
   display: flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap;
 }
 .btn-new-session:hover { background: rgba(192,57,43,.15); border-color: rgba(192,57,43,.35); color: #e74c3c; }
-.btn-hint { font-size: .6rem; color: rgba(240,230,208,.18); text-align: center; margin-top: 1px; font-style: italic; }
+.btn-hint { font-size: .6rem; color: rgba(239,242,247,.50); text-align: center; margin-top: 1px; font-style: italic; }
 .btn-end-session {
   width: 100%; padding: 12px 16px; border-radius: var(--radius-sm);
   background: transparent; border: 1px solid rgba(192,57,43,.2);
@@ -518,47 +540,47 @@ body::before {
   display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px;
 }
 .btn-end-session:hover { background: rgba(192,57,43,.1); border-color: rgba(192,57,43,.35); color: #e74c3c; }
-.end-session-hint { font-size: .58rem; color: rgba(240,230,208,.15); text-align: center; margin-top: 3px; font-style: italic; }
+.end-session-hint { font-size: .58rem; color: rgba(239,242,247,.45); text-align: center; margin-top: 3px; font-style: italic; }
 
 /* Story queue panel */
-.story-panel { background: rgba(0,0,0,.18); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; }
-.story-panel-title { font-size: .65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(240,230,208,.3); margin-bottom: 10px; }
+.story-panel { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; }
+.story-panel-title { font-size: .65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); margin-bottom: 10px; }
 .story-active { font-size: .92rem; font-weight: 600; color: var(--cream); margin-bottom: 6px; line-height: 1.35; }
-.story-progress { font-size: .68rem; color: rgba(240,230,208,.3); margin-bottom: 10px; }
+.story-progress { font-size: .68rem; color: rgba(239,242,247,.65); margin-bottom: 10px; }
 .story-add-row { display: flex; gap: 6px; margin-bottom: 8px; }
-.story-inp { flex: 1; padding: 8px 10px; background: rgba(0,0,0,.3); border: 1px solid var(--border2); border-radius: 8px; color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .8rem; }
-.story-inp::placeholder { color: rgba(240,230,208,.18); }
-.story-inp:focus { outline: none; border-color: var(--gold); }
+.story-inp { flex: 1; padding: 8px 10px; background: rgba(255,255,255,.07); border: 1px solid var(--border2); border-radius: 8px; color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .8rem; transition: border-color .2s, background .2s; }
+.story-inp::placeholder { color: rgba(239,242,247,.50); }
+.story-inp:focus { outline: none; border-color: var(--gold2); background: rgba(255,255,255,.10); }
 .btn-story-add { padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(201,145,42,.25); background: var(--goldB); color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .2s; }
 .btn-story-add:hover { background: rgba(201,145,42,.18); }
 .story-list { max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
 .story-item { font-size: .75rem; padding: 4px 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-.story-item.done { color: rgba(240,230,208,.28); text-decoration: line-through; }
+.story-item.done { color: rgba(239,242,247,.62); text-decoration: line-through; }
 .story-item.active { background: var(--goldB); color: var(--gold2); font-weight: 600; }
-.story-item.queued { color: rgba(240,230,208,.4); }
+.story-item.queued { color: rgba(239,242,247,.75); }
 .story-est { font-size: .68rem; opacity: .7; }
 .btn-record-next { width: 100%; padding: 11px; border-radius: var(--radius-sm); border: none; background: linear-gradient(135deg, rgba(39,174,96,.7), rgba(39,174,96,.5)); color: #fff; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .2s; margin-top: 4px; }
 .btn-record-next:hover { background: linear-gradient(135deg, rgba(39,174,96,.85), rgba(39,174,96,.65)); }
 .btn-record-next:disabled { opacity: .3; cursor: not-allowed; }
 .story-name-banner { background: rgba(201,145,42,.07); border: 1px solid rgba(201,145,42,.15); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; }
-.story-name-label { font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(240,230,208,.3); display: block; margin-bottom: 3px; }
+.story-name-label { font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); display: block; margin-bottom: 3px; }
 .story-name-text { font-size: .9rem; font-weight: 600; color: var(--cream); line-height: 1.3; }
 
 /* ══════════════════════ PLAYERS PANEL ══════════════════════ */
-.vp-head { display: flex; justify-content: space-between; font-size: .7rem; color: rgba(240,230,208,.3); margin-bottom: 8px; }
+.vp-head { display: flex; justify-content: space-between; font-size: .7rem; color: rgba(239,242,247,.65); margin-bottom: 8px; }
 .vp-bar { background: rgba(255,255,255,.05); border-radius: 100px; height: 4px; overflow: hidden; margin-bottom: 14px; }
 .vp-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--gold), var(--gold2)); transition: width .5s ease; }
 .plist { display: flex; flex-direction: column; gap: 6px; }
 .prow {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; border-radius: 11px;
-  background: rgba(255,255,255,.025); border: 1px solid var(--border);
+  background: rgba(255,255,255,.05); border: 1px solid var(--border);
   transition: all .3s;
 }
 .prow.voted { background: var(--goldB); border-color: rgba(201,145,42,.15); }
 .prow.obs   { background: rgba(41,128,185,.07); border-color: rgba(41,128,185,.12); }
 .prow.not-voted-yet { border-color: rgba(255,255,255,.04); opacity: .75; }
-.prow.not-voted-yet .pav { background: rgba(255,255,255,.08); color: rgba(240,230,208,.4); }
+.prow.not-voted-yet .pav { background: rgba(255,255,255,.10); color: rgba(239,242,247,.80); }
 .pav {
   width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -567,7 +589,7 @@ body::before {
 .prow.voted .pav { background: var(--gold); color: var(--ink); }
 .prow.obs   .pav { background: rgba(41,128,185,.4); }
 .pname { font-size: .84rem; font-weight: 500; color: var(--cream2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prole { font-size: .64rem; color: rgba(240,230,208,.25); margin-top: 1px; }
+.prole { font-size: .64rem; color: rgba(239,242,247,.60); margin-top: 1px; }
 .prow.obs .prole { color: rgba(93,173,226,.5); }
 .pdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .pdot.v { background: var(--gold); }
@@ -583,17 +605,17 @@ body::before {
 .voted-label { font-size: .62rem; color: rgba(201,145,42,.7); font-weight: 600; }
 .waiting-label { font-size: .62rem; color: rgba(231,76,60,.5); font-style: italic; }
 .sep { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
-.nobody { font-size: .78rem; color: rgba(240,230,208,.18); font-style: italic; text-align: center; padding: 10px 0; }
+.nobody { font-size: .78rem; color: rgba(239,242,247,.50); font-style: italic; text-align: center; padding: 10px 0; }
 
 /* ══════════════════════ SESSION STATS ══════════════════════ */
 .ss-grid { display: flex; gap: 8px; }
 .ss-chip {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 12px 8px; background: rgba(0,0,0,.2);
-  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 8px; background: rgba(255,255,255,.05);
+  border: 1px solid var(--border2); border-radius: 10px;
 }
 .ss-v { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--gold2); font-weight: 700; }
-.ss-l { font-size: .6rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(240,230,208,.25); text-align: center; }
+.ss-l { font-size: .6rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.60); text-align: center; }
 
 /* ══════════════════════ SESSION WARNING ══════════════════════ */
 .session-warn-banner {
@@ -602,12 +624,12 @@ body::before {
   padding: 12px 16px; display: flex; align-items: center; gap: 12px;
   animation: urgentBg 2s ease infinite; margin-bottom: 16px;
 }
-.session-warn-text { flex: 1; font-size: .8rem; color: rgba(240,230,208,.75); }
+.session-warn-text { flex: 1; font-size: .8rem; color: rgba(239,242,247,.93); }
 .session-warn-text strong { color: #e67e22; }
 
 /* ══════════════════════ INVITE ══════════════════════ */
 .inv-panel { border-style: dashed; border-color: rgba(255,255,255,.07); }
-.inv-url { background: rgba(0,0,0,.2); border-radius: 8px; padding: 9px 12px; font-family: monospace; font-size: .7rem; color: rgba(240,230,208,.28); word-break: break-all; margin-bottom: 10px; border: 1px solid var(--border); }
+.inv-url { background: rgba(255,255,255,.06); border-radius: 8px; padding: 9px 12px; font-family: monospace; font-size: .7rem; color: rgba(239,242,247,.78); word-break: break-all; margin-bottom: 10px; border: 1px solid var(--border2); }
 .btn-inv { width: 100%; padding: 10px; background: var(--goldB); border: 1px solid rgba(201,145,42,.2); border-radius: 9px; color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .2s; }
 .btn-inv:hover { background: rgba(201,145,42,.14); }
 
@@ -628,6 +650,125 @@ body::before {
 /* ══════════════════════ LOADING ══════════════════════ */
 .loading { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
 .spinner { width: 34px; height: 34px; border: 3px solid rgba(201,145,42,.18); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
+
+/* ══════════════════════ PRICING MODAL ══════════════════════ */
+.pricing-overlay {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; animation: fadeIn .2s ease;
+}
+.pricing-modal {
+  width: 100%; max-width: 700px; max-height: 92vh; overflow-y: auto;
+  background: linear-gradient(160deg, rgba(14,32,18,.99) 0%, rgba(7,14,8,1) 100%);
+  border: 1px solid rgba(201,146,42,.3);
+  border-radius: 24px; padding: 40px 36px 36px;
+  box-shadow: 0 40px 100px rgba(0,0,0,.8), inset 0 1px 0 rgba(201,146,42,.12);
+  position: relative; animation: fadeUp .3s ease;
+}
+.pricing-modal::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--gold3), var(--gold), transparent);
+  background-size: 300% auto; animation: shimmer 3s linear infinite; border-radius: 24px 24px 0 0;
+}
+.pricing-close {
+  position: absolute; top: 16px; right: 18px;
+  background: transparent; border: 1px solid var(--border);
+  color: rgba(239,242,247,.60); border-radius: 8px;
+  width: 32px; height: 32px; font-size: 1.1rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+}
+.pricing-close:hover { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
+.pricing-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem; font-weight: 700; color: var(--gold2);
+  text-align: center; margin-bottom: 4px;
+}
+.pricing-sub {
+  text-align: center; color: rgba(239,242,247,.65);
+  font-size: .82rem; margin-bottom: 24px; font-weight: 300;
+}
+/* Currency switcher */
+.currency-row {
+  display: flex; justify-content: center; gap: 6px; margin-bottom: 28px;
+}
+.currency-btn {
+  padding: 7px 18px; border-radius: 100px;
+  border: 1px solid var(--border); background: transparent;
+  color: rgba(239,242,247,.65); font-family: 'Outfit', sans-serif;
+  font-size: .82rem; font-weight: 500; cursor: pointer; transition: all .2s;
+}
+.currency-btn.active {
+  background: var(--goldB); border-color: rgba(201,146,42,.4);
+  color: var(--gold2); font-weight: 600;
+}
+.currency-btn:hover:not(.active) { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
+/* Pricing cards */
+.pricing-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.pricing-card {
+  border: 1px solid var(--border2); border-radius: 18px;
+  padding: 28px 22px 24px; background: var(--surface);
+  display: flex; flex-direction: column; gap: 0; position: relative;
+  transition: border-color .2s;
+}
+.pricing-card.pro {
+  border-color: rgba(201,146,42,.45);
+  background: linear-gradient(160deg, rgba(201,146,42,.08), rgba(201,146,42,.03));
+  box-shadow: 0 0 40px rgba(201,146,42,.1);
+}
+.pricing-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--ink); font-size: .65rem; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  padding: 4px 14px; border-radius: 100px; white-space: nowrap;
+}
+.pricing-tier { font-size: .68rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.60); margin-bottom: 10px; }
+.pricing-card.pro .pricing-tier { color: var(--gold2); }
+.pricing-price { margin-bottom: 6px; display: flex; align-items: baseline; gap: 4px; }
+.pricing-amount { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 700; color: var(--cream); line-height: 1; }
+.pricing-card.pro .pricing-amount { color: var(--gold2); }
+.pricing-period { font-size: .82rem; color: rgba(239,242,247,.55); }
+.pricing-desc { font-size: .78rem; color: rgba(239,242,247,.60); margin-bottom: 18px; min-height: 32px; line-height: 1.45; }
+.pricing-features { display: flex; flex-direction: column; gap: 9px; margin-bottom: 22px; flex: 1; }
+.pricing-feature {
+  display: flex; align-items: flex-start; gap: 9px;
+  font-size: .80rem; color: rgba(239,242,247,.82); line-height: 1.35;
+}
+.pf-icon { font-size: .85rem; flex-shrink: 0; margin-top: 1px; }
+.pf-icon.yes { color: var(--green); }
+.pf-icon.no  { color: rgba(239,242,247,.25); }
+.pricing-card.pro .pricing-feature { color: rgba(239,242,247,.90); }
+.pricing-cta {
+  width: 100%; padding: 13px; border-radius: var(--radius-sm);
+  font-family: 'Outfit', sans-serif; font-size: .9rem; font-weight: 600;
+  cursor: pointer; transition: all .2s; border: 1px solid var(--border2);
+  background: transparent; color: rgba(239,242,247,.80);
+}
+.pricing-cta:hover { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
+.pricing-cta.pro-cta {
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--ink); border: none;
+  box-shadow: 0 4px 20px rgba(201,146,42,.35);
+}
+.pricing-cta.pro-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,146,42,.5); }
+.pricing-footer { text-align: center; font-size: .72rem; color: rgba(239,242,247,.45); line-height: 1.6; }
+.pricing-footer a { color: var(--gold2); text-decoration: none; }
+/* Pricing button on join screen */
+.btn-pricing {
+  display: block; margin: 0 auto 20px;
+  padding: 8px 20px; border-radius: 100px;
+  border: 1px solid rgba(201,146,42,.3); background: var(--goldB);
+  color: var(--gold2); font-family: 'Outfit', sans-serif;
+  font-size: .78rem; font-weight: 600; cursor: pointer;
+  transition: all .2s; letter-spacing: .3px;
+}
+.btn-pricing:hover { background: var(--goldA); border-color: rgba(201,146,42,.5); }
+@media (max-width: 600px) {
+  .pricing-cards { grid-template-columns: 1fr; }
+  .pricing-modal { padding: 32px 20px 28px; }
+}
 
 /* ══════════════════════ RESPONSIVE ══════════════════════ */
 @media (max-width: 780px) {
@@ -655,10 +796,20 @@ body::before {
 /* ═══════════════════════ ROOM CONFIG ═══════════════════════ */
 // Dynamic rooms: each Create generates a unique 5-char code.
 // URL is updated via replaceState so links can be shared directly.
-// Capacity: max 11 players per room (host + 10 team members).
-const MAX_PLAYERS = 11;
+const FREE_MAX_PLAYERS = 6;   // Free tier: small team trial
+const PRO_MAX_PLAYERS  = 20;  // Pro tier: full team + stakeholders
 const SESSION_MAX_MS = 3 * 60 * 60 * 1000;
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000;
+
+// ── FOUNDER DETECTION ────────────────────────────────────────
+// Stored encoded so the team code isn't readable as plain text
+// in the compiled bundle. Not a guarantee, but raises the bar.
+// Encoded value is: btoa("<teamCode>") — never commit the raw name.
+const _FC = ["cnBhYnVpbGR0ZWFt"]; // rpabuildteam
+const isFounderRoom = (code) => {
+  try { return _FC.some(h => atob(h) === code.toLowerCase()); }
+  catch { return false; }
+};
 
 /* ═══════════════════════ MAIN APP ═══════════════════════ */
 export default function App() {
@@ -918,6 +1069,7 @@ export default function App() {
       round: 1,
       storiesDone: 0,
       deck,
+      plan: "free",
       timer: { running: false, duration: 30, remaining: 30 },
       players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
     });
@@ -941,8 +1093,13 @@ export default function App() {
     }
     const data = snap.val();
     const currentCount = Object.keys(data.players || {}).length;
-    if (currentCount >= MAX_PLAYERS) {
-      showToast(`This room is full (max ${MAX_PLAYERS} players).`);
+    const maxForPlan = data.plan === "pro" ? PRO_MAX_PLAYERS : FREE_MAX_PLAYERS;
+    if (currentCount >= maxForPlan) {
+      if (data.plan !== "pro") {
+        showToast(`Room full (free tier: ${FREE_MAX_PLAYERS} max). The host can upgrade to Pro for up to ${PRO_MAX_PLAYERS}.`);
+      } else {
+        showToast(`This room is full (max ${PRO_MAX_PLAYERS} participants).`);
+      }
       return;
     }
     setMyRole(role);
@@ -966,14 +1123,20 @@ export default function App() {
   // The room is created fresh if nobody is there, or joined if active.
   const handleTeamRoom = async (name, role, teamName, deck = "fibonacci") => {
     const c = teamCode(teamName);
+    // Team Room is a Pro feature. Founder team is always Pro.
+    // All other team rooms are set to Pro for now — Stripe will gate
+    // creation at Phase 3 once payment is wired up.
+    const plan = "pro";
     const snap = await new Promise((res) =>
       onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
     );
+    const existingPlan = snap.exists() ? (snap.val().plan || "pro") : plan;
     const currentCount = snap.exists()
       ? Object.keys(snap.val().players || {}).length
       : 0;
-    if (currentCount >= MAX_PLAYERS) {
-      showToast(`This room is full (max ${MAX_PLAYERS} players).`);
+    const maxForPlan = existingPlan === "pro" ? PRO_MAX_PLAYERS : FREE_MAX_PLAYERS;
+    if (currentCount >= maxForPlan) {
+      showToast(`This room is full (max ${maxForPlan} participants).`);
       return;
     }
     setMyRole(role);
@@ -985,7 +1148,9 @@ export default function App() {
         round: 1,
         storiesDone: 0,
         deck,
+        plan,
         teamName,
+        founderRoom: isFounderRoom(c),
         timer: { running: false, duration: 30, remaining: 30 },
         players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
       });
@@ -1140,7 +1305,7 @@ export default function App() {
         {screen === "game" && !roomData && (
           <div className="loading">
             <div className="spinner" />
-            <div style={{ color: "rgba(240,230,208,.28)", fontSize: ".88rem" }}>
+            <div style={{ color: "rgba(239,242,247,.62)", fontSize: ".88rem" }}>
               Connecting…
             </div>
           </div>
@@ -1298,6 +1463,114 @@ function Confetti({ onDone }) {
   );
 }
 
+/* ═══════════════════════ PRICING MODAL ═══════════════════════ */
+const PRICING = {
+  USD: { symbol: "$", free: "0", pro: "8",  proAnnual: "6"  },
+  GBP: { symbol: "£", free: "0", pro: "6",  proAnnual: "5"  },
+  EUR: { symbol: "€", free: "0", pro: "7",  proAnnual: "6"  },
+};
+
+function PricingModal({ onClose }) {
+  const [currency, setCurrency] = useState("GBP");
+  const p = PRICING[currency];
+
+  const FREE_FEATURES = [
+    { yes: true,  text: "Up to 6 participants per room"   },
+    { yes: true,  text: "All card decks (Fibonacci, T-Shirt, Powers of 2)" },
+    { yes: true,  text: "Story queue & results panel"     },
+    { yes: true,  text: "New room link each session"      },
+    { yes: false, text: "Team Room — persistent URL"      },
+    { yes: false, text: "Up to 20 participants"           },
+    { yes: false, text: "Unlimited stories per session"   },
+    { yes: false, text: "Session summary export"          },
+  ];
+
+  const PRO_FEATURES = [
+    { yes: true, text: "Everything in Free"                        },
+    { yes: true, text: "Team Room — your own link, forever"        },
+    { yes: true, text: "Up to 20 participants per room"            },
+    { yes: true, text: "Unlimited stories per session"             },
+    { yes: true, text: "Session summary — copy to clipboard"       },
+    { yes: true, text: "All card decks & custom timer"             },
+    { yes: true, text: "Priority support"                          },
+  ];
+
+  return (
+    <div className="pricing-overlay" onClick={onClose}>
+      <div className="pricing-modal" onClick={e => e.stopPropagation()}>
+        <button className="pricing-close" onClick={onClose} aria-label="Close pricing">✕</button>
+
+        <h2 className="pricing-title">Simple, Transparent Pricing</h2>
+        <p className="pricing-sub">Start free. Upgrade when your team needs more.</p>
+
+        {/* Currency switcher */}
+        <div className="currency-row">
+          {["USD", "GBP", "EUR"].map(c => (
+            <button
+              key={c}
+              className={`currency-btn${currency === c ? " active" : ""}`}
+              onClick={() => setCurrency(c)}
+            >
+              {c === "USD" ? "🇺🇸 USD" : c === "GBP" ? "🇬🇧 GBP" : "🇪🇺 EUR"}
+            </button>
+          ))}
+        </div>
+
+        {/* Pricing cards */}
+        <div className="pricing-cards">
+          {/* Free */}
+          <div className="pricing-card">
+            <div className="pricing-tier">Free</div>
+            <div className="pricing-price">
+              <span className="pricing-amount">{p.symbol}0</span>
+              <span className="pricing-period">/ forever</span>
+            </div>
+            <p className="pricing-desc">Perfect for individuals or small teams trying it out.</p>
+            <div className="pricing-features">
+              {FREE_FEATURES.map((f, i) => (
+                <div className="pricing-feature" key={i}>
+                  <span className={`pf-icon ${f.yes ? "yes" : "no"}`}>{f.yes ? "✓" : "✕"}</span>
+                  <span>{f.text}</span>
+                </div>
+              ))}
+            </div>
+            <button className="pricing-cta" onClick={onClose}>Get Started Free</button>
+          </div>
+
+          {/* Pro */}
+          <div className="pricing-card pro">
+            <span className="pricing-badge">Most Popular</span>
+            <div className="pricing-tier">Pro</div>
+            <div className="pricing-price">
+              <span className="pricing-amount">{p.symbol}{p.pro}</span>
+              <span className="pricing-period">/ month</span>
+            </div>
+            <p className="pricing-desc">
+              One persistent URL for your team, forever. Save {p.symbol}{Number(p.pro) - Number(p.proAnnual)}/mo with annual billing.
+            </p>
+            <div className="pricing-features">
+              {PRO_FEATURES.map((f, i) => (
+                <div className="pricing-feature" key={i}>
+                  <span className="pf-icon yes">✓</span>
+                  <span>{f.text}</span>
+                </div>
+              ))}
+            </div>
+            <button className="pricing-cta pro-cta" onClick={onClose}>
+              Start Free Trial — 14 days
+            </button>
+          </div>
+        </div>
+
+        <p className="pricing-footer">
+          No credit card required for free tier · Cancel anytime · Prices ex. VAT<br />
+          Questions? <a href="mailto:support@planningpoker.app">Contact us</a>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════ JOIN SCREEN ═══════════════════════ */
 function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) {
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
@@ -1308,6 +1581,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
   const [rc, setRc] = useState(prefillCode || "");
   const [teamName, setTeamName] = useState(prefillTeam || "");
   const [err, setErr] = useState("");
+  const [showPricing, setShowPricing] = useState(false);
 
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
@@ -1343,6 +1617,14 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
         <h1 className="join-title">Planning Poker</h1>
         <p className="join-sub">Sprint Planning · Agile Estimation</p>
 
+        {/* Pricing CTA */}
+        <button className="btn-pricing" onClick={() => setShowPricing(true)}>
+          ✦ See Pricing — Free &amp; Pro
+        </button>
+
+        {/* Pricing modal */}
+        {showPricing && <PricingModal onClose={() => setShowPricing(false)} />}
+
         {/* Three-tab navigation */}
         <div className="tab-row">
           <button
@@ -1369,7 +1651,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
         <label className="lbl">Your Name</label>
         <input
           className="inp"
-          placeholder="e.g. Jahangir Ali"
+          placeholder="e.g. Alex Johnson"
           value={name}
           onChange={(e) => { setName(e.target.value); clearErr(); }}
           onKeyDown={(e) => e.key === "Enter" && go()}
@@ -1398,7 +1680,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
             <label className="lbl">Team Name</label>
             <input
               className="inp"
-              placeholder="e.g. RPA Dev Team"
+              placeholder="e.g. Product Team"
               value={teamName}
               onChange={(e) => { setTeamName(e.target.value); clearErr(); }}
               onKeyDown={(e) => e.key === "Enter" && go()}
@@ -1409,7 +1691,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
                 <span className="tcp-code">{previewCode}</span>
               </div>
             )}
-            <p style={{ fontSize: ".72rem", color: "rgba(240,230,208,.28)", marginBottom: "18px", lineHeight: 1.5 }}>
+            <p style={{ fontSize: ".72rem", color: "rgba(239,242,247,.62)", marginBottom: "18px", lineHeight: 1.5 }}>
               Your team's permanent room. Anyone who types the same team name always joins the same space — no code sharing needed.
             </p>
           </>
@@ -1460,12 +1742,12 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
             : "Enter Team Room →"}
         </button>
         {tab === "create" && (
-          <p style={{ fontSize: ".68rem", color: "rgba(240,230,208,.18)", textAlign: "center", marginTop: "10px" }}>
+          <p style={{ fontSize: ".68rem", color: "rgba(239,242,247,.50)", textAlign: "center", marginTop: "10px" }}>
             Up to 11 players per room · Share the link after creating
           </p>
         )}
         {tab === "team" && (
-          <p style={{ fontSize: ".68rem", color: "rgba(240,230,208,.18)", textAlign: "center", marginTop: "10px" }}>
+          <p style={{ fontSize: ".68rem", color: "rgba(239,242,247,.50)", textAlign: "center", marginTop: "10px" }}>
             Persistent team space · No link sharing required
           </p>
         )}
@@ -1880,7 +2162,7 @@ function GameScreen({
                               <span className="l">Min</span>
                             </div>
                             <div className="avg-hero-stat">
-                              <span className="v" style={{ color: "rgba(240,230,208,.6)", fontSize: "1.4rem" }}>
+                              <span className="v" style={{ color: "rgba(239,242,247,.88)", fontSize: "1.4rem" }}>
                                 {medianDisp}
                               </span>
                               <span className="l">Median</span>
@@ -1897,7 +2179,7 @@ function GameScreen({
                             </div>
                           </div>
                           {spread > 0 && (
-                            <div style={{ textAlign: "center", marginTop: "10px", fontSize: ".72rem", color: "rgba(240,230,208,.3)", letterSpacing: ".5px" }}>
+                            <div style={{ textAlign: "center", marginTop: "10px", fontSize: ".72rem", color: "rgba(239,242,247,.65)", letterSpacing: ".5px" }}>
                               Spread: {spread} point{spread !== 1 ? "s" : ""} — discuss before finalising
                             </div>
                           )}
@@ -2199,10 +2481,10 @@ function GameScreen({
                         borderColor: s.estimate != null ? "rgba(201,145,42,.14)" : "var(--border)",
                       }}
                     >
-                      <span style={{ fontSize: ".8rem", color: s.estimate != null ? "var(--cream)" : "rgba(240,230,208,.3)", flex: 1, paddingRight: "8px", lineHeight: 1.3 }}>
+                      <span style={{ fontSize: ".8rem", color: s.estimate != null ? "var(--cream)" : "rgba(239,242,247,.65)", flex: 1, paddingRight: "8px", lineHeight: 1.3 }}>
                         {s.name}
                       </span>
-                      <span style={{ fontSize: ".88rem", fontWeight: 700, color: s.estimate != null ? "var(--gold2)" : "rgba(240,230,208,.2)", whiteSpace: "nowrap" }}>
+                      <span style={{ fontSize: ".88rem", fontWeight: 700, color: s.estimate != null ? "var(--gold2)" : "rgba(239,242,247,.52)", whiteSpace: "nowrap" }}>
                         {s.estimate != null ? `${s.estimate}` : "—"}
                       </span>
                     </div>
