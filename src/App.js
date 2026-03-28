@@ -609,7 +609,9 @@ body::before {
 
 /* Story queue panel */
 .story-panel { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; }
-.story-panel-title { font-size: .65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); margin-bottom: 10px; }
+.story-panel-title { font-size: .65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.story-panel-optional { font-size: .58rem; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: rgba(201,145,42,.7); background: rgba(201,145,42,.1); border: 1px solid rgba(201,145,42,.2); border-radius: 20px; padding: 1px 7px; }
+.story-panel-hint { font-size: .72rem; color: rgba(239,242,247,.45); margin-bottom: 10px; line-height: 1.5; font-style: italic; }
 .story-active { font-size: .92rem; font-weight: 600; color: var(--cream); margin-bottom: 6px; line-height: 1.35; }
 .story-progress { font-size: .68rem; color: rgba(239,242,247,.65); margin-bottom: 10px; }
 .story-add-row { display: flex; gap: 6px; margin-bottom: 8px; }
@@ -736,6 +738,20 @@ body::before {
   font-size: .72rem; color: rgba(239,242,247,.60);
   margin-top: 10px; line-height: 1.55; font-style: italic;
 }
+.analytics-breakdown { margin-top: 14px; }
+.analytics-breakdown-title {
+  font-size: .68rem; font-weight: 500; letter-spacing: .07em;
+  text-transform: uppercase; color: rgba(239,242,247,.45); margin-bottom: 8px;
+}
+.analytics-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.analytics-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 11px; border-radius: 20px;
+  background: rgba(255,255,255,.05); border: 1px solid var(--border);
+  font-size: .78rem; line-height: 1;
+}
+.analytics-chip-val { font-weight: 600; color: var(--gold2); }
+.analytics-chip-cnt { color: rgba(239,242,247,.50); font-weight: 300; }
 
 /* ══════════════════════ STREAK / ESTIMATION SPREE ══════════════════════ */
 .streak-panel {
@@ -1018,6 +1034,10 @@ export default function App() {
     return r ? r.toUpperCase() : "";
   });
   const [prefillTeam] = useState(() => {
+    // Clean URL: /t/<slug>  e.g. /t/rpa-build-team
+    const pathMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+    if (pathMatch) return pathMatch[1];
+    // Query param fallback: ?team=<name>
     const p = new URLSearchParams(window.location.search);
     const t = p.get("team");
     return t ? decodeURIComponent(t) : "";
@@ -1404,10 +1424,12 @@ export default function App() {
   const addStory = useCallback(async (name) => {
     // Firebase returns stories as {0:{...}, 1:{...}} — an object, not an array.
     // .length on an object is undefined, so use Object.keys to get the count.
+    const sanitised = name.trim().slice(0, 200); // enforce 200-char max server-side
+    if (!sanitised) return;
     const current = roomData?.stories || {};
     const idx = Object.keys(current).length;
     await update(ref(db, `rooms/${code}/stories/${idx}`), {
-      name: name.trim(),
+      name: sanitised,
       estimate: null,
     });
   }, [code, roomData]);
@@ -1681,24 +1703,24 @@ function PricingModal({ onClose }) {
   const p = PRICING[currency];
 
   const FREE_FEATURES = [
-    { yes: true,  text: "Up to 6 participants per room"   },
-    { yes: true,  text: "All card decks (Fibonacci, T-Shirt, Powers of 2)" },
-    { yes: true,  text: "Story queue & results panel"     },
-    { yes: true,  text: "New room link each session"      },
-    { yes: false, text: "Team Room — persistent URL"      },
-    { yes: false, text: "Up to 20 participants"           },
-    { yes: false, text: "Unlimited stories per session"   },
-    { yes: false, text: "Session summary export"          },
+    { yes: true,  text: "Up to 6 participants per room"                         },
+    { yes: true,  text: "All card decks — Fibonacci, T-Shirt, Powers of 2"     },
+    { yes: true,  text: "Real-time voting with simultaneous reveal"             },
+    { yes: true,  text: "Story queue — work through your full backlog"          },
+    { yes: true,  text: "Session summary — copy all estimates to clipboard"     },
+    { yes: true,  text: "Observer mode with team analytics"                     },
+    { yes: false, text: "Team Room — your own permanent link"                   },
+    { yes: false, text: "Up to 20 participants per room"                        },
   ];
 
   const PRO_FEATURES = [
-    { yes: true, text: "Everything in Free"                        },
-    { yes: true, text: "Team Room — your own link, forever"        },
-    { yes: true, text: "Up to 20 participants per room"            },
-    { yes: true, text: "Unlimited stories per session"             },
-    { yes: true, text: "Session summary — copy to clipboard"       },
-    { yes: true, text: "All card decks & custom timer"             },
-    { yes: true, text: "Priority support"                          },
+    { yes: true, text: "Everything in Free, always"                             },
+    { yes: true, text: "Team Room — one permanent URL, reused every sprint"     },
+    { yes: true, text: "Up to 20 participants per room"                         },
+    { yes: true, text: "No link sharing — team just types the team name"        },
+    { yes: true, text: "Custom countdown timer per session"                     },
+    { yes: true, text: "Estimation Spree & alignment analytics"                 },
+    { yes: true, text: "Priority support"                                       },
   ];
 
   return (
@@ -1707,7 +1729,7 @@ function PricingModal({ onClose }) {
         <button className="pricing-close" onClick={onClose} aria-label="Close pricing">✕</button>
 
         <h2 className="pricing-title">Simple, Transparent Pricing</h2>
-        <p className="pricing-sub">Start free. Upgrade when your team needs more.</p>
+        <p className="pricing-sub">Free forever for small teams. Upgrade for your permanent team space.</p>
 
         {/* Currency switcher */}
         <div className="currency-row">
@@ -1731,7 +1753,7 @@ function PricingModal({ onClose }) {
               <span className="pricing-amount">{p.symbol}0</span>
               <span className="pricing-period">/ forever</span>
             </div>
-            <p className="pricing-desc">Perfect for individuals or small teams trying it out.</p>
+            <p className="pricing-desc">No account needed. Get your team estimating in under 10 seconds — free forever.</p>
             <div className="pricing-features">
               {FREE_FEATURES.map((f, i) => (
                 <div className="pricing-feature" key={i}>
@@ -1752,7 +1774,7 @@ function PricingModal({ onClose }) {
               <span className="pricing-period">/ month</span>
             </div>
             <p className="pricing-desc">
-              One persistent URL for your team, forever. Save {p.symbol}{Number(p.pro) - Number(p.proAnnual)}/mo with annual billing.
+              One permanent room your team reuses every sprint. No more sending links before every session. Save {p.symbol}{Number(p.pro) - Number(p.proAnnual)}/mo with annual billing.
             </p>
             <div className="pricing-features">
               {PRO_FEATURES.map((f, i) => (
@@ -1821,11 +1843,11 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
           ))}
         </div>
         <h1 className="join-title">Planning Poker</h1>
-        <p className="join-sub">Sprint Planning · Agile Estimation</p>
+        <p className="join-sub">Real-time estimation for agile teams · Free · No sign-up</p>
 
         {/* Pricing CTA */}
         <button className="btn-pricing" onClick={() => setShowPricing(true)}>
-          ✦ See Pricing — Free &amp; Pro
+          ✦ Free &amp; Pro Plans — See What's Included
         </button>
 
         {/* Pricing modal */}
@@ -1898,7 +1920,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
               </div>
             )}
             <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
-              Your team's permanent room. Anyone who types the same team name always joins the same space — no link sharing needed.
+              Your team's permanent room — reuse the same link every sprint. No setup, no link sharing. Anyone on the team just types the team name and they're in.
             </p>
           </>
         )}
@@ -1949,58 +1971,61 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
         </button>
         {tab === "create" && (
           <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
-            Free · Up to {FREE_MAX_PLAYERS} participants · Share the link after creating
+            Free forever · Up to {FREE_MAX_PLAYERS} participants · Ready in under 10 seconds
           </p>
         )}
         {tab === "team" && (
           <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
-            Pro feature · Persistent team space · No link sharing needed
+            Pro · Your team's permanent space — same link, every sprint
           </p>
         )}
       </div>
 
       {/* ── SEO content — rendered in DOM for Googlebot, visible to users ── */}
       <section className="seo-section" aria-label="About Planning Poker">
-        <h2 className="seo-h2">Free Online Planning Poker — No Sign-up Required</h2>
+        <h2 className="seo-h2">The Fastest Way to Run Sprint Planning — Free, No Sign-up</h2>
         <p className="seo-intro">
-          A fast, free planning poker tool for agile and scrum teams. Run story points estimation
-          sessions in seconds — create a room, share the link, and start voting. No account needed.
+          Stop wasting the first 20 minutes of every sprint just getting the team set up. Planning Poker
+          gives you a live estimation room in under 10 seconds. Create a room, share one link, and your
+          whole team is voting simultaneously — no account, no install, no friction.
         </p>
 
         <div className="seo-grid">
           <div className="seo-card">
-            <h3 className="seo-h3">What Is Planning Poker?</h3>
+            <h3 className="seo-h3">Why Simultaneous Reveal Matters</h3>
             <p className="seo-p">
-              Planning Poker (also called Scrum Poker) is a consensus-based estimation technique
-              used by agile and scrum teams. Each team member votes on the complexity of a user story
-              using Fibonacci cards (1, 2, 3, 5, 8, 13, 21, 34). Cards are revealed simultaneously
-              to prevent anchoring bias and encourage honest, independent story points estimation.
+              Planning Poker (also called Scrum Poker) works because every team member votes
+              independently before estimates are shown. Cards reveal all at once, which eliminates
+              anchoring bias — the tendency to adjust your estimate after hearing someone else's.
+              The result is more honest, more accurate story points with less discussion time.
             </p>
           </div>
           <div className="seo-card">
             <h3 className="seo-h3">How It Works</h3>
             <ol className="seo-ol">
               <li>Create a free room — no account required</li>
-              <li>Share the room link with your sprint team</li>
-              <li>Add your user stories to the queue</li>
-              <li>Vote with Fibonacci, T-shirt, or Powers of 2 cards</li>
-              <li>Reveal all votes simultaneously — discuss and agree on story points</li>
-              <li>Move to the next story — estimates are saved automatically</li>
+              <li>Share the link in Slack, Teams, or Zoom</li>
+              <li>Load your backlog into the story queue</li>
+              <li>Vote with Fibonacci, T-Shirt, or Powers of 2 cards</li>
+              <li>Reveal all votes at once — discuss only when there's disagreement</li>
+              <li>Record the estimate and move straight to the next story</li>
             </ol>
           </div>
         </div>
 
         <div className="seo-features">
-          <h3 className="seo-h3">Why Teams Use This Planning Poker Tool</h3>
+          <h3 className="seo-h3">What Makes This Planning Poker Tool Different</h3>
           <ul className="seo-ul">
-            <li><strong>No signup, no friction</strong> — create a room and share the link in under 10 seconds</li>
-            <li><strong>Real-time voting</strong> — all votes update live for every participant</li>
-            <li><strong>Multiple card decks</strong> — Fibonacci sequence, T-shirt sizing (XS–XXL), or Powers of 2</li>
-            <li><strong>Built-in countdown timer</strong> — keep estimation rounds focused and on track</li>
-            <li><strong>Story queue</strong> — add your full backlog and work through each item in order</li>
-            <li><strong>Session summary</strong> — copy all story point estimates at the end of your sprint planning</li>
-            <li><strong>Works for remote teams</strong> — designed for distributed agile teams across any time zone</li>
-            <li><strong>Team Room (Pro)</strong> — a persistent, shareable URL your team reuses every sprint</li>
+            <li><strong>Zero setup, every time</strong> — create a room and share the link in under 10 seconds, no account needed</li>
+            <li><strong>Simultaneous vote reveal</strong> — prevents anchoring bias so every estimate is honest and independent</li>
+            <li><strong>Three card decks</strong> — Fibonacci (1–34), T-Shirt sizing (XS–XXL), or Powers of 2, matched to how your team thinks</li>
+            <li><strong>Story queue</strong> — load your full sprint backlog and work through it in order, one story at a time</li>
+            <li><strong>Team Alignment analytics</strong> — facilitators see live consensus rate, total story points, estimate distribution, and re-vote patterns</li>
+            <li><strong>Estimation Spree</strong> — a live streak counter celebrates when the team aligns consistently, reinforcing good backlog clarity</li>
+            <li><strong>Built-in countdown timer</strong> — keep each estimation round time-boxed and the whole session on track</li>
+            <li><strong>Session summary</strong> — copy all story point estimates to the clipboard at the end for your sprint tool</li>
+            <li><strong>Observer and Facilitator mode</strong> — join without a vote card and manage the session from the analytics view</li>
+            <li><strong>Team Room (Pro)</strong> — one permanent URL your team reuses every sprint, no link sharing ever again</li>
           </ul>
         </div>
 
@@ -2010,50 +2035,52 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam }) 
           <h3 className="seo-h3" style={{ textAlign: "center", marginBottom: "20px" }}>Frequently Asked Questions</h3>
           <div className="seo-faq-grid">
             <div className="seo-faq-item">
-              <h4 className="seo-h4">Is this planning poker tool free?</h4>
+              <h4 className="seo-h4">Is this planning poker tool actually free?</h4>
               <p className="seo-p">
-                Yes. The free tier supports up to {FREE_MAX_PLAYERS} participants per room, all card decks,
-                a full story queue, and session summaries — no credit card or account required.
-                Upgrade to Pro for a persistent Team Room and up to {PRO_MAX_PLAYERS} participants.
+                Yes, and it stays free. The free tier gives you up to {FREE_MAX_PLAYERS} participants,
+                all three card decks, a full story queue, session analytics, and clipboard export —
+                no credit card, no account, no time limit. Pro adds a permanent Team Room and up to {PRO_MAX_PLAYERS} participants.
               </p>
             </div>
             <div className="seo-faq-item">
               <h4 className="seo-h4">Do I need to create an account?</h4>
               <p className="seo-p">
-                No. Just enter your name, create a room, and share the link. There is no
-                registration required to run a planning poker session.
+                No. Enter your name, create a room, and share the link. Your team joins in one click.
+                There is no registration, no email confirmation, and no password required — ever.
               </p>
             </div>
             <div className="seo-faq-item">
-              <h4 className="seo-h4">What is the Fibonacci sequence in planning poker?</h4>
+              <h4 className="seo-h4">Why use Fibonacci numbers for story points?</h4>
               <p className="seo-p">
-                The Fibonacci sequence (1, 2, 3, 5, 8, 13, 21, 34) is the most widely used
-                card deck in planning poker. The growing gaps between numbers reflect the
-                increasing uncertainty of larger user stories, making it easy for teams to
-                distinguish small, medium, and large effort without false precision.
+                Fibonacci (1, 2, 3, 5, 8, 13, 21, 34) reflects how estimation uncertainty grows with
+                complexity. The widening gaps between numbers make it easy for teams to distinguish
+                small, medium, and large effort without false precision — and force a real conversation
+                when two people are far apart.
               </p>
             </div>
             <div className="seo-faq-item">
               <h4 className="seo-h4">Does this work for remote and distributed teams?</h4>
               <p className="seo-p">
-                Yes. Share the room link in Slack, Teams, or Zoom and everyone joins instantly
-                from any browser — no install required. Ideal for remote sprint planning across
-                different time zones.
+                It was built for remote teams. Paste the room link into Slack, Teams, or Zoom chat
+                and everyone joins from any browser in seconds — no install, no plugin. Works across
+                all time zones and any combination of desktop and mobile devices.
               </p>
             </div>
             <div className="seo-faq-item">
-              <h4 className="seo-h4">What is T-shirt sizing in agile estimation?</h4>
+              <h4 className="seo-h4">What is the Team Alignment score?</h4>
               <p className="seo-p">
-                T-shirt sizing uses XS, S, M, L, XL, XXL instead of numbers. It is useful
-                early in a project when precise numeric estimates are not yet meaningful.
-                This tool supports T-shirt sizing alongside Fibonacci and Powers of 2.
+                The Team Alignment score (visible to facilitators) tracks the percentage of stories
+                that reached first-round consensus — where every voter picked the same card.
+                A high score means your backlog is well-defined. A low score flags stories that
+                need more acceptance criteria before the sprint begins.
               </p>
             </div>
             <div className="seo-faq-item">
               <h4 className="seo-h4">How many people can join a planning poker session?</h4>
               <p className="seo-p">
                 Free rooms support up to {FREE_MAX_PLAYERS} voters. Pro rooms support up to {PRO_MAX_PLAYERS}.
-                Observers can join in addition to voters and do not count towards the limit.
+                Observers — facilitators, product owners, or stakeholders watching — join on top of
+                that limit and never use a voter slot.
               </p>
             </div>
           </div>
@@ -2435,11 +2462,11 @@ function GameScreen({
                   className={`vstatus${myVote && !revealed ? " voted" : " wait"}`}
                   style={{ marginTop: 10 }}
                 >
-                  {myVote && !revealed
-                    ? `✓ You picked ${myVote} — waiting for reveal…`
-                    : !revealed
-                      ? "Pick a card to cast your vote"
-                      : ""}
+                  {revealed
+                    ? "⏳ Waiting for the facilitator to start the next story…"
+                    : myVote
+                      ? `✓ You picked ${myVote} — waiting for reveal…`
+                      : "Pick a card to cast your vote"}
                 </div>
               )}
             </div>
@@ -2565,12 +2592,16 @@ function GameScreen({
               <div className="obs-controls">
                 {/* Story queue manager */}
                 <div className="story-panel">
-                  <div className="story-panel-title">📋 Story Queue</div>
+                  <div className="story-panel-title">📋 Story Queue <span className="story-panel-optional">optional</span></div>
+                  <p className="story-panel-hint">
+                    Add stories to track estimates by name — or just start voting without them. Both work.
+                  </p>
                   <div className="story-add-row">
                     <input
                       className="story-inp"
-                      placeholder="Add a story or ticket name…"
+                      placeholder="e.g. User login flow, PROJ-42…"
                       value={storyInput}
+                      maxLength={200}
                       onChange={(e) => setStoryInput(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && storyInput.trim()) {
@@ -2632,28 +2663,60 @@ function GameScreen({
                   </div>
                 )}
 
-                {/* Record estimate and advance to next story */}
-                {hasStories && !allStoriesDone && revealed && (
-                  <button
-                    className="btn-record-next"
-                    onClick={() => onRecordStory(avgDisp !== "—" ? avgDisp : (allSame ? voted[0]?.vote : "?"), allSame)}
-                  >
-                    ✅ Record {avgDisp !== "—" ? `${avgDisp} pts` : "estimate"} &amp; Next Story
-                  </button>
+                {/* Primary forward action — shown after reveal only */}
+                {revealed && (
+                  <>
+                    {hasStories && !allStoriesDone ? (
+                      <button
+                        className="btn-record-next"
+                        onClick={() => onRecordStory(avgDisp !== "—" ? avgDisp : (allSame ? voted[0]?.vote : "?"), allSame)}
+                      >
+                        ✅ Record {avgDisp !== "—" ? `${avgDisp} pts` : "estimate"} &amp; Next Story
+                      </button>
+                    ) : (
+                      <button
+                        className="btn-record-next"
+                        onClick={() => onNewRound(allSame)}
+                      >
+                        ✅ Agreed — Start Next Story
+                      </button>
+                    )}
+                    <div className="obs-secondary-row" style={{ marginTop: 8 }}>
+                      <button className="btn-next-round" onClick={() => onNewRound(false)}>
+                        ↺ Re-vote this story
+                      </button>
+                      <button
+                        className="btn-new-session"
+                        onClick={() => {
+                          if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
+                        }}
+                      >
+                        🔄 New Sprint
+                      </button>
+                    </div>
+                    <div className="btn-hint">
+                      "Re-vote" keeps the same story · "New Sprint" resets everything
+                    </div>
+                  </>
                 )}
-
-                <div className="obs-secondary-row">
-                  <button className="btn-next-round" onClick={() => onNewRound(allSame)}>
-                    ↺ Next Round (no estimate)
-                  </button>
-                  <button className="btn-new-session" onClick={onReset}>
-                    🔄 New Sprint
-                  </button>
-                </div>
-                <div className="btn-hint">
-                  "Next Round" re-votes same story · "New Sprint" resets all votes
-                </div>
-                <button className="btn-end-session" onClick={onEndSession}>
+                {!revealed && (
+                  <div className="obs-secondary-row">
+                    <button
+                      className="btn-new-session"
+                      onClick={() => {
+                        if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
+                      }}
+                    >
+                      🔄 New Sprint
+                    </button>
+                  </div>
+                )}
+                <button
+                  className="btn-end-session"
+                  onClick={() => {
+                    if (window.confirm("End the session? This disconnects everyone and permanently deletes all session data.")) onEndSession();
+                  }}
+                >
                   🔴 End Session — Disconnect Everyone
                 </button>
                 <div className="end-session-hint">
@@ -2737,11 +2800,14 @@ function GameScreen({
               </div>
             </div>
 
-            {/* Session Analytics */}
-            {(() => {
+            {/* Session Analytics — observer only */}
+            {isObs && (() => {
+              const isTshirt = deck === "tshirt";
+              const tshirtOrder = ["XS", "S", "M", "L", "XL", "XXL"];
               const estimatedStories = stories.filter(
                 (s) => s.estimate != null && s.estimate !== "?" && !isNaN(Number(s.estimate))
               );
+              const allRecorded = stories.filter((s) => s.estimate != null && s.estimate !== "?");
               const totalSP = estimatedStories.reduce((sum, s) => sum + Number(s.estimate), 0);
               const avgSP = estimatedStories.length
                 ? (totalSP / estimatedStories.length).toFixed(1)
@@ -2749,7 +2815,6 @@ function GameScreen({
               const consensusRate = storiesDone > 0
                 ? Math.round((consensusCount / storiesDone) * 100)
                 : null;
-              // Re-vote rounds = total rounds - stories done (each story = 1 round minimum)
               const extraRounds = round - 1 - storiesDone;
               const fillClass = consensusRate === null ? "ok"
                 : consensusRate >= 70 ? "good"
@@ -2763,6 +2828,20 @@ function GameScreen({
                 : consensusRate >= 40
                 ? "Mixed alignment. Consider refining stories before the next sprint."
                 : "Low consensus — stories may need more definition and acceptance criteria.";
+              // Deck breakdown — frequency map of recorded estimates
+              const freqMap = {};
+              allRecorded.forEach((s) => {
+                freqMap[s.estimate] = (freqMap[s.estimate] || 0) + 1;
+              });
+              const breakdown = Object.entries(freqMap).sort((a, b) =>
+                isTshirt
+                  ? tshirtOrder.indexOf(a[0]) - tshirtOrder.indexOf(b[0])
+                  : Number(a[0]) - Number(b[0])
+              );
+              const deckLabel = deck === "fibonacci" ? "Fibonacci"
+                : deck === "tshirt" ? "T-Shirt"
+                : "Powers of 2";
+              const unitLabel = isTshirt ? "" : " sp";
               return (
                 <div className="panel">
                   <span className="ptitle">Session Analytics</span>
@@ -2811,6 +2890,19 @@ function GameScreen({
                           className="analytics-bar-fill ok"
                           style={{ width: `${Math.min((extraRounds / Math.max(round - 1, 1)) * 100, 100)}%` }}
                         ></div>
+                      </div>
+                    </div>
+                  )}
+                  {breakdown.length > 0 && (
+                    <div className="analytics-breakdown">
+                      <div className="analytics-breakdown-title">{deckLabel} — estimates this session</div>
+                      <div className="analytics-chips">
+                        {breakdown.map(([val, cnt]) => (
+                          <div className="analytics-chip" key={val}>
+                            <span className="analytics-chip-val">{val}{unitLabel}</span>
+                            <span className="analytics-chip-cnt">×{cnt}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
