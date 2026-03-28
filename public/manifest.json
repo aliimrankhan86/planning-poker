@@ -1,7 +1,7 @@
 {
   "short_name": "Planning Poker",
-  "name": "Planning Poker — Agile Estimation Tool",
-  "description": "Free online planning poker for agile and scrum teams.",
+  "name": "Planning Poker — Real-Time Estimation for Agile Teams",
+  "description": "Free real-time planning poker for agile and scrum teams. No sign-up required.",
   "icons": [
     {
       "src": "favicon.ico",
