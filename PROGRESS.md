@@ -30,6 +30,15 @@
   - The approved transparent brand mark is now used across the app’s logo sections
   - The app wordmark now displays as `Point Poker` with white `Point`, gold `Poker`, and stronger spacing/capitalization
   - The approved brand mark now also drives favicon and app-icon assets across browser and PWA contexts
+  - NavBar now includes direct `Plans` and `FAQ` shortcuts to improve landing-page discoverability
+  - JoinScreen now includes a compact plans overview section that the new `Plans` nav item scrolls to
+  - Login/register/reset copy now more clearly separates free use from account-linked Pro access
+  - Upgrade flow now returns signed-out users to pricing after account creation/sign-in instead of leaving them stranded
+  - Pricing modal now makes free vs Pro account state clearer and explicitly blocks misleading checkout copy while Stripe links are still placeholders
+  - Atlas QA signal recorded: auth modal looked clear, but live sign-in appeared to fail silently and Navbar `Plans`/`FAQ` did not appear in the tested deployment; this needs live-production recheck after deployment parity is confirmed
+  - Short-term paid-user recommendation clarified: activation code remains the simplest clean entitlement path before live Stripe checkout exists
+  - Pricing CTA now explicitly pivots to activation-code setup when checkout links are still placeholders
+  - Auth modal now explains the short-term Pro path more clearly: create account, then activate Pro with code
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
@@ -52,12 +61,17 @@
   - Cookie banner links open in new tab; banner copy updated to accurately describe essential-only storage
   - `vercel.json` updated with `/terms` and `/privacy` rewrites for direct URL and browser refresh
   - `npm run build` clean — 180.9 kB gzipped
+- Infrastructure completed (29 March 2026):
+  - `REACT_APP_SUPPORT_EMAIL` set in Vercel ✅
+  - All Firebase env vars confirmed in Vercel ✅
+  - Firebase Database Rules deployed with history path ✅
+  - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
-  - Git commit and push all changes
-  - Deploy updated `database.rules.json` to Firebase Console (history path)
-  - Connect `www.pointpoker.app` to Vercel and verify production routing
-  - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel environment variable
+  - Reconcile Atlas-reported auth/login failure against the live deployed build and confirm deployment parity
+  - Connect `www.pointpoker.app` domain to Vercel and verify production routing
+  - Run full E2E QA pass on production URL (see `QA_TEST_PLAN.md`)
   - Replace Stripe placeholder links and finish paid activation wiring
+  - Verify a real Pro account end-to-end once live Stripe links exist
 
 Treat this section as the fastest current-status read. Historical session notes below are useful context, but this snapshot is the authoritative present-tense state.
 
@@ -66,27 +80,26 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** NavBar alignment, Terms/Privacy legal pages, SPA routing, cookie audit, sprint history completion
+- **Worked on:** Navigation discoverability, auth/upgrade UX clarity, pricing state messaging, reusable QA prompt
 - **Completed:**
-  - NavBar alignment fixed: subtitle now `position: absolute` below the wrapper — "Log in" and "Get Pro" are now vertically level
-  - `TermsPage`: English-law Terms of Service (disclaimer, liability cap of £100, acceptable use, IP ownership, indemnification, governing law)
-  - `PrivacyPage`: UK GDPR-compliant Privacy Policy (all 7 DSAR rights, ICO complaint route, Firebase/Vercel/Stripe processor details, legal basis per Article 6, data retention, international transfers)
-  - `LegalPage` shared layout with back button and styled headings
-  - SPA routing: screen state now initialises from `window.location.pathname` (`/terms` → "terms" screen, `/privacy` → "privacy" screen)
-  - `navTo()` helper in App for pushState + setScreen transitions
-  - Footer all legal links wired with `onNavTerms`/`onNavPrivacy` SPA callbacks (no hard-nav dead links)
-  - Cookie banner: links open in new tab; copy rewritten to be more accurate (essential-only storage)
-  - `vercel.json`: `/terms` and `/privacy` Vercel rewrites added for direct URL access
-  - Sprint history: `HistoryModal`, NavBar "📊 History" button, Firebase listener, and all Pro copy updates (prior session completed)
-  - `database.rules.json`: `/history/{uid}` owner-only access and field validation
-  - `npm run build` clean — 180.9 kB gzipped
+  - Added `Plans` and `FAQ` NavBar shortcuts on non-game screens
+  - Added a compact landing-page plans section with a stable `#plans` target
+  - Added section-scroll behaviour for `Plans` and `FAQ` navigation
+  - Improved LoginModal copy and account-state messaging for signed-out, free, and Pro users
+  - Added signed-in password-reset action inside the account modal
+  - Improved upgrade flow so pricing -> create account/sign in -> pricing is coherent
+  - Updated PricingModal to clearly reflect active Pro, free-account readiness, and Stripe-not-live state
+  - Replaced the overly long QA prompt with a concise reusable Atlas prompt in `QA_PROMPT.md`
+  - Reviewed the simplest pre-Stripe paid-user path: keep account creation + activation code as the primary entitlement route until Stripe is live
+  - Updated pricing/auth copy so the app now explicitly guides users toward activation-code Pro setup while Stripe checkout is unavailable
+  - `npm run build` clean — 182.76 kB gzipped
 
 ---
 
 ## 📍 Current Status
 **Phase:** 1 / 3 crossover — Auth foundation coded, monetisation still blocked on Stripe setup
-**Active step:** Product QA and UX hardening on the core planning flow, now including a modernised UI pass
-**Remaining:** Vercel domain connection, Vercel support-email env var, Stripe links/webhook, continued product QA/hardening
+**Active step:** Production-focused QA and auth/upgrade hardening, including live verification of the deployed sign-in flow
+**Remaining:** Resolve Atlas auth mismatch if real, connect domain, add live Stripe links/webhook, then verify real Pro after Stripe is live
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

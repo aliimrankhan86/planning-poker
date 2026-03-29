@@ -447,6 +447,71 @@ body::before {
 .seo-ul li { padding-left: 1.4em; position: relative; margin-bottom: 6px; }
 .seo-ul li::before { content: "♦"; position: absolute; left: 0; color: var(--gold); font-size: .6rem; top: .35em; opacity: .7; }
 .seo-ul strong { color: rgba(239,242,247,.88); font-weight: 600; }
+.scroll-target { scroll-margin-top: 92px; }
+.seo-plan-section {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 16px;
+  padding: 28px 24px;
+  margin-bottom: 44px;
+}
+.seo-plan-intro {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 20px;
+}
+.seo-plan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.seo-plan-card {
+  padding: 20px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.seo-plan-card.pro {
+  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(241,185,63,.04));
+  border-color: rgba(241,185,63,.22);
+}
+.seo-plan-topline {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.48);
+  margin-bottom: 10px;
+}
+.seo-plan-card.pro .seo-plan-topline { color: var(--gold2); }
+.seo-plan-price {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--cream);
+  margin-bottom: 12px;
+}
+.seo-plan-card.pro .seo-plan-price { color: var(--gold2); }
+.seo-plan-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: rgba(239,242,247,.78);
+  font-size: .86rem;
+  line-height: 1.55;
+}
+.seo-plan-list li::before {
+  content: "✓";
+  color: var(--gold2);
+  margin-right: 10px;
+}
+.seo-plan-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+.seo-plan-cta { min-width: 220px; }
 .seo-features {
   background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.10);
   border-radius: 16px; padding: 28px 24px; margin-bottom: 44px;
@@ -464,7 +529,7 @@ body::before {
   margin: 44px auto;
 }
 @media (max-width: 680px) {
-  .seo-grid, .seo-faq-grid { grid-template-columns: 1fr; }
+  .seo-grid, .seo-faq-grid, .seo-plan-grid { grid-template-columns: 1fr; }
   .seo-section h2.seo-h2 { font-size: 1.5rem; }
   .seo-section { margin-top: 40px; }
 }
@@ -1082,12 +1147,22 @@ body::before {
   background: transparent; color: rgba(239,242,247,.80);
 }
 .pricing-cta:hover { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
+.pricing-cta:disabled {
+  cursor: not-allowed;
+  opacity: .72;
+  transform: none;
+  box-shadow: none;
+}
 .pricing-cta.pro-cta {
   background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
   color: var(--ink); border: none;
   box-shadow: 0 14px 30px rgba(241,185,63,.26), inset 0 1px 0 rgba(255,255,255,.48);
 }
 .pricing-cta.pro-cta:hover { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(241,185,63,.34), inset 0 1px 0 rgba(255,255,255,.58); }
+.pricing-cta.pro-cta:disabled {
+  background: linear-gradient(135deg, rgba(240,180,63,.72) 0%, rgba(255,217,120,.72) 55%, rgba(255,240,176,.72) 100%);
+  color: rgba(8,17,14,.76);
+}
 /* Billing note below price */
 .pricing-billing-note { font-size: .72rem; color: rgba(239,242,247,.45); margin-bottom: 14px; line-height: 1.4; }
 /* Trial note below CTA */
@@ -1103,6 +1178,12 @@ body::before {
 }
 .pro-key-toggle:hover { color: var(--gold2); }
 .pro-key-body { margin-top: 12px; }
+.pro-key-copy {
+  font-size: .78rem;
+  line-height: 1.55;
+  color: rgba(239,242,247,.60);
+  margin-bottom: 12px;
+}
 .pro-key-row { display: flex; gap: 8px; }
 .pro-key-input {
   flex: 1; padding: 10px 14px; border-radius: var(--radius-sm);
@@ -1185,6 +1266,12 @@ body::before {
 }
 .navbar-left  { display: flex; align-items: center; gap: 12px; }
 .navbar-right { display: flex; align-items: center; gap: 8px; }
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+}
 .navbar-brand {
   font-family: 'Outfit', sans-serif;
   font-size: 1.22rem; font-weight: 700;
@@ -1209,6 +1296,25 @@ body::before {
 .brand-wordmark-poker { color: var(--gold2); }
 .navbar-brand:hover .brand-wordmark-point { color: var(--mint2); }
 .navbar-brand:hover .brand-wordmark-poker { color: var(--gold3); }
+.nav-link-btn {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(158,234,196,.08);
+  background: rgba(255,255,255,.02);
+  color: rgba(239,242,247,.62);
+  font-family: 'Outfit', sans-serif;
+  font-size: .76rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.nav-link-btn:hover {
+  color: var(--cream);
+  background: rgba(255,255,255,.06);
+  border-color: rgba(158,234,196,.22);
+}
 
 /* Casino chip button */
 .chip-logo {
@@ -1337,6 +1443,59 @@ body::before {
   font-size: .84rem; color: rgba(239,242,247,.60); text-align: center;
   margin-bottom: 28px; font-weight: 300; line-height: 1.55;
 }
+.account-status-card {
+  margin-bottom: 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(158,234,196,.12);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.account-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: .82rem;
+  color: rgba(239,242,247,.78);
+}
+.account-status-row + .account-status-row { margin-top: 10px; }
+.account-status-label {
+  color: rgba(239,242,247,.52);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .66rem;
+  font-weight: 700;
+}
+.account-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.10);
+  color: rgba(239,242,247,.72);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.account-status-pill.pro {
+  color: var(--gold2);
+  border-color: rgba(241,185,63,.30);
+  background: rgba(241,185,63,.10);
+}
+.account-status-copy {
+  font-size: .8rem;
+  line-height: 1.55;
+  color: rgba(239,242,247,.68);
+}
+.login-mode-hint {
+  margin: -4px 0 18px;
+  text-align: center;
+  font-size: .78rem;
+  line-height: 1.5;
+  color: rgba(255,217,120,.82);
+}
 .login-modal-divider {
   display: flex; align-items: center; gap: 12px;
   margin: 20px 0; color: rgba(239,242,247,.28); font-size: .72rem;
@@ -1360,6 +1519,25 @@ body::before {
   border-bottom: 1px solid rgba(201,145,42,.3); transition: border-color .2s;
 }
 .login-modal-upgrade a:hover { border-bottom-color: var(--gold2); }
+.login-secondary-btn {
+  width: 100%;
+  margin-top: 14px;
+  margin-bottom: 14px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(158,234,196,.14);
+  background: rgba(255,255,255,.03);
+  color: var(--cream);
+  font-family: 'Outfit', sans-serif;
+  font-size: .84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.login-secondary-btn:hover {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(158,234,196,.24);
+}
 .auth-mode-row {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px;
 }
@@ -1399,6 +1577,18 @@ body::before {
 .pricing-account-note {
   margin: 0 0 12px; font-size: .8rem; color: rgba(239,242,247,.56);
 }
+.pricing-state-box {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(158,234,196,.12);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.pricing-state-neutral { color: rgba(239,242,247,.72); }
+.pricing-state-ok { color: var(--gold2); font-weight: 600; }
+.pricing-state-warn { color: rgba(255,217,120,.82); }
 
 /* ─── Nav upgrade wrapper ─── */
 /* Wrapper is exactly button height so it aligns with sibling buttons in navbar-right.
@@ -1635,6 +1825,7 @@ body::before {
   .footer-inner { grid-template-columns: 1fr 1fr; }
   .footer-col-brand { grid-column: 1 / -1; }
   .navbar-brand { display: none; }
+  .navbar-links { margin-left: 0; }
   .nav-account-name { max-width: 140px; }
   .footer-plan-bar { gap: 14px; }
   .footer-plan-cta { margin-left: 0; }
@@ -1643,6 +1834,8 @@ body::before {
   .footer-inner { grid-template-columns: 1fr; }
   .footer-legal-note { text-align: left; max-width: 100%; }
   .nav-btn-login { display: none; }
+  .navbar-links { gap: 4px; }
+  .nav-link-btn { padding: 6px 10px; font-size: .68rem; }
   .nav-btn-register { font-size: .78rem; padding: 7px 14px; }
   .nav-upgrade-sub { display: none; }
   .login-modal { padding: 36px 22px 28px; }
@@ -1695,12 +1888,36 @@ function BrandWordmark() {
   );
 }
 
+function NavLinkButton({ children, onClick, ariaLabel }) {
+  return (
+    <button
+      type="button"
+      className="nav-link-btn"
+      onClick={onClick}
+      aria-label={ariaLabel || children}
+    >
+      {children}
+    </button>
+  );
+}
+
 /* ═══════════════════════ GLOBAL NAVBAR ═══════════════════════
    Persistent top bar shown on all screens.
    - Left:  Brand mark + "pointpoker" brand name
    - Right: Account state + pricing CTA
 ═══════════════════════════════════════════════════════════════ */
-function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, onLogout, onHistory }) {
+function NavBar({
+  onLogoClick,
+  onLogin,
+  onRegister,
+  onPlans,
+  onFaq,
+  currentUser,
+  currentPlan,
+  onLogout,
+  onHistory,
+  showMarketingNav = true,
+}) {
   const accountLabel = currentUser?.displayName || currentUser?.email || null;
   const isPro = currentPlan === "pro";
 
@@ -1716,6 +1933,16 @@ function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, on
           <button className="navbar-brand" onClick={onLogoClick}>
             <BrandWordmark />
           </button>
+          {showMarketingNav && (
+            <div className="navbar-links" aria-label="Marketing sections">
+              <NavLinkButton onClick={onPlans} ariaLabel="Go to plans">
+                Plans
+              </NavLinkButton>
+              <NavLinkButton onClick={onFaq} ariaLabel="Go to frequently asked questions">
+                FAQ
+              </NavLinkButton>
+            </div>
+          )}
         </div>
         <div className="navbar-right">
           {currentUser ? (
@@ -1866,8 +2093,17 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, onNavTerms, 
    3. Password reset
    4. Manual Pro key activation
 ═══════════════════════════════════════════════════════════════ */
-function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
-  const [mode, setMode] = useState(currentUser ? "account" : "signin");
+function LoginModal({
+  onClose,
+  onAuthSuccess,
+  onProActivated,
+  currentUser,
+  currentPlan = "free",
+  initialMode = "signin",
+  entryIntent = "general",
+  onShowPricing,
+}) {
+  const [mode, setMode] = useState(currentUser ? "account" : initialMode);
   const [nameInput, setNameInput] = useState("");
   const [emailInput, setEmailInput] = useState(currentUser?.email || "");
   const [passInput, setPassInput] = useState("");
@@ -1875,6 +2111,43 @@ function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
   const [authError, setAuthError] = useState("");
   const [keyInput, setKeyInput] = useState("");
   const [keyStatus, setKeyStatus] = useState(null);
+  const isPro = currentPlan === "pro";
+  const upgradeIntent = entryIntent === "upgrade";
+
+  const title = currentUser
+    ? isPro
+      ? "Your Pro account"
+      : "Your free account"
+    : mode === "register"
+      ? "Create your account"
+      : mode === "reset"
+        ? "Reset your password"
+        : upgradeIntent
+          ? "Create your account first"
+          : "Sign in to your account";
+
+  const subtitle = currentUser
+    ? isPro
+      ? "This account already has Pro access, sprint history, and your permanent team room."
+      : "This account is on the free plan. Upgrade when you want a permanent team room, 20 voters, and sprint history."
+    : mode === "register"
+      ? "Accounts keep billing, Pro access, and sprint history tied to one place across devices."
+      : mode === "reset"
+        ? "Enter your account email and we’ll send a password reset link."
+        : upgradeIntent
+          ? "Billing and Pro access are attached to your account, so create one before upgrading."
+          : "Free rooms work without an account. Sign in only if you already have one or want account-linked Pro access.";
+  const modeHint = currentUser
+    ? isPro
+      ? "You can use Team Room and Sprint History immediately on this account."
+      : "Short-term Pro access is activated with a code while checkout is being finalised."
+    : upgradeIntent
+      ? "Short-term Pro setup: create your account, then activate Pro with your code."
+      : mode === "register"
+        ? "New here? Create one account and keep your future Pro access tied to it."
+        : mode === "signin"
+          ? "Already registered? Sign in to restore your plan and sprint history."
+          : "We’ll email you a reset link for this account.";
 
   const resetMessages = () => {
     setAuthStatus(null);
@@ -1941,6 +2214,22 @@ function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
     }
   };
 
+  const handleSignedInReset = async () => {
+    if (!currentUser?.email) {
+      setAuthError("This account does not have a password reset email available.");
+      return;
+    }
+    setAuthStatus("loading");
+    setAuthError("");
+    try {
+      await sendPasswordResetEmail(auth, currentUser.email);
+      setAuthStatus("reset");
+    } catch (error) {
+      setAuthStatus(null);
+      setAuthError(getAuthErrorMessage(error));
+    }
+  };
+
   const handleKey = async () => {
     if (!keyInput.trim()) return;
     setKeyStatus("loading");
@@ -1966,12 +2255,30 @@ function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
           <BrandMark size={52} label="pointpoker"/>
         </div>
 
-        <h2 className="login-modal-title">{currentUser ? "Your account" : "Account access"}</h2>
-        <p className="login-modal-sub">
-          {currentUser
-            ? "Your account is active. You can activate a Pro key below or reset your password."
-            : "Create an account to manage billing and restore your plan on any device."}
-        </p>
+        <h2 className="login-modal-title">{title}</h2>
+        <p className="login-modal-sub">{subtitle}</p>
+
+        <div className="account-status-card">
+          {currentUser ? (
+            <>
+              <div className="account-status-row">
+                <span className="account-status-label">Signed in as</span>
+                <strong>{currentUser.displayName || currentUser.email || "Current account"}</strong>
+              </div>
+              <div className="account-status-row">
+                <span className="account-status-label">Current plan</span>
+                <span className={`account-status-pill${isPro ? " pro" : ""}`}>
+                  {isPro ? "Pro active" : "Free plan"}
+                </span>
+              </div>
+            </>
+          ) : (
+            <p className="account-status-copy">
+              Use free rooms instantly, or create an account when you want billing, Pro access, and sprint history to follow you.
+            </p>
+          )}
+        </div>
+        <p className="login-mode-hint">{modeHint}</p>
 
         {!currentUser && (
           <>
@@ -2052,12 +2359,12 @@ function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
 
             {mode === "signin" && (
               <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleSignIn} disabled={authStatus === "loading"}>
-                {authStatus === "loading" ? "Signing in…" : "Log in"}
+                {authStatus === "loading" ? "Signing in…" : "Sign in"}
               </button>
             )}
             {mode === "register" && (
               <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleRegister} disabled={authStatus === "loading"}>
-                {authStatus === "loading" ? "Creating account…" : "Create account"}
+                {authStatus === "loading" ? "Creating account…" : upgradeIntent ? "Create account to activate Pro" : "Create account"}
               </button>
             )}
             {mode === "reset" && (
@@ -2075,6 +2382,34 @@ function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
             <strong>{currentUser.displayName || "Signed in"}</strong><br />
             {currentUser.email}
           </div>
+        )}
+
+        {currentUser && authStatus === "reset" && (
+          <div className="auth-status success">✓ Password reset email sent.</div>
+        )}
+        {currentUser && authError && (
+          <div className="auth-status error">{authError}</div>
+        )}
+
+        {currentUser && (
+          <button
+            type="button"
+            className="login-secondary-btn"
+            onClick={handleSignedInReset}
+            disabled={authStatus === "loading"}
+          >
+            {authStatus === "loading" ? "Sending reset…" : "Send password reset email"}
+          </button>
+        )}
+
+        {!isPro && onShowPricing && (
+          <button
+            type="button"
+            className="login-secondary-btn"
+            onClick={onShowPricing}
+          >
+            View plans and Pro features
+          </button>
         )}
 
         <label className="lbl">Pro Activation Key</label>
@@ -2110,7 +2445,13 @@ function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
 
         <div className="login-modal-upgrade">
           Don't have a key?{" "}
-          <a href="/#pricing" onClick={onClose}>See Pro plans ↗</a>
+          <button
+            type="button"
+            onClick={onShowPricing}
+            style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600, border: "none", background: "none", padding: 0, cursor: "pointer" }}
+          >
+            See Pro plans ↗
+          </button>
         </div>
       </div>
     </div>
@@ -2167,6 +2508,10 @@ export default function App() {
     try { localStorage.removeItem("pp_cookie_ok"); } catch {}
     setCookieAccepted(false);
   };
+  const [loginModalConfig, setLoginModalConfig] = useState({
+    initialMode: "signin",
+    entryIntent: "general",
+  });
 
   // ── SPA NAVIGATION ────────────────────────────────────────────────
   // Navigate within the SPA without a full-page reload.
@@ -2177,6 +2522,33 @@ export default function App() {
     if (path === "/privacy") { setScreen("privacy"); return; }
     setScreen("join");
   };
+  const openLoginModal = useCallback((initialMode = "signin", entryIntent = "general") => {
+    setLoginModalConfig({ initialMode, entryIntent });
+    setShowLoginModal(true);
+  }, []);
+  const openPricingModal = useCallback(() => {
+    setShowPricingModal(true);
+    track("pricing_opened");
+  }, []);
+  const jumpToMarketingSection = useCallback((sectionId) => {
+    if (!sectionId) return;
+    const focusSection = () => {
+      const el = document.getElementById(sectionId);
+      if (!el) return;
+      el.focus?.({ preventScroll: true });
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    if (screen === "join") {
+      window.history.replaceState({}, "", `/#${sectionId}`);
+      requestAnimationFrame(focusSection);
+      return;
+    }
+    if (screen === "terms" || screen === "privacy") {
+      navTo("/");
+      window.history.replaceState({}, "", `/#${sectionId}`);
+      setTimeout(focusSection, 40);
+    }
+  }, [screen]);
   // Global modal states — NavBar triggers these from any screen
   const [showLoginModal,   setShowLoginModal]   = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
@@ -2269,6 +2641,19 @@ export default function App() {
     });
     return () => unsub();
   }, [authUser?.uid, currentPlan]);
+
+  useEffect(() => {
+    if (screen !== "join") return;
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash) return;
+    const timeout = setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (!el) return;
+      el.focus?.({ preventScroll: true });
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 40);
+    return () => clearTimeout(timeout);
+  }, [screen]);
 
   // sessionWarningRef: prevents the session-check interval from restarting
   // every time the sessionWarning flag flips, eliminating unnecessary churn.
@@ -2817,12 +3202,15 @@ export default function App() {
             if (screen === "terms" || screen === "privacy") { navTo("/"); return; }
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          onLogin={()    => { setShowLoginModal(true);   track("login_modal_opened");   }}
-          onRegister={()  => { setShowPricingModal(true); track("pricing_opened"); }}
+          onLogin={()    => { openLoginModal("signin", "general"); track("login_modal_opened"); }}
+          onRegister={openPricingModal}
+          onPlans={() => jumpToMarketingSection("plans")}
+          onFaq={() => jumpToMarketingSection("faq")}
           currentUser={authUser}
           currentPlan={currentPlan}
           onLogout={handleLogout}
           onHistory={() => setShowHistoryModal(true)}
+          showMarketingNav={screen !== "game"}
         />
 
         <div className="app">
@@ -2840,7 +3228,7 @@ export default function App() {
               prefillCode={code}
               prefillTeam={prefillTeam}
               proMode={proMode}
-              onShowPricing={() => { setShowPricingModal(true); track("pricing_opened"); }}
+              onShowPricing={openPricingModal}
             />
           )}
           {screen === "game" && !roomData && (
@@ -2872,7 +3260,7 @@ export default function App() {
               sessionWarning={sessionWarning}
               toast={showToast}
               currentPlan={currentPlan}
-              onShowPricing={() => { setShowPricingModal(true); track("pricing_opened"); }}
+              onShowPricing={openPricingModal}
             />
           )}
           <div className={`toast${toastOn ? " show" : ""}`}>{toast}</div>
@@ -2880,7 +3268,7 @@ export default function App() {
 
         <SiteFooter
           onCookieSettings={resetCookieBanner}
-          onShowPricing={() => { setShowPricingModal(true); track("pricing_opened"); }}
+          onShowPricing={openPricingModal}
           currentPlan={currentPlan}
           onNavTerms={() => navTo("/terms")}
           onNavPrivacy={() => navTo("/privacy")}
@@ -2892,9 +3280,21 @@ export default function App() {
       {showLoginModal && (
         <LoginModal
           onClose={() => setShowLoginModal(false)}
-          onAuthSuccess={() => { setShowLoginModal(false); showToast("Account ready."); }}
+          onAuthSuccess={() => {
+            const shouldResumePricing = loginModalConfig.entryIntent === "upgrade";
+            setShowLoginModal(false);
+            showToast("Account ready.");
+            if (shouldResumePricing) setShowPricingModal(true);
+          }}
           onProActivated={() => { setShowLoginModal(false); showToast("Pro activated."); }}
           currentUser={authUser}
+          currentPlan={currentPlan}
+          initialMode={loginModalConfig.initialMode}
+          entryIntent={loginModalConfig.entryIntent}
+          onShowPricing={() => {
+            setShowLoginModal(false);
+            openPricingModal();
+          }}
         />
       )}
       {showPricingModal && (
@@ -2903,7 +3303,11 @@ export default function App() {
           onProActivated={() => { setShowPricingModal(false); showToast("Pro activated."); }}
           currentUser={authUser}
           currentPlan={currentPlan}
-          onRequireLogin={() => { setShowLoginModal(true); track("login_modal_opened"); }}
+          onRequireLogin={() => {
+            setShowPricingModal(false);
+            openLoginModal("register", "upgrade");
+            track("login_modal_opened");
+          }}
         />
       )}
       {showHistoryModal && (
@@ -3755,6 +4159,9 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
   const savePct = Math.round((1 - p.proAnnual / p.pro) * 100);
   const stripeUrl = STRIPE_LINKS[billing][currency];
   const support   = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
+  const checkoutLive = stripeUrl !== "#upgrade";
+  const isPro = currentPlan === "pro";
+  const activationPrimary = !checkoutLive && !!currentUser && !isPro;
 
   const FREE_FEATURES = [
     { yes: true,  text: `Up to ${FREE_MAX_PLAYERS} voters per session`           },
@@ -3790,13 +4197,15 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
   };
 
   const handleCheckout = async () => {
+    if (isPro) return;
     if (!currentUser) {
       setBillingStatus("login");
       if (onRequireLogin) onRequireLogin();
       return;
     }
-    if (stripeUrl === "#upgrade") {
-      setBillingStatus("pending");
+    if (!checkoutLive) {
+      setBillingStatus("activation");
+      setShowKey(true);
       return;
     }
     setBillingStatus("redirecting");
@@ -3812,7 +4221,9 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
         <button className="pricing-close" onClick={onClose} aria-label="Close pricing">✕</button>
 
         <h2 className="pricing-title">Simple, Transparent Pricing</h2>
-        <p className="pricing-sub">Free forever for small teams. Upgrade for your permanent team room.</p>
+        <p className="pricing-sub">
+          Free forever for small teams. Pro gives you a permanent team room, more voter capacity, and sprint history.
+        </p>
 
         {/* ── Billing toggle ── */}
         <div className="billing-toggle-row">
@@ -3896,6 +4307,17 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
                 ? `Billing will be linked to ${currentUser.email}.`
                 : "Create an account first so your plan follows you across devices."}
             </div>
+            <div className="pricing-state-box">
+              {isPro ? (
+                <span className="pricing-state-ok">✓ This account already has Pro access.</span>
+              ) : currentUser ? (
+                checkoutLive
+                  ? <span className="pricing-state-neutral">Signed in and ready for checkout.</span>
+                  : <span className="pricing-state-warn">Checkout is not live yet. Use your activation code for now, then keep this same account for Stripe later.</span>
+              ) : (
+                <span className="pricing-state-neutral">Create an account first so Pro access, billing, and sprint history stay attached to one identity.</span>
+              )}
+            </div>
             <div className="pricing-features">
               {PRO_FEATURES.map((f, i) => (
                 <div className="pricing-feature" key={i}>
@@ -3905,23 +4327,27 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
               ))}
             </div>
 
-            <button className="pricing-cta pro-cta" onClick={handleCheckout}>
-              {currentPlan === "pro"
+            <button className="pricing-cta pro-cta" onClick={handleCheckout} disabled={isPro}>
+              {isPro
                 ? "Your Pro plan is active"
+                : activationPrimary
+                  ? "Activate Pro with code ↓"
                 : currentUser
                   ? "Continue to secure checkout →"
-                  : "Create account to continue →"}
+                  : checkoutLive
+                    ? "Create account to continue →"
+                    : "Create account to activate Pro →"}
             </button>
             <p className="pricing-trial-note">
-              {stripeUrl === "#upgrade"
-                ? "Stripe checkout setup is still in progress"
+              {!checkoutLive
+                ? "Temporary setup: activate Pro with your code while Stripe checkout is being finalised"
                 : "Secure checkout via Stripe · Cancel anytime"}
             </p>
             {billingStatus === "login" && (
-              <p className="pro-key-status error">Create or sign in to an account before starting checkout.</p>
+              <p className="pro-key-status error">Create or sign in to an account before activating or purchasing Pro.</p>
             )}
-            {billingStatus === "pending" && (
-              <p className="pro-key-status error">Stripe checkout is not wired yet. Add your real Stripe links next.</p>
+            {billingStatus === "activation" && (
+              <p className="pro-key-status success">Scroll down to enter your Pro activation code.</p>
             )}
             {billingStatus === "redirecting" && (
               <p className="pro-key-status success">Opening Stripe checkout…</p>
@@ -3936,10 +4362,13 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
             onClick={() => setShowKey(v => !v)}
             aria-expanded={showKey}
           >
-            {showKey ? "▾" : "▸"} Already have a Pro activation key?
+            {showKey ? "▾" : "▸"} Activate Pro with a code
           </button>
           {showKey && (
             <div className="pro-key-body">
+              <p className="pro-key-copy">
+                This is the simplest short-term Pro path while Stripe checkout is still being finalised. Create or sign in to your account first, then activate your code here.
+              </p>
               <div className="pro-key-row">
                 <input
                   type="text"
@@ -4215,6 +4644,38 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
           </div>
         </div>
 
+        <div className="seo-plan-section scroll-target" id="plans" tabIndex="-1" aria-label="Plans overview">
+          <h3 className="seo-h3">Plans that match how teams actually estimate</h3>
+          <p className="seo-p seo-plan-intro">
+            Start free in seconds. Upgrade only when you need a permanent team room, more voter capacity, and sprint history tied to your account.
+          </p>
+          <div className="seo-plan-grid">
+            <article className="seo-plan-card">
+              <div className="seo-plan-topline">Free</div>
+              <div className="seo-plan-price">£0</div>
+              <ul className="seo-plan-list">
+                <li>Up to {FREE_MAX_PLAYERS} voters per session</li>
+                <li>All card decks and story queue</li>
+                <li>Facilitator mode and live analytics</li>
+              </ul>
+            </article>
+            <article className="seo-plan-card pro">
+              <div className="seo-plan-topline">Pro</div>
+              <div className="seo-plan-price">from £5/mo</div>
+              <ul className="seo-plan-list">
+                <li>Permanent Team Room with your own URL</li>
+                <li>Up to {PRO_MAX_PLAYERS} voters per sprint</li>
+                <li>Sprint history and cross-device account access</li>
+              </ul>
+            </article>
+          </div>
+          <div className="seo-plan-actions">
+            <button type="button" className="btn-pricing seo-plan-cta" onClick={onShowPricing}>
+              Open full pricing
+            </button>
+          </div>
+        </div>
+
         <div className="seo-features">
           <h3 className="seo-h3">What Makes This Planning Poker Tool Different</h3>
           <ul className="seo-ul">
@@ -4233,7 +4694,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
 
         <div className="seo-divider" role="separator"></div>
 
-        <div className="seo-faq">
+        <div className="seo-faq scroll-target" id="faq" tabIndex="-1">
           <h3 className="seo-h3" style={{ textAlign: "center", marginBottom: "20px" }}>Frequently Asked Questions</h3>
           <div className="seo-faq-grid">
             <div className="seo-faq-item">

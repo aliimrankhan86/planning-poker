@@ -42,10 +42,18 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - The provided transparent brand-mark asset is now used in the app logo sections in place of the old inline SVG chip mark
   - App chrome wordmark now renders as `Point Poker` with white `Point`, gold `Poker`, and explicit spacing/capitalization
   - The same approved brand mark is now used for favicon and app-icon assets across browser and PWA contexts
+  - Landing-page discoverability improved: NavBar now exposes `Plans` and `FAQ` shortcuts that jump to real on-page sections
+  - Landing page now contains a compact plans overview section in addition to the pricing modal
+  - Auth flow is clearer: login/register/reset messaging now distinguishes free use from account-linked Pro access
+  - Upgrade flow is smoother: starting checkout while signed out now routes through account creation/sign-in and then returns the user to pricing
+  - Pricing/account state messaging is more explicit about Free vs Pro and about Stripe checkout still being blocked by missing live links
+  - Short-term monetisation direction is now explicit: activation code remains the simplest temporary Pro-entitlement path until live Stripe checkout exists
+  - Pricing and auth surfaces now explicitly guide users toward account creation + activation code when Stripe checkout is not yet live
 - Still pending:
+  - Reconcile Atlas-reported live auth/sign-in failure against the currently deployed build
   - Connect domain in Vercel and verify production routing
-  - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
   - Replace Stripe placeholder links and complete paid activation wiring
+  - Verify real paid/pro account state end-to-end once live Stripe links exist
 
 If older historical notes below conflict with this section, treat this snapshot as the authoritative current state and update the older sections when touching them.
 
@@ -74,7 +82,7 @@ If older historical notes below conflict with this section, treat this snapshot 
 | Hosting | Vercel | — | Auto-deploys from `main` branch on GitHub |
 | Performance | Vercel Speed Insights | latest | Installed in `src/index.js` for production field-performance monitoring |
 | Build tool | react-scripts | 5.0.1 | CRA — no custom webpack config |
-| Fonts | Outfit v15, Cormorant Garamond v21 | — | **Self-hosted** in `public/fonts/` — no Google Fonts CDN |
+| Fonts | Outfit v15 | — | **Self-hosted** in `public/fonts/` — sole active font family |
 | Payments | Stripe | — | Account-aware checkout UI in place; real Stripe links/webhook still pending |
 | Auth | Firebase Auth | SDK 12.10.0 | Email/Password UI implemented in app and provider enabled in Firebase Console |
 | CI/CD | GitHub → Vercel | — | Push to `main` = live deploy |
@@ -93,9 +101,9 @@ REACT_APP_FIREBASE_MESSAGING_SENDER_ID
 REACT_APP_FIREBASE_APP_ID
 ```
 
-Future (not yet added):
+Additional:
 ```
-REACT_APP_SUPPORT_EMAIL   # set to support@pointpoker.app in Vercel/local env
+REACT_APP_SUPPORT_EMAIL   # support@pointpoker.app (already set in Vercel)
 ```
 
 ---
@@ -106,16 +114,16 @@ REACT_APP_SUPPORT_EMAIL   # set to support@pointpoker.app in Vercel/local env
 planning-poker/
 ├── public/
 │   ├── index.html          # SEO shell — canonical and OG now point to www.pointpoker.app
-│   ├── favicon.svg         # Branded SVG: dark green card, gold spade
-│   ├── favicon.ico         # 7-size ICO (16/24/32/48/64/128/256px)
-│   ├── logo192.png         # PWA icon — branded casino card
-│   ├── logo512.png         # PWA icon — branded casino card
+│   ├── favicon.ico         # Favicon generated from approved brand mark
+│   ├── favicon-32.png      # PNG favicon generated from approved brand mark
+│   ├── logo192.png         # PWA icon generated from approved brand mark
+│   ├── logo512.png         # PWA icon generated from approved brand mark
 │   ├── manifest.json       # PWA manifest with SEO copy
 │   ├── robots.txt          # Sitemap points to www.pointpoker.app
 │   ├── sitemap.xml         # Root URL sitemap for www.pointpoker.app
 │   ├── privacy.html        # GDPR/UK ICO privacy policy (styled, noindex)
 │   ├── terms.html          # Terms of Service — England & Wales (styled, noindex)
-│   └── fonts/              # Self-hosted: Outfit v15, Cormorant Garamond v21
+│   └── fonts/              # Self-hosted: Outfit v15 (active)
 ├── src/
 │   ├── App.js              # ENTIRE app in one file — ~3800 lines (see § Components)
 │   ├── firebase.js         # Firebase init — reads from REACT_APP_* env vars
