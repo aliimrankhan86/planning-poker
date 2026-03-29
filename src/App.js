@@ -3679,6 +3679,12 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     try {
       await signOut(auth);
+      setScreen("join");
+      setRoomData(null);
+      setSessionWarning(false);
+      setCode("");
+      setPrefillTeam("");
+      window.history.replaceState({}, "", homePath());
       showToast("Signed out.");
     } catch {
       showToast("Could not sign out. Try again.");
@@ -4989,11 +4995,13 @@ function JoinScreen({
 }) {
   const signedIn = !!currentUser;
   const isPro = currentPlan === "pro";
+  const teamRouteMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+  const teamQuery = new URLSearchParams(window.location.search).get("team");
   const defaultName = currentUser?.displayName || deriveDisplayNameFallback(currentUser?.email || "");
   const dedicatedTeamName = accountProfile?.teamRoomName || deriveTeamRoomName(currentUser?.displayName || "", currentUser?.email || "");
   const dedicatedTeamCode = dedicatedTeamName ? teamCode(dedicatedTeamName) : "";
   const dedicatedTeamUrl = dedicatedTeamCode ? `${window.location.origin}${teamRoomPath(dedicatedTeamCode)}` : "";
-  const isSharedTeamRoomEntry = !!prefillTeam;
+  const isSharedTeamRoomEntry = !!prefillTeam && (!!teamRouteMatch || !!teamQuery);
   const canHostPermanentTeamRoom = isPro;
   const canEnterTeamRoom = canHostPermanentTeamRoom || isSharedTeamRoomEntry;
   const showTeamRoomProBadge = !canEnterTeamRoom;

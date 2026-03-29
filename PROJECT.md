@@ -69,6 +69,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - Free users now see a real Team Room gate again (PRO badge + upgrade callout + no misleading "Enter Team Room" state), while guest/shared-link entrants keep the frictionless join path
     - Team Room copy was clarified so guest-facing flows no longer imply that the guest owns a Pro account
     - signed-in footer copy is now account-aware on workspace screens instead of repeating public marketing language
+    - stale `prefillTeam` state is now route-bound and cleared on logout, so Free users no longer inherit a false shared-Team-Room state from prior Pro sessions in the same browser
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened

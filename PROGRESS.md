@@ -79,6 +79,7 @@
     - guest/shared-link Team Room entrants keep the low-friction join flow without being told "Your Pro account…"
     - Team Room CTA/readonly behaviour now differs correctly for Free, Pro, and guest states
     - signed-in footer copy is more account-aware and less public-marketing-heavy
+    - follow-up hardening: shared Team Room mode is now route-bound rather than inferred from any stale `prefillTeam` state, and logout explicitly clears team/code URL state so Free users do not inherit a false Team Room-entry context from an earlier Pro session in the same browser
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
