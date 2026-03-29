@@ -64,6 +64,21 @@
     - permanent Team Room URL wraps cleanly rather than truncating
     - workspace `Open Team Room` now scrolls to the Team Room entry controls so it no longer feels inert
   - Stale-room cleanup is now hardened in the client: from the join/workspace screen, the app performs a throttled background sweep of `/rooms` and batch-removes sessions older than the 5-hour expiry window when they are clearly inactive (no timer running, no votes in flight, at most one lingering player, no story progress yet)
+  - Firebase QA data cleaned for trustworthy regression testing:
+    - free QA account `aliimrankhan86@googlemail.com` restored to `plan: free` / `billingStatus: inactive`
+    - stale ad-hoc rooms removed from Realtime Database
+    - persistent rooms retained: `ali-imran-team` and founder room `rpa-build-team`
+  - Latest production QA findings from Atlas/Comet isolated one real remaining product-hardening cluster:
+    - signed-out surfaces were still inheriting broad Pro state from local storage (`pp_pro`)
+    - mobile navbar hid too much signed-in identity/history state
+    - Team Room gating copy/CTA logic still confused Free users vs guest/shared-link entrants
+  - Those issues are now fixed in code:
+    - signed-out UI now resolves plan from authenticated account truth instead of broad local-storage Pro state
+    - mobile navbar keeps signed-in account identity, sign-out, and Pro history access visible at narrow widths
+    - Free Team Room tab now shows the real PRO gate again (badge + upgrade callout + upgrade CTA)
+    - guest/shared-link Team Room entrants keep the low-friction join flow without being told "Your Pro account…"
+    - Team Room CTA/readonly behaviour now differs correctly for Free, Pro, and guest states
+    - signed-in footer copy is more account-aware and less public-marketing-heavy
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
@@ -114,7 +129,8 @@
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
   - Connect `www.pointpoker.app` domain to Vercel and verify production routing
-  - Recreate or reserve a true free-only QA account, because the old free account now appears to be Pro in production and blocks free-tier regression testing
+  - Re-run final live QA on production after the latest mobile/account-state/team-room fixes
+  - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate
   - Run full E2E QA pass on production URL (see `QA_TEST_PLAN.md`)
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist

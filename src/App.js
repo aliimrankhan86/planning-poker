@@ -2161,7 +2161,7 @@ body::before {
   .history-modal { padding: 28px 20px 24px; }
 }
 @media (max-width: 520px) {
-  .nav-btn-history { display: none; }
+  .navbar:not(.authenticated) .nav-btn-history { display: none; }
   .hi-item-stats { gap: 12px; }
 }
 
@@ -2178,16 +2178,29 @@ body::before {
 @media (max-width: 520px) {
   .footer-inner { grid-template-columns: 1fr; }
   .footer-legal-note { text-align: left; max-width: 100%; }
-  .nav-btn-login { display: none; }
+  .navbar { padding: 0 14px; }
+  .navbar-inner { gap: 10px; }
+  .navbar-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .navbar.authenticated .nav-btn-login { display: inline-flex; padding: 7px 12px; font-size: .74rem; }
+  .navbar.authenticated .nav-btn-history { display: inline-flex; padding: 7px 11px; font-size: .72rem; }
+  .navbar:not(.authenticated) .nav-btn-login { display: none; }
   .navbar-links { gap: 4px; }
   .nav-link-btn { padding: 6px 10px; font-size: .68rem; }
-  .nav-btn-register { font-size: .78rem; padding: 7px 14px; }
+  .nav-btn-register { font-size: .76rem; padding: 7px 13px; }
   .nav-upgrade-sub { display: none; }
   .login-modal { padding: 34px 22px 26px; max-width: 100%; }
   .auth-mode-row { grid-template-columns: 1fr; }
   .login-upgrade-head { flex-direction: column; align-items: stretch; }
   .login-upgrade-link { width: 100%; justify-content: center; }
-  .nav-account { display: none; }
+  .navbar.authenticated .nav-account {
+    display: flex;
+    margin-right: 0;
+    align-items: flex-end;
+    gap: 3px;
+  }
+  .navbar.authenticated .nav-account-name { max-width: 104px; font-size: .74rem; }
+  .navbar.authenticated .nav-account-plan { font-size: .62rem; padding: 3px 8px; letter-spacing: .1em; }
+  .navbar:not(.authenticated) .nav-account { display: none; }
   .game-upgrade-strip { flex-direction: column; align-items: flex-start; gap: 8px; }
   .footer-plan-item:last-of-type .footer-plan-text { display: none; }
 }
@@ -2321,7 +2334,11 @@ function NavBar({
   const isPro = currentPlan === "pro";
 
   return (
-    <nav className="navbar" role="navigation" aria-label="Main navigation">
+    <nav
+      className={`navbar${currentUser ? " authenticated" : ""}${isPro ? " pro-user" : ""}`}
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="navbar-inner">
         <div className="navbar-left">
           <BrandMark
@@ -2429,13 +2446,18 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
             <span className="footer-brand-name"><BrandWordmark /></span>
           </div>
           <p className="footer-brand-desc">
-            Free, real-time planning poker for agile and Scrum teams.
-            No sign-up required. Works in any browser.
+            {signedIn
+              ? isPro
+                ? "Your Pro workspace is live. Reuse your fixed Team Room, share invite links quickly, and keep sprint history attached to your account."
+                : "You are signed in on the free plan. Create and join sessions instantly now, then upgrade later when you need a permanent Team Room."
+              : "Free, real-time planning poker for agile and Scrum teams. No sign-up required. Works in any browser."}
           </p>
-          <p className="footer-brand-desc" style={{ marginTop: 4 }}>
-            Built for Product Owners, Scrum Masters, and distributed teams
-            who need fast, structured story-point consensus.
-          </p>
+          {!signedIn && (
+            <p className="footer-brand-desc" style={{ marginTop: 4 }}>
+              Built for Product Owners, Scrum Masters, and distributed teams
+              who need fast, structured story-point consensus.
+            </p>
+          )}
         </div>
 
         {/* Column 2 — Legal */}
@@ -2946,8 +2968,7 @@ export default function App() {
   const [myRole, setMyRole] = useState("voter");
   const [authUser, setAuthUser] = useState(() => auth.currentUser);
   const [accountProfile, setAccountProfile] = useState(null);
-  const proMode = accountProfile?.plan === "pro" || readStoredProAccess();
-  const currentPlan = accountProfile?.plan || (readStoredProAccess() ? "pro" : "free");
+  const currentPlan = authUser ? (accountProfile?.plan || "free") : "free";
   const [cookieAccepted, setCookieAccepted] = useState(
     () => {
       try { return localStorage.getItem("pp_cookie_ok") === "1"; }
@@ -3055,13 +3076,14 @@ export default function App() {
         return;
       }
       try {
+        const storedProAccess = readStoredProAccess();
         const snap = await get(ref(db, `users/${user.uid}`));
         if (!snap.exists()) {
           await saveUserProfile(user, {
             displayName: user.displayName || "",
             email: user.email || "",
-            plan: readStoredProAccess() ? "pro" : "free",
-            billingStatus: readStoredProAccess() ? "active" : "inactive",
+            plan: storedProAccess ? "pro" : "free",
+            billingStatus: storedProAccess ? "active" : "inactive",
             createdAt: Date.now(),
           });
         } else {
@@ -3375,7 +3397,7 @@ export default function App() {
       streak: 0,
       consensusCount: 0,
       deck,
-      plan: proMode ? "pro" : "free",
+      plan: currentPlan === "pro" ? "pro" : "free",
       timer: { running: false, duration: 30, remaining: 30 },
       players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
     });
@@ -3386,7 +3408,7 @@ export default function App() {
     // Update URL so the creator can copy/share the link immediately.
     window.history.replaceState({}, "", roomPath(c));
     setScreen("game");
-    track(proMode ? "room_created_pro" : "room_created_free");
+    track(currentPlan === "pro" ? "room_created_pro" : "room_created_free");
     if (role === "observer") track("observer_joined"); else track("player_joined");
     showToast(`🎲 Room ${c} created! Share the link to invite your team.`);
   };
@@ -3432,13 +3454,8 @@ export default function App() {
   // team always lands in the same room without needing to share a link.
   // The room is created fresh if nobody is there, or joined if active.
   const handleTeamRoom = async (name, role, teamName, deck = "fibonacci") => {
-    if (!proMode && !isFounderRoom(teamCode(teamName))) {
-      setShowPricingModal(true);
-      track("pricing_opened");
-      showToast("Team Rooms are a Pro feature. Upgrade to unlock a permanent team URL.");
-      return;
-    }
     const c = teamCode(teamName);
+    const founderRoom = isFounderRoom(c);
     // Team Room is a Pro feature. Founder team is always Pro.
     // All other team rooms are set to Pro for now — Stripe will gate
     // creation at Phase 3 once payment is wired up.
@@ -3446,9 +3463,18 @@ export default function App() {
     const snap = await new Promise((res) =>
       onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
     );
-    const existingPlan = snap.exists() ? (snap.val().plan || "pro") : plan;
-    const currentCount = snap.exists()
-      ? countVoters(snap.val().players || {})
+    const existingRoom = snap.exists() ? snap.val() || {} : null;
+    const canEnterExistingTeamRoom = !!existingRoom;
+    const canCreateDedicatedTeamRoom = currentPlan === "pro" || founderRoom;
+    if (!canEnterExistingTeamRoom && !canCreateDedicatedTeamRoom) {
+      setShowPricingModal(true);
+      track("pricing_opened");
+      showToast("Team Rooms are a Pro feature for hosts. Upgrade to unlock your own permanent team URL.");
+      return;
+    }
+    const existingPlan = existingRoom ? (existingRoom.plan || "pro") : plan;
+    const currentCount = existingRoom
+      ? countVoters(existingRoom.players || {})
       : 0;
     const maxForPlan = existingPlan === "pro" ? PRO_MAX_PLAYERS : FREE_MAX_PLAYERS;
     if (role === "voter" && currentCount >= maxForPlan) {
@@ -3469,7 +3495,7 @@ export default function App() {
         deck,
         plan,
         teamName,
-        founderRoom: isFounderRoom(c),
+        founderRoom,
         timer: { running: false, duration: 30, remaining: 30 },
         players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
       });
@@ -3700,7 +3726,6 @@ export default function App() {
               onTeamRoom={handleTeamRoom}
               prefillCode={code}
               prefillTeam={prefillTeam}
-              proMode={proMode}
               onShowPricing={openPricingModal}
               currentUser={authUser}
               currentPlan={currentPlan}
@@ -4957,7 +4982,6 @@ function JoinScreen({
   onTeamRoom,
   prefillCode,
   prefillTeam,
-  proMode,
   onShowPricing,
   currentUser,
   currentPlan = "free",
@@ -4969,6 +4993,10 @@ function JoinScreen({
   const dedicatedTeamName = accountProfile?.teamRoomName || deriveTeamRoomName(currentUser?.displayName || "", currentUser?.email || "");
   const dedicatedTeamCode = dedicatedTeamName ? teamCode(dedicatedTeamName) : "";
   const dedicatedTeamUrl = dedicatedTeamCode ? `${window.location.origin}${teamRoomPath(dedicatedTeamCode)}` : "";
+  const isSharedTeamRoomEntry = !!prefillTeam;
+  const canHostPermanentTeamRoom = isPro;
+  const canEnterTeamRoom = canHostPermanentTeamRoom || isSharedTeamRoomEntry;
+  const showTeamRoomProBadge = !canEnterTeamRoom;
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
   const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : (signedIn && isPro ? "team" : "create"));
   const [name, setName] = useState(signedIn ? defaultName : "");
@@ -4984,6 +5012,12 @@ function JoinScreen({
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
   const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
+  const isOwnDedicatedTeamRoom = isPro && !!previewCode && previewCode === dedicatedTeamCode;
+  const teamPrimaryLabel = !canEnterTeamRoom
+    ? "Upgrade to unlock Team Room →"
+    : isSharedTeamRoomEntry
+      ? "Join Team Room →"
+      : "Enter Team Room →";
 
   useEffect(() => {
     if (signedIn) {
@@ -5007,6 +5041,10 @@ function JoinScreen({
       onJoin(name.trim(), role, rc.trim().toUpperCase());
     } else {
       // team room
+      if (!canEnterTeamRoom) {
+        onShowPricing();
+        return;
+      }
       if (!teamName.trim()) { setErr("Please enter your team name"); return; }
       onTeamRoom(name.trim(), role, teamName.trim(), deck);
     }
@@ -5174,7 +5212,7 @@ function JoinScreen({
             onClick={() => { setTab("team"); clearErr(); }}
           >
             Team Room
-            {!proMode && <span className="pro-tab-badge">PRO</span>}
+            {showTeamRoomProBadge && <span className="pro-tab-badge">PRO</span>}
           </button>
         </div>
 
@@ -5220,7 +5258,7 @@ function JoinScreen({
               value={teamName}
               onChange={(e) => { setTeamName(e.target.value); clearErr(); }}
               onKeyDown={(e) => e.key === "Enter" && go()}
-              readOnly={signedIn && isPro}
+              readOnly={isSharedTeamRoomEntry || (signedIn && isPro)}
             />
             {previewCode && (
               <div className="team-code-preview">
@@ -5228,7 +5266,7 @@ function JoinScreen({
                 <span className="tcp-code">{previewCode}</span>
               </div>
             )}
-            {!proMode ? (
+            {!canEnterTeamRoom ? (
               <div className="team-pro-gate">
                 <span className="team-pro-gate-text">
                   Team Room requires a Pro account. Type your team name to preview the URL — then upgrade to unlock it.
@@ -5237,9 +5275,17 @@ function JoinScreen({
                   View Pro plans →
                 </button>
               </div>
+            ) : isSharedTeamRoomEntry ? (
+              <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
+                {signedIn && !isPro
+                  ? "You are joining a shared Team Room. Only the host needs Pro — your own plan stays Free."
+                  : "This team's permanent room is ready. Add your name, choose your role, and join the live session."}
+              </p>
             ) : (
               <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
-                Your Pro account has a fixed Team Room. Share the same link every sprint and keep it bookmarked for the whole team.
+                {isOwnDedicatedTeamRoom
+                  ? "Your Pro account has a fixed Team Room. Share the same link every sprint and keep it bookmarked for the whole team."
+                  : "Your Team Room is tied to your Pro account. Use the same URL every sprint and keep it bookmarked for the whole team."}
               </p>
             )}
           </div>
@@ -5290,7 +5336,7 @@ function JoinScreen({
         <button className="btn-primary" onClick={go}>
           {tab === "create" ? "Create Room →"
             : tab === "join" ? "Join Room →"
-            : "Enter Team Room →"}
+            : teamPrimaryLabel}
         </button>
         {!signedIn && tab === "create" && (
           <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>

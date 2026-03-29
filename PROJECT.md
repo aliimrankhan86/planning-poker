@@ -61,6 +61,14 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - A real production Pro account is now working for `misteraliimran@gmail.com`
   - Workspace UX was tightened after live QA: copy-link actions now show visible feedback, the permanent Team Room URL wraps cleanly instead of truncating, the pricing modal keeps activation success visible briefly before closing, and the workspace `Open Team Room` CTA now scrolls to the actual Team Room entry controls
   - Stale-room cleanup is now hardened in the client: the app periodically sweeps `/rooms` in the background from the join/workspace screen and batch-deletes sessions older than the 5-hour expiry window when they are clearly inactive
+  - Firebase QA data has now been cleaned: the free QA account (`aliimrankhan86@googlemail.com`) is back on `plan: "free"` / `billingStatus: "inactive"`, stale ad-hoc rooms were removed from Realtime Database, and only the meaningful persistent team rooms remain
+  - Account-state modelling has been tightened after the latest Atlas/Comet pass:
+    - signed-out UI no longer inherits broad Pro state from `pp_pro` local storage
+    - mobile navbar now keeps signed-in identity, sign-out, and Pro history access visible instead of collapsing into a signed-out-looking header
+    - Team Room flow now cleanly separates three cases: signed-in Pro owner, signed-in Free user trying to unlock Team Room, and guest/shared-link entrant joining an existing Team Room
+    - Free users now see a real Team Room gate again (PRO badge + upgrade callout + no misleading "Enter Team Room" state), while guest/shared-link entrants keep the frictionless join path
+    - Team Room copy was clarified so guest-facing flows no longer imply that the guest owns a Pro account
+    - signed-in footer copy is now account-aware on workspace screens instead of repeating public marketing language
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened
@@ -72,7 +80,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Still pending:
   - Connect domain in Vercel and verify production routing
   - Replace Stripe placeholder links and complete paid activation wiring
-  - Re-establish a true free-only QA account, because the previously used free test account now appears to have Pro state in production and no longer validates free-only upgrade/gating flows cleanly
+  - Run a fresh final live QA pass after the latest account-state/mobile/team-room fixes (Atlas for signed-out + Free, Comet for Pro + Team Room + mobile)
+  - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate/stale profile data
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 
 If older historical notes below conflict with this section, treat this snapshot as the authoritative current state and update the older sections when touching them.
