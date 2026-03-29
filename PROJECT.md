@@ -81,6 +81,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - signed-in Free footer copy is now phrased as workspace guidance rather than public marketing
   - Signed-in room-name editing is now preserved properly:
     - the Join/Create/Team name input seeds once from the account profile when the session identity changes
+    - the signed-in name field is now seeded but intentionally uncontrolled, so visible typed session names remain authoritative instead of being reimposed by account-state rerenders
     - manual name edits are no longer overwritten by follow-up account/profile sync
     - creating or joining a room now uses the user’s edited session name when they intentionally change it
     - room-entry actions now resolve the latest typed name from a live ref-backed value so automation timing and quick clicks cannot silently fall back to the account name

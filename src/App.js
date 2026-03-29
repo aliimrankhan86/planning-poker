@@ -5015,7 +5015,7 @@ function JoinScreen({
   const nameSeedKey = signedIn ? `${currentUser?.uid || currentUser?.email || ""}:${defaultName}` : "guest";
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
   const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : (signedIn && isPro ? "team" : "create"));
-  const [name, setName] = useState(signedIn ? defaultName : "");
+  const [nameDraft, setNameDraft] = useState(signedIn ? defaultName : "");
   const [nameEdited, setNameEdited] = useState(false);
   const [role, setRole] = useState("voter");
   const [deck, setDeck] = useState("fibonacci");
@@ -5046,7 +5046,7 @@ function JoinScreen({
 
   const syncEnteredName = useCallback((nextName) => {
     nameValueRef.current = nextName;
-    setName(nextName);
+    setNameDraft(nextName);
     setNameEdited(true);
     clearErr();
   }, []);
@@ -5057,7 +5057,7 @@ function JoinScreen({
       setNameEdited(false);
       const nextName = signedIn ? defaultName : "";
       nameValueRef.current = nextName;
-      setName(nextName);
+      setNameDraft(nextName);
       if (nameInputRef.current) nameInputRef.current.value = nextName;
     }
   }, [nameSeedKey, signedIn, defaultName]);
@@ -5296,10 +5296,11 @@ function JoinScreen({
         {/* Your Name — always shown */}
         <label className="lbl">Your Name</label>
         <input
+          key={`name-${nameSeedKey}`}
           ref={nameInputRef}
           className="inp"
           placeholder="e.g. Alex Johnson"
-          value={name}
+          defaultValue={nameDraft}
           onInput={(e) => syncEnteredName(e.currentTarget.value)}
           onChange={(e) => syncEnteredName(e.target.value)}
           onBlur={(e) => {

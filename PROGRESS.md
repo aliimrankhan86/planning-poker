@@ -90,6 +90,7 @@
     - `Plans` anchor now lands closer to the actual plans cards instead of feeling too low
     - signed-in Free footer copy is now phrased as workspace guidance rather than public-marketing tagline copy
   - Final free-flow polish after the latest Atlas rerun:
+    - the signed-in name field is now seeded but intentionally uncontrolled, so visible typed session names remain authoritative instead of being reimposed by account-state rerenders
     - signed-in room-name input now seeds once from account identity and then respects manual edits
     - creating or joining a room now uses the edited session name instead of silently reverting to the account display name
     - room-entry actions now read the latest typed name from a ref-backed value so fast interactions / automation timing do not fall back to the stored account name
