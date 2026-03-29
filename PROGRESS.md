@@ -85,6 +85,20 @@
   - Cookie banner links open in new tab; banner copy updated to accurately describe essential-only storage
   - `vercel.json` updated with `/terms` and `/privacy` rewrites for direct URL and browser refresh
   - `npm run build` clean — 180.9 kB gzipped
+- Facilitator controls + Team Alignment redesign (29 March 2026 — third session):
+  - Team Alignment `fillClass` now "neutral" (not "ok") until 2+ stories are done — prevents a single non-consensus story rendering a red bar immediately
+  - `alignLabel` suppressed until `storiesDone >= 2`; renamed "Needs work" → "Low consensus" — coaching signal, not a pass/fail grade
+  - Low-score colour changed from red (#e74c3c) to amber — same visual language as gold design system, not error-red
+  - Neutral bar fill added (.a-align-bar-fill.neutral) for early-session state
+  - Score display handles null alignLabel cleanly (shows "X%" alone before label is active, not "null · X%")
+  - Added `.a-align-note`: "% of stories where all voters agreed on the first vote" — explains the metric inline
+  - "agreed first round" → "agreed first vote" in alignSub — clearer plain language
+  - `.obs-danger-divider` added above End Session — thin amber/red hairline rule with "END SESSION" label separates management controls from the destructive terminal action
+  - `.btn-new-session` changed from red to neutral ghost — New Sprint is a management action, not a danger action
+  - `.obs-secondary-row .btn-new-session:only-child` gets `flex: 1` so standalone New Sprint fills the row instead of hanging left
+  - Pre-reveal "New Sprint" hidden when `round === 1 && storiesDone === 0` — nothing to reset at true session start
+  - End Session button label shortened to "End Session" (hint text already explains consequences)
+  - `npm run build` clean — 187.27 kB gzipped — commit `07f3b8d`
 - UX/IA improvements (29 March 2026 — second session):
   - PRO badge on Team Room tab was backwards: it showed for Pro users (redundant) and not for non-Pro users (where it's needed). Fixed — badge now shows only for non-Pro users so the gate is visible before attempting to use the feature.
   - Inline `team-pro-gate` callout added inside the Team Room tab content for non-Pro users: explains the feature requires Pro, shows a team name preview so the value is tangible, and links directly to the pricing modal.
@@ -111,7 +125,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** Deep UX/IA audit — identified and implemented top 3 highest-value product improvements
+- **Worked on:** Facilitator controls redesign + Team Alignment panel fix + copy/UX language audit
 - **Completed:**
   - Deep product review across JoinScreen, GameScreen, NavBar, PricingModal, SiteFooter, and routing
   - **Fix 1 — Team Room PRO badge (critical UX bug):** Badge logic was inverted — showed for Pro users (meaningless) and hidden for non-Pro (where it's needed). Fixed. Non-Pro users now see the PRO badge immediately on the tab.

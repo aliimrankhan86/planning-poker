@@ -60,6 +60,9 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Firebase Realtime Database rules for `/licenses/{key}` are now published in production and activation-code validation is live
   - A real production Pro account is now working for `misteraliimran@gmail.com`
   - Workspace UX was tightened after live QA: copy-link actions now show visible feedback, the permanent Team Room URL wraps cleanly instead of truncating, the pricing modal keeps activation success visible briefly before closing, and the workspace `Open Team Room` CTA now scrolls to the actual Team Room entry controls
+  - Facilitator controls + Team Alignment redesigned (29 March 2026):
+    - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
+    - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened
   - UX/IA audit completed (29 March 2026) — top 3 improvements implemented:
     - **PRO badge on Team Room tab fixed:** badge was shown for Pro users (meaningless) and hidden for non-Pro users (where it matters). Now shows only for non-Pro users, giving the correct gating signal before submission.
     - **Inline Team Room pro-gate callout added:** non-Pro users on the Team Room tab see an explanatory callout with a direct link to the pricing modal — eliminates the "surprise gate" at form submit.
