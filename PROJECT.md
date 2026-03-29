@@ -508,6 +508,12 @@ Listed chronologically newest-first.
 - Leaving or ending a room now clears both `code` and `prefillTeam` app state before returning to home
 - This prevents stale room/team values from leaking back into the home inputs after leaving a founder room
 
+### 2026-03 — Mobile vote UI stabilization
+- Vote cards now use native button semantics rather than clickable `div`s
+- Selection state is now optimistic on the client: the tapped card stays visibly selected immediately while Firebase confirms the write
+- Optimistic vote state is cleared on round change, reveal, or once the remote vote state catches up
+- This specifically hardens the mobile case where a tap could appear to select and then visually unselect due to transient real-time state lag
+
 ### 2026-03 — Firebase Auth accounts + account-aware Pro gating
 - `firebase.js` now exports `auth` alongside `db`
 - `LoginModal` now supports sign in, create account, password reset, and legacy Pro key activation

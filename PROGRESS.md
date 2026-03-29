@@ -21,6 +21,7 @@
   - Re-vote flow no longer leaves facilitator stuck without `Start Voting`
   - Leaving or losing a room now returns the browser URL to `/`
   - Leaving a room now also clears stale room/team input state on the home screen
+  - Vote cards now use optimistic client-side selection to stabilize mobile tap behavior
 - Remaining priorities:
   - Connect domain to Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
@@ -214,6 +215,12 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Atlas-found suspicious behavior:** After leaving a team room, the home UI could still retain stale room/team input state even though the URL had been reset to `/`.
 - **Fix:** Leaving, expiry teardown, deleted-room fallback, and end-session cleanup now clear both `code` and `prefillTeam` state before returning to home.
 - **Expected result:** The join screen returns to a genuinely clean home state instead of carrying over `rpa-build-team` into the next action.
+
+### Session 9n — 29 March 2026 (Optimistic mobile vote fix)
+- **User-reported issue persists:** On mobile, a tapped vote card could still appear to select and then unselect.
+- **Likely root cause:** The selected visual state depended entirely on the latest Firebase snapshot, so transient real-time lag could momentarily clear the highlight even when the tap had been registered.
+- **Fix:** Vote cards now use native `button` elements and optimistic local selection state. The chosen card is highlighted immediately on tap, then reconciled with Firebase once the remote vote catches up.
+- **Reset behavior:** Optimistic state clears safely on reveal, round change, or when the server state matches.
 
 ### Session 8b — 28 March 2026 (UX & background fixes)
 - **Background bug fixed:** `body::before` had 3 background layers but only 2 `background-size` values (`cover, 200px 200px`). Browser cycled values — second radial gradient rendered as a 200×200px tile instead of covering the viewport. Root cause of the "overstretched/broken" visual artifact. Fixed to `cover, cover, 200px 200px`. Also softened the bottom-right gradient (0.18→0.12 opacity).

@@ -529,6 +529,12 @@ body::before {
 .cards-grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 0; }
 .pcard {
   width: 96px; height: 136px; position: relative;
+  display: block;
+  border: none;
+  padding: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
   cursor: pointer; user-select: none;
   animation: dealIn .35s ease both;
   transition: transform .2s cubic-bezier(.34,1.56,.64,1), filter .2s;
@@ -3305,6 +3311,7 @@ function GameScreen({
   const cards = getCards(deck);
   const [tsel, setTsel] = useState(30);
   const [storyInput, setStoryInput] = useState("");
+  const [optimisticVote, setOptimisticVote] = useState(null);
   // Confetti fires once per consensus reveal, keyed by round number
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConsensus, setShowConsensus] = useState(false);
@@ -3313,7 +3320,8 @@ function GameScreen({
   const players = Object.values(rd.players || {});
   const voters = players.filter((p) => p.role === "voter");
   const observers = players.filter((p) => p.role === "observer");
-  const myVote = rd.players?.[myId]?.vote || null;
+  const remoteVote = rd.players?.[myId]?.vote || null;
+  const myVote = optimisticVote ?? remoteVote;
   const isObs = myRole === "observer";
   const revealed = rd.revealed || false;
   const round = rd.round || 1;
@@ -3381,6 +3389,24 @@ function GameScreen({
       setShowConsensus(false);
     }
   }, [revealed, allSame, round]);
+
+  useEffect(() => {
+    if (revealed) {
+      setOptimisticVote(null);
+      return;
+    }
+    if (!remoteVote) {
+      setOptimisticVote(null);
+      return;
+    }
+    if (optimisticVote === remoteVote) {
+      setOptimisticVote(null);
+    }
+  }, [remoteVote, revealed, optimisticVote]);
+
+  useEffect(() => {
+    setOptimisticVote(null);
+  }, [round]);
 
   const prog = timer.running ? timer.remaining / timer.duration : 1;
   const offset = CIRC * (1 - prog);
@@ -3634,18 +3660,23 @@ function GameScreen({
                   {cards.map((c, i) => {
                     const sel = myVote === c.val;
                     return (
-                      <div
+                      <button
                         key={c.val}
                         className={`pcard${c.red ? " red" : ""}${c.val === "?" ? " wild" : ""}${sel ? " sel" : ""}${revealed ? " locked" : ""}`}
                         style={{ animationDelay: `${i * 0.055}s` }}
-                        role="button"
+                        type="button"
                         tabIndex={revealed ? -1 : 0}
                         aria-pressed={sel}
                         aria-label={`Vote ${c.val}`}
-                        onClick={() => !revealed && onCard(c.val)}
+                        onClick={() => {
+                          if (revealed) return;
+                          setOptimisticVote(c.val);
+                          onCard(c.val);
+                        }}
                         onKeyDown={(e) => {
                           if (!revealed && (e.key === "Enter" || e.key === " ")) {
                             e.preventDefault();
+                            setOptimisticVote(c.val);
                             onCard(c.val);
                           }
                         }}
@@ -3664,7 +3695,7 @@ function GameScreen({
                             <span className="pcard-suit-sm">{c.suit}</span>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
