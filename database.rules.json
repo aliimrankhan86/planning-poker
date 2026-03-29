@@ -179,6 +179,37 @@
       }
     },
 
+    // ── SPRINT HISTORY ────────────────────────────────────────────────────────
+    // Per-user session records written by saveSessionHistory() on session end.
+    // Only the owning authenticated user can read or write their history.
+    // Each entry is keyed by push() auto-ID; no custom path manipulation possible.
+    "history": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "$entryId": {
+          ".validate": "newData.hasChildren(['roomCode', 'startedAt', 'endedAt', 'storiesDone', 'totalPoints', 'consensusRate'])",
+
+          "roomCode":      { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 48" },
+          "teamName":      { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 60)" },
+          "startedAt":     { ".validate": "newData.isNumber()" },
+          "endedAt":       { ".validate": "newData.isNumber()" },
+          "storiesDone":   { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "totalPoints":   { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "consensusRate": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+          "storyCount":    { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)" },
+          "stories": {
+            "$si": {
+              ".validate": "newData.hasChildren(['name', 'estimate'])",
+              "name":     { ".validate": "newData.isString() && newData.val().length <= 200" },
+              "estimate": { ".validate": "newData.isString()" }
+            }
+          }
+        }
+      }
+    },
+
     // Block all reads/writes to any path not explicitly defined above.
     // This prevents abuse of arbitrary Firebase paths.
     "$other": {

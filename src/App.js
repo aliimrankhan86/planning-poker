@@ -12,6 +12,7 @@ import {
   ref,
   set,
   get,
+  push,
   onValue,
   update,
   remove,
@@ -45,6 +46,41 @@ async function track(eventName) {
     );
   } catch {
     // Analytics must never break the main app — swallow all errors silently
+  }
+}
+
+// ── SPRINT HISTORY ────────────────────────────────────────────────
+// Saves a session summary to Firebase /history/{uid} when a Pro session ends.
+// Requires an authenticated user — anonymous sessions are not recorded.
+// Failures are silent so a history error never blocks session teardown.
+async function saveSessionHistory(uid, roomData, roomCode) {
+  if (!uid || !roomData) return;
+  const stories = roomData.stories ? Object.values(roomData.stories) : [];
+  const storiesDone  = roomData.storiesDone  || 0;
+  const consensusCount = roomData.consensusCount || 0;
+  const totalPoints = stories
+    .filter(s => s.estimate != null && !isNaN(Number(s.estimate)))
+    .reduce((sum, s) => sum + Number(s.estimate), 0);
+  const consensusRate = storiesDone > 0
+    ? Math.round((consensusCount / storiesDone) * 100) : 0;
+  const record = {
+    roomCode,
+    teamName:     roomData.teamName     || null,
+    startedAt:    roomData.createdAt    || Date.now(),
+    endedAt:      Date.now(),
+    storiesDone,
+    totalPoints,
+    consensusRate,
+    storyCount:   stories.length,
+    // Store estimated stories only — keeps payload small
+    stories: stories
+      .filter(s => s.estimate != null)
+      .map(s => ({ name: s.name || "", estimate: s.estimate })),
+  };
+  try {
+    await push(ref(db, `history/${uid}`), record);
+  } catch (e) {
+    // Swallow — history must never interrupt session teardown
   }
 }
 
@@ -251,8 +287,9 @@ body::before {
 }
 .consensus-burst-emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
 .consensus-burst-text {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 2.4rem; font-weight: 700; color: var(--gold2);
+  letter-spacing: -0.02em;
   text-shadow: 0 0 40px rgba(201,145,42,.8), 0 4px 20px rgba(0,0,0,.8);
   line-height: 1.1;
 }
@@ -293,10 +330,10 @@ body::before {
 .join-suits span { opacity: .12; }
 .join-suits span:nth-child(2), .join-suits span:nth-child(4) { color: var(--red); opacity: .18; }
 .join-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 2.6rem; font-weight: 700;
   color: var(--cream); text-align: center;
-  margin-bottom: 4px; letter-spacing: .5px; line-height: 1.1;
+  margin-bottom: 4px; letter-spacing: -0.03em; line-height: 1.1;
   text-shadow: 0 12px 32px rgba(0,0,0,.42);
 }
 .join-sub {
@@ -373,10 +410,10 @@ body::before {
   color: rgba(239,242,247,.82); font-family: 'Outfit', sans-serif;
 }
 .seo-section h2.seo-h2 {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 1.85rem; font-weight: 700;
   color: var(--gold2); text-align: center;
-  margin-bottom: 16px; letter-spacing: .3px; line-height: 1.25;
+  margin-bottom: 16px; letter-spacing: -0.02em; line-height: 1.25;
 }
 .seo-intro {
   text-align: center; font-size: .95rem; line-height: 1.7;
@@ -531,7 +568,7 @@ body::before {
 .rsv { transform: rotate(-90deg); }
 .rt { fill: none; stroke: rgba(255,255,255,.05); stroke-width: 6; }
 .rp { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke .3s; }
-.rnum { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 1.7rem; color: var(--cream); }
+.rnum { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Outfit', sans-serif; font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; color: var(--cream); }
 .rnum.urgent { color: #e74c3c; }
 .rtxt { flex: 1; }
 .rstatus { font-size: .72rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px; color: rgba(245,251,247,.74); }
@@ -586,10 +623,10 @@ body::before {
   display: flex; flex-direction: column; align-items: center; line-height: 1;
   transform: rotate(180deg);
 }
-.pcard-num      { font-family: 'Cormorant Garamond', serif; font-size: .95rem; font-weight: 700; color: #1a1208; line-height: 1; }
+.pcard-num      { font-family: 'Outfit', sans-serif; font-size: .95rem; font-weight: 700; color: #1a1208; line-height: 1; letter-spacing: -0.02em; }
 .pcard-suit-sm  { font-size: .78rem; line-height: 1; margin-top: 2px; }
 .pcard-center   { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
-.pcard-bignum   { font-family: 'Cormorant Garamond', serif; font-size: 2.6rem; font-weight: 700; line-height: 1; color: #1a1208; }
+.pcard-bignum   { font-family: 'Outfit', sans-serif; font-size: 2.6rem; font-weight: 700; line-height: 1; color: #1a1208; letter-spacing: -0.04em; }
 .pcard-bigsuit  { font-size: 1.3rem; line-height: 1; margin-top: 2px; }
 /* Colour variants */
 .pcard.red .pcard-num,     .pcard.red .pcard-bignum   { color: #b01020; }
@@ -619,9 +656,9 @@ body::before {
   text-transform: uppercase; color: rgba(239,242,247,.73); margin-bottom: 10px;
 }
 .avg-hero-num {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 5.5rem; color: var(--gold2); font-weight: 700;
-  line-height: 1; text-shadow: 0 0 50px rgba(201,145,42,.45);
+  line-height: 1; letter-spacing: -0.05em; text-shadow: 0 0 50px rgba(201,145,42,.45);
   animation: heroIn .5s ease;
 }
 .avg-hero-sub { font-size: .8rem; color: rgba(239,242,247,.75); margin-top: 10px; }
@@ -634,7 +671,7 @@ body::before {
 }
 .avg-hero-range { display: flex; justify-content: center; gap: 32px; margin-top: 18px; }
 .avg-hero-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.avg-hero-stat .v { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--cream); font-weight: 700; }
+.avg-hero-stat .v { font-family: 'Outfit', sans-serif; font-size: 1.5rem; color: var(--cream); font-weight: 700; letter-spacing: -0.03em; }
 .avg-hero-stat .l { font-size: .58rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.62); }
 
 /* ══════════════════════ WHO PICKED WHAT ══════════════════════ */
@@ -651,7 +688,7 @@ body::before {
 .rv-card-face.outlier-high { border: 2px solid #e74c3c; box-shadow: 0 6px 18px rgba(231,76,60,.3); }
 .rv-card-face.outlier-low  { border: 2px solid #3498db; box-shadow: 0 6px 18px rgba(52,152,219,.3); }
 .rv-card-face.consensus    { border: 2px solid var(--gold); box-shadow: 0 6px 18px rgba(201,145,42,.4); }
-.rv-val { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; color: var(--ink); }
+.rv-val { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; color: var(--ink); letter-spacing: -0.04em; }
 .rv-val.red { color: #b01020; }
 .rv-name { font-size: .68rem; color: rgba(239,242,247,.84); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .rv-you-tag { font-size: .58rem; color: var(--gold2); font-weight: 700; letter-spacing: .3px; }
@@ -758,7 +795,7 @@ body::before {
 .pdot.o { background: rgba(93,173,226,.35); }
 .vchip {
   background: var(--card-bg); color: var(--ink);
-  font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: .95rem;
+  font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .95rem;
   border-radius: 6px; padding: 3px 10px;
   border: 1px solid var(--gold); min-width: 32px; text-align: center;
   animation: flip .3s ease both;
@@ -775,7 +812,7 @@ body::before {
   padding: 12px 8px; background: rgba(255,255,255,.05);
   border: 1px solid var(--border2); border-radius: 10px;
 }
-.ss-v { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; color: var(--gold2); font-weight: 700; }
+.ss-v { font-family: 'Outfit', sans-serif; font-size: 1.5rem; color: var(--gold2); font-weight: 700; letter-spacing: -0.03em; }
 .ss-l { font-size: .6rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.60); text-align: center; }
 
 /* ══════════════════════ SESSION WARNING ══════════════════════ */
@@ -962,9 +999,9 @@ body::before {
 }
 .pricing-close:hover { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
 .pricing-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 2rem; font-weight: 700; color: var(--cream);
-  text-align: center; margin-bottom: 4px;
+  letter-spacing: -0.03em; text-align: center; margin-bottom: 4px;
 }
 .pricing-sub {
   text-align: center; color: rgba(239,242,247,.65);
@@ -1025,7 +1062,7 @@ body::before {
 .pricing-tier { font-size: .68rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.60); margin-bottom: 10px; }
 .pricing-card.pro .pricing-tier { color: var(--gold2); }
 .pricing-price { margin-bottom: 6px; display: flex; align-items: baseline; gap: 4px; }
-.pricing-amount { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 700; color: var(--cream); line-height: 1; }
+.pricing-amount { font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 700; color: var(--cream); line-height: 1; letter-spacing: -0.04em; }
 .pricing-card.pro .pricing-amount { color: var(--gold2); }
 .pricing-period { font-size: .82rem; color: rgba(239,242,247,.55); }
 .pricing-desc { font-size: .78rem; color: rgba(239,242,247,.60); margin-bottom: 18px; min-height: 32px; line-height: 1.45; }
@@ -1292,9 +1329,9 @@ body::before {
 .login-modal-close:hover { color: var(--cream); background: var(--surface2); }
 .login-modal-chip { display: flex; justify-content: center; margin-bottom: 20px; }
 .login-modal-title {
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 1.9rem; font-weight: 700; color: var(--cream);
-  text-align: center; margin-bottom: 6px;
+  letter-spacing: -0.03em; text-align: center; margin-bottom: 6px;
 }
 .login-modal-sub {
   font-size: .84rem; color: rgba(239,242,247,.60); text-align: center;
@@ -1363,21 +1400,256 @@ body::before {
   margin: 0 0 12px; font-size: .8rem; color: rgba(239,242,247,.56);
 }
 
+/* ─── Nav upgrade wrapper ─── */
+/* Wrapper is exactly button height so it aligns with sibling buttons in navbar-right.
+   The subtitle floats below via absolute positioning and does not affect layout. */
+.nav-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+.nav-upgrade-sub {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .58rem; font-weight: 500; color: rgba(239,242,247,.42);
+  letter-spacing: .15px; line-height: 1; pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ─── Game upgrade strip — free users only ─── */
+.game-upgrade-strip {
+  background: linear-gradient(90deg, rgba(241,185,63,.09), rgba(241,185,63,.04));
+  border-top: 1px solid rgba(241,185,63,.16);
+  padding: 10px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-shrink: 0;
+}
+.game-upgrade-strip-text {
+  font-size: .78rem; color: rgba(239,242,247,.58); line-height: 1.4;
+}
+.game-upgrade-strip-cta {
+  padding: 7px 18px; border-radius: 10px; border: none;
+  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
+  color: #1a1208; font-family: 'Outfit', sans-serif;
+  font-size: .78rem; font-weight: 700; cursor: pointer;
+  white-space: nowrap; transition: all .2s;
+  box-shadow: 0 4px 14px rgba(241,185,63,.20);
+  flex-shrink: 0;
+}
+.game-upgrade-strip-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(241,185,63,.30); }
+
+/* ─── Footer plan comparison bar ─── */
+.footer-plan-bar {
+  max-width: 1160px; margin: 0 auto;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 16px 0 18px;
+}
+.footer-plan-item { display: flex; align-items: center; gap: 8px; }
+.footer-plan-badge {
+  padding: 3px 9px; border-radius: 999px;
+  font-size: .6rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.footer-plan-badge.free {
+  background: rgba(255,255,255,.07); color: rgba(239,242,247,.50);
+  border: 1px solid rgba(255,255,255,.10);
+}
+.footer-plan-badge.pro {
+  background: rgba(201,145,42,.14); color: var(--gold2);
+  border: 1px solid rgba(201,145,42,.28);
+}
+.footer-plan-text { font-size: .76rem; color: rgba(239,242,247,.42); }
+.footer-plan-divider {
+  width: 1px; height: 18px; background: rgba(255,255,255,.08); flex-shrink: 0;
+}
+.footer-plan-cta {
+  margin-left: auto; padding: 7px 18px; border-radius: 10px; border: none;
+  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
+  color: #1a1208; font-family: 'Outfit', sans-serif;
+  font-size: .76rem; font-weight: 700; cursor: pointer;
+  transition: all .2s; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(241,185,63,.18);
+}
+.footer-plan-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(241,185,63,.28); }
+
+/* ══════════════════════ LEGAL PAGES ══════════════════════ */
+.legal-page {
+  width: 100%; padding: 48px 24px 80px;
+  display: flex; justify-content: center;
+}
+.legal-inner {
+  max-width: 760px; width: 100%;
+}
+.legal-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 10px;
+  border: 1px solid rgba(158,234,196,.18); background: rgba(255,255,255,.04);
+  color: rgba(239,242,247,.72); font-family: 'Outfit', sans-serif;
+  font-size: .84rem; font-weight: 500; cursor: pointer;
+  transition: all .2s; margin-bottom: 32px;
+}
+.legal-back:hover { background: rgba(255,255,255,.08); color: var(--cream); }
+.legal-h1 {
+  font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700;
+  color: var(--cream); letter-spacing: -0.03em; margin: 0 0 8px;
+}
+.legal-updated {
+  font-size: .78rem; color: rgba(239,242,247,.42); margin: 0 0 40px;
+}
+.legal-body h2 {
+  font-family: 'Outfit', sans-serif; font-size: 1.08rem; font-weight: 600;
+  color: var(--cream); letter-spacing: -0.01em; margin: 36px 0 12px;
+  padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.legal-body p, .legal-body li {
+  font-size: .88rem; line-height: 1.75; color: rgba(239,242,247,.74);
+  margin: 0 0 12px;
+}
+.legal-body ul {
+  padding-left: 20px; margin: 0 0 12px;
+}
+.legal-body li { margin-bottom: 6px; }
+.legal-body strong { color: rgba(239,242,247,.90); font-weight: 600; }
+.legal-body a { color: var(--gold2); text-decoration: underline; }
+.legal-body a:hover { color: var(--gold3); }
+.legal-body code {
+  font-family: 'Courier New', monospace; font-size: .82em;
+  background: rgba(255,255,255,.07); padding: 1px 6px; border-radius: 4px;
+}
+
+/* ══════════════════════ HISTORY MODAL ══════════════════════ */
+.history-overlay {
+  position: fixed; inset: 0; z-index: 950;
+  background: rgba(0,0,0,.74); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; animation: fadeIn .2s ease;
+}
+.history-modal {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0)),
+    linear-gradient(155deg, rgba(10,24,20,.97) 0%, rgba(6,14,12,.99) 100%);
+  border: 1px solid rgba(158,234,196,.14); border-radius: 24px;
+  padding: 36px 32px 32px; width: 100%; max-width: 640px;
+  max-height: 88vh; overflow-y: auto;
+  box-shadow: 0 44px 110px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.06);
+  position: relative; animation: fadeUp .28s ease;
+}
+.history-close {
+  position: absolute; top: 18px; right: 18px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10);
+  color: rgba(239,242,247,.55); width: 32px; height: 32px;
+  border-radius: 10px; cursor: pointer; font-size: .85rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .18s;
+}
+.history-close:hover { color: var(--cream); background: rgba(255,255,255,.10); }
+.history-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.7rem; font-weight: 700; color: var(--cream);
+  letter-spacing: -0.03em; margin-bottom: 4px;
+}
+.history-sub {
+  font-size: .82rem; color: rgba(239,242,247,.48); margin-bottom: 22px;
+}
+.history-insights {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 10px; margin-bottom: 24px;
+}
+.hi-stat {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px; padding: 14px 10px; text-align: center;
+}
+.hi-v {
+  font-size: 1.8rem; font-weight: 700; color: var(--gold2);
+  letter-spacing: -0.04em; line-height: 1;
+}
+.hi-trend-up   { color: #4bd889; }
+.hi-trend-down { color: #e74c3c; }
+.hi-trend-flat { color: rgba(239,242,247,.55); }
+.hi-l {
+  font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(239,242,247,.42); margin-top: 6px;
+}
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+.history-item {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px; padding: 16px 18px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  transition: border-color .18s;
+}
+.history-item:hover { border-color: rgba(158,234,196,.18); }
+.hi-item-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.hi-item-sprint {
+  font-size: .72rem; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: rgba(239,242,247,.38);
+}
+.hi-item-label {
+  font-size: .96rem; font-weight: 600; color: var(--cream);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hi-item-date { font-size: .72rem; color: rgba(239,242,247,.38); }
+.hi-item-stats { display: flex; gap: 20px; flex-shrink: 0; }
+.hi-item-stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.hi-item-v {
+  font-size: 1.2rem; font-weight: 700; color: var(--cream);
+  letter-spacing: -0.03em; line-height: 1;
+}
+.hi-item-v.gold { color: var(--gold2); }
+.hi-item-l {
+  font-size: .58rem; letter-spacing: 1.2px; text-transform: uppercase;
+  color: rgba(239,242,247,.38);
+}
+.history-empty {
+  text-align: center; padding: 40px 20px; color: rgba(239,242,247,.45);
+}
+.history-empty p { font-size: .88rem; line-height: 1.6; }
+.history-empty p:first-child { font-size: 1.1rem; color: rgba(239,242,247,.65); margin-bottom: 8px; }
+
+/* NavBar history button */
+.nav-btn-history {
+  padding: 8px 14px; border-radius: 12px;
+  border: 1px solid rgba(158,234,196,.16); background: rgba(255,255,255,.04);
+  color: rgba(239,242,247,.75); font-family: 'Outfit', sans-serif;
+  font-size: .82rem; font-weight: 500; cursor: pointer;
+  transition: all .2s; letter-spacing: .2px;
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-btn-history:hover { background: rgba(255,255,255,.08); color: var(--cream); border-color: rgba(158,234,196,.28); }
+
+@media (max-width: 780px) {
+  .history-insights { grid-template-columns: repeat(2, 1fr); }
+  .history-modal { padding: 28px 20px 24px; }
+}
+@media (max-width: 520px) {
+  .nav-btn-history { display: none; }
+  .hi-item-stats { gap: 12px; }
+}
+
 /* ══════════════════════ RESPONSIVE — FOOTER + NAV ══════════════════════ */
 @media (max-width: 780px) {
   .footer-inner { grid-template-columns: 1fr 1fr; }
   .footer-col-brand { grid-column: 1 / -1; }
   .navbar-brand { display: none; }
   .nav-account-name { max-width: 140px; }
+  .footer-plan-bar { gap: 14px; }
+  .footer-plan-cta { margin-left: 0; }
 }
 @media (max-width: 520px) {
   .footer-inner { grid-template-columns: 1fr; }
   .footer-legal-note { text-align: left; max-width: 100%; }
   .nav-btn-login { display: none; }
   .nav-btn-register { font-size: .78rem; padding: 7px 14px; }
+  .nav-upgrade-sub { display: none; }
   .login-modal { padding: 36px 22px 28px; }
   .auth-mode-row { grid-template-columns: 1fr; }
   .nav-account { display: none; }
+  .game-upgrade-strip { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .footer-plan-item:last-of-type .footer-plan-text { display: none; }
 }
 `;
 
@@ -1386,8 +1658,8 @@ body::before {
 // URL is updated via replaceState so links can be shared directly.
 const FREE_MAX_PLAYERS = 6;   // Free tier participant limit
 const PRO_MAX_PLAYERS  = 20;  // Pro tier: full team + stakeholders
-const SESSION_MAX_MS = 3 * 60 * 60 * 1000;
-const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000;
+const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours — auto-end + save history
+const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
 
 // ── FOUNDER DETECTION ────────────────────────────────────────
 // Stored encoded so the team code isn't readable as plain text
@@ -1428,8 +1700,9 @@ function BrandWordmark() {
    - Left:  Brand mark + "pointpoker" brand name
    - Right: Account state + pricing CTA
 ═══════════════════════════════════════════════════════════════ */
-function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, onLogout }) {
+function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, onLogout, onHistory }) {
   const accountLabel = currentUser?.displayName || currentUser?.email || null;
+  const isPro = currentPlan === "pro";
 
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
@@ -1447,24 +1720,38 @@ function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, on
         <div className="navbar-right">
           {currentUser ? (
             <>
+              {isPro && (
+                <button
+                  className="nav-btn-history"
+                  onClick={onHistory}
+                  aria-label="View sprint history"
+                >
+                  📊 History
+                </button>
+              )}
               <div className="nav-account" aria-label="Signed-in account">
                 <span className="nav-account-name">{accountLabel}</span>
-                <span className={`nav-account-plan${currentPlan === "pro" ? " pro" : ""}`}>
-                  {currentPlan === "pro" ? "Pro" : "Free"}
+                <span className={`nav-account-plan${isPro ? " pro" : ""}`}>
+                  {isPro ? "✓ Pro" : "Free"}
                 </span>
               </div>
-              <button className="nav-btn-login" onClick={onLogout}>
-                Log out
-              </button>
+              <button className="nav-btn-login" onClick={onLogout}>Sign out</button>
+              {!isPro && (
+                <div className="nav-btn-wrapper">
+                  <button className="nav-btn-register" onClick={onRegister}>✦ Upgrade to Pro</button>
+                  <span className="nav-upgrade-sub">Team Room · 20 players · Sprint history</span>
+                </div>
+              )}
             </>
           ) : (
-            <button className="nav-btn-login" onClick={onLogin}>
-              Log in
-            </button>
+            <>
+              <button className="nav-btn-login" onClick={onLogin}>Log in</button>
+              <div className="nav-btn-wrapper">
+                <button className="nav-btn-register" onClick={onRegister}>✦ Get Pro</button>
+                <span className="nav-upgrade-sub">Team Room · 20 players · Sprint history</span>
+              </div>
+            </>
           )}
-          <button className="nav-btn-register" onClick={onRegister}>
-            {currentPlan === "pro" ? "Manage Plan" : "✦ Get Pro"}
-          </button>
         </div>
       </div>
     </nav>
@@ -1475,10 +1762,37 @@ function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, on
    Three-column footer: brand, legal links, product links.
    onCookieSettings: resets cookie consent so the banner re-appears.
 ═══════════════════════════════════════════════════════════════ */
-function SiteFooter({ onCookieSettings }) {
+function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, onNavTerms, onNavPrivacy }) {
   const year = new Date().getFullYear();
+  const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
+  const isPro = currentPlan === "pro";
+
   return (
     <footer className="site-footer" aria-label="Site footer">
+
+      {/* ── Free vs Pro comparison bar ── */}
+      <div className="footer-plan-bar">
+        <div className="footer-plan-item">
+          <span className="footer-plan-badge free">Free</span>
+          <span className="footer-plan-text">Up to 6 voters · All card decks · No account needed</span>
+        </div>
+        <div className="footer-plan-divider" aria-hidden="true" />
+        <div className="footer-plan-item">
+          <span className="footer-plan-badge pro">Pro</span>
+          <span className="footer-plan-text">Permanent Team Room · Up to 20 voters · Sprint history · From £5/mo</span>
+        </div>
+        {!isPro && (
+          <button className="footer-plan-cta" onClick={onShowPricing}>
+            ✦ Upgrade to Pro
+          </button>
+        )}
+        {isPro && (
+          <span style={{ marginLeft: "auto", fontSize: ".76rem", color: "var(--gold2)", fontWeight: 600 }}>
+            ✓ You're on Pro
+          </span>
+        )}
+      </div>
+
       <div className="footer-inner">
 
         {/* Column 1 — Brand */}
@@ -1488,7 +1802,7 @@ function SiteFooter({ onCookieSettings }) {
             <span className="footer-brand-name"><BrandWordmark /></span>
           </div>
           <p className="footer-brand-desc">
-            Free, real-time estimation for agile and Scrum teams.
+            Free, real-time planning poker for agile and Scrum teams.
             No sign-up required. Works in any browser.
           </p>
           <p className="footer-brand-desc" style={{ marginTop: 4 }}>
@@ -1500,20 +1814,24 @@ function SiteFooter({ onCookieSettings }) {
         {/* Column 2 — Legal */}
         <div className="footer-col-links">
           <div className="footer-col-title">Legal</div>
-          <a href="/terms"   className="footer-link">Terms of Service</a>
-          <a href="/privacy" className="footer-link">Privacy Policy</a>
-          <button className="footer-link" onClick={onCookieSettings}>
-            Cookie Settings
-          </button>
-          <a href="/privacy#data" className="footer-link">Data &amp; GDPR</a>
+          <button className="footer-link" onClick={onNavTerms}>Terms of Service</button>
+          <button className="footer-link" onClick={onNavPrivacy}>Privacy Policy</button>
+          <button className="footer-link" onClick={onCookieSettings}>Cookie Settings</button>
+          <button className="footer-link" onClick={onNavPrivacy}>Data &amp; GDPR</button>
         </div>
 
         {/* Column 3 — Product */}
         <div className="footer-col-links">
           <div className="footer-col-title">Product</div>
           <a href="/" className="footer-link">Free Planning Poker</a>
-          <a href="/#pricing" className="footer-link">Pro Plan</a>
-          <a href="/privacy#contact" className="footer-link">Contact &amp; Support</a>
+          {isPro ? (
+            <span className="footer-link" style={{ color: "var(--gold2)", cursor: "default" }}>
+              Pro Plan ✓ Active
+            </span>
+          ) : (
+            <button className="footer-link" onClick={onShowPricing}>Pro Plan — what's included</button>
+          )}
+          <a href={`mailto:${support}`} className="footer-link">Contact &amp; Support</a>
         </div>
       </div>
 
@@ -1526,9 +1844,12 @@ function SiteFooter({ onCookieSettings }) {
         <div className="footer-legal-note">
           pointpoker is provided "as-is" without warranty of any kind.
           Use is subject to our{" "}
-          <a href="/terms" style={{ color: "rgba(239,242,247,.38)", textDecoration: "underline" }}>
+          <button
+            onClick={onNavTerms}
+            style={{ color: "rgba(239,242,247,.38)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
+          >
             Terms of Service
-          </a>
+          </button>
           . Firebase, Vercel, and Stripe are third-party services and
           are not affiliated with pointpoker.
         </div>
@@ -1802,16 +2123,16 @@ function CookieBanner({ onAccept }) {
     <div className="cookie-banner" role="dialog" aria-label="Cookie notice" aria-live="polite">
       <div className="cookie-inner">
         <p className="cookie-text">
-          <strong>This site uses cookies.</strong>{" "}
-          We use functional browser storage required for Firebase (real-time sessions) and
-          anonymous, cookie-free usage counts to improve the product. No advertising or
-          tracking cookies are used. See our{" "}
-          <a href="/privacy" className="cookie-link">Privacy Policy</a> and{" "}
-          <a href="/terms" className="cookie-link">Terms of Service</a>.
+          <strong>We use essential browser storage only.</strong>{" "}
+          This includes Firebase session data and a preference flag to remember your consent.
+          No advertising, tracking, or third-party analytics cookies are used. See our{" "}
+          <a href="/privacy" className="cookie-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>{" "}
+          and{" "}
+          <a href="/terms" className="cookie-link" target="_blank" rel="noopener noreferrer">Terms of Service</a>.
         </p>
         <div className="cookie-actions">
-          <a href="/privacy" className="cookie-link">Privacy</a>
-          <a href="/terms" className="cookie-link">Terms</a>
+          <a href="/privacy" className="cookie-link" target="_blank" rel="noopener noreferrer">Privacy</a>
+          <a href="/terms" className="cookie-link" target="_blank" rel="noopener noreferrer">Terms</a>
           <button className="cookie-accept" onClick={onAccept}>Accept &amp; Continue</button>
         </div>
       </div>
@@ -1820,7 +2141,12 @@ function CookieBanner({ onAccept }) {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState("join");
+  const [screen, setScreen] = useState(() => {
+    const path = window.location.pathname;
+    if (path === "/terms")   return "terms";
+    if (path === "/privacy") return "privacy";
+    return "join";
+  });
   const [myId] = useState(uid);
   const [myRole, setMyRole] = useState("voter");
   const [authUser, setAuthUser] = useState(() => auth.currentUser);
@@ -1841,9 +2167,21 @@ export default function App() {
     try { localStorage.removeItem("pp_cookie_ok"); } catch {}
     setCookieAccepted(false);
   };
+
+  // ── SPA NAVIGATION ────────────────────────────────────────────────
+  // Navigate within the SPA without a full-page reload.
+  // Used by footer links and the back button on legal pages.
+  const navTo = (path) => {
+    window.history.pushState({}, "", path);
+    if (path === "/terms")   { setScreen("terms");   return; }
+    if (path === "/privacy") { setScreen("privacy"); return; }
+    setScreen("join");
+  };
   // Global modal states — NavBar triggers these from any screen
   const [showLoginModal,   setShowLoginModal]   = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [sprintHistory,    setSprintHistory]    = useState([]);
   // Initialise room code and team name synchronously from the URL so JoinScreen
   // receives the correct prefill on the very first render — no flash or double-update.
   // ?room=CODE  → Join Room tab pre-filled with code
@@ -1915,6 +2253,22 @@ export default function App() {
     });
     return () => unsub();
   }, [authUser?.uid]);
+
+  // ── SPRINT HISTORY LISTENER — Pro users only ──────────────────
+  useEffect(() => {
+    if (!authUser?.uid || currentPlan !== "pro") {
+      setSprintHistory([]);
+      return undefined;
+    }
+    const unsub = onValue(ref(db, `history/${authUser.uid}`), (snap) => {
+      if (!snap.exists()) { setSprintHistory([]); return; }
+      const entries = Object.entries(snap.val())
+        .map(([id, v]) => ({ id, ...v }))
+        .sort((a, b) => (b.endedAt || 0) - (a.endedAt || 0)); // most recent first
+      setSprintHistory(entries);
+    });
+    return () => unsub();
+  }, [authUser?.uid, currentPlan]);
 
   // sessionWarningRef: prevents the session-check interval from restarting
   // every time the sessionWarning flag flips, eliminating unnecessary churn.
@@ -2039,10 +2393,13 @@ export default function App() {
 
   // Store createdAt in a ref so the interval always has the real value,
   // not a snapshot from when the effect last ran.
-  const createdAtRef = useRef(null);
-  useEffect(() => {
-    if (roomData?.createdAt) createdAtRef.current = roomData.createdAt;
-  }, [roomData?.createdAt]); // eslint-disable-line
+  const createdAtRef    = useRef(null);
+  // Refs used by endSession and auto-expire so they don't need to be in dep arrays
+  const authUserRef     = useRef(null);
+  const currentPlanRef  = useRef("free");
+  useEffect(() => { if (roomData?.createdAt) createdAtRef.current = roomData.createdAt; }, [roomData?.createdAt]); // eslint-disable-line
+  useEffect(() => { authUserRef.current    = authUser;    }, [authUser]);
+  useEffect(() => { currentPlanRef.current = currentPlan; }, [currentPlan]);
 
   // ── SESSION EXPIRY CHECK ──────────────────────────────────────────
   // sessionWarning is intentionally NOT in the dependency array — we
@@ -2057,6 +2414,10 @@ export default function App() {
       const age = Date.now() - start;
       if (age >= SESSION_MAX_MS) {
         clearInterval(sessionCheckRef.current);
+        // Save history for authenticated Pro users before tearing down the room
+        if (authUserRef.current && currentPlanRef.current === "pro" && roomDataRef.current) {
+          await saveSessionHistory(authUserRef.current.uid, roomDataRef.current, code);
+        }
         await remove(ref(db, `rooms/${code}`));
         setScreen("join");
         setRoomData(null);
@@ -2064,7 +2425,7 @@ export default function App() {
         setCode("");
         setPrefillTeam("");
         window.history.replaceState({}, "", homePath());
-        showToast("⏰ Session ended after 3 hours. See you next sprint!");
+        showToast("⏰ Session auto-ended after 5 hours. Sprint data saved to your history.");
       } else if (age >= SESSION_WARN_MS && !sessionWarningRef.current) {
         setSessionWarning(true);
         showToast("⚠️ Session ending in ~10 minutes. Wrap up your planning!");
@@ -2387,14 +2748,16 @@ export default function App() {
 
   const endSession = useCallback(async () => {
     // Explicitly clear the local timer interval before tearing down the room.
-    // Without this, the interval could fire one more tick after the room is
-    // deleted, resulting in a harmless but unnecessary Firebase write attempt.
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
     remainingRef.current = null;
     clearInterval(sessionCheckRef.current);
+    // Save sprint history for authenticated Pro users
+    if (authUserRef.current && currentPlanRef.current === "pro" && roomDataRef.current) {
+      await saveSessionHistory(authUserRef.current.uid, roomDataRef.current, code);
+    }
     await remove(ref(db, `rooms/${code}`));
     setScreen("join");
     setRoomData(null);
@@ -2449,15 +2812,26 @@ export default function App() {
       {/* ── Global shell — NavBar → content → Footer ── */}
       <div className="page-shell">
         <NavBar
-          onLogoClick={() => screen === "game" ? goBack() : window.scrollTo({ top: 0, behavior: "smooth" })}
+          onLogoClick={() => {
+            if (screen === "game") { goBack(); return; }
+            if (screen === "terms" || screen === "privacy") { navTo("/"); return; }
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
           onLogin={()    => { setShowLoginModal(true);   track("login_modal_opened");   }}
           onRegister={()  => { setShowPricingModal(true); track("pricing_opened"); }}
           currentUser={authUser}
           currentPlan={currentPlan}
           onLogout={handleLogout}
+          onHistory={() => setShowHistoryModal(true)}
         />
 
         <div className="app">
+          {screen === "terms" && (
+            <TermsPage onBack={() => navTo("/")} />
+          )}
+          {screen === "privacy" && (
+            <PrivacyPage onBack={() => navTo("/")} />
+          )}
           {screen === "join" && (
             <JoinScreen
               onCreate={handleCreate}
@@ -2497,12 +2871,20 @@ export default function App() {
               onRecordStory={recordAndNextStory}
               sessionWarning={sessionWarning}
               toast={showToast}
+              currentPlan={currentPlan}
+              onShowPricing={() => { setShowPricingModal(true); track("pricing_opened"); }}
             />
           )}
           <div className={`toast${toastOn ? " show" : ""}`}>{toast}</div>
         </div>
 
-        <SiteFooter onCookieSettings={resetCookieBanner} />
+        <SiteFooter
+          onCookieSettings={resetCookieBanner}
+          onShowPricing={() => { setShowPricingModal(true); track("pricing_opened"); }}
+          currentPlan={currentPlan}
+          onNavTerms={() => navTo("/terms")}
+          onNavPrivacy={() => navTo("/privacy")}
+        />
       </div>
 
       {/* ── Overlays ── */}
@@ -2522,6 +2904,12 @@ export default function App() {
           currentUser={authUser}
           currentPlan={currentPlan}
           onRequireLogin={() => { setShowLoginModal(true); track("login_modal_opened"); }}
+        />
+      )}
+      {showHistoryModal && (
+        <HistoryModal
+          onClose={() => setShowHistoryModal(false)}
+          history={sprintHistory}
         />
       )}
     </>
@@ -2754,6 +3142,604 @@ async function validateAndSavePro(key, user = null) {
   }
 }
 
+/* ═══════════════════════ HISTORY MODAL ═══════════════════════
+   Pro-only. Shows all saved sprint sessions with velocity insights.
+   history: array of session records from Firebase /history/{uid}
+═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════ LEGAL PAGE SHELL ═══════════════════════
+   Shared layout wrapper for Terms and Privacy pages.
+   Renders within the main SPA layout (NavBar + Footer stay visible).
+═══════════════════════════════════════════════════════════════ */
+function LegalPage({ title, lastUpdated, onBack, children }) {
+  return (
+    <div className="legal-page">
+      <div className="legal-inner">
+        <button className="legal-back" onClick={onBack} aria-label="Back to home">
+          ← Back
+        </button>
+        <h1 className="legal-h1">{title}</h1>
+        <p className="legal-updated">Last updated: {lastUpdated}</p>
+        <div className="legal-body">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════ TERMS OF SERVICE ═══════════════════════
+   Governed by English law. Protects pointpoker and its operator
+   from misuse, liability, and service abuse claims.
+═══════════════════════════════════════════════════════════════ */
+function TermsPage({ onBack }) {
+  const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
+  return (
+    <LegalPage title="Terms of Service" lastUpdated="29 March 2026" onBack={onBack}>
+      <h2>1. Agreement to Terms</h2>
+      <p>
+        These Terms of Service ("Terms") govern your access to and use of the pointpoker service
+        ("Service"), operated by the pointpoker owner ("we", "us", "our"). By accessing or using
+        the Service, you agree to be bound by these Terms. If you do not agree, you must not use
+        the Service.
+      </p>
+      <p>
+        These Terms constitute a legally binding agreement between you and us. We reserve the right
+        to modify these Terms at any time. Continued use of the Service after any change constitutes
+        acceptance of the updated Terms. Material changes will be communicated via the Service.
+      </p>
+
+      <h2>2. Description of the Service</h2>
+      <p>
+        pointpoker is a web-based planning poker tool designed to assist agile and Scrum teams in
+        collaborative story-point estimation. The Service is provided on a free tier and a paid
+        Pro tier. Features and limits differ between tiers and are described on the pricing page.
+      </p>
+      <p>
+        The Service is provided via third-party infrastructure including Google Firebase (real-time
+        database and authentication) and Vercel (hosting). These third parties operate independently
+        and are subject to their own terms and privacy policies.
+      </p>
+
+      <h2>3. Eligibility and Accounts</h2>
+      <p>
+        You must be at least 16 years of age to use the Service. By using the Service, you represent
+        and warrant that you meet this requirement and have the legal capacity to enter into this
+        agreement.
+      </p>
+      <p>
+        If you create an account, you are responsible for maintaining the confidentiality of your
+        credentials and for all activity that occurs under your account. You must notify us immediately
+        at <a href={`mailto:${support}`}>{support}</a> if you suspect any unauthorised use.
+      </p>
+      <p>
+        You may not create accounts by automated means or register under false pretences. We reserve
+        the right to terminate accounts that violate these Terms without notice or refund.
+      </p>
+
+      <h2>4. Acceptable Use</h2>
+      <p>You agree not to use the Service to:</p>
+      <ul>
+        <li>Violate any applicable law or regulation, including data protection and privacy laws;</li>
+        <li>Transmit any harmful, abusive, defamatory, obscene, or otherwise objectionable content;</li>
+        <li>Attempt to gain unauthorised access to any part of the Service, its infrastructure, or another user's data;</li>
+        <li>Interfere with or disrupt the integrity or performance of the Service;</li>
+        <li>Conduct automated scraping, crawling, or data extraction without our written consent;</li>
+        <li>Misuse or fraudulently activate Pro subscription keys;</li>
+        <li>Reverse engineer, decompile, or disassemble any component of the Service;</li>
+        <li>Use the Service in any manner that could damage, disable, or impair our infrastructure.</li>
+      </ul>
+      <p>
+        We reserve the right to suspend or terminate your access if we determine, in our sole
+        discretion, that you have violated this acceptable use policy.
+      </p>
+
+      <h2>5. Pro Subscription</h2>
+      <p>
+        Access to Pro features requires a valid Pro subscription or activation key. Subscription
+        fees are payable in advance and are non-refundable except as required by applicable consumer
+        protection law. Where you purchase as a consumer in the United Kingdom, the Consumer Rights
+        Act 2015 and Consumer Contracts Regulations 2013 may apply.
+      </p>
+      <p>
+        Pro activation keys are personal to the account holder and may not be resold, transferred,
+        or shared. We reserve the right to deactivate keys that we reasonably believe have been
+        obtained or used fraudulently.
+      </p>
+      <p>
+        We may change Pro pricing at any time. Any price changes will take effect at the start of
+        your next billing cycle and will be communicated in advance.
+      </p>
+
+      <h2>6. Intellectual Property</h2>
+      <p>
+        All intellectual property rights in the Service, including but not limited to its software,
+        design, visual elements, and content, are owned by us or our licensors. Nothing in these
+        Terms grants you any right, title, or interest in the Service other than the limited
+        right to use it in accordance with these Terms.
+      </p>
+      <p>
+        You retain ownership of any content you input into the Service (such as story names). You
+        grant us a limited, royalty-free licence to store and process such content solely for the
+        purpose of providing the Service to you.
+      </p>
+
+      <h2>7. Disclaimers</h2>
+      <p>
+        THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS
+        OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+        PARTICULAR PURPOSE, NON-INFRINGEMENT, ACCURACY, OR UNINTERRUPTED AVAILABILITY.
+      </p>
+      <p>
+        We do not warrant that the Service will be free of errors, viruses, or other harmful components,
+        or that any defects will be corrected. We make no warranty as to the reliability, timeliness,
+        or accuracy of any results produced by the Service.
+      </p>
+      <p>
+        The Service is intended as a facilitation tool only. Estimates and outputs produced through
+        the Service are the sole responsibility of the teams using it. We accept no liability for
+        decisions made on the basis of estimates produced using the Service.
+      </p>
+
+      <h2>8. Limitation of Liability</h2>
+      <p>
+        TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL WE BE LIABLE FOR ANY
+        INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED
+        TO LOSS OF PROFITS, DATA, GOODWILL, OR BUSINESS INTERRUPTION, ARISING FROM OR IN CONNECTION
+        WITH YOUR USE OF OR INABILITY TO USE THE SERVICE, HOWEVER CAUSED AND UNDER ANY THEORY OF
+        LIABILITY.
+      </p>
+      <p>
+        OUR TOTAL CUMULATIVE LIABILITY TO YOU FOR ALL CLAIMS ARISING FROM OR RELATING TO THESE TERMS
+        OR THE SERVICE SHALL NOT EXCEED THE GREATER OF (A) THE AMOUNT YOU PAID US IN THE TWELVE MONTHS
+        PRECEDING THE CLAIM, OR (B) £100 (ONE HUNDRED POUNDS STERLING).
+      </p>
+      <p>
+        Nothing in these Terms excludes or limits our liability for death or personal injury caused by
+        our negligence, fraud or fraudulent misrepresentation, or any other liability that cannot be
+        excluded or limited by English law.
+      </p>
+
+      <h2>9. Indemnification</h2>
+      <p>
+        You agree to indemnify, defend, and hold harmless us and our officers, directors, employees,
+        agents, and successors from and against any claims, liabilities, damages, losses, and expenses
+        (including reasonable legal fees) arising out of or in connection with your use of the Service,
+        your violation of these Terms, or your infringement of any third-party rights.
+      </p>
+
+      <h2>10. Third-Party Services</h2>
+      <p>
+        The Service integrates with third-party services including Google Firebase, Vercel, and Stripe.
+        Your use of such services is subject to their respective terms and privacy policies. We are not
+        responsible for the practices, content, or availability of any third-party services.
+      </p>
+
+      <h2>11. Availability and Changes to the Service</h2>
+      <p>
+        We reserve the right to modify, suspend, or discontinue the Service (or any part thereof) at
+        any time, with or without notice. We shall not be liable to you or any third party for any
+        such modification, suspension, or discontinuation.
+      </p>
+      <p>
+        We will make reasonable efforts to provide advance notice of material changes that affect
+        paying Pro subscribers.
+      </p>
+
+      <h2>12. Governing Law and Jurisdiction</h2>
+      <p>
+        These Terms and any dispute or claim arising from or in connection with them (including
+        non-contractual disputes or claims) shall be governed by and construed in accordance with
+        the laws of England and Wales.
+      </p>
+      <p>
+        You and we irrevocably agree that the courts of England and Wales shall have exclusive
+        jurisdiction to settle any dispute or claim arising from or in connection with these Terms
+        or their subject matter.
+      </p>
+
+      <h2>13. General</h2>
+      <p>
+        If any provision of these Terms is held to be invalid or unenforceable, the remaining
+        provisions shall continue in full force and effect. Our failure to enforce any right or
+        provision of these Terms shall not constitute a waiver of that right or provision.
+      </p>
+      <p>
+        These Terms constitute the entire agreement between you and us regarding the Service and
+        supersede all prior agreements, representations, and understandings.
+      </p>
+
+      <h2>14. Contact</h2>
+      <p>
+        Questions or concerns regarding these Terms should be directed to:{" "}
+        <a href={`mailto:${support}`}>{support}</a>
+      </p>
+    </LegalPage>
+  );
+}
+
+/* ═══════════════════════ PRIVACY POLICY ═══════════════════════
+   GDPR-compliant under UK GDPR and the Data Protection Act 2018.
+   Satisfies Article 13 transparency obligations (notice at collection).
+═══════════════════════════════════════════════════════════════ */
+function PrivacyPage({ onBack }) {
+  const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
+  return (
+    <LegalPage title="Privacy Policy" lastUpdated="29 March 2026" onBack={onBack}>
+      <h2>1. Who We Are</h2>
+      <p>
+        pointpoker ("we", "us", "our") is a planning poker service. The operator is the data controller
+        responsible for your personal data processed in connection with the Service. For any
+        data-related queries, contact us at <a href={`mailto:${support}`}>{support}</a>.
+      </p>
+
+      <h2>2. What Data We Collect</h2>
+      <p>We collect and process only the data necessary to provide the Service:</p>
+      <ul>
+        <li>
+          <strong>Account data</strong> — If you register, we collect your email address and
+          display name. These are required to create and manage your account.
+        </li>
+        <li>
+          <strong>Session data</strong> — Room codes, team names, story names, and vote values
+          are stored temporarily in Firebase Realtime Database while a session is active.
+          Free sessions are deleted when the session ends. Pro session summaries (total points,
+          stories estimated, consensus rate) are retained in your account history.
+        </li>
+        <li>
+          <strong>Usage analytics</strong> — We count anonymised events (e.g. "room created",
+          "pricing page viewed") as daily integer totals in Firebase. No personal data, device
+          identifiers, or IP addresses are stored in analytics. These counts cannot be linked
+          back to any individual.
+        </li>
+        <li>
+          <strong>Technical data</strong> — Firebase and Vercel may log standard server data
+          (IP addresses, browser type, access timestamps) as part of their infrastructure
+          operations. We do not control or access this data outside their platforms.
+        </li>
+        <li>
+          <strong>Payment data</strong> — Pro subscription payments are processed by Stripe.
+          We do not receive or store your full card details. Stripe's privacy policy governs
+          payment data handling.
+        </li>
+      </ul>
+
+      <h2>3. Legal Basis for Processing (UK GDPR)</h2>
+      <p>
+        We process your personal data on the following legal bases under the UK General Data
+        Protection Regulation:
+      </p>
+      <ul>
+        <li>
+          <strong>Contract performance (Article 6(1)(b))</strong> — Processing your account
+          data and session data is necessary to deliver the Service you have requested.
+        </li>
+        <li>
+          <strong>Legitimate interests (Article 6(1)(f))</strong> — We process anonymised
+          usage analytics to understand how the Service is used and to improve it. These
+          interests are not overridden by your rights, as no personal data is included.
+        </li>
+        <li>
+          <strong>Consent (Article 6(1)(a))</strong> — We rely on your consent for storing
+          a preference cookie (cookie consent flag) in your browser. You may withdraw this
+          consent at any time via the Cookie Settings link in the footer.
+        </li>
+      </ul>
+
+      <h2>4. How We Use Your Data</h2>
+      <p>We use your data solely for the following purposes:</p>
+      <ul>
+        <li>To create and authenticate your account;</li>
+        <li>To operate and deliver the planning poker Service;</li>
+        <li>To store Pro sprint history data associated with your account;</li>
+        <li>To process payments via Stripe;</li>
+        <li>To count anonymised usage events to improve the product;</li>
+        <li>To respond to support enquiries you send to us;</li>
+        <li>To comply with our legal obligations.</li>
+      </ul>
+      <p>
+        We do not sell, rent, or share your personal data with third parties for marketing
+        purposes. We do not use your data for automated decision-making or profiling.
+      </p>
+
+      <h2>5. Cookies and Local Storage</h2>
+      <p>
+        We use browser local storage (not traditional HTTP cookies) for the following purposes:
+      </p>
+      <ul>
+        <li>
+          <strong>Firebase authentication persistence</strong> — Firebase stores your
+          authentication session in IndexedDB or local storage to keep you signed in across
+          browser sessions. This is strictly necessary for the authentication feature.
+        </li>
+        <li>
+          <strong>Cookie consent preference</strong> — A single flag (<code>pp_cookie_ok</code>)
+          is stored in local storage to record that you have accepted this notice. It contains
+          no personal data.
+        </li>
+      </ul>
+      <p>
+        We do not set advertising, tracking, or third-party marketing cookies. You can reset
+        your cookie consent at any time via Cookie Settings in the footer.
+      </p>
+
+      <h2>6. Third-Party Processors</h2>
+      <p>
+        We use the following third-party services that process data on our behalf as data
+        processors:
+      </p>
+      <ul>
+        <li>
+          <strong>Google Firebase</strong> — Provides real-time database (session data) and
+          authentication. Data may be stored in Google's data centres, which may be located
+          within the EEA and other regions. Google LLC is certified under the EU-US Data
+          Privacy Framework. See{" "}
+          <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">
+            Firebase Privacy Policy
+          </a>.
+        </li>
+        <li>
+          <strong>Vercel Inc.</strong> — Hosts and serves the Service. Standard server access
+          logs may be retained by Vercel in accordance with their privacy policy. See{" "}
+          <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">
+            Vercel Privacy Policy
+          </a>.
+        </li>
+        <li>
+          <strong>Stripe Inc.</strong> — Processes Pro subscription payments. Stripe is a
+          certified PCI DSS Level 1 service provider. See{" "}
+          <a href="https://stripe.com/gb/privacy" target="_blank" rel="noopener noreferrer">
+            Stripe Privacy Policy
+          </a>.
+        </li>
+      </ul>
+
+      <h2>7. Data Retention</h2>
+      <p>
+        We retain your data for as long as your account is active or as needed to provide the
+        Service. Session data for free rooms is deleted immediately when the session ends.
+        Pro account data (account profile and sprint history) is retained while your account
+        remains active.
+      </p>
+      <p>
+        If you request account deletion, we will delete your personal data within 30 days,
+        except where we are required to retain it by law (for example, financial records for
+        VAT purposes, which we retain for 6 years as required by HMRC).
+      </p>
+
+      <h2>8. Your Rights Under UK GDPR</h2>
+      <p>
+        As a data subject under UK GDPR and the Data Protection Act 2018, you have the following
+        rights:
+      </p>
+      <ul>
+        <li>
+          <strong>Right of access</strong> — You may request a copy of the personal data we
+          hold about you.
+        </li>
+        <li>
+          <strong>Right to rectification</strong> — You may ask us to correct inaccurate or
+          incomplete data.
+        </li>
+        <li>
+          <strong>Right to erasure ("right to be forgotten")</strong> — You may request that
+          we delete your personal data, subject to legal retention requirements.
+        </li>
+        <li>
+          <strong>Right to restriction of processing</strong> — You may ask us to restrict
+          processing of your data in certain circumstances.
+        </li>
+        <li>
+          <strong>Right to data portability</strong> — You may request your data in a
+          structured, machine-readable format.
+        </li>
+        <li>
+          <strong>Right to object</strong> — You may object to processing based on legitimate
+          interests at any time.
+        </li>
+        <li>
+          <strong>Right to withdraw consent</strong> — Where processing is based on consent,
+          you may withdraw it at any time without affecting the lawfulness of prior processing.
+        </li>
+      </ul>
+      <p>
+        To exercise any of these rights, contact us at{" "}
+        <a href={`mailto:${support}`}>{support}</a>. We will respond within one calendar month.
+        You will not be charged for exercising these rights.
+      </p>
+
+      <h2>9. Right to Lodge a Complaint</h2>
+      <p>
+        If you believe we have processed your data unlawfully or in violation of UK GDPR, you
+        have the right to lodge a complaint with the Information Commissioner's Office (ICO),
+        the UK supervisory authority for data protection:
+      </p>
+      <ul>
+        <li>Website: <a href="https://ico.org.uk" target="_blank" rel="noopener noreferrer">ico.org.uk</a></li>
+        <li>Helpline: 0303 123 1113</li>
+      </ul>
+      <p>
+        We encourage you to contact us first at <a href={`mailto:${support}`}>{support}</a> so
+        we can attempt to resolve your concern directly.
+      </p>
+
+      <h2>10. Data Security</h2>
+      <p>
+        We take reasonable technical and organisational measures to protect your personal data
+        against accidental loss, unauthorised access, alteration, or disclosure. These measures
+        include Firebase security rules (restricting data access to the owning user),
+        HTTPS-enforced transmission, and role-based access controls.
+      </p>
+      <p>
+        No method of transmission over the internet or electronic storage is 100% secure. While
+        we strive to use commercially acceptable means to protect your data, we cannot guarantee
+        absolute security.
+      </p>
+
+      <h2>11. International Transfers</h2>
+      <p>
+        Your data may be processed in countries outside the United Kingdom, including the United
+        States, by our third-party processors (Firebase, Vercel, Stripe). Each processor has
+        appropriate safeguards in place, such as Standard Contractual Clauses or recognised
+        certification frameworks, to ensure your data is protected to UK GDPR standards.
+      </p>
+
+      <h2>12. Children's Privacy</h2>
+      <p>
+        The Service is not directed at children under 16 years of age. We do not knowingly
+        collect personal data from children under 16. If you believe a child under 16 has
+        provided personal data, please contact us and we will delete it promptly.
+      </p>
+
+      <h2>13. Changes to This Policy</h2>
+      <p>
+        We may update this Privacy Policy from time to time. Material changes will be indicated
+        by updating the "Last updated" date at the top of this page. Continued use of the Service
+        after any changes constitutes acceptance of the updated policy.
+      </p>
+
+      <h2>14. Contact and Data Controller Details</h2>
+      <p>
+        For all privacy-related queries, data subject requests, or complaints, contact:{" "}
+        <a href={`mailto:${support}`}>{support}</a>
+      </p>
+      <p id="data">
+        We are registered in England and Wales and subject to UK GDPR as implemented by the
+        Data Protection Act 2018. We are not currently required to register with the ICO as a
+        data controller solely processing data for our own business purposes on a small scale,
+        but we operate in full compliance with UK GDPR obligations.
+      </p>
+    </LegalPage>
+  );
+}
+
+function HistoryModal({ onClose, history }) {
+  const totalSprints = history.length;
+
+  // Compute insights from numeric-point sessions only
+  const pointSessions = history.filter(h => h.totalPoints > 0);
+  const avgVelocity = pointSessions.length > 0
+    ? Math.round(pointSessions.reduce((s, h) => s + h.totalPoints, 0) / pointSessions.length)
+    : 0;
+  const bestSprint = pointSessions.length > 0
+    ? Math.max(...pointSessions.map(h => h.totalPoints))
+    : 0;
+  const avgConsensus = totalSprints > 0
+    ? Math.round(history.reduce((s, h) => s + (h.consensusRate || 0), 0) / totalSprints)
+    : 0;
+
+  // Trend: compare most recent half vs earlier half (need ≥2 sessions)
+  let trend = null;
+  if (pointSessions.length >= 2) {
+    const half  = Math.ceil(pointSessions.length / 2);
+    const recent = pointSessions.slice(0, half);
+    const older  = pointSessions.slice(half);
+    const recentAvg = recent.reduce((s, h) => s + h.totalPoints, 0) / recent.length;
+    const olderAvg  = older.reduce((s, h)  => s + h.totalPoints, 0)  / older.length;
+    if (recentAvg > olderAvg * 1.05)      trend = { icon: "↑", label: "Improving", col: "#4ade80" };
+    else if (recentAvg < olderAvg * 0.95) trend = { icon: "↓", label: "Declining", col: "#f87171" };
+    else                                   trend = { icon: "→", label: "Steady",    col: "var(--gold2)" };
+  }
+
+  const fmtDate = (ts) => {
+    if (!ts) return "—";
+    return new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  };
+  const fmtDuration = (start, end) => {
+    if (!start || !end) return "";
+    const mins = Math.round((end - start) / 60000);
+    if (mins < 60) return `${mins}m`;
+    return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  };
+
+  return (
+    <div className="history-overlay" role="dialog" aria-modal="true" aria-label="Sprint history">
+      <div className="history-modal">
+        {/* Header */}
+        <div className="history-header">
+          <div>
+            <h2 className="history-title">Sprint History</h2>
+            <p className="history-sub">{totalSprints} session{totalSprints !== 1 ? "s" : ""} recorded</p>
+          </div>
+          <button className="modal-close" onClick={onClose} aria-label="Close history">✕</button>
+        </div>
+
+        {totalSprints === 0 ? (
+          <div className="history-empty">
+            <div style={{ fontSize: "2.2rem", marginBottom: "10px" }}>📋</div>
+            <p style={{ color: "rgba(239,242,247,.62)", fontSize: ".9rem", lineHeight: 1.5 }}>
+              No sprint sessions recorded yet. Sessions are saved automatically when you end a session or after 5 hours.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Insights row */}
+            <div className="history-insights">
+              <div className="hi-card">
+                <span className="hi-label">Avg velocity</span>
+                <span className="hi-v">{avgVelocity > 0 ? avgVelocity : "—"}</span>
+                <span className="hi-unit">pts / sprint</span>
+              </div>
+              <div className="hi-card">
+                <span className="hi-label">Best sprint</span>
+                <span className="hi-v">{bestSprint > 0 ? bestSprint : "—"}</span>
+                <span className="hi-unit">story pts</span>
+              </div>
+              <div className="hi-card">
+                <span className="hi-label">Team alignment</span>
+                <span className="hi-v">{avgConsensus}%</span>
+                <span className="hi-unit">avg consensus</span>
+              </div>
+              <div className="hi-card">
+                <span className="hi-label">Velocity trend</span>
+                <span className="hi-v" style={trend ? { color: trend.col } : {}}>
+                  {trend ? trend.icon : "—"}
+                </span>
+                <span className="hi-unit">{trend ? trend.label : "need 2+ sprints"}</span>
+              </div>
+            </div>
+
+            {/* Session list */}
+            <div className="history-list">
+              {history.map((h, i) => {
+                const sprintNum = totalSprints - i;
+                const label = h.teamName ? h.teamName : `Sprint ${sprintNum}`;
+                return (
+                  <div className="history-item" key={h.id || i}>
+                    <div className="hi-item-left">
+                      <span className="hi-sprint-label">{label}</span>
+                      <span className="hi-sprint-date">{fmtDate(h.endedAt)}</span>
+                    </div>
+                    <div className="hi-item-stats">
+                      <div className="hi-stat">
+                        <span className="hi-stat-val">{h.totalPoints}</span>
+                        <span className="hi-stat-key">pts</span>
+                      </div>
+                      <div className="hi-stat">
+                        <span className="hi-stat-val">{h.storiesDone}</span>
+                        <span className="hi-stat-key">stories</span>
+                      </div>
+                      <div className="hi-stat">
+                        <span className="hi-stat-val">{h.consensusRate ?? "—"}%</span>
+                        <span className="hi-stat-key">consensus</span>
+                      </div>
+                      {h.startedAt && h.endedAt && (
+                        <div className="hi-stat">
+                          <span className="hi-stat-val">{fmtDuration(h.startedAt, h.endedAt)}</span>
+                          <span className="hi-stat-key">duration</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onRequireLogin }) {
   const [currency, setCurrency]   = useState("GBP");
   const [billing,  setBilling]    = useState("annual");  // "monthly" | "annual"
@@ -2778,6 +3764,7 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
     { yes: true,  text: "Facilitator mode and sprint analytics"                  },
     { yes: false, text: "Permanent Team Room with your own URL"                  },
     { yes: false, text: `Up to ${PRO_MAX_PLAYERS} voters per session`            },
+    { yes: false, text: "Sprint history — velocity trends across sprints"        },
     { yes: false, text: "Priority support"                                       },
   ];
 
@@ -2785,8 +3772,8 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
     { yes: true, text: "Everything in Free, always"                              },
     { yes: true, text: "Permanent Team Room — same URL every sprint"             },
     { yes: true, text: `Up to ${PRO_MAX_PLAYERS} voters per session`             },
+    { yes: true, text: "Sprint history — velocity trends and consensus insights" },
     { yes: true, text: "Team joins by name — no link sharing needed"             },
-    { yes: true, text: "Custom countdown timer and facilitator controls"         },
     { yes: true, text: "Estimation Spree streak and alignment analytics"         },
     { yes: true, text: "Priority support via email"                              },
   ];
@@ -3325,6 +4312,8 @@ function GameScreen({
   onRecordStory,
   sessionWarning,
   toast,
+  currentPlan,
+  onShowPricing,
 }) {
   const cards = getCards(deck);
   const [tsel, setTsel] = useState(30);
@@ -4314,6 +5303,18 @@ function GameScreen({
           </div>
         </div>
       </div>
+
+      {/* ── Free-tier upgrade nudge — hidden for Pro users ── */}
+      {currentPlan !== "pro" && (
+        <div className="game-upgrade-strip">
+          <span className="game-upgrade-strip-text">
+            Free plan · up to {FREE_MAX_PLAYERS} voters · upgrade for a permanent Team Room, sprint history, and up to {PRO_MAX_PLAYERS} voters
+          </span>
+          <button className="game-upgrade-strip-cta" onClick={onShowPricing}>
+            ✦ Upgrade to Pro
+          </button>
+        </div>
+      )}
     </>
   );
 }

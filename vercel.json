@@ -1,5 +1,7 @@
 {
   "rewrites": [
-    { "source": "/t/:slug", "destination": "/" }
+    { "source": "/t/:slug",  "destination": "/" },
+    { "source": "/terms",    "destination": "/" },
+    { "source": "/privacy",  "destination": "/" }
   ]
 }

@@ -24,15 +24,40 @@
   - Vote cards now use optimistic client-side selection to stabilize mobile tap behavior
   - OG social image now exists at `public/og-image.png`
   - The visual design system has been modernised toward a cleaner 2026 casino-app look with brighter amber, deeper emerald surfaces, and more premium glass UI
+  - Font system unified to Outfit only — Cormorant Garamond removed; display contexts (headings, card numbers, stats, pricing) use Outfit 700 with tight negative letter-spacing for a clean modern feel
   - OG social image now matches the refreshed UI theme and uses clearer, more readable social-preview text
   - Vercel Speed Insights is installed and mounted for production performance monitoring
   - The approved transparent brand mark is now used across the app’s logo sections
   - The app wordmark now displays as `Point Poker` with white `Point`, gold `Poker`, and stronger spacing/capitalization
   - The approved brand mark now also drives favicon and app-icon assets across browser and PWA contexts
+  - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
+  - SiteFooter updated: footer plan bar Pro column now mentions sprint history
+  - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
+  - PricingModal: PRO_FEATURES and FREE_FEATURES updated to include sprint history as a Pro differentiator
+  - Sprint History feature (Pro-only) fully implemented:
+    - `saveSessionHistory()` utility writes session records to Firebase `/history/{uid}` on session end or auto-expire
+    - Session auto-expire extended to 5 hours (was 3 hours); toast updated to confirm data was saved
+    - `authUserRef`, `currentPlanRef` refs added (alongside existing `roomDataRef`) to avoid stale closures in endSession and auto-expire interval
+    - `sprintHistory` state and Firebase listener subscribe to `/history/{uid}` for authenticated Pro users
+    - `HistoryModal` component renders insights (avg velocity, best sprint, alignment %, trend) and a chronological sprint list with team name, date, points, stories, consensus %, and duration
+    - NavBar wired with `onHistory` prop; HistoryModal rendered as an overlay in App
+    - `database.rules.json` updated with `/history/{uid}` read/write rules (owner-only, with field validation)
+  - `npm run build` passes cleanly
+  - NavBar button alignment fixed (subtitle uses `position: absolute` so buttons sit level)
+  - `TermsPage` component: full English-law Terms of Service with liability cap, disclaimer, acceptable use, indemnification
+  - `PrivacyPage` component: full UK GDPR / DPA 2018 Privacy Policy (legal basis, all 7 DSAR rights, ICO reference, processor details for Firebase/Vercel/Stripe, data retention, international transfers)
+  - `LegalPage` shared layout shell
+  - SPA routing: `screen` state initialised from `window.location.pathname`; `navTo()` helper added
+  - Footer legal links now use `onNavTerms`/`onNavPrivacy` SPA callbacks (no dead `<a>` hard-nav)
+  - Cookie banner links open in new tab; banner copy updated to accurately describe essential-only storage
+  - `vercel.json` updated with `/terms` and `/privacy` rewrites for direct URL and browser refresh
+  - `npm run build` clean — 180.9 kB gzipped
 - Remaining priorities:
-  - Connect domain to Vercel and verify production routing
-  - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
-  - Replace Stripe placeholders and finish paid activation wiring
+  - Git commit and push all changes
+  - Deploy updated `database.rules.json` to Firebase Console (history path)
+  - Connect `www.pointpoker.app` to Vercel and verify production routing
+  - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel environment variable
+  - Replace Stripe placeholder links and finish paid activation wiring
 
 Treat this section as the fastest current-status read. Historical session notes below are useful context, but this snapshot is the authoritative present-tense state.
 
@@ -41,8 +66,20 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** UI modernisation and launch polish
-- **Completed:** Refreshed the app visual system in `src/App.js` toward a more modern 2026 casino-style product while keeping the pointpoker green-and-gold brand. Updated palette, glass surfaces, CTA/buttons, navbar, pricing modal, join screen, footer, auth modal, toast, and cookie banner. Also regenerated `public/og-image.png` so social previews match the new theme and use clearer text, installed Vercel Speed Insights in the React root, integrated the approved transparent brand mark into the app logo sections, refined the app wordmark to `Point Poker`, and aligned favicon/PWA icons to the same approved brand mark. `npm run build` passed after the visual refresh.
+- **Worked on:** NavBar alignment, Terms/Privacy legal pages, SPA routing, cookie audit, sprint history completion
+- **Completed:**
+  - NavBar alignment fixed: subtitle now `position: absolute` below the wrapper — "Log in" and "Get Pro" are now vertically level
+  - `TermsPage`: English-law Terms of Service (disclaimer, liability cap of £100, acceptable use, IP ownership, indemnification, governing law)
+  - `PrivacyPage`: UK GDPR-compliant Privacy Policy (all 7 DSAR rights, ICO complaint route, Firebase/Vercel/Stripe processor details, legal basis per Article 6, data retention, international transfers)
+  - `LegalPage` shared layout with back button and styled headings
+  - SPA routing: screen state now initialises from `window.location.pathname` (`/terms` → "terms" screen, `/privacy` → "privacy" screen)
+  - `navTo()` helper in App for pushState + setScreen transitions
+  - Footer all legal links wired with `onNavTerms`/`onNavPrivacy` SPA callbacks (no hard-nav dead links)
+  - Cookie banner: links open in new tab; copy rewritten to be more accurate (essential-only storage)
+  - `vercel.json`: `/terms` and `/privacy` Vercel rewrites added for direct URL access
+  - Sprint history: `HistoryModal`, NavBar "📊 History" button, Firebase listener, and all Pro copy updates (prior session completed)
+  - `database.rules.json`: `/history/{uid}` owner-only access and field validation
+  - `npm run build` clean — 180.9 kB gzipped
 
 ---
 

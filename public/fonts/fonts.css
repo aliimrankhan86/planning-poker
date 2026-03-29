@@ -40,33 +40,3 @@
   font-display: swap;
   src: url('./outfit-v15-latin-700.woff2') format('woff2');
 }
-
-/* ── Cormorant Garamond ─────────────────────────────────────── */
-@font-face {
-  font-family: 'Cormorant Garamond';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./cormorant-garamond-v21-latin-regular.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Cormorant Garamond';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./cormorant-garamond-v21-latin-italic.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Cormorant Garamond';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('./cormorant-garamond-v21-latin-600.woff2') format('woff2');
-}
-@font-face {
-  font-family: 'Cormorant Garamond';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('./cormorant-garamond-v21-latin-700.woff2') format('woff2');
-}
