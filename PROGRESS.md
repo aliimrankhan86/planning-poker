@@ -15,6 +15,12 @@
   - Domain placeholders replaced with `www.pointpoker.app`
   - Copy, legal accuracy, accessibility semantics, and structured SEO hardened
   - Mobile vote-selection bug hardened so repeat taps no longer clear the selected card
+  - Founder-enabled team room confirmed as `/t/rpa-build-team`
+  - Founder-room slug regression fixed so `/t/rpa-build-team` no longer falls into pricing
+  - Team-room URLs now stay clean and voter limits now count only voters
+  - Re-vote flow no longer leaves facilitator stuck without `Start Voting`
+  - Leaving or losing a room now returns the browser URL to `/`
+  - Leaving a room now also clears stale room/team input state on the home screen
 - Remaining priorities:
   - Connect domain to Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
@@ -28,8 +34,8 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** Final quality hardening across copy, legal accuracy, structured SEO, accessibility semantics, tracker consistency, and mobile voting stability
-- **Completed:** Added FAQPage structured data and richer social metadata, fixed stale `Observer` copy in pricing, removed misleading trial language before Stripe launch, aligned Terms with current non-live billing state, fixed broken legal-page anchor links, improved segmented-control accessibility semantics, hardened vote cards for mobile/keyboard use, and removed the fragile tap-to-unselect behavior that could clear a vote on phones.
+- **Worked on:** Product polish around team-room certainty, placeholder consistency, and branded UI chrome
+- **Completed:** Confirmed the existing founder-enabled team URL is `/t/rpa-build-team`, standardised account-name placeholders to `Alex Johnson`, added branded gold scrollbars across the app and legal pages, and removed the stale runtime Google Fonts import so the self-hosted font setup is consistent.
 
 ---
 
@@ -172,6 +178,42 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Likely root cause removed:** Vote selection previously toggled the same card back to `null` when tapped again. That behavior is now disabled; selecting a card is idempotent until the user actively chooses a different card or the round resets.
 - **Interaction semantics improved:** Vote cards now expose `role="button"`, keyboard activation, `aria-pressed`, `:focus-visible`, and mobile tap hardening via `touch-action: manipulation`.
 - **Verification:** `npm run build` completed successfully after the fix.
+
+### Session 9i — 29 March 2026 (Founder room confirmation + scrollbar polish)
+- **Founder room confirmed:** No code change was needed for Ali's preferred internal team URL. `https://www.pointpoker.app/t/rpa-build-team` already maps to founder-enabled Pro access with the current allowlist.
+- **Placeholder consistency:** The create-account full-name placeholder now uses `Alex Johnson`, matching the rest of the app.
+- **Scrollbar styling:** Added branded gold scrollbars across the SPA, pricing modal, and legal pages using the best available browser APIs (`scrollbar-color` for Firefox, `::-webkit-scrollbar*` for Chromium/Safari).
+- **Font-loading consistency:** Removed the stale Google Fonts `@import` from `src/App.js`, leaving the self-hosted font setup as the single active source.
+
+### Session 9j — 29 March 2026 (Founder room pricing regression fix)
+- **Major bug reported:** Entering the founder team URL `https://www.pointpoker.app/t/rpa-build-team` and choosing Facilitator incorrectly opened the pricing modal.
+- **Root cause:** `teamCode()` stripped hyphens from already-slugged input, so `rpa-build-team` became `rpabuildteam` during the founder-room check and failed the allowlist match.
+- **Fix:** Team slug normalisation now preserves hyphens while still cleaning unsafe characters.
+- **Expected result after fix:** `/t/rpa-build-team` enters the founder room directly and retains founder-level Pro access instead of prompting for pricing.
+
+### Session 9k — 29 March 2026 (Deeper routing and capacity bug pass)
+- **Additional defects found during adversarial review:**
+  - standard room URLs were being written as relative `?room=...`, which could attach to `/t/...` paths
+  - team-room entry rewrote clean `/t/<slug>` URLs back to `?team=...`
+  - invite links did not reliably preserve the correct room-type URL
+  - voter limits counted all players instead of only `voter` roles, contradicting the product copy
+- **Fixes applied:**
+  - standard rooms now use `/?room=CODE`
+  - team rooms now stay on `/t/<slug>`
+  - shared invite links now preserve the correct room URL type
+  - room-capacity enforcement now counts only voters, so facilitators/non-voting stakeholders do not consume a voter slot
+  - copy now says `voters` where voter limits are actually enforced
+
+### Session 9l — 29 March 2026 (Re-vote blocker and stale-route cleanup)
+- **Atlas-found blocker:** After `↺ Re-vote this story`, the facilitator could lose the `Start Voting` control and both sides became stuck.
+- **Likely root cause fixed:** Auto-reveal and reveal transitions were not fully clearing timer state. Timer state is now explicitly reset on reveal, auto-reveal, re-vote, reset, and stop.
+- **Home-route cleanup fixed:** Leaving a team room, ending a session, expiry teardown, or landing on a deleted room now resets the URL back to `/` instead of leaving stale `/t/...` paths on the home UI.
+- **Verification:** `npm run build` completed successfully after the fixes.
+
+### Session 9m — 29 March 2026 (Home-state cleanup after leave)
+- **Atlas-found suspicious behavior:** After leaving a team room, the home UI could still retain stale room/team input state even though the URL had been reset to `/`.
+- **Fix:** Leaving, expiry teardown, deleted-room fallback, and end-session cleanup now clear both `code` and `prefillTeam` state before returning to home.
+- **Expected result:** The join screen returns to a genuinely clean home state instead of carrying over `rpa-build-team` into the next action.
 
 ### Session 8b — 28 March 2026 (UX & background fixes)
 - **Background bug fixed:** `body::before` had 3 background layers but only 2 `background-size` values (`cover, 200px 200px`). Browser cycled values — second radial gradient rendered as a 200×200px tile instead of covering the viewport. Root cause of the "overstretched/broken" visual artifact. Fixed to `cover, cover, 200px 200px`. Also softened the bottom-right gradient (0.18→0.12 opacity).

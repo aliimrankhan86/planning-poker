@@ -25,6 +25,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Roles:
   - Backend values are `voter` and `observer`
   - User-facing label for `observer` is `Facilitator`
+- Founder team room:
+  - Stable founder-enabled URL is `https://www.pointpoker.app/t/rpa-build-team`
 - Verified product state:
   - Auth QA passed
   - Core room-flow QA passed
@@ -33,6 +35,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - SEO/domain references updated for `www.pointpoker.app`
   - Copy, legal accuracy, accessibility semantics, and structured SEO reviewed and tightened
   - Mobile voting interaction hardened so same-card repeat taps no longer clear the vote
+  - Team-room routing and founder-room URL handling were hardened after a real regression was found
 - Still pending:
   - Connect domain in Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
@@ -473,6 +476,37 @@ Listed chronologically newest-first.
 - Vote selection no longer toggles off when the same card is tapped again; selecting a card is now idempotent until the user chooses a different card or the round resets
 - Vote cards now include explicit keyboard/button semantics plus `:focus-visible` styling and mobile tap hardening (`touch-action: manipulation`, no tap highlight)
 - This change targets the reported defect where mobile users could see a card appear selected and then become unselected again in later rounds
+
+### 2026-03 — Founder room confirmation + UI polish
+- Confirmed no founder-room code change is needed for Ali's chosen team URL: `https://www.pointpoker.app/t/rpa-build-team` already maps to founder-enabled Pro access
+- Standardised the create-account name placeholder to `Alex Johnson` so it matches the rest of the app
+- Added branded gold scrollbars across the SPA and legal pages with the best cross-browser styling available:
+  - Firefox via `scrollbar-width` / `scrollbar-color`
+  - WebKit browsers via `::-webkit-scrollbar*`
+- Removed the stale Google Fonts `@import` from `src/App.js` so runtime styling is consistent with the self-hosted font setup documented elsewhere
+
+### 2026-03 — Founder room slug bug fix
+- Fixed a regression in `teamCode()` where already-slugged names like `rpa-build-team` were being normalised to `rpabuildteam`
+- This bug caused `/t/rpa-build-team` to fail the founder-room Pro bypass and incorrectly open the pricing modal instead of entering the team room
+- Hyphens are now preserved during team slug normalisation, so clean team URLs and typed team names resolve consistently
+
+### 2026-03 — Team-room routing + voter-capacity fixes
+- Standard room URLs now use an explicit root path (`/?room=CODE`) instead of relative query strings that could accidentally attach to `/t/...` paths
+- Team rooms now preserve the clean stable route format (`/t/<slug>`) after entry instead of rewriting the browser URL to `?team=...`
+- Invite links now respect room type:
+  - standard rooms share `/?room=CODE`
+  - team rooms share `/t/<slug>`
+- Capacity checks now count only `voter` roles, matching the product copy that facilitators and non-voting stakeholders do not consume voter slots
+- Pricing and onboarding copy now consistently says `voters` where the code actually enforces voter limits
+
+### 2026-03 — Re-vote timer blocker + route cleanup fix
+- Fixed a blocker where auto-reveal could leave timer state partially active, causing the facilitator to lose the `Start Voting` control after `Re-vote this story`
+- Timer state is now explicitly cleared on reveal, auto-reveal, re-vote, reset, and manual stop (`running`, `remaining`, `startedBy`)
+- Leaving a room, ending a room, expiry teardown, and deleted-room fallback now all reset the browser URL back to `/` instead of leaving stale `/t/...` paths visible on the home screen
+
+### 2026-03 — Join-screen stale state cleanup
+- Leaving or ending a room now clears both `code` and `prefillTeam` app state before returning to home
+- This prevents stale room/team values from leaking back into the home inputs after leaving a founder room
 
 ### 2026-03 — Firebase Auth accounts + account-aware Pro gating
 - `firebase.js` now exports `auth` alongside `db`

@@ -106,12 +106,17 @@ const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
 // "RPA Dev Team" → "rpa-dev-team" — shareable, memorable, consistent.
 const teamCode = (name) =>
   name.trim().toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")   // strip special chars
+    .replace(/[^a-z0-9\s-]/g, "")  // strip special chars but preserve slug hyphens
     .replace(/\s+/g, "-")           // spaces → hyphens
     .replace(/-{2,}/g, "-")         // collapse double-hyphens
     .replace(/^-|-$/g, "")          // trim leading/trailing hyphens
     .slice(0, 24)                   // max 24 chars
   || "team";
+const homePath = () => "/";
+const roomPath = (code) => `/?room=${encodeURIComponent(code)}`;
+const teamRoomPath = (teamNameOrCode) => `/t/${teamCode(teamNameOrCode)}`;
+const countVoters = (players = {}) =>
+  Object.values(players).filter((p) => p?.role === "voter").length;
 const ini = (n = "") =>
   n
     .split(" ")
@@ -122,8 +127,6 @@ const ini = (n = "") =>
 
 /* ═══════════════════════════ CSS ═══════════════════════════ */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -145,12 +148,36 @@ const CSS = `
   --blue:     #4499e8;
   --ink:      #080e09;
   --card-bg:  #fdfaf3;
+  --scroll-track: rgba(255,255,255,0.06);
+  --scroll-thumb: linear-gradient(180deg, #f5d07a 0%, #e8b84b 45%, #c9922a 100%);
+  --scroll-thumb-border: rgba(8,14,9,0.55);
   --radius:   16px;
   --radius-sm:10px;
   --shadow:   0 20px 60px rgba(0,0,0,0.60);
 }
 
 html { font-size: 16px; scroll-behavior: smooth; }
+html, body, * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) var(--scroll-track);
+}
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 999px;
+  border: 2px solid var(--scroll-thumb-border);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #f8da91 0%, #efc45d 48%, #d39c35 100%);
+}
+*::-webkit-scrollbar-corner { background: transparent; }
 body {
   font-family: 'Outfit', sans-serif;
   background: var(--bg);
@@ -777,7 +804,7 @@ body::before {
   font-size: .65rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
   color: rgba(239,242,247,.40); margin-bottom: 4px;
 }
-.a-story-list { max-height: 180px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent; }
+.a-story-list { max-height: 180px; overflow-y: auto; }
 .a-story-row { display: flex; align-items: center; padding: 5px 0; border-top: 1px solid rgba(255,255,255,.05); }
 .a-story-row:first-child { border-top: none; }
 .a-story-idx { font-size: .62rem; color: rgba(239,242,247,.28); width: 16px; flex-shrink: 0; font-weight: 400; text-align: right; }
@@ -1635,7 +1662,7 @@ function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
                 <label className="lbl">Full Name</label>
                 <input
                   className="inp"
-                  placeholder="Ali Khan"
+                  placeholder="Alex Johnson"
                   value={nameInput}
                   onChange={(e) => { setNameInput(e.target.value); resetMessages(); }}
                   maxLength={40}
@@ -1802,7 +1829,7 @@ export default function App() {
     const r = p.get("room");
     return r ? r.toUpperCase() : "";
   });
-  const [prefillTeam] = useState(() => {
+  const [prefillTeam, setPrefillTeam] = useState(() => {
     // Clean URL: /t/<slug>  e.g. /t/rpa-build-team
     const pathMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
     if (pathMatch) return pathMatch[1];
@@ -1895,6 +1922,9 @@ export default function App() {
         // Room deleted (end session / expired) — go home
         setRoomData(null);
         setScreen("join");
+        setCode("");
+        setPrefillTeam("");
+        window.history.replaceState({}, "", homePath());
       }
     });
     return () => unsub();
@@ -1971,6 +2001,11 @@ export default function App() {
         );
         if (freshVoters.every((p) => p.voted) && !fresh.revealed) {
           await update(ref(db, `rooms/${code}`), { revealed: true });
+          await update(ref(db, `rooms/${code}/timer`), {
+            running: false,
+            remaining: 0,
+            startedBy: null,
+          });
           showToast("🃏 All voted — revealing cards!");
         }
       }, 700);
@@ -2002,6 +2037,9 @@ export default function App() {
         setScreen("join");
         setRoomData(null);
         setSessionWarning(false);
+        setCode("");
+        setPrefillTeam("");
+        window.history.replaceState({}, "", homePath());
         showToast("⏰ Session ended after 3 hours. See you next sprint!");
       } else if (age >= SESSION_WARN_MS && !sessionWarningRef.current) {
         setSessionWarning(true);
@@ -2044,7 +2082,9 @@ export default function App() {
 
     setScreen("join");
     setRoomData(null);
-    window.history.replaceState({}, "", window.location.pathname);
+    setCode("");
+    setPrefillTeam("");
+    window.history.replaceState({}, "", homePath());
   }, [code, myId]);
 
   // ── BROWSER CLOSE / REFRESH CLEANUP ──────────────────────────────
@@ -2083,6 +2123,7 @@ export default function App() {
     const c = mkCode();
     setMyRole(role);
     setCode(c);
+    setPrefillTeam("");
     await set(ref(db, `rooms/${c}`), {
       createdAt: serverTimestamp(),
       revealed: false,
@@ -2100,7 +2141,7 @@ export default function App() {
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
 
     // Update URL so the creator can copy/share the link immediately.
-    window.history.replaceState({}, "", `?room=${c}`);
+    window.history.replaceState({}, "", roomPath(c));
     setScreen("game");
     track(proMode ? "room_created_pro" : "room_created_free");
     if (role === "observer") track("observer_joined"); else track("player_joined");
@@ -2116,18 +2157,19 @@ export default function App() {
       return;
     }
     const data = snap.val();
-    const currentCount = Object.keys(data.players || {}).length;
+    const currentCount = countVoters(data.players || {});
     const maxForPlan = data.plan === "pro" ? PRO_MAX_PLAYERS : FREE_MAX_PLAYERS;
-    if (currentCount >= maxForPlan) {
+    if (role === "voter" && currentCount >= maxForPlan) {
       if (data.plan !== "pro") {
-        showToast(`Room full (free tier: ${FREE_MAX_PLAYERS} max). The host can upgrade to Pro for up to ${PRO_MAX_PLAYERS}.`);
+        showToast(`Room full for voters (free tier: ${FREE_MAX_PLAYERS} max). The host can upgrade to Pro for up to ${PRO_MAX_PLAYERS} voters.`);
       } else {
-        showToast(`This room is full (max ${PRO_MAX_PLAYERS} participants).`);
+        showToast(`This room is full for voters (max ${PRO_MAX_PLAYERS}).`);
       }
       return;
     }
     setMyRole(role);
     setCode(c);
+    setPrefillTeam("");
     await update(ref(db, `rooms/${c}/players/${myId}`), {
       id: myId,
       name,
@@ -2136,7 +2178,7 @@ export default function App() {
       vote: null,
     });
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
-    window.history.replaceState({}, "", `?room=${c}`);
+    window.history.replaceState({}, "", roomPath(c));
     setScreen("game");
     track(role === "observer" ? "observer_joined" : "player_joined");
     showToast(`🎲 Welcome, ${name}!`);
@@ -2163,15 +2205,16 @@ export default function App() {
     );
     const existingPlan = snap.exists() ? (snap.val().plan || "pro") : plan;
     const currentCount = snap.exists()
-      ? Object.keys(snap.val().players || {}).length
+      ? countVoters(snap.val().players || {})
       : 0;
     const maxForPlan = existingPlan === "pro" ? PRO_MAX_PLAYERS : FREE_MAX_PLAYERS;
-    if (currentCount >= maxForPlan) {
-      showToast(`This room is full (max ${maxForPlan} participants).`);
+    if (role === "voter" && currentCount >= maxForPlan) {
+      showToast(`This room is full for voters (max ${maxForPlan}).`);
       return;
     }
     setMyRole(role);
     setCode(c);
+    setPrefillTeam(c);
     if (!snap.exists()) {
       await set(ref(db, `rooms/${c}`), {
         createdAt: serverTimestamp(),
@@ -2193,9 +2236,8 @@ export default function App() {
       });
     }
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
-    // Use ?team= so shared links open the Team Room tab with the name pre-filled,
-    // rather than dropping teammates on the Join tab with a raw code.
-    window.history.replaceState({}, "", `?team=${encodeURIComponent(teamName)}`);
+    // Keep the clean stable team-room URL so invites and browser refreshes stay consistent.
+    window.history.replaceState({}, "", teamRoomPath(c));
     setScreen("game");
     track(role === "observer" ? "observer_joined" : "player_joined");
     if (!snap.exists()) track("room_created_pro"); // Team rooms are always Pro
@@ -2217,7 +2259,11 @@ export default function App() {
 
   const revealVotes = useCallback(async () => {
     await update(ref(db, `rooms/${code}`), { revealed: true });
-    await update(ref(db, `rooms/${code}/timer`), { running: false });
+    await update(ref(db, `rooms/${code}/timer`), {
+      running: false,
+      remaining: 0,
+      startedBy: null,
+    });
   }, [code]);
 
   // estimate !== null  → story is complete; persist estimate and advance counters
@@ -2233,6 +2279,7 @@ export default function App() {
     upd[`rooms/${code}/round`] = (roomData?.round || 1) + 1;
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
+    upd[`rooms/${code}/timer/startedBy`] = null;
 
     if (estimate !== null) {
       // Story complete — record estimate, advance counters, update alignment stats
@@ -2289,6 +2336,7 @@ export default function App() {
     upd[`rooms/${code}/consensusCount`] = (roomData?.consensusCount || 0) + (isConsensus ? 1 : 0);
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
+    upd[`rooms/${code}/timer/startedBy`] = null;
     await update(ref(db), upd);
     track("stories_estimated");
     showToast("✅ Estimate recorded. Voting on next story.");
@@ -2308,6 +2356,7 @@ export default function App() {
     upd[`rooms/${code}/consensusCount`] = 0;
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
+    upd[`rooms/${code}/timer/startedBy`] = null;
     await update(ref(db), upd);
     showToast("🔄 New sprint session — everyone's votes cleared.");
   }, [code, roomData, showToast]);
@@ -2326,6 +2375,9 @@ export default function App() {
     setScreen("join");
     setRoomData(null);
     setSessionWarning(false);
+    setCode("");
+    setPrefillTeam("");
+    window.history.replaceState({}, "", homePath());
   }, [code]);
 
   const startTimer = useCallback(
@@ -2347,7 +2399,10 @@ export default function App() {
       timerRef.current = null;
     }
     remainingRef.current = null;
-    await update(ref(db, `rooms/${code}/timer`), { running: false });
+    await update(ref(db, `rooms/${code}/timer`), {
+      running: false,
+      startedBy: null,
+    });
   }, [code]);
 
   const handleLogout = useCallback(async () => {
@@ -2359,7 +2414,9 @@ export default function App() {
     }
   }, [showToast]);
 
-  const shareUrl = `${window.location.origin}${window.location.pathname}?room=${code}`;
+  const shareUrl = roomData?.teamName
+    ? `${window.location.origin}${teamRoomPath(code)}`
+    : `${window.location.origin}${roomPath(code)}`;
 
   return (
     <>
@@ -2690,20 +2747,20 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
   const support   = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
 
   const FREE_FEATURES = [
-    { yes: true,  text: `Up to ${FREE_MAX_PLAYERS} participants per session`     },
+    { yes: true,  text: `Up to ${FREE_MAX_PLAYERS} voters per session`           },
     { yes: true,  text: "All card decks — Fibonacci, T-Shirt, Powers of 2"      },
     { yes: true,  text: "Simultaneous reveal with live vote breakdown"           },
     { yes: true,  text: "Story queue and session summary export"                 },
     { yes: true,  text: "Facilitator mode and sprint analytics"                  },
     { yes: false, text: "Permanent Team Room with your own URL"                  },
-    { yes: false, text: `Up to ${PRO_MAX_PLAYERS} participants per session`      },
+    { yes: false, text: `Up to ${PRO_MAX_PLAYERS} voters per session`            },
     { yes: false, text: "Priority support"                                       },
   ];
 
   const PRO_FEATURES = [
     { yes: true, text: "Everything in Free, always"                              },
     { yes: true, text: "Permanent Team Room — same URL every sprint"             },
-    { yes: true, text: `Up to ${PRO_MAX_PLAYERS} participants per session`       },
+    { yes: true, text: `Up to ${PRO_MAX_PLAYERS} voters per session`             },
     { yes: true, text: "Team joins by name — no link sharing needed"             },
     { yes: true, text: "Custom countdown timer and facilitator controls"         },
     { yes: true, text: "Estimation Spree streak and alignment analytics"         },
@@ -3105,7 +3162,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
         </button>
         {tab === "create" && (
           <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
-            Free forever · Up to {FREE_MAX_PLAYERS} participants · Ready in under 10 seconds
+            Free forever · Up to {FREE_MAX_PLAYERS} voters · Ready in under 10 seconds
           </p>
         )}
         {tab === "team" && (
