@@ -36,10 +36,11 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Copy, legal accuracy, accessibility semantics, and structured SEO reviewed and tightened
   - Mobile voting interaction hardened so same-card repeat taps no longer clear the vote
   - Team-room routing and founder-room URL handling were hardened after a real regression was found
+  - Core UI palette and surface system were refreshed toward a more modern 2026 casino-app look while preserving the green/gold brand
+  - OG social image was refreshed to match the modernised theme and improve text readability in social previews
 - Still pending:
   - Connect domain in Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
-  - Create `public/og-image.png`
   - Replace Stripe placeholder links and complete paid activation wiring
 
 If older historical notes below conflict with this section, treat this snapshot as the authoritative current state and update the older sections when touching them.
@@ -132,27 +133,29 @@ The entire application — CSS, all components, all logic — lives in `src/App.
 ### Colour palette (CSS custom properties)
 
 ```css
---bg:       #0c1a0f   /* Page background — deep forest green */
---bg2:      #122018   /* Slightly lighter green surface */
---surface:  rgba(255,255,255,0.07)
---surface2: rgba(255,255,255,0.12)
---border:   rgba(255,255,255,0.13)
---border2:  rgba(255,255,255,0.24)
---gold:     #c9922a   /* Primary gold */
---gold2:    #e8b84b   /* Lighter gold — headings, active states */
---gold3:    #f5d07a   /* Lightest gold — highlights */
---goldA:    rgba(201,146,42,0.20)
---goldB:    rgba(201,146,42,0.13)
---cream:    #eef2ec
---cream2:   #9db89e
+--bg:       #07110e   /* Page background — near-black emerald */
+--bg2:      #0d1d19   /* Elevated dark green */
+--surface:  rgba(15,32,27,0.76)
+--surface2: rgba(22,44,38,0.92)
+--border:   rgba(134,198,166,0.12)
+--border2:  rgba(158,234,196,0.22)
+--gold:     #f1b93f   /* Primary premium amber */
+--gold2:    #ffd978   /* Brighter active amber */
+--gold3:    #fff2be   /* Highlight amber */
+--goldA:    rgba(241,185,63,0.24)
+--goldB:    rgba(241,185,63,0.14)
+--mint:     #72f0b4
+--aqua:     #7ee6ff
+--cream:    #f5fbf7
+--cream2:   #b8d1c2
 --red:      #e04848
---green:    #3dba68
---blue:     #4499e8
+--green:    #4bd889
+--blue:     #6ccff6
 --ink:      #080e09   /* Text on gold backgrounds */
 --card-bg:  #fdfaf3   /* Playing card face */
---radius:   16px
---radius-sm:10px
---shadow:   0 20px 60px rgba(0,0,0,0.60)
+--radius:   20px
+--radius-sm:14px
+--shadow:   0 28px 90px rgba(0,0,0,0.58)
 ```
 
 ### Typography
@@ -439,6 +442,16 @@ T-shirt deck: story points are non-numeric — `avgSP`, `totalSP`, and estimate 
 
 Listed chronologically newest-first.
 
+### 2026-03 — Modern 2026 casino-style visual refresh
+- The app visual system in `src/App.js` was refreshed away from a dull/rustic casino look toward a cleaner 2026 product feel while preserving the casino identity
+- Palette updated to deeper emerald-black backgrounds, brighter amber highlights, and subtle mint/aqua accents for contrast and premium polish
+- Key surfaces and interactions modernised:
+  - join screen and form controls
+  - glass panels and sticky headers
+  - primary CTA buttons and facilitator controls
+  - pricing modal, auth modal, navbar, toast, cookie banner, and footer
+- Build verification passed after the redesign, with no app logic changes introduced as part of the visual pass
+
 ### 2026-03 — Facilitator role copy clarification
 - Join-screen role label changed from user-facing `Observer` to `Facilitator` while keeping the Firebase role value as `observer`
 - Facilitator helper copy now explicitly says this role runs the session and does not vote
@@ -513,6 +526,12 @@ Listed chronologically newest-first.
 - Selection state is now optimistic on the client: the tapped card stays visibly selected immediately while Firebase confirms the write
 - Optimistic vote state is cleared on round change, reveal, or once the remote vote state catches up
 - This specifically hardens the mobile case where a tap could appear to select and then visually unselect due to transient real-time state lag
+
+### 2026-03 — OG social image created
+- Added `public/og-image.png` at `1200x630`
+- Asset uses the live pointpoker brand direction: dark green felt background, gold chip/wordmark, and planning-poker card visuals
+- Existing Open Graph and Twitter metadata in `public/index.html` already points to this file, so no code changes were required beyond creating the asset
+- Later refreshed to align with the newer premium emerald/amber UI theme and improve headline/tagline legibility in social previews
 
 ### 2026-03 — Firebase Auth accounts + account-aware Pro gating
 - `firebase.js` now exports `auth` alongside `db`
@@ -606,7 +625,6 @@ Items are grouped by dependency. Do not mark complete until fully deployed/verif
 
 ### DOMAIN / LAUNCH CONFIG
 
-- [ ] Create `public/og-image.png` (1200×630px) for OG/Twitter meta preview
 - [ ] Add `REACT_APP_SUPPORT_EMAIL` to Vercel environment variables
 - [ ] Connect `www.pointpoker.app` to Vercel and verify production routing
 - [ ] Submit sitemap to Google Search Console

@@ -22,10 +22,12 @@
   - Leaving or losing a room now returns the browser URL to `/`
   - Leaving a room now also clears stale room/team input state on the home screen
   - Vote cards now use optimistic client-side selection to stabilize mobile tap behavior
+  - OG social image now exists at `public/og-image.png`
+  - The visual design system has been modernised toward a cleaner 2026 casino-app look with brighter amber, deeper emerald surfaces, and more premium glass UI
+  - OG social image now matches the refreshed UI theme and uses clearer, more readable social-preview text
 - Remaining priorities:
   - Connect domain to Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
-  - Create `public/og-image.png`
   - Replace Stripe placeholders and finish paid activation wiring
 
 Treat this section as the fastest current-status read. Historical session notes below are useful context, but this snapshot is the authoritative present-tense state.
@@ -35,15 +37,15 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** Product polish around team-room certainty, placeholder consistency, and branded UI chrome
-- **Completed:** Confirmed the existing founder-enabled team URL is `/t/rpa-build-team`, standardised account-name placeholders to `Alex Johnson`, added branded gold scrollbars across the app and legal pages, and removed the stale runtime Google Fonts import so the self-hosted font setup is consistent.
+- **Worked on:** UI modernisation and launch polish
+- **Completed:** Refreshed the app visual system in `src/App.js` toward a more modern 2026 casino-style product while keeping the pointpoker green-and-gold brand. Updated palette, glass surfaces, CTA/buttons, navbar, pricing modal, join screen, footer, auth modal, toast, and cookie banner. Also regenerated `public/og-image.png` so social previews match the new theme and use clearer text. `npm run build` passed after the visual refresh.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 1 / 3 crossover — Auth foundation coded, monetisation still blocked on Stripe setup
-**Active step:** Product QA and UX hardening on the core planning flow, with launch-copy and metadata consistency tightened
-**Remaining:** Vercel domain connection, Vercel support-email env var, OG image, Stripe links/webhook, continued product QA/hardening
+**Active step:** Product QA and UX hardening on the core planning flow, now including a modernised UI pass
+**Remaining:** Vercel domain connection, Vercel support-email env var, Stripe links/webhook, continued product QA/hardening
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -97,7 +99,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 2.5 | Add content section to JoinScreen (features, FAQ) | ✅ Done | Session 8. Semantic HTML: h2/h3/h4/p/ol/ul/FAQ grid. Keyword-rich, WCAG compliant, responsive. |
 | 2.6 | Google Fonts preconnect + Core Web Vitals | ✅ Done | display=swap confirmed. Preconnect in index.html head. Session 7/8. |
 | 2.7 | Register Google Search Console + submit sitemap | ⏳ Not started | Ali to do manually after domain purchase |
-| 2.8 | Create OG social image (1200×630px) | ⏳ Not started | Referenced in index.html as /og-image.png |
+| 2.8 | Create OG social image (1200×630px) | ✅ Done | Added as `public/og-image.png` in Session 9o |
 
 ---
 
@@ -157,7 +159,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Public domain references updated:** `public/index.html`, `public/robots.txt`, and `public/sitemap.xml` now use `https://www.pointpoker.app`.
 - **Branding updated:** Public-facing product name changed from `Planning Poker` to `pointpoker` across app chrome, manifest, privacy/terms pages, README, and tracker headings where they refer to the brand.
 - **SEO/category wording preserved:** Generic "planning poker" terminology remains in descriptive copy where it helps explain the product category and search intent.
-- **Remaining launch items after domain purchase:** Vercel domain connection/deployment verification, support email wiring, OG image creation, Stripe links/webhook.
+- **Remaining launch items after domain purchase:** Vercel domain connection/deployment verification, support email wiring, Stripe links/webhook.
 - **Build verification:** `npm run build` completed successfully after the domain/brand update.
 
 ### Session 9f — 29 March 2026 (Support email + SEO metadata polish)
@@ -221,6 +223,23 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Likely root cause:** The selected visual state depended entirely on the latest Firebase snapshot, so transient real-time lag could momentarily clear the highlight even when the tap had been registered.
 - **Fix:** Vote cards now use native `button` elements and optimistic local selection state. The chosen card is highlighted immediately on tap, then reconciled with Firebase once the remote vote catches up.
 - **Reset behavior:** Optimistic state clears safely on reveal, round change, or when the server state matches.
+
+### Session 9o — 29 March 2026 (OG social image)
+- **Asset created:** Added `public/og-image.png` at `1200x630` for Open Graph and Twitter previews.
+- **Visual direction:** Dark green felt background, gold pointpoker wordmark and chip motif, layered planning cards, and a short supporting tagline.
+- **Integration status:** `public/index.html` was already configured to reference `/og-image.png`, so this completes the missing asset rather than changing metadata wiring.
+
+### Session 9p — 29 March 2026 (Modern casino UI refresh)
+- **Design direction updated:** The core UI was shifted from a more rustic gold-on-green look toward a cleaner 2026 casino-product feel.
+- **Palette refresh:** Deepened the emerald/black backgrounds and replaced the older muddy amber tones with brighter premium amber plus small mint/aqua accent usage.
+- **Surface refresh:** Modernised the join screen, panels, navbar, pricing modal, auth modal, footer, toast, and cookie banner with stronger glass surfaces, softer borders, and more premium shadows.
+- **Interaction refresh:** Updated CTA buttons, role/deck/tab toggles, facilitator controls, and timer controls for a more modern feel without changing product logic.
+- **Verification:** `npm run build` completed successfully after the visual refresh.
+
+### Session 9q — 29 March 2026 (OG image refreshed for new theme)
+- **Social asset updated:** Rebuilt `public/og-image.png` to match the modernised emerald/amber visual system instead of the older rustic version.
+- **Readability improved:** Headline, supporting copy, and feature pills were redrawn for stronger contrast and better legibility in shared link previews.
+- **Visual consistency:** The new OG image now matches the refreshed product chrome with darker emerald backgrounds, cleaner glass panels, and brighter premium amber highlights.
 
 ### Session 8b — 28 March 2026 (UX & background fixes)
 - **Background bug fixed:** `body::before` had 3 background layers but only 2 `background-size` values (`cover, 200px 200px`). Browser cycled values — second radial gradient rendered as a 200×200px tile instead of covering the viewport. Root cause of the "overstretched/broken" visual artifact. Fixed to `cover, cover, 200px 200px`. Also softened the bottom-right gradient (0.18→0.12 opacity).
