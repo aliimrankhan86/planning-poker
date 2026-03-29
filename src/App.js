@@ -1055,6 +1055,49 @@ body::before {
 .session-warn-text { flex: 1; font-size: .8rem; color: rgba(239,242,247,.93); }
 .session-warn-text strong { color: #e67e22; }
 
+/* ══════════════════════ SOLO INVITE BANNER ══════════════════════ */
+.solo-invite-banner {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, rgba(201,145,42,.14), rgba(201,145,42,.06));
+  border: 1px solid rgba(201,145,42,.32); border-radius: var(--radius-sm);
+  padding: 12px 16px; margin-bottom: 16px;
+}
+.solo-invite-icon { font-size: 1.15rem; flex-shrink: 0; }
+.solo-invite-body { flex: 1; font-size: .8rem; color: rgba(239,242,247,.9); line-height: 1.4; }
+.solo-invite-body strong { color: var(--cream); }
+.solo-invite-copy {
+  padding: 7px 14px; border-radius: 9px;
+  background: rgba(201,145,42,.18); border: 1px solid rgba(201,145,42,.36);
+  color: var(--gold2); font-family: 'Outfit', sans-serif;
+  font-size: .76rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: all .18s;
+}
+.solo-invite-copy:hover { background: rgba(201,145,42,.28); }
+.solo-invite-dismiss {
+  padding: 4px 8px; background: none; border: none;
+  color: rgba(239,242,247,.4); font-size: .78rem; cursor: pointer;
+  flex-shrink: 0; transition: color .15s;
+}
+.solo-invite-dismiss:hover { color: rgba(239,242,247,.7); }
+
+/* ══════════════════════ TEAM PRO GATE ══════════════════════ */
+.team-pro-gate {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; border-radius: 10px; margin-bottom: 18px;
+  background: rgba(201,145,42,.06); border: 1px solid rgba(201,145,42,.20);
+}
+.team-pro-gate-text {
+  flex: 1; font-size: .79rem; color: rgba(239,242,247,.70); line-height: 1.45;
+}
+.team-pro-gate-link {
+  padding: 5px 12px; border-radius: 8px;
+  background: rgba(201,145,42,.12); border: 1px solid rgba(201,145,42,.28);
+  color: var(--gold2); font-family: 'Outfit', sans-serif;
+  font-size: .76rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: all .18s;
+}
+.team-pro-gate-link:hover { background: rgba(201,145,42,.22); }
+
 /* ══════════════════════ INVITE ══════════════════════ */
 .inv-panel { border-style: dashed; border-color: rgba(255,255,255,.07); }
 .inv-url { background: rgba(255,255,255,.06); border-radius: 8px; padding: 9px 12px; font-family: monospace; font-size: .7rem; color: rgba(239,242,247,.78); word-break: break-all; margin-bottom: 10px; border: 1px solid var(--border2); }
@@ -4969,17 +5012,21 @@ function JoinScreen({
                     type="button"
                     className="workspace-action-btn gold"
                     onClick={() => {
-                      setTab("team");
-                      clearErr();
-                      focusTeamEntry();
+                      const n = name.trim() || defaultName;
+                      if (!n) { setErr("Please enter your name"); setTab("team"); focusTeamEntry(); return; }
+                      onTeamRoom(n, role, dedicatedTeamName, deck);
                     }}
                   >
-                    Open Team Room
+                    Enter Team Room →
                   </button>
                   <button
                     type="button"
                     className="workspace-action-btn"
-                    onClick={() => { setTab("create"); clearErr(); }}
+                    onClick={() => {
+                      const n = name.trim() || defaultName;
+                      if (!n) { setErr("Please enter your name"); setTab("create"); return; }
+                      onCreate(n, role, deck);
+                    }}
                   >
                     Create one-off room
                   </button>
@@ -4993,15 +5040,19 @@ function JoinScreen({
                   Free users can still create and join sessions instantly. Upgrade when you want a permanent URL, sprint history, and more voter capacity.
                 </p>
                 <div className="workspace-actions">
-                  <button type="button" className="workspace-action-btn gold" onClick={onShowPricing}>
-                    Upgrade to Pro
-                  </button>
                   <button
                     type="button"
-                    className="workspace-action-btn"
-                    onClick={() => { setTab("create"); clearErr(); }}
+                    className="workspace-action-btn gold"
+                    onClick={() => {
+                      const n = name.trim() || defaultName;
+                      if (!n) { setErr("Please enter your name"); setTab("create"); return; }
+                      onCreate(n, role, deck);
+                    }}
                   >
-                    Create free room
+                    Create Room →
+                  </button>
+                  <button type="button" className="workspace-action-btn" onClick={onShowPricing}>
+                    Upgrade to Pro
                   </button>
                 </div>
               </div>
@@ -5038,7 +5089,7 @@ function JoinScreen({
             onClick={() => { setTab("team"); clearErr(); }}
           >
             Team Room
-            {proMode && <span className="pro-tab-badge">PRO</span>}
+            {!proMode && <span className="pro-tab-badge">PRO</span>}
           </button>
         </div>
 
@@ -5092,11 +5143,20 @@ function JoinScreen({
                 <span className="tcp-code">{previewCode}</span>
               </div>
             )}
-            <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
-              {signedIn && isPro
-                ? "Your Pro account has a fixed Team Room. Share the same link every sprint and keep it bookmarked for the whole team."
-                : "Your team's permanent room — reuse the same link every sprint. No setup, no link sharing. Anyone on the team just types the team name and they're in."}
-            </p>
+            {!proMode ? (
+              <div className="team-pro-gate">
+                <span className="team-pro-gate-text">
+                  Team Room requires a Pro account. Type your team name to preview the URL — then upgrade to unlock it.
+                </span>
+                <button type="button" className="team-pro-gate-link" onClick={onShowPricing}>
+                  View Pro plans →
+                </button>
+              </div>
+            ) : (
+              <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
+                Your Pro account has a fixed Team Room. Share the same link every sprint and keep it bookmarked for the whole team.
+              </p>
+            )}
           </div>
         )}
 
@@ -5330,6 +5390,7 @@ function GameScreen({
   const [optimisticVote, setOptimisticVote] = useState(null);
   const [headerLinkCopied, setHeaderLinkCopied] = useState(false);
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const [solobannerDismissed, setSoloBannerDismissed] = useState(false);
   // Confetti fires once per consensus reveal, keyed by round number
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConsensus, setShowConsensus] = useState(false);
@@ -5501,6 +5562,30 @@ function GameScreen({
       </header>
 
       <div className="game-body">
+        {/* Solo invite banner — shown when creator is alone, dismissed once copied or closed */}
+        {players.length === 1 && !solobannerDismissed && (
+          <div className="solo-invite-banner" role="status">
+            <span className="solo-invite-icon">👥</span>
+            <div className="solo-invite-body">
+              <strong>Your room is ready.</strong> Share the link to bring your team in.
+            </div>
+            <button
+              type="button"
+              className="solo-invite-copy"
+              onClick={() => { handleCopyLink("banner"); setSoloBannerDismissed(true); }}
+            >
+              Copy invite link
+            </button>
+            <button
+              type="button"
+              className="solo-invite-dismiss"
+              aria-label="Dismiss"
+              onClick={() => setSoloBannerDismissed(true)}
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {sessionWarning && (
           <div className="session-warn-banner">
             <span>⚠️</span>
