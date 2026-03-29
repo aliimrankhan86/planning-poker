@@ -89,6 +89,9 @@
   - Final polish after the latest Atlas rerun:
     - `Plans` anchor now lands closer to the actual plans cards instead of feeling too low
     - signed-in Free footer copy is now phrased as workspace guidance rather than public-marketing tagline copy
+  - Final free-flow polish after the latest Atlas rerun:
+    - signed-in room-name input now seeds once from account identity and then respects manual edits
+    - creating or joining a room now uses the edited session name instead of silently reverting to the account display name
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players

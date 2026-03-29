@@ -5012,9 +5012,11 @@ function JoinScreen({
   const canHostPermanentTeamRoom = isPro;
   const canEnterTeamRoom = canHostPermanentTeamRoom || isSharedTeamRoomEntry;
   const showTeamRoomProBadge = !canEnterTeamRoom;
+  const nameSeedKey = signedIn ? `${currentUser?.uid || currentUser?.email || ""}:${defaultName}` : "guest";
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
   const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : (signedIn && isPro ? "team" : "create"));
   const [name, setName] = useState(signedIn ? defaultName : "");
+  const [nameEdited, setNameEdited] = useState(false);
   const [role, setRole] = useState("voter");
   const [deck, setDeck] = useState("fibonacci");
   const [rc, setRc] = useState(prefillCode || "");
@@ -5024,6 +5026,7 @@ function JoinScreen({
   const teamEntryRef = useRef(null);
   const teamUrlCopiedRef = useRef(null);
   const autoEnterOwnTeamRoomRef = useRef(false);
+  const lastNameSeedKeyRef = useRef(nameSeedKey);
 
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
@@ -5036,14 +5039,20 @@ function JoinScreen({
       : "Enter Team Room →";
 
   useEffect(() => {
-    if (signedIn) {
-      setName(defaultName);
-      if (!prefillTeam && isPro) setTeamName(dedicatedTeamName);
+    if (lastNameSeedKeyRef.current !== nameSeedKey) {
+      lastNameSeedKeyRef.current = nameSeedKey;
+      setNameEdited(false);
+      setName(signedIn ? defaultName : "");
+    }
+  }, [nameSeedKey, signedIn, defaultName]);
+
+  useEffect(() => {
+    if (!signedIn) {
+      if (!isSharedTeamRoomEntry) setTeamName("");
       return;
     }
-    setName("");
-    if (!isSharedTeamRoomEntry) setTeamName("");
-  }, [signedIn, defaultName, prefillTeam, isPro, dedicatedTeamName, isSharedTeamRoomEntry]);
+    if (!prefillTeam && isPro) setTeamName(dedicatedTeamName);
+  }, [signedIn, prefillTeam, isPro, dedicatedTeamName, isSharedTeamRoomEntry]);
 
   useEffect(() => {
     if (signedIn && isSharedTeamRoomEntry && teamQuery && teamName !== teamQuery) {
@@ -5274,13 +5283,19 @@ function JoinScreen({
           className="inp"
           placeholder="e.g. Alex Johnson"
           value={name}
-          onChange={(e) => { setName(e.target.value); clearErr(); }}
+          onChange={(e) => {
+            setName(e.target.value);
+            setNameEdited(true);
+            clearErr();
+          }}
           onKeyDown={(e) => e.key === "Enter" && go()}
           autoFocus={!signedIn}
         />
         {signedIn && (
           <div className="workspace-inline-note">
-            Prefilled from your account. Change it only if you want to join this session under a different visible name.
+            {nameEdited
+              ? "Using your custom session name for this room. Clear it if you want to go back to your account name."
+              : "Prefilled from your account. Change it only if you want to join this session under a different visible name."}
           </div>
         )}
 

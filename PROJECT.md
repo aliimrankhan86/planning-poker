@@ -79,6 +79,10 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Final public/workspace polish after the latest Atlas rerun:
     - `Plans` anchor now lands closer to the actual plans cards instead of feeling offset too low
     - signed-in Free footer copy is now phrased as workspace guidance rather than public marketing
+  - Signed-in room-name editing is now preserved properly:
+    - the Join/Create/Team name input seeds once from the account profile when the session identity changes
+    - manual name edits are no longer overwritten by follow-up account/profile sync
+    - creating or joining a room now uses the user’s edited session name when they intentionally change it
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened
