@@ -5027,6 +5027,7 @@ function JoinScreen({
   const teamUrlCopiedRef = useRef(null);
   const autoEnterOwnTeamRoomRef = useRef(false);
   const lastNameSeedKeyRef = useRef(nameSeedKey);
+  const nameValueRef = useRef(signedIn ? defaultName : "");
 
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
@@ -5037,12 +5038,18 @@ function JoinScreen({
     : isSharedTeamRoomEntry
       ? "Join Team Room →"
       : "Enter Team Room →";
+  const resolveEnteredName = useCallback(
+    () => (nameValueRef.current || "").trim() || defaultName,
+    [defaultName],
+  );
 
   useEffect(() => {
     if (lastNameSeedKeyRef.current !== nameSeedKey) {
       lastNameSeedKeyRef.current = nameSeedKey;
       setNameEdited(false);
-      setName(signedIn ? defaultName : "");
+      const nextName = signedIn ? defaultName : "";
+      nameValueRef.current = nextName;
+      setName(nextName);
     }
   }, [nameSeedKey, signedIn, defaultName]);
 
@@ -5067,12 +5074,13 @@ function JoinScreen({
   }, []);
 
   const go = () => {
-    if (!name.trim()) { setErr("Please enter your name"); return; }
+    const enteredName = resolveEnteredName();
+    if (!enteredName) { setErr("Please enter your name"); return; }
     if (tab === "create") {
-      onCreate(name.trim(), role, deck);
+      onCreate(enteredName, role, deck);
     } else if (tab === "join") {
       if (!rc.trim()) { setErr("Please enter a room code"); return; }
-      onJoin(name.trim(), role, rc.trim().toUpperCase());
+      onJoin(enteredName, role, rc.trim().toUpperCase());
     } else {
       // team room
       if (!canEnterTeamRoom) {
@@ -5080,7 +5088,7 @@ function JoinScreen({
         return;
       }
       if (!teamName.trim()) { setErr("Please enter your team name"); return; }
-      onTeamRoom(name.trim(), role, teamName.trim(), deck);
+      onTeamRoom(enteredName, role, teamName.trim(), deck);
     }
   };
 
@@ -5108,7 +5116,7 @@ function JoinScreen({
     if (autoEnterOwnTeamRoomRef.current) return;
     if (!signedIn || !isPro || !isSharedTeamRoomEntry) return;
     if (!teamRouteMatch || !dedicatedTeamCode || teamRouteMatch[1] !== dedicatedTeamCode) return;
-    const nextName = (name.trim() || defaultName).trim();
+    const nextName = resolveEnteredName();
     if (!nextName) return;
     autoEnterOwnTeamRoomRef.current = true;
     onTeamRoom(nextName, role, dedicatedTeamName, deck);
@@ -5118,12 +5126,11 @@ function JoinScreen({
     isSharedTeamRoomEntry,
     teamRouteMatch,
     dedicatedTeamCode,
-    name,
-    defaultName,
     role,
     dedicatedTeamName,
     deck,
     onTeamRoom,
+    resolveEnteredName,
   ]);
 
   return (
@@ -5196,7 +5203,7 @@ function JoinScreen({
                     type="button"
                     className="workspace-action-btn gold"
                     onClick={() => {
-                      const n = name.trim() || defaultName;
+                      const n = resolveEnteredName();
                       if (!n) { setErr("Please enter your name"); setTab("team"); focusTeamEntry(); return; }
                       onTeamRoom(n, role, dedicatedTeamName, deck);
                     }}
@@ -5207,7 +5214,7 @@ function JoinScreen({
                     type="button"
                     className="workspace-action-btn"
                     onClick={() => {
-                      const n = name.trim() || defaultName;
+                      const n = resolveEnteredName();
                       if (!n) { setErr("Please enter your name"); setTab("create"); return; }
                       onCreate(n, role, deck);
                     }}
@@ -5228,7 +5235,7 @@ function JoinScreen({
                     type="button"
                     className="workspace-action-btn gold"
                     onClick={() => {
-                      const n = name.trim() || defaultName;
+                      const n = resolveEnteredName();
                       if (!n) { setErr("Please enter your name"); setTab("create"); return; }
                       onCreate(n, role, deck);
                     }}
@@ -5284,7 +5291,9 @@ function JoinScreen({
           placeholder="e.g. Alex Johnson"
           value={name}
           onChange={(e) => {
-            setName(e.target.value);
+            const nextName = e.target.value;
+            nameValueRef.current = nextName;
+            setName(nextName);
             setNameEdited(true);
             clearErr();
           }}

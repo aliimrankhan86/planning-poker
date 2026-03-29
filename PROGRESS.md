@@ -92,6 +92,7 @@
   - Final free-flow polish after the latest Atlas rerun:
     - signed-in room-name input now seeds once from account identity and then respects manual edits
     - creating or joining a room now uses the edited session name instead of silently reverting to the account display name
+    - room-entry actions now read the latest typed name from a ref-backed value so fast interactions / automation timing do not fall back to the stored account name
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players

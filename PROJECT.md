@@ -83,6 +83,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - the Join/Create/Team name input seeds once from the account profile when the session identity changes
     - manual name edits are no longer overwritten by follow-up account/profile sync
     - creating or joining a room now uses the user’s edited session name when they intentionally change it
+    - room-entry actions now resolve the latest typed name from a live ref-backed value so automation timing and quick clicks cannot silently fall back to the account name
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened
