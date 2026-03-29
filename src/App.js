@@ -456,8 +456,8 @@ body::before {
 }
 .btn-back:hover { background: rgba(255,255,255,.07); color: var(--cream); border-color: rgba(158,234,196,.24); }
 .logo-txt {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.3rem; font-weight: 700; color: var(--cream); letter-spacing: .3px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.3rem; font-weight: 700; color: var(--cream); letter-spacing: -.02em;
 }
 .hdr-c { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .badge {
@@ -1149,25 +1149,43 @@ body::before {
 .navbar-left  { display: flex; align-items: center; gap: 12px; }
 .navbar-right { display: flex; align-items: center; gap: 8px; }
 .navbar-brand {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.25rem; font-weight: 700;
-  color: var(--cream); letter-spacing: .3px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.22rem; font-weight: 700;
+  color: var(--cream); letter-spacing: -.02em;
   cursor: pointer; text-decoration: none;
   background: none; border: none; padding: 0;
-  font-family: 'Cormorant Garamond', serif;
-  transition: color .2s;
+  transition: color .2s, transform .2s;
 }
-.navbar-brand:hover { color: var(--mint2); }
+.navbar-brand:hover { color: var(--cream); transform: translateY(-1px); }
+.brand-wordmark {
+  display: inline-flex; align-items: baseline; gap: .28em;
+  line-height: 1; white-space: nowrap;
+}
+.brand-wordmark-point,
+.brand-wordmark-poker {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+.brand-wordmark-point { color: var(--cream); }
+.brand-wordmark-poker { color: var(--gold2); }
+.navbar-brand:hover .brand-wordmark-point { color: var(--mint2); }
+.navbar-brand:hover .brand-wordmark-poker { color: var(--gold3); }
 
 /* Casino chip button */
 .chip-logo {
   background: none; border: none; padding: 0;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; flex-shrink: 0;
-  transition: transform .3s cubic-bezier(.34,1.56,.64,1), filter .2s;
+  transition: transform .22s ease, filter .22s ease, opacity .22s ease;
 }
-.chip-logo:hover  { transform: rotate(18deg) scale(1.1);  filter: drop-shadow(0 0 12px rgba(201,145,42,.65)); }
-.chip-logo:active { transform: rotate(12deg) scale(1.04); }
+.chip-logo img {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,.28));
+}
+.chip-logo:hover  { transform: translateY(-1px) scale(1.03); filter: drop-shadow(0 0 14px rgba(241,185,63,.24)); }
+.chip-logo:active { transform: translateY(0) scale(1.01); }
 
 /* Nav auth buttons */
 .nav-btn-login {
@@ -1206,8 +1224,9 @@ body::before {
 .footer-col-brand { display: flex; flex-direction: column; gap: 12px; }
 .footer-brand-row { display: flex; align-items: center; gap: 10px; }
 .footer-brand-name {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.15rem; font-weight: 700; color: var(--cream);
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.08rem; font-weight: 700; color: var(--cream);
+  letter-spacing: -.02em;
 }
 .footer-brand-desc {
   font-size: .78rem; color: rgba(239,242,247,.45); line-height: 1.65;
@@ -1385,52 +1404,28 @@ const isFounderRoom = (code) => {
    Used in NavBar (44px) and LoginModal (52px).
    onClick: optional handler — e.g. navigate home.
 ═══════════════════════════════════════════════════════════════════ */
-function CasinoChip({ onClick, size = 44, label = "Go to home" }) {
-  // 8 alternating gold/dark-green segments around the rim (stroke-dasharray)
-  // r=34  →  circumference = 2π×34 ≈ 213.6  →  16 equal dashes ≈ 13.35 each
+function BrandMark({ onClick, size = 44, label = "Go to home" }) {
   return (
     <button className="chip-logo" onClick={onClick} aria-label={label}
       style={{ width: size, height: size }}
     >
-      <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
-        width={size} height={size} aria-hidden="true"
-      >
-        {/* Base disc */}
-        <circle cx="40" cy="40" r="39" fill="#0c1a0f"/>
-        {/* Outer gold ring */}
-        <circle cx="40" cy="40" r="39" fill="none" stroke="#c9922a" strokeWidth="1.5"/>
-        {/* 8 chip-edge segments — dashed stroke on dark gap ring */}
-        <circle cx="40" cy="40" r="34" fill="none" stroke="#0c1a0f"  strokeWidth="10"/>
-        <circle cx="40" cy="40" r="34" fill="none" stroke="#c9922a"  strokeWidth="9"
-          strokeDasharray="13.35 13.35"
-          transform="rotate(-11.25 40 40)"
-        />
-        {/* Felt inner disc */}
-        <circle cx="40" cy="40" r="28.5" fill="#12261a"/>
-        {/* Inner gold ring */}
-        <circle cx="40" cy="40" r="28.5" fill="none" stroke="#e8b84b" strokeWidth="1.5"/>
-        {/* Subtle radial highlight */}
-        <circle cx="40" cy="40" r="27" fill="url(#chipGlow)"/>
-        <defs>
-          <radialGradient id="chipGlow" cx="38%" cy="36%" r="55%">
-            <stop offset="0%"   stopColor="#1e4028" stopOpacity="1"/>
-            <stop offset="100%" stopColor="#0c1a0f" stopOpacity="1"/>
-          </radialGradient>
-        </defs>
-        {/* "PP" logotype */}
-        <text x="40" y="48" textAnchor="middle"
-          fontFamily="'Cormorant Garamond', Georgia, serif"
-          fontWeight="700" fontSize="22" fill="#e8b84b"
-          letterSpacing="1"
-        >PP</text>
-      </svg>
+      <img src="/brand-mark.png" alt="" aria-hidden="true" />
     </button>
+  );
+}
+
+function BrandWordmark() {
+  return (
+    <span className="brand-wordmark" aria-label="Point Poker">
+      <span className="brand-wordmark-point">Point</span>
+      <span className="brand-wordmark-poker">Poker</span>
+    </span>
   );
 }
 
 /* ═══════════════════════ GLOBAL NAVBAR ═══════════════════════
    Persistent top bar shown on all screens.
-   - Left:  CasinoChip + "pointpoker" brand name
+   - Left:  Brand mark + "pointpoker" brand name
    - Right: Account state + pricing CTA
 ═══════════════════════════════════════════════════════════════ */
 function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, onLogout }) {
@@ -1440,13 +1435,13 @@ function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, on
     <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div className="navbar-inner">
         <div className="navbar-left">
-          <CasinoChip
+          <BrandMark
             onClick={onLogoClick}
             size={44}
             label="pointpoker — go to home"
           />
           <button className="navbar-brand" onClick={onLogoClick}>
-            pointpoker
+            <BrandWordmark />
           </button>
         </div>
         <div className="navbar-right">
@@ -1489,8 +1484,8 @@ function SiteFooter({ onCookieSettings }) {
         {/* Column 1 — Brand */}
         <div className="footer-col-brand">
           <div className="footer-brand-row">
-            <CasinoChip size={36} label="pointpoker"/>
-            <span className="footer-brand-name">pointpoker</span>
+            <BrandMark size={36} label="pointpoker"/>
+            <span className="footer-brand-name"><BrandWordmark /></span>
           </div>
           <p className="footer-brand-desc">
             Free, real-time estimation for agile and Scrum teams.
@@ -1647,7 +1642,7 @@ function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
 
         {/* Chip */}
         <div className="login-modal-chip">
-          <CasinoChip size={52} label="pointpoker"/>
+          <BrandMark size={52} label="pointpoker"/>
         </div>
 
         <h2 className="login-modal-title">{currentUser ? "Your account" : "Account access"}</h2>
@@ -3052,7 +3047,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
 
         {/* Decorative chip — visual anchor inside the card */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <CasinoChip size={56} label="pointpoker"/>
+          <BrandMark size={56} label="pointpoker"/>
         </div>
 
         <h1 className="join-title">Start Estimating</h1>
@@ -3459,7 +3454,7 @@ function GameScreen({
             <button className="btn-back" onClick={onBack} aria-label="Leave room and return to home">
               ← Leave
             </button>
-            <CasinoChip size={34} onClick={onBack} label="Return to home"/>
+            <BrandMark size={34} onClick={onBack} label="Return to home"/>
           </div>
           <div className="hdr-c">
             <div className="badge">Round {round}</div>

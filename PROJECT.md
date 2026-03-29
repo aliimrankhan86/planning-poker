@@ -39,6 +39,9 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Core UI palette and surface system were refreshed toward a more modern 2026 casino-app look while preserving the green/gold brand
   - OG social image was refreshed to match the modernised theme and improve text readability in social previews
   - Vercel Speed Insights was added to the React root for live production performance telemetry
+  - The provided transparent brand-mark asset is now used in the app logo sections in place of the old inline SVG chip mark
+  - App chrome wordmark now renders as `Point Poker` with white `Point`, gold `Poker`, and explicit spacing/capitalization
+  - The same approved brand mark is now used for favicon and app-icon assets across browser and PWA contexts
 - Still pending:
   - Connect domain in Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
@@ -448,6 +451,21 @@ Listed chronologically newest-first.
 - Added `@vercel/speed-insights` to the project dependencies
 - Mounted `<SpeedInsights />` in `src/index.js` so production deployments can start collecting field-performance metrics
 - Installed with `--legacy-peer-deps` due dependency-resolution conflicts between the current CRA toolchain and Vercel’s package peers
+
+### 2026-03 — Brand mark integrated into app chrome
+- Added `public/brand-mark.png` from the approved transparent logo asset
+- Replaced the old inline `CasinoChip` SVG component with an image-based `BrandMark` component in app chrome
+- The new brand mark now appears in the navbar, footer, login modal, join screen, and in-room header while preserving the existing layout and wordmark treatment
+
+### 2026-03 — Brand wordmark refined
+- Replaced the plain lowercase `pointpoker` wordmark in app chrome with a styled `Point Poker` wordmark component
+- `Point` now renders in white, `Poker` renders in the theme gold, and spacing between the words is explicit rather than implied
+- The app chrome wordmark font treatment now uses a stronger sans-serif look for a cleaner premium SaaS feel
+
+### 2026-03 — Favicon and app icons aligned to brand mark
+- Regenerated `favicon.ico`, `favicon-32.png`, `logo192.png`, and `logo512.png` from the approved transparent `brand-mark.png`
+- Updated `public/index.html` and `public/manifest.json` so browser, Apple touch, and PWA icon contexts all use the same approved brand mark
+- Prefer lighter PNG/ICO favicon delivery in the document head rather than the heavier SVG wrapper path
 
 ### 2026-03 — Modern 2026 casino-style visual refresh
 - The app visual system in `src/App.js` was refreshed away from a dull/rustic casino look toward a cleaner 2026 product feel while preserving the casino identity

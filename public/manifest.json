@@ -4,6 +4,11 @@
   "description": "Free online planning poker for agile and scrum teams with real-time voting and story point estimation.",
   "icons": [
     {
+      "src": "favicon-32.png",
+      "type": "image/png",
+      "sizes": "32x32"
+    },
+    {
       "src": "favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"

@@ -26,6 +26,9 @@
   - The visual design system has been modernised toward a cleaner 2026 casino-app look with brighter amber, deeper emerald surfaces, and more premium glass UI
   - OG social image now matches the refreshed UI theme and uses clearer, more readable social-preview text
   - Vercel Speed Insights is installed and mounted for production performance monitoring
+  - The approved transparent brand mark is now used across the app’s logo sections
+  - The app wordmark now displays as `Point Poker` with white `Point`, gold `Poker`, and stronger spacing/capitalization
+  - The approved brand mark now also drives favicon and app-icon assets across browser and PWA contexts
 - Remaining priorities:
   - Connect domain to Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
@@ -39,7 +42,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
 - **Worked on:** UI modernisation and launch polish
-- **Completed:** Refreshed the app visual system in `src/App.js` toward a more modern 2026 casino-style product while keeping the pointpoker green-and-gold brand. Updated palette, glass surfaces, CTA/buttons, navbar, pricing modal, join screen, footer, auth modal, toast, and cookie banner. Also regenerated `public/og-image.png` so social previews match the new theme and use clearer text, and installed Vercel Speed Insights in the React root. `npm run build` passed after the visual refresh.
+- **Completed:** Refreshed the app visual system in `src/App.js` toward a more modern 2026 casino-style product while keeping the pointpoker green-and-gold brand. Updated palette, glass surfaces, CTA/buttons, navbar, pricing modal, join screen, footer, auth modal, toast, and cookie banner. Also regenerated `public/og-image.png` so social previews match the new theme and use clearer text, installed Vercel Speed Insights in the React root, integrated the approved transparent brand mark into the app logo sections, refined the app wordmark to `Point Poker`, and aligned favicon/PWA icons to the same approved brand mark. `npm run build` passed after the visual refresh.
 
 ---
 
@@ -246,6 +249,24 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Performance telemetry added:** Installed `@vercel/speed-insights` and mounted `<SpeedInsights />` in `src/index.js`.
 - **Compatibility note:** Package installation required `--legacy-peer-deps` because the current CRA/TypeScript dependency tree conflicts with Vercel's newer peer expectations.
 - **Outcome:** Production deployments can now start reporting field-performance metrics in Vercel Speed Insights.
+
+### Session 9s — 29 March 2026 (Brand mark integrated)
+- **Transparent asset accepted:** The provided PNG already contained a proper alpha channel, so no background-removal work was needed.
+- **Logo-section integration:** Added `public/brand-mark.png` and replaced the old inline chip SVG with the approved brand mark across the navbar, footer, join screen, login modal, and room header.
+- **Behavior preserved:** Existing wordmark layout stayed intact, while hover behavior was softened so the new logo behaves like a modern product mark rather than a rotating casino chip.
+- **Verification:** `npm run build` completed successfully after the brand-mark swap.
+
+### Session 9t — 29 March 2026 (Wordmark refinement)
+- **Brand text refined:** App chrome now uses a styled `Point Poker` wordmark instead of plain lowercase `pointpoker`.
+- **Color treatment:** `Point` is white, `Poker` uses the theme gold, and the separation between the words is explicit.
+- **Typography direction:** The wordmark treatment now uses a stronger sans-serif style for a cleaner premium product-brand feel alongside the new symbol.
+- **Verification:** `npm run build` completed successfully after the wordmark update.
+
+### Session 9u — 29 March 2026 (Favicon + app icons aligned)
+- **Favicon updated:** Regenerated favicon assets from the approved transparent `brand-mark.png`, including `favicon.ico` and `favicon-32.png`.
+- **PWA icon update:** Regenerated `logo192.png` and `logo512.png` from the same approved brand mark so app installs and touch icons match the live logo system.
+- **HTML/manifest wiring updated:** `public/index.html` and `public/manifest.json` now point browser and app-icon contexts at the new generated assets.
+- **Verification:** `npm run build` completed successfully after the icon refresh.
 
 ### Session 8b — 28 March 2026 (UX & background fixes)
 - **Background bug fixed:** `body::before` had 3 background layers but only 2 `background-size` values (`cover, 200px 200px`). Browser cycled values — second radial gradient rendered as a 200×200px tile instead of covering the viewport. Root cause of the "overstretched/broken" visual artifact. Fixed to `cover, cover, 200px 200px`. Also softened the bottom-right gradient (0.18→0.12 opacity).
