@@ -60,6 +60,11 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Firebase Realtime Database rules for `/licenses/{key}` are now published in production and activation-code validation is live
   - A real production Pro account is now working for `misteraliimran@gmail.com`
   - Workspace UX was tightened after live QA: copy-link actions now show visible feedback, the permanent Team Room URL wraps cleanly instead of truncating, the pricing modal keeps activation success visible briefly before closing, and the workspace `Open Team Room` CTA now scrolls to the actual Team Room entry controls
+  - UX/IA audit completed (29 March 2026) — top 3 improvements implemented:
+    - **PRO badge on Team Room tab fixed:** badge was shown for Pro users (meaningless) and hidden for non-Pro users (where it matters). Now shows only for non-Pro users, giving the correct gating signal before submission.
+    - **Inline Team Room pro-gate callout added:** non-Pro users on the Team Room tab see an explanatory callout with a direct link to the pricing modal — eliminates the "surprise gate" at form submit.
+    - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
+    - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
   - Connect domain in Vercel and verify production routing
   - Replace Stripe placeholder links and complete paid activation wiring
@@ -661,11 +666,11 @@ Items are grouped by dependency. Do not mark complete until fully deployed/verif
 
 ### IMMEDIATE — Deploy (user action required)
 
-- [ ] **Commit and push local changes to remote**
+- [ ] **Push 2 committed commits to remote to trigger Vercel deploy**
   ```bash
-  cd ~/Documents/planning-poker && git push
+  cd ~/Documents/planning-poker && git push origin main
   ```
-  Local changes exist in the working tree and still need to be committed and pushed.
+  Commits `bf7ee1d` (UX improvements) and `cff462a` (PROGRESS.md update) are committed locally but not yet pushed. VM network is restricted — run from your terminal.
 
 ### DOMAIN / LAUNCH CONFIG
 
@@ -737,6 +742,8 @@ If `room_created_free` grows but `pricing_opened` stays flat → add in-room ups
 ## § Commit History Summary
 
 ```
+cff462a  docs: update PROGRESS.md with UX/IA improvements from current session
+bf7ee1d  ux: fix Team Room gate UX, 1-click workspace actions, solo invite banner
 54c64b2  feat: anonymous usage analytics + firebase rules + privacy update
 964d9fe  feat: global nav, casino chip logo, site footer, login modal
 aa06e6d  fix: persist estimates without story queue; fix re-vote counter bug
@@ -757,7 +764,7 @@ f5323af  feat: branded favicon/icons + privacy policy + manifest copy update
 |---|---|---|
 | Stripe links are `#upgrade` placeholders | Pending Stripe setup | PricingModal is account-aware but cannot open a real paid checkout yet |
 | Pro key must be manually added to Firebase | Temporary | Stripe webhook will automate in Phase 3 |
-| App.js is ~3800 lines | Acceptable | Split into components at next major feature milestone |
+| App.js is ~6400 lines | Acceptable | Split into components at next major feature milestone |
 | `startedBy` in timer not validated by Firebase rules | Low risk | Internal field, not exploitable |
 
 ---
