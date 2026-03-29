@@ -70,6 +70,12 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - Team Room copy was clarified so guest-facing flows no longer imply that the guest owns a Pro account
     - signed-in footer copy is now account-aware on workspace screens instead of repeating public marketing language
     - stale `prefillTeam` state is now route-bound and cleared on logout, so Free users no longer inherit a false shared-Team-Room state from prior Pro sessions in the same browser
+  - Follow-up Pro-workspace hardening after the latest Comet pass:
+    - workspace Team Room copy button now uses the same visible copied-state pattern as the live-room invite action
+    - workspace Team Room URL is now rendered as a single-line trust signal instead of wrapping mid-slug
+    - visiting your own bookmarked `/t/<team-slug>` URL while signed in on Pro now enters the room directly instead of stopping at the workspace home
+    - guest join forms now clear the previous signed-in user's display name on sign-out/shared-device flows
+    - live rooms no longer show the Free-tier upgrade strip when the room itself is already a Pro room, even if the browser auth session is interrupted on another tab
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened
@@ -83,6 +89,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Replace Stripe placeholder links and complete paid activation wiring
   - Run a fresh final live QA pass after the latest account-state/mobile/team-room fixes (Atlas for signed-out + Free, Comet for Pro + Team Room + mobile)
   - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate/stale profile data
+  - Decide whether the signed-out `Plans` anchor should scroll slightly higher for a cleaner visual landing on the plans cards
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 
 If older historical notes below conflict with this section, treat this snapshot as the authoritative current state and update the older sections when touching them.

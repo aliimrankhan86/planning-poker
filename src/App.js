@@ -470,9 +470,9 @@ body::before {
 .workspace-team-url code {
   flex: 1;
   min-width: 0;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: monospace;
   font-size: .8rem;
   line-height: 1.45;
@@ -489,9 +489,15 @@ body::before {
   font-size: .76rem;
   font-weight: 600;
   cursor: pointer;
+  transition: all .18s ease;
 }
 .workspace-team-url button:hover {
   background: rgba(255,255,255,.08);
+}
+.workspace-team-url button.copied {
+  color: var(--gold2);
+  border-color: rgba(241,185,63,.28);
+  background: rgba(241,185,63,.10);
 }
 .workspace-inline-note {
   margin-top: 10px;
@@ -5016,6 +5022,7 @@ function JoinScreen({
   const [teamUrlCopied, setTeamUrlCopied] = useState(false);
   const teamEntryRef = useRef(null);
   const teamUrlCopiedRef = useRef(null);
+  const autoEnterOwnTeamRoomRef = useRef(false);
 
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
@@ -5031,8 +5038,17 @@ function JoinScreen({
     if (signedIn) {
       setName(defaultName);
       if (!prefillTeam && isPro) setTeamName(dedicatedTeamName);
+      return;
     }
-  }, [signedIn, defaultName, prefillTeam, isPro, dedicatedTeamName]);
+    setName("");
+    if (!isSharedTeamRoomEntry) setTeamName("");
+  }, [signedIn, defaultName, prefillTeam, isPro, dedicatedTeamName, isSharedTeamRoomEntry]);
+
+  useEffect(() => {
+    if (signedIn && isSharedTeamRoomEntry && teamQuery && teamName !== teamQuery) {
+      setTeamName(teamQuery);
+    }
+  }, [signedIn, isSharedTeamRoomEntry, teamQuery, teamName]);
 
   const focusTeamEntry = useCallback(() => {
     setTimeout(() => {
@@ -5063,15 +5079,42 @@ function JoinScreen({
     { r: "observer", icon: "👁", l: "Facilitator", s: "Runs the session and does not vote" },
   ];
 
-  const copyTeamUrl = () => {
+  const copyTeamUrl = async () => {
     if (!dedicatedTeamUrl) return;
-    navigator.clipboard.writeText(dedicatedTeamUrl);
+    try {
+      await navigator.clipboard.writeText(dedicatedTeamUrl);
+    } catch {
+      // Clipboard failure should still surface visible feedback to keep the action intelligible.
+    }
     setTeamUrlCopied(true);
+    clearErr();
     clearTimeout(teamUrlCopiedRef.current);
     teamUrlCopiedRef.current = setTimeout(() => setTeamUrlCopied(false), 1600);
   };
 
   useEffect(() => () => clearTimeout(teamUrlCopiedRef.current), []);
+
+  useEffect(() => {
+    if (autoEnterOwnTeamRoomRef.current) return;
+    if (!signedIn || !isPro || !isSharedTeamRoomEntry) return;
+    if (!teamRouteMatch || !dedicatedTeamCode || teamRouteMatch[1] !== dedicatedTeamCode) return;
+    const nextName = (name.trim() || defaultName).trim();
+    if (!nextName) return;
+    autoEnterOwnTeamRoomRef.current = true;
+    onTeamRoom(nextName, role, dedicatedTeamName, deck);
+  }, [
+    signedIn,
+    isPro,
+    isSharedTeamRoomEntry,
+    teamRouteMatch,
+    dedicatedTeamCode,
+    name,
+    defaultName,
+    role,
+    dedicatedTeamName,
+    deck,
+    onTeamRoom,
+  ]);
 
   return (
     <div className="join-wrap">
@@ -5134,8 +5177,8 @@ function JoinScreen({
                 </p>
                 <div className="workspace-team-url">
                   <code>{dedicatedTeamUrl}</code>
-                  <button type="button" onClick={copyTeamUrl}>
-                    {teamUrlCopied ? "Copied!" : "Copy link"}
+                  <button type="button" className={teamUrlCopied ? "copied" : ""} onClick={copyTeamUrl}>
+                    {teamUrlCopied ? "✓ Invite link copied!" : "Copy link"}
                   </button>
                 </div>
                 <div className="workspace-actions" style={{ marginTop: 12 }}>
@@ -6558,7 +6601,7 @@ function GameScreen({
       </div>
 
       {/* ── Free-tier upgrade nudge — hidden for Pro users ── */}
-      {currentPlan !== "pro" && (
+      {currentPlan !== "pro" && rd.plan !== "pro" && (
         <div className="game-upgrade-strip">
           <span className="game-upgrade-strip-text">
             Free plan · up to {FREE_MAX_PLAYERS} voters · upgrade for a permanent Team Room, sprint history, and up to {PRO_MAX_PLAYERS} voters
