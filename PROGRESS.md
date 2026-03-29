@@ -63,6 +63,7 @@
     - pricing modal leaves the Pro-success state visible briefly before closing
     - permanent Team Room URL wraps cleanly rather than truncating
     - workspace `Open Team Room` now scrolls to the Team Room entry controls so it no longer feels inert
+  - Stale-room cleanup is now hardened in the client: from the join/workspace screen, the app performs a throttled background sweep of `/rooms` and batch-removes sessions older than the 5-hour expiry window when they are clearly inactive (no timer running, no votes in flight, at most one lingering player, no story progress yet)
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
@@ -132,14 +133,15 @@ Treat this section as the fastest current-status read. Historical session notes 
   - **Fix 1b — Inline pro-gate callout:** Non-Pro users on the Team Room tab now see a contextual note explaining the feature requires Pro, with a direct link to the pricing modal. Prevents the "surprise gate" at form submission.
   - **Fix 2 — 1-click workspace actions:** Workspace "Open Team Room" / "Create free room" buttons now directly call `onTeamRoom()` / `onCreate()` with pre-filled values. Previously they only switched tab and scrolled, requiring a second click. Also corrected CTA priority for Free users: "Create Room →" is now the gold primary.
   - **Fix 3 — Solo invite banner:** GameScreen now shows a prominent gold banner when the creator is alone in the room — "Your room is ready. Share the link to bring your team in." with a direct copy button. Dismisses on copy or close. Eliminates first-action friction after room creation.
-  - Build clean, commit `bf7ee1d` staged — push to origin required from terminal (VM network restricted)
+  - **Fix 4 — Stale-room sweeper:** Added a throttled background cleanup pass on the join/workspace screen that reads `/rooms` once and batch-deletes sessions older than the existing 5-hour expiry window when they are clearly inactive. Keeps Firebase leaner on the Spark plan without touching live sessions.
+  - Build clean, latest UX/IA and facilitator redesign commits are already pushed to `main`
 
 ---
 
 ## 📍 Current Status
 **Phase:** 1 / 3 crossover — Auth foundation coded, monetisation still blocked on Stripe setup
-**Active step:** Re-run live QA after the latest polish pass, then restore a genuinely free-only QA account for free-plan regression coverage
-**Remaining:** finish free-tier regression coverage, then continue Stripe/domain launch work
+**Active step:** Re-run live QA after the stale-room cleanup pass, then restore a genuinely free-only QA account for free-plan regression coverage
+**Remaining:** finish free-tier regression coverage, then continue domain launch work
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

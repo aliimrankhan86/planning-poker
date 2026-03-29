@@ -2200,6 +2200,58 @@ const FREE_MAX_PLAYERS = 6;   // Free tier participant limit
 const PRO_MAX_PLAYERS  = 20;  // Pro tier: full team + stakeholders
 const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours — auto-end + save history
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
+const ROOM_SWEEP_INTERVAL_MS = 15 * 60 * 1000;       // Best-effort stale-room cleanup cadence per browser
+const ROOM_SWEEP_STORAGE_KEY = "pp_last_room_sweep";
+
+function hasSweepCooldown() {
+  try {
+    const last = Number(localStorage.getItem(ROOM_SWEEP_STORAGE_KEY) || 0);
+    return Date.now() - last < ROOM_SWEEP_INTERVAL_MS;
+  } catch {
+    return false;
+  }
+}
+
+function markRoomSweepRun() {
+  try {
+    localStorage.setItem(ROOM_SWEEP_STORAGE_KEY, String(Date.now()));
+  } catch {
+    // Best-effort only — room sweeper must never break app usage.
+  }
+}
+
+async function sweepStaleRooms() {
+  try {
+    const snap = await get(ref(db, "rooms"));
+    if (!snap.exists()) return 0;
+    const rooms = snap.val() || {};
+    const now = Date.now();
+    const deletions = {};
+
+    Object.entries(rooms).forEach(([roomId, room]) => {
+      const createdAt = Number(room?.createdAt || 0);
+      if (!createdAt || now - createdAt < SESSION_MAX_MS) return;
+
+      const timerRunning = !!room?.timer?.running;
+      const players = Object.values(room?.players || {});
+      const lingeringPlayers = players.length;
+      const hasVotesInFlight = players.some((p) => p?.voted || p?.vote != null);
+      const hasLiveStoryProgress = (room?.storiesDone || 0) === 0 && (room?.round || 1) <= 1;
+      const inactive = !timerRunning && !hasVotesInFlight && lingeringPlayers <= 1 && hasLiveStoryProgress;
+
+      if (!inactive) return;
+      deletions[`rooms/${roomId}`] = null;
+    });
+
+    const count = Object.keys(deletions).length;
+    if (count > 0) {
+      await update(ref(db), deletions);
+    }
+    return count;
+  } catch {
+    return 0;
+  }
+}
 
 // ── FOUNDER DETECTION ────────────────────────────────────────
 // Stored encoded so the team code isn't readable as plain text
@@ -2980,6 +3032,12 @@ export default function App() {
   const [sessionWarning, setSessionWarning] = useState(false);
   const toastRef = useRef(null);
   const sessionCheckRef = useRef(null);
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setToastOn(true);
+    clearTimeout(toastRef.current);
+    toastRef.current = setTimeout(() => setToastOn(false), 3400);
+  }, []);
 
   // ── STABLE REFS ──────────────────────────────────────────────────
   // roomDataRef: always holds the latest roomData for use in goBack /
@@ -3058,6 +3116,24 @@ export default function App() {
     }, 40);
     return () => clearTimeout(timeout);
   }, [screen]);
+
+  useEffect(() => {
+    if (screen !== "join") return;
+    if (hasSweepCooldown()) return;
+
+    let cancelled = false;
+    markRoomSweepRun();
+
+    (async () => {
+      const removed = await sweepStaleRooms();
+      if (cancelled || removed <= 0) return;
+      showToast(`🧹 Cleared ${removed} stale room${removed === 1 ? "" : "s"} in the background.`);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [screen, showToast]);
 
   // sessionWarningRef: prevents the session-check interval from restarting
   // every time the sessionWarning flag flips, eliminating unnecessary churn.
@@ -3285,13 +3361,6 @@ export default function App() {
     window.addEventListener("beforeunload", cleanup);
     return () => window.removeEventListener("beforeunload", cleanup);
   }, [code, myId]);
-
-  const showToast = useCallback((msg) => {
-    setToast(msg);
-    setToastOn(true);
-    clearTimeout(toastRef.current);
-    toastRef.current = setTimeout(() => setToastOn(false), 3400);
-  }, []);
 
   const handleCreate = async (name, role, deck = "fibonacci") => {
     const c = mkCode();

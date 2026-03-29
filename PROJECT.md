@@ -60,6 +60,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Firebase Realtime Database rules for `/licenses/{key}` are now published in production and activation-code validation is live
   - A real production Pro account is now working for `misteraliimran@gmail.com`
   - Workspace UX was tightened after live QA: copy-link actions now show visible feedback, the permanent Team Room URL wraps cleanly instead of truncating, the pricing modal keeps activation success visible briefly before closing, and the workspace `Open Team Room` CTA now scrolls to the actual Team Room entry controls
+  - Stale-room cleanup is now hardened in the client: the app periodically sweeps `/rooms` in the background from the join/workspace screen and batch-deletes sessions older than the 5-hour expiry window when they are clearly inactive
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened
