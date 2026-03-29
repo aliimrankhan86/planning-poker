@@ -93,6 +93,7 @@
     - signed-in room-name input now seeds once from account identity and then respects manual edits
     - creating or joining a room now uses the edited session name instead of silently reverting to the account display name
     - room-entry actions now read the latest typed name from a ref-backed value so fast interactions / automation timing do not fall back to the stored account name
+    - room-entry actions now also read the live DOM input value first, so browser automation and blur/timing edge cases cannot fall back to the stored account name
   - Scrollbar polish refreshed again:
     - scrollbar tracks now use the same deep-green brand surface as the page background/body
     - scrollbar thumbs remain the existing gold/yellow accent

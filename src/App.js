@@ -5024,6 +5024,7 @@ function JoinScreen({
   const [err, setErr] = useState("");
   const [teamUrlCopied, setTeamUrlCopied] = useState(false);
   const teamEntryRef = useRef(null);
+  const nameInputRef = useRef(null);
   const teamUrlCopiedRef = useRef(null);
   const autoEnterOwnTeamRoomRef = useRef(false);
   const lastNameSeedKeyRef = useRef(nameSeedKey);
@@ -5039,9 +5040,16 @@ function JoinScreen({
       ? "Join Team Room →"
       : "Enter Team Room →";
   const resolveEnteredName = useCallback(
-    () => (nameValueRef.current || "").trim() || defaultName,
+    () => (nameInputRef.current?.value || nameValueRef.current || "").trim() || defaultName,
     [defaultName],
   );
+
+  const syncEnteredName = useCallback((nextName) => {
+    nameValueRef.current = nextName;
+    setName(nextName);
+    setNameEdited(true);
+    clearErr();
+  }, []);
 
   useEffect(() => {
     if (lastNameSeedKeyRef.current !== nameSeedKey) {
@@ -5050,6 +5058,7 @@ function JoinScreen({
       const nextName = signedIn ? defaultName : "";
       nameValueRef.current = nextName;
       setName(nextName);
+      if (nameInputRef.current) nameInputRef.current.value = nextName;
     }
   }, [nameSeedKey, signedIn, defaultName]);
 
@@ -5287,15 +5296,15 @@ function JoinScreen({
         {/* Your Name — always shown */}
         <label className="lbl">Your Name</label>
         <input
+          ref={nameInputRef}
           className="inp"
           placeholder="e.g. Alex Johnson"
           value={name}
-          onChange={(e) => {
-            const nextName = e.target.value;
-            nameValueRef.current = nextName;
-            setName(nextName);
-            setNameEdited(true);
-            clearErr();
+          onInput={(e) => syncEnteredName(e.currentTarget.value)}
+          onChange={(e) => syncEnteredName(e.target.value)}
+          onBlur={(e) => {
+            const liveValue = e.currentTarget.value;
+            if (liveValue !== nameValueRef.current) syncEnteredName(liveValue);
           }}
           onKeyDown={(e) => e.key === "Enter" && go()}
           autoFocus={!signedIn}

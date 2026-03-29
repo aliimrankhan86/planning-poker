@@ -84,6 +84,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - manual name edits are no longer overwritten by follow-up account/profile sync
     - creating or joining a room now uses the user’s edited session name when they intentionally change it
     - room-entry actions now resolve the latest typed name from a live ref-backed value so automation timing and quick clicks cannot silently fall back to the account name
+    - room-entry actions now also read the live DOM input value first, so browser automation and blur/timing edge cases cannot revert the visible edited name back to the stored account name
   - Scrollbar styling is now aligned more closely with the brand system:
     - scrollbar tracks use the same deep-green surface tone as the app background/body
     - scrollbar thumbs remain the existing premium gold/yellow accent
