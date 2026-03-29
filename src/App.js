@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from "firebase/auth";
 import {
   ref,
   set,
@@ -497,8 +505,11 @@ body::before {
   cursor: pointer; user-select: none;
   animation: dealIn .35s ease both;
   transition: transform .2s cubic-bezier(.34,1.56,.64,1), filter .2s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .pcard:hover:not(.locked) { transform: translateY(-16px) scale(1.06); filter: drop-shadow(0 22px 18px rgba(0,0,0,.55)); }
+.pcard:focus-visible { outline: 3px solid rgba(232,184,75,.85); outline-offset: 4px; }
 .pcard.sel { transform: translateY(-18px) scale(1.08); filter: drop-shadow(0 0 16px rgba(201,145,42,.9)) drop-shadow(0 20px 22px rgba(0,0,0,.6)); }
 .pcard.locked { cursor: default; }
 .pcard-inner {
@@ -1237,15 +1248,52 @@ body::before {
   border-bottom: 1px solid rgba(201,145,42,.3); transition: border-color .2s;
 }
 .login-modal-upgrade a:hover { border-bottom-color: var(--gold2); }
+.auth-mode-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px;
+}
+.auth-mode-btn {
+  appearance: none; border: 1px solid var(--border); background: rgba(255,255,255,.04);
+  color: rgba(239,242,247,.72); border-radius: 999px; padding: 10px 12px; font: inherit;
+  font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+  transition: all .2s ease;
+}
+.auth-mode-btn.active {
+  border-color: rgba(201,145,42,.45); background: rgba(201,145,42,.16); color: var(--gold2);
+}
+.auth-status {
+  font-size: .82rem; margin-top: 10px; text-align: center; padding: 9px 10px; border-radius: 10px;
+}
+.auth-status.success { color: #2ecc71; background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.18); }
+.auth-status.error   { color: #e74c3c; background: rgba(231,76,60,.06); border: 1px solid rgba(231,76,60,.15); }
 .pro-key-status { font-size: .8rem; margin-top: 8px; text-align: center; padding: 6px 0; border-radius: 6px; }
 .pro-key-status.success { color: #2ecc71; background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.18); }
 .pro-key-status.error   { color: #e74c3c; background: rgba(231,76,60,.06);  border: 1px solid rgba(231,76,60,.15);  }
+.nav-account {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-right: 12px;
+  min-width: 0;
+}
+.nav-account-name {
+  max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: rgba(239,242,247,.86); font-size: .84rem; font-weight: 500;
+}
+.nav-account-plan {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05);
+  color: rgba(239,242,247,.62); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+}
+.nav-account-plan.pro {
+  color: var(--gold2); border-color: rgba(201,145,42,.32); background: rgba(201,145,42,.12);
+}
+.pricing-account-note {
+  margin: 0 0 12px; font-size: .8rem; color: rgba(239,242,247,.56);
+}
 
 /* ══════════════════════ RESPONSIVE — FOOTER + NAV ══════════════════════ */
 @media (max-width: 780px) {
   .footer-inner { grid-template-columns: 1fr 1fr; }
   .footer-col-brand { grid-column: 1 / -1; }
   .navbar-brand { display: none; }
+  .nav-account-name { max-width: 140px; }
 }
 @media (max-width: 520px) {
   .footer-inner { grid-template-columns: 1fr; }
@@ -1253,13 +1301,15 @@ body::before {
   .nav-btn-login { display: none; }
   .nav-btn-register { font-size: .78rem; padding: 7px 14px; }
   .login-modal { padding: 36px 22px 28px; }
+  .auth-mode-row { grid-template-columns: 1fr; }
+  .nav-account { display: none; }
 }
 `;
 
 /* ═══════════════════════ ROOM CONFIG ═══════════════════════ */
 // Dynamic rooms: each Create generates a unique 5-char code.
 // URL is updated via replaceState so links can be shared directly.
-const FREE_MAX_PLAYERS = 6;   // Free tier: small team trial
+const FREE_MAX_PLAYERS = 6;   // Free tier participant limit
 const PRO_MAX_PLAYERS  = 20;  // Pro tier: full team + stakeholders
 const SESSION_MAX_MS = 3 * 60 * 60 * 1000;
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000;
@@ -1324,11 +1374,12 @@ function CasinoChip({ onClick, size = 44, label = "Go to home" }) {
 
 /* ═══════════════════════ GLOBAL NAVBAR ═══════════════════════
    Persistent top bar shown on all screens.
-   - Left:  CasinoChip + "Planning Poker" brand name
-   - Right: Log in (ghost) + Get Pro (gold)
-   The "Log in" state is currently key-based (no Firebase Auth yet).
+   - Left:  CasinoChip + "pointpoker" brand name
+   - Right: Account state + pricing CTA
 ═══════════════════════════════════════════════════════════════ */
-function NavBar({ screen, onLogoClick, onLogin, onRegister }) {
+function NavBar({ onLogoClick, onLogin, onRegister, currentUser, currentPlan, onLogout }) {
+  const accountLabel = currentUser?.displayName || currentUser?.email || null;
+
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div className="navbar-inner">
@@ -1336,18 +1387,32 @@ function NavBar({ screen, onLogoClick, onLogin, onRegister }) {
           <CasinoChip
             onClick={onLogoClick}
             size={44}
-            label="Planning Poker — go to home"
+            label="pointpoker — go to home"
           />
           <button className="navbar-brand" onClick={onLogoClick}>
-            Planning Poker
+            pointpoker
           </button>
         </div>
         <div className="navbar-right">
-          <button className="nav-btn-login" onClick={onLogin}>
-            Log in
-          </button>
+          {currentUser ? (
+            <>
+              <div className="nav-account" aria-label="Signed-in account">
+                <span className="nav-account-name">{accountLabel}</span>
+                <span className={`nav-account-plan${currentPlan === "pro" ? " pro" : ""}`}>
+                  {currentPlan === "pro" ? "Pro" : "Free"}
+                </span>
+              </div>
+              <button className="nav-btn-login" onClick={onLogout}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <button className="nav-btn-login" onClick={onLogin}>
+              Log in
+            </button>
+          )}
           <button className="nav-btn-register" onClick={onRegister}>
-            ✦ Get Pro
+            {currentPlan === "pro" ? "Manage Plan" : "✦ Get Pro"}
           </button>
         </div>
       </div>
@@ -1368,8 +1433,8 @@ function SiteFooter({ onCookieSettings }) {
         {/* Column 1 — Brand */}
         <div className="footer-col-brand">
           <div className="footer-brand-row">
-            <CasinoChip size={36} label="Planning Poker"/>
-            <span className="footer-brand-name">Planning Poker</span>
+            <CasinoChip size={36} label="pointpoker"/>
+            <span className="footer-brand-name">pointpoker</span>
           </div>
           <p className="footer-brand-desc">
             Free, real-time estimation for agile and Scrum teams.
@@ -1404,17 +1469,17 @@ function SiteFooter({ onCookieSettings }) {
       {/* Bottom bar — copyright + legal note */}
       <div className="footer-bottom">
         <div className="footer-copy">
-          © {year} Planning Poker. All rights reserved.
+          © {year} pointpoker. All rights reserved.
           Registered in England &amp; Wales.
         </div>
         <div className="footer-legal-note">
-          Planning Poker is provided "as-is" without warranty of any kind.
+          pointpoker is provided "as-is" without warranty of any kind.
           Use is subject to our{" "}
           <a href="/terms" style={{ color: "rgba(239,242,247,.38)", textDecoration: "underline" }}>
             Terms of Service
           </a>
           . Firebase, Vercel, and Stripe are third-party services and
-          are not affiliated with Planning Poker.
+          are not affiliated with pointpoker.
         </div>
       </div>
     </footer>
@@ -1423,23 +1488,95 @@ function SiteFooter({ onCookieSettings }) {
 
 /* ═══════════════════════ LOGIN MODAL ═══════════════════════
    Shown when user clicks "Log in" in the NavBar.
-   Covers two states:
-   1. Pro key entry — activate an existing Pro key
-   2. "Coming soon" notice for email/password auth (Phase 1.2)
-   onProActivated: called after a valid key is saved → triggers reload.
+   Supports:
+   1. Email/password sign in
+   2. Account creation
+   3. Password reset
+   4. Manual Pro key activation
 ═══════════════════════════════════════════════════════════════ */
-function LoginModal({ onClose, onProActivated }) {
-  const [keyInput,  setKeyInput]  = useState("");
-  const [keyStatus, setKeyStatus] = useState(null); // null | "loading" | "ok" | "invalid" | "error"
+function LoginModal({ onClose, onAuthSuccess, onProActivated, currentUser }) {
+  const [mode, setMode] = useState(currentUser ? "account" : "signin");
+  const [nameInput, setNameInput] = useState("");
+  const [emailInput, setEmailInput] = useState(currentUser?.email || "");
+  const [passInput, setPassInput] = useState("");
+  const [authStatus, setAuthStatus] = useState(null);
+  const [authError, setAuthError] = useState("");
+  const [keyInput, setKeyInput] = useState("");
+  const [keyStatus, setKeyStatus] = useState(null);
+
+  const resetMessages = () => {
+    setAuthStatus(null);
+    setAuthError("");
+  };
+
+  const handleSignIn = async () => {
+    if (!emailInput.trim() || !passInput) {
+      setAuthError("Enter your email and password.");
+      return;
+    }
+    setAuthStatus("loading");
+    setAuthError("");
+    try {
+      await signInWithEmailAndPassword(auth, emailInput.trim(), passInput);
+      setAuthStatus("ok");
+      setTimeout(() => onAuthSuccess?.("signin"), 500);
+    } catch (error) {
+      setAuthStatus(null);
+      setAuthError(getAuthErrorMessage(error));
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!nameInput.trim()) {
+      setAuthError("Enter your name so teammates can recognise you.");
+      return;
+    }
+    if (!emailInput.trim() || !passInput) {
+      setAuthError("Enter your email and password.");
+      return;
+    }
+    setAuthStatus("loading");
+    setAuthError("");
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, emailInput.trim(), passInput);
+      await updateProfile(credential.user, { displayName: nameInput.trim().slice(0, 40) });
+      await saveUserProfile(credential.user, {
+        displayName: nameInput.trim().slice(0, 40),
+        email: credential.user.email || emailInput.trim(),
+        plan: "free",
+      });
+      setAuthStatus("ok");
+      setTimeout(() => onAuthSuccess?.("register"), 500);
+    } catch (error) {
+      setAuthStatus(null);
+      setAuthError(getAuthErrorMessage(error));
+    }
+  };
+
+  const handleReset = async () => {
+    if (!emailInput.trim()) {
+      setAuthError("Enter your email and we'll send a reset link.");
+      return;
+    }
+    setAuthStatus("loading");
+    setAuthError("");
+    try {
+      await sendPasswordResetEmail(auth, emailInput.trim());
+      setAuthStatus("reset");
+    } catch (error) {
+      setAuthStatus(null);
+      setAuthError(getAuthErrorMessage(error));
+    }
+  };
 
   const handleKey = async () => {
     if (!keyInput.trim()) return;
     setKeyStatus("loading");
-    const result = await validateAndSavePro(keyInput.trim());
+    const result = await validateAndSavePro(keyInput.trim(), currentUser);
     if (result === "ok") {
       track("pro_activated");
       setKeyStatus("ok");
-      setTimeout(onProActivated, 900);
+      setTimeout(() => onProActivated?.(), 700);
     } else if (result === "invalid") {
       setKeyStatus("invalid");
     } else {
@@ -1454,16 +1591,120 @@ function LoginModal({ onClose, onProActivated }) {
 
         {/* Chip */}
         <div className="login-modal-chip">
-          <CasinoChip size={52} label="Planning Poker"/>
+          <CasinoChip size={52} label="pointpoker"/>
         </div>
 
-        <h2 className="login-modal-title">Log in</h2>
+        <h2 className="login-modal-title">{currentUser ? "Your account" : "Account access"}</h2>
         <p className="login-modal-sub">
-          Access your Pro features using your activation key below.
-          Email &amp; password sign-in is coming soon.
+          {currentUser
+            ? "Your account is active. You can activate a Pro key below or reset your password."
+            : "Create an account to manage billing and restore your plan on any device."}
         </p>
 
-        {/* Pro key entry */}
+        {!currentUser && (
+          <>
+            <div className="auth-mode-row">
+              <button
+                type="button"
+                className={`auth-mode-btn${mode === "signin" ? " active" : ""}`}
+                aria-pressed={mode === "signin"}
+                onClick={() => { setMode("signin"); resetMessages(); }}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                className={`auth-mode-btn${mode === "register" ? " active" : ""}`}
+                aria-pressed={mode === "register"}
+                onClick={() => { setMode("register"); resetMessages(); }}
+              >
+                Create account
+              </button>
+              <button
+                type="button"
+                className={`auth-mode-btn${mode === "reset" ? " active" : ""}`}
+                aria-pressed={mode === "reset"}
+                onClick={() => { setMode("reset"); resetMessages(); }}
+              >
+                Reset password
+              </button>
+            </div>
+
+            {mode === "register" && (
+              <>
+                <label className="lbl">Full Name</label>
+                <input
+                  className="inp"
+                  placeholder="Ali Khan"
+                  value={nameInput}
+                  onChange={(e) => { setNameInput(e.target.value); resetMessages(); }}
+                  maxLength={40}
+                  autoFocus
+                />
+              </>
+            )}
+
+            <label className="lbl">{mode === "reset" ? "Account Email" : "Email"}</label>
+            <input
+              className="inp"
+              type="email"
+              placeholder="you@company.com"
+              value={emailInput}
+              onChange={(e) => { setEmailInput(e.target.value); resetMessages(); }}
+              autoFocus={mode !== "register"}
+            />
+
+            {mode !== "reset" && (
+              <>
+                <label className="lbl">Password</label>
+                <input
+                  className="inp"
+                  type="password"
+                  placeholder={mode === "register" ? "Minimum 6 characters" : "Your password"}
+                  value={passInput}
+                  onChange={(e) => { setPassInput(e.target.value); resetMessages(); }}
+                  onKeyDown={(e) => e.key === "Enter" && (mode === "register" ? handleRegister() : handleSignIn())}
+                />
+              </>
+            )}
+
+            {authError && <div className="auth-status error">{authError}</div>}
+            {authStatus === "ok" && (
+              <div className="auth-status success">
+                {mode === "register" ? "✓ Account created." : "✓ Signed in."}
+              </div>
+            )}
+            {authStatus === "reset" && (
+              <div className="auth-status success">✓ Password reset email sent.</div>
+            )}
+
+            {mode === "signin" && (
+              <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleSignIn} disabled={authStatus === "loading"}>
+                {authStatus === "loading" ? "Signing in…" : "Log in"}
+              </button>
+            )}
+            {mode === "register" && (
+              <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleRegister} disabled={authStatus === "loading"}>
+                {authStatus === "loading" ? "Creating account…" : "Create account"}
+              </button>
+            )}
+            {mode === "reset" && (
+              <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleReset} disabled={authStatus === "loading"}>
+                {authStatus === "loading" ? "Sending reset…" : "Send reset link"}
+              </button>
+            )}
+
+            <div className="login-modal-divider">or</div>
+          </>
+        )}
+
+        {currentUser && (
+          <div className="login-modal-coming">
+            <strong>{currentUser.displayName || "Signed in"}</strong><br />
+            {currentUser.email}
+          </div>
+        )}
+
         <label className="lbl">Pro Activation Key</label>
         <input
           className="inp"
@@ -1473,13 +1714,12 @@ function LoginModal({ onClose, onProActivated }) {
           onKeyDown={(e) => e.key === "Enter" && handleKey()}
           style={{ letterSpacing: "0.1em", fontFamily: "monospace", marginBottom: 8 }}
           maxLength={19}
-          autoFocus
         />
         {keyStatus === "loading" && (
           <div className="pro-key-status" style={{ color: "rgba(239,242,247,.55)" }}>Verifying…</div>
         )}
         {keyStatus === "ok" && (
-          <div className="pro-key-status success">✓ Pro activated — reloading…</div>
+          <div className="pro-key-status success">✓ Pro activated for this account.</div>
         )}
         {keyStatus === "invalid" && (
           <div className="pro-key-status error">Key not recognised. Check the format: PPRO-XXXX-XXXX-XXXX</div>
@@ -1495,14 +1735,6 @@ function LoginModal({ onClose, onProActivated }) {
         >
           {keyStatus === "loading" ? "Verifying…" : "Activate Pro"}
         </button>
-
-        <div className="login-modal-divider">or</div>
-
-        <div className="login-modal-coming">
-          <strong>Email &amp; password sign-in</strong><br/>
-          Full account login is coming in a future update.
-          Your session and Pro access are managed via your key in the meantime.
-        </div>
 
         <div className="login-modal-upgrade">
           Don't have a key?{" "}
@@ -1540,8 +1772,10 @@ export default function App() {
   const [screen, setScreen] = useState("join");
   const [myId] = useState(uid);
   const [myRole, setMyRole] = useState("voter");
-  // Pro status — derived from localStorage on mount; updated on key activation via page reload
-  const [proMode] = useState(() => readProStatus());
+  const [authUser, setAuthUser] = useState(() => auth.currentUser);
+  const [accountProfile, setAccountProfile] = useState(null);
+  const proMode = accountProfile?.plan === "pro" || readStoredProAccess();
+  const currentPlan = accountProfile?.plan || (readStoredProAccess() ? "pro" : "free");
   const [cookieAccepted, setCookieAccepted] = useState(
     () => {
       try { return localStorage.getItem("pp_cookie_ok") === "1"; }
@@ -1591,6 +1825,45 @@ export default function App() {
   useEffect(() => {
     roomDataRef.current = roomData;
   }, [roomData]);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      setAuthUser(user);
+      if (!user) {
+        setAccountProfile(null);
+        return;
+      }
+      try {
+        const snap = await get(ref(db, `users/${user.uid}`));
+        if (!snap.exists()) {
+          await saveUserProfile(user, {
+            displayName: user.displayName || "",
+            email: user.email || "",
+            plan: readStoredProAccess() ? "pro" : "free",
+            billingStatus: readStoredProAccess() ? "active" : "inactive",
+            createdAt: Date.now(),
+          });
+        } else {
+          await update(ref(db, `users/${user.uid}`), {
+            email: user.email || "",
+            displayName: user.displayName || "",
+            lastLoginAt: Date.now(),
+          });
+        }
+      } catch {
+        // Account hydration should not block app use.
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!authUser?.uid) return undefined;
+    const unsub = onValue(ref(db, `users/${authUser.uid}`), (snap) => {
+      setAccountProfile(snap.exists() ? snap.val() : null);
+    });
+    return () => unsub();
+  }, [authUser?.uid]);
 
   // sessionWarningRef: prevents the session-check interval from restarting
   // every time the sessionWarning flag flips, eliminating unnecessary churn.
@@ -1874,6 +2147,12 @@ export default function App() {
   // team always lands in the same room without needing to share a link.
   // The room is created fresh if nobody is there, or joined if active.
   const handleTeamRoom = async (name, role, teamName, deck = "fibonacci") => {
+    if (!proMode && !isFounderRoom(teamCode(teamName))) {
+      setShowPricingModal(true);
+      track("pricing_opened");
+      showToast("Team Rooms are a Pro feature. Upgrade to unlock a permanent team URL.");
+      return;
+    }
     const c = teamCode(teamName);
     // Team Room is a Pro feature. Founder team is always Pro.
     // All other team rooms are set to Pro for now — Stripe will gate
@@ -1927,10 +2206,10 @@ export default function App() {
     async (val) => {
       if (!roomData || roomData.revealed) return;
       const cur = roomData.players?.[myId]?.vote;
-      const nv = cur === val ? null : val;
+      if (cur === val) return;
       await update(ref(db, `rooms/${code}/players/${myId}`), {
-        voted: !!nv,
-        vote: nv,
+        voted: true,
+        vote: val,
       });
     },
     [roomData, code, myId],
@@ -2071,6 +2350,15 @@ export default function App() {
     await update(ref(db, `rooms/${code}/timer`), { running: false });
   }, [code]);
 
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut(auth);
+      showToast("Signed out.");
+    } catch {
+      showToast("Could not sign out. Try again.");
+    }
+  }, [showToast]);
+
   const shareUrl = `${window.location.origin}${window.location.pathname}?room=${code}`;
 
   return (
@@ -2080,10 +2368,12 @@ export default function App() {
       {/* ── Global shell — NavBar → content → Footer ── */}
       <div className="page-shell">
         <NavBar
-          screen={screen}
           onLogoClick={() => screen === "game" ? goBack() : window.scrollTo({ top: 0, behavior: "smooth" })}
           onLogin={()    => { setShowLoginModal(true);   track("login_modal_opened");   }}
           onRegister={()  => { setShowPricingModal(true); track("pricing_opened"); }}
+          currentUser={authUser}
+          currentPlan={currentPlan}
+          onLogout={handleLogout}
         />
 
         <div className="app">
@@ -2139,13 +2429,18 @@ export default function App() {
       {showLoginModal && (
         <LoginModal
           onClose={() => setShowLoginModal(false)}
-          onProActivated={() => { setShowLoginModal(false); window.location.reload(); }}
+          onAuthSuccess={() => { setShowLoginModal(false); showToast("Account ready."); }}
+          onProActivated={() => { setShowLoginModal(false); showToast("Pro activated."); }}
+          currentUser={authUser}
         />
       )}
       {showPricingModal && (
         <PricingModal
           onClose={() => setShowPricingModal(false)}
-          onProActivated={() => { setShowPricingModal(false); window.location.reload(); }}
+          onProActivated={() => { setShowPricingModal(false); showToast("Pro activated."); }}
+          currentUser={authUser}
+          currentPlan={currentPlan}
+          onRequireLogin={() => { setShowLoginModal(true); track("login_modal_opened"); }}
         />
       )}
     </>
@@ -2299,7 +2594,7 @@ const STRIPE_LINKS = {
 // ── Pro status ───────────────────────────────────────────────────────────────
 const PRO_KEY_REGEX = /^PPRO-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 
-function readProStatus() {
+function readStoredProAccess() {
   try {
     const raw = localStorage.getItem("pp_pro");
     if (!raw) return false;
@@ -2308,7 +2603,51 @@ function readProStatus() {
   } catch { return false; }
 }
 
-async function validateAndSavePro(key) {
+function getAuthErrorMessage(error) {
+  switch (error?.code) {
+    case "auth/email-already-in-use":
+      return "That email address already has an account.";
+    case "auth/invalid-email":
+      return "Enter a valid email address.";
+    case "auth/user-not-found":
+    case "auth/wrong-password":
+    case "auth/invalid-credential":
+      return "Email or password not recognised.";
+    case "auth/weak-password":
+      return "Password must be at least 6 characters.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Wait a moment and try again.";
+    default:
+      return "Could not complete that request. Try again.";
+  }
+}
+
+async function saveUserProfile(user, profile = {}) {
+  if (!user?.uid) return;
+  const nextProfile = {
+    email: user.email || profile.email || "",
+    displayName: profile.displayName || user.displayName || "",
+    plan: profile.plan || "free",
+    billingStatus: profile.billingStatus || "inactive",
+    createdAt: profile.createdAt || Date.now(),
+    lastLoginAt: Date.now(),
+  };
+  await update(ref(db, `users/${user.uid}`), nextProfile);
+}
+
+async function markCheckoutIntent(user, billing, currency) {
+  if (!user?.uid) return;
+  await update(ref(db, `users/${user.uid}`), {
+    billingCycle: billing,
+    currency,
+    billingStatus: "checkout_started",
+    checkoutStartedAt: Date.now(),
+    email: user.email || "",
+    displayName: user.displayName || "",
+  });
+}
+
+async function validateAndSavePro(key, user = null) {
   const formatted = key.trim().toUpperCase();
   if (!PRO_KEY_REGEX.test(formatted)) return "invalid";
   try {
@@ -2316,6 +2655,17 @@ async function validateAndSavePro(key) {
     const snap = await get(ref(db, `licenses/${formatted}`));
     if (!snap.exists() || snap.val().active !== true) return "invalid";
     localStorage.setItem("pp_pro", JSON.stringify({ key: formatted, activatedAt: Date.now() }));
+    if (user?.uid) {
+      await update(ref(db, `users/${user.uid}`), {
+        email: user.email || "",
+        displayName: user.displayName || "",
+        plan: "pro",
+        billingStatus: "active",
+        proKey: formatted,
+        proActivatedAt: Date.now(),
+        lastLoginAt: Date.now(),
+      });
+    }
     return "ok";
   } catch {
     // Firebase unreachable — fail closed (require real validation)
@@ -2323,12 +2673,13 @@ async function validateAndSavePro(key) {
   }
 }
 
-function PricingModal({ onClose, onProActivated }) {
+function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onRequireLogin }) {
   const [currency, setCurrency]   = useState("GBP");
   const [billing,  setBilling]    = useState("annual");  // "monthly" | "annual"
   const [keyInput, setKeyInput]   = useState("");
   const [keyStatus, setKeyStatus] = useState(null);      // null | "checking" | "ok" | "invalid" | "error"
   const [showKey,  setShowKey]    = useState(false);
+  const [billingStatus, setBillingStatus] = useState(null);
 
   const p       = PRICING[currency];
   const isAnn   = billing === "annual";
@@ -2336,14 +2687,14 @@ function PricingModal({ onClose, onProActivated }) {
   const annTotal = p.proAnnual * 12;
   const savePct = Math.round((1 - p.proAnnual / p.pro) * 100);
   const stripeUrl = STRIPE_LINKS[billing][currency];
-  const support   = process.env.REACT_APP_SUPPORT_EMAIL || "support@planningpoker.app";
+  const support   = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
 
   const FREE_FEATURES = [
     { yes: true,  text: `Up to ${FREE_MAX_PLAYERS} participants per session`     },
     { yes: true,  text: "All card decks — Fibonacci, T-Shirt, Powers of 2"      },
     { yes: true,  text: "Simultaneous reveal with live vote breakdown"           },
     { yes: true,  text: "Story queue and session summary export"                 },
-    { yes: true,  text: "Observer mode and sprint analytics"                     },
+    { yes: true,  text: "Facilitator mode and sprint analytics"                  },
     { yes: false, text: "Permanent Team Room with your own URL"                  },
     { yes: false, text: `Up to ${PRO_MAX_PLAYERS} participants per session`      },
     { yes: false, text: "Priority support"                                       },
@@ -2362,12 +2713,29 @@ function PricingModal({ onClose, onProActivated }) {
   const handleActivate = async () => {
     if (!keyInput.trim()) return;
     setKeyStatus("checking");
-    const result = await validateAndSavePro(keyInput);
+    const result = await validateAndSavePro(keyInput, currentUser);
     setKeyStatus(result);
     if (result === "ok") {
       track("pro_activated");
       if (onProActivated) onProActivated();
     }
+  };
+
+  const handleCheckout = async () => {
+    if (!currentUser) {
+      setBillingStatus("login");
+      if (onRequireLogin) onRequireLogin();
+      return;
+    }
+    if (stripeUrl === "#upgrade") {
+      setBillingStatus("pending");
+      return;
+    }
+    setBillingStatus("redirecting");
+    markCheckoutIntent(currentUser, billing, currency).catch(() => {
+      // Billing intent should not block checkout.
+    });
+    window.location.assign(stripeUrl);
   };
 
   return (
@@ -2381,11 +2749,15 @@ function PricingModal({ onClose, onProActivated }) {
         {/* ── Billing toggle ── */}
         <div className="billing-toggle-row">
           <button
+            type="button"
             className={`billing-btn${billing === "monthly" ? " active" : ""}`}
+            aria-pressed={billing === "monthly"}
             onClick={() => setBilling("monthly")}
           >Monthly</button>
           <button
+            type="button"
             className={`billing-btn${billing === "annual" ? " active" : ""}`}
+            aria-pressed={billing === "annual"}
             onClick={() => setBilling("annual")}
           >
             Annual
@@ -2400,7 +2772,9 @@ function PricingModal({ onClose, onProActivated }) {
           {["GBP", "USD", "EUR"].map(c => (
             <button
               key={c}
+              type="button"
               className={`currency-btn${currency === c ? " active" : ""}`}
+              aria-pressed={currency === c}
               onClick={() => setCurrency(c)}
             >
               {c === "GBP" ? "🇬🇧 GBP" : c === "USD" ? "🇺🇸 USD" : "🇪🇺 EUR"}
@@ -2449,6 +2823,11 @@ function PricingModal({ onClose, onProActivated }) {
             <p className="pricing-desc">
               One permanent room your team reuses every sprint — no link sharing before every session.
             </p>
+            <div className="pricing-account-note">
+              {currentUser
+                ? `Billing will be linked to ${currentUser.email}.`
+                : "Create an account first so your plan follows you across devices."}
+            </div>
             <div className="pricing-features">
               {PRO_FEATURES.map((f, i) => (
                 <div className="pricing-feature" key={i}>
@@ -2458,15 +2837,27 @@ function PricingModal({ onClose, onProActivated }) {
               ))}
             </div>
 
-            <a
-              className="pricing-cta pro-cta"
-              href={stripeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Start 14-day Free Trial →
-            </a>
-            <p className="pricing-trial-note">No card needed during trial · Cancel anytime</p>
+            <button className="pricing-cta pro-cta" onClick={handleCheckout}>
+              {currentPlan === "pro"
+                ? "Your Pro plan is active"
+                : currentUser
+                  ? "Continue to secure checkout →"
+                  : "Create account to continue →"}
+            </button>
+            <p className="pricing-trial-note">
+              {stripeUrl === "#upgrade"
+                ? "Stripe checkout setup is still in progress"
+                : "Secure checkout via Stripe · Cancel anytime"}
+            </p>
+            {billingStatus === "login" && (
+              <p className="pro-key-status error">Create or sign in to an account before starting checkout.</p>
+            )}
+            {billingStatus === "pending" && (
+              <p className="pro-key-status error">Stripe checkout is not wired yet. Add your real Stripe links next.</p>
+            )}
+            {billingStatus === "redirecting" && (
+              <p className="pro-key-status success">Opening Stripe checkout…</p>
+            )}
           </div>
         </div>
 
@@ -2565,8 +2956,8 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
   };
 
   const ROLES = [
-    { r: "voter",    icon: "🃏", l: "Participant", s: "Votes on each story"    },
-    { r: "observer", icon: "👁", l: "Observer",    s: "Watches without voting" },
+    { r: "voter",    icon: "🃏", l: "Participant", s: "Votes on each story" },
+    { r: "observer", icon: "👁", l: "Facilitator", s: "Runs the session and does not vote" },
   ];
 
   return (
@@ -2575,7 +2966,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
 
         {/* Decorative chip — visual anchor inside the card */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-          <CasinoChip size={56} label="Planning Poker"/>
+          <CasinoChip size={56} label="pointpoker"/>
         </div>
 
         <h1 className="join-title">Start Estimating</h1>
@@ -2589,19 +2980,25 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
         {/* Three-tab navigation */}
         <div className="tab-row">
           <button
+            type="button"
             className={`tab-btn${tab === "create" ? " active" : ""}`}
+            aria-pressed={tab === "create"}
             onClick={() => { setTab("create"); clearErr(); }}
           >
             Create Room
           </button>
           <button
+            type="button"
             className={`tab-btn${tab === "join" ? " active" : ""}`}
+            aria-pressed={tab === "join"}
             onClick={() => { setTab("join"); clearErr(); }}
           >
             Join Room
           </button>
           <button
+            type="button"
             className={`tab-btn${tab === "team" ? " active" : ""}`}
+            aria-pressed={tab === "team"}
             onClick={() => { setTab("team"); clearErr(); }}
           >
             Team Room
@@ -2665,7 +3062,10 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
           {ROLES.map(({ r, icon, l, s }) => (
             <button
               key={r}
+              type="button"
               className={`role-btn${role === r ? (r === "voter" ? " rv" : " ro") : ""}`}
+              aria-pressed={role === r}
+              aria-label={`${l} role: ${s}`}
               onClick={() => setRole(r)}
             >
               <span className="ri">{icon}</span>
@@ -2716,10 +3116,10 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
       </div>
 
       {/* ── SEO content — rendered in DOM for Googlebot, visible to users ── */}
-      <section className="seo-section" aria-label="About Planning Poker">
+      <section className="seo-section" aria-label="About pointpoker">
         <h2 className="seo-h2">The Fastest Way to Run Sprint Planning — Free, No Sign-up</h2>
         <p className="seo-intro">
-          Stop wasting the first 20 minutes of every sprint just getting the team set up. Planning Poker
+          Stop wasting the first 20 minutes of every sprint just getting the team set up. pointpoker
           gives you a live estimation room in under 10 seconds. Create a room, share one link, and your
           whole team is voting simultaneously — no account, no install, no friction.
         </p>
@@ -2728,7 +3128,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
           <div className="seo-card">
             <h3 className="seo-h3">Why Simultaneous Reveal Matters</h3>
             <p className="seo-p">
-              Planning Poker (also called Scrum Poker) works because every team member votes
+              pointpoker works because every team member votes
               independently before estimates are shown. Cards reveal all at once, which eliminates
               anchoring bias — the tendency to adjust your estimate after hearing someone else's.
               The result is more honest, more accurate story points with less discussion time.
@@ -2758,7 +3158,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
             <li><strong>Estimation Spree</strong> — a live streak counter celebrates when the team aligns consistently, reinforcing good backlog clarity</li>
             <li><strong>Built-in countdown timer</strong> — keep each estimation round time-boxed and the whole session on track</li>
             <li><strong>Session summary</strong> — copy all story point estimates to the clipboard at the end for your sprint tool</li>
-            <li><strong>Observer and Facilitator mode</strong> — join without a vote card and manage the session from the analytics view</li>
+            <li><strong>Facilitator mode</strong> — join without a vote card and manage the timer, reveal, and session flow from the analytics view</li>
             <li><strong>Team Room (Pro)</strong> — one permanent URL your team reuses every sprint, no link sharing ever again</li>
           </ul>
         </div>
@@ -2813,7 +3213,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
               <h4 className="seo-h4">How many people can join a planning poker session?</h4>
               <p className="seo-p">
                 Free rooms support up to {FREE_MAX_PLAYERS} voters. Pro rooms support up to {PRO_MAX_PLAYERS}.
-                Observers — facilitators, product owners, or stakeholders watching — join on top of
+                Facilitators and non-voting stakeholders join on top of
                 that limit and never use a voter slot.
               </p>
             </div>
@@ -3144,7 +3544,7 @@ function GameScreen({
                               : "Pick your card!"}
                         </div>
                         <div className="rhint">
-                          Facilitator controls the reveal
+                          Facilitator reveals the cards
                         </div>
                       </div>
                     </div>
@@ -3152,7 +3552,7 @@ function GameScreen({
                     <div className="waiting-hint">
                       {revealed
                         ? "✓ Cards revealed — results below"
-                        : "Waiting for facilitator to start…"}
+                        : "Waiting for the facilitator to start voting…"}
                     </div>
                   )}
                 </>
@@ -3181,7 +3581,17 @@ function GameScreen({
                         key={c.val}
                         className={`pcard${c.red ? " red" : ""}${c.val === "?" ? " wild" : ""}${sel ? " sel" : ""}${revealed ? " locked" : ""}`}
                         style={{ animationDelay: `${i * 0.055}s` }}
+                        role="button"
+                        tabIndex={revealed ? -1 : 0}
+                        aria-pressed={sel}
+                        aria-label={`Vote ${c.val}`}
                         onClick={() => !revealed && onCard(c.val)}
+                        onKeyDown={(e) => {
+                          if (!revealed && (e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault();
+                            onCard(c.val);
+                          }
+                        }}
                       >
                         <div className="pcard-inner">
                           <div className="pcard-tl">
@@ -3332,7 +3742,7 @@ function GameScreen({
               </div>
             )}
 
-            {/* Observer Controls */}
+            {/* Facilitator Controls */}
             {isObs && (
               <div className="obs-controls">
                 {/* Story queue manager */}
@@ -3540,7 +3950,7 @@ function GameScreen({
                         {p.name}
                         {p.id === myId ? " (you)" : ""}
                       </div>
-                      <div className="prole">Observer · Facilitator</div>
+                      <div className="prole">Facilitator · No vote</div>
                     </div>
                     <div className="pdot o" />
                   </div>
@@ -3548,7 +3958,7 @@ function GameScreen({
               </div>
             </div>
 
-            {/* Sprint Analytics — observer only */}
+            {/* Sprint Analytics — facilitator only */}
             {isObs && (() => {
               const isTshirt = deck === "tshirt";
               const tshirtOrder = ["XS", "S", "M", "L", "XL", "XXL"];

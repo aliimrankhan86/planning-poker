@@ -1,4 +1,4 @@
-# Planning Poker — Project Context
+# pointpoker — Project Context
 
 > **Single source of truth for any AI assistant (Claude, Codex, Gemini, GPT, etc.)**
 >
@@ -12,16 +12,47 @@
 
 ---
 
+## § Current Truth Snapshot
+
+This section is the fastest, highest-priority handoff summary for any AI.
+
+- Brand: `pointpoker`
+- Production domain: `https://www.pointpoker.app/`
+- Support email: `support@pointpoker.app`
+- Auth:
+  - Firebase Email/Password auth is implemented and enabled
+  - `/users/{uid}` persistence is live
+- Roles:
+  - Backend values are `voter` and `observer`
+  - User-facing label for `observer` is `Facilitator`
+- Verified product state:
+  - Auth QA passed
+  - Core room-flow QA passed
+  - Facilitator wording clarified
+  - Privacy policy updated for auth
+  - SEO/domain references updated for `www.pointpoker.app`
+  - Copy, legal accuracy, accessibility semantics, and structured SEO reviewed and tightened
+  - Mobile voting interaction hardened so same-card repeat taps no longer clear the vote
+- Still pending:
+  - Connect domain in Vercel and verify production routing
+  - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
+  - Create `public/og-image.png`
+  - Replace Stripe placeholder links and complete paid activation wiring
+
+If older historical notes below conflict with this section, treat this snapshot as the authoritative current state and update the older sections when touching them.
+
+---
+
 ## § Project Identity
 
 | Field | Value |
 |---|---|
-| **Product name** | Planning Poker |
-| **Purpose** | Free real-time planning poker for agile and Scrum teams. No sign-up required. |
+| **Product name** | pointpoker |
+| **Purpose** | Free real-time planning poker for agile and Scrum teams. Sign-up optional for free use; required for account-based Pro billing. |
 | **Target audience** | Product Owners, Scrum Masters, developers on distributed teams |
 | **Business model** | Freemium — Free tier (6 players) + Pro tier (20 players, team rooms) |
 | **Jurisdiction** | England & Wales |
-| **Current status** | Deployed on Vercel. Pre-revenue. Analytics tracking live. Auth not yet implemented. |
+| **Current status** | Deployed on Vercel. Pre-revenue. Analytics tracking live. Firebase Auth is enabled and privacy policy updated; Stripe activation still pending. |
 | **Founder room** | `rpa-build-team` (encoded in `_FC` array as `btoa` value) |
 
 ---
@@ -35,8 +66,8 @@
 | Hosting | Vercel | — | Auto-deploys from `main` branch on GitHub |
 | Build tool | react-scripts | 5.0.1 | CRA — no custom webpack config |
 | Fonts | Outfit v15, Cormorant Garamond v21 | — | **Self-hosted** in `public/fonts/` — no Google Fonts CDN |
-| Payments | Stripe | — | **Not yet integrated** — links are `#upgrade` placeholders |
-| Auth | None yet | — | Firebase Auth planned for Phase 1.2 |
+| Payments | Stripe | — | Account-aware checkout UI in place; real Stripe links/webhook still pending |
+| Auth | Firebase Auth | SDK 12.10.0 | Email/Password UI implemented in app and provider enabled in Firebase Console |
 | CI/CD | GitHub → Vercel | — | Push to `main` = live deploy |
 
 ### Environment variables (Vercel + local `.env`)
@@ -55,7 +86,7 @@ REACT_APP_FIREBASE_APP_ID
 
 Future (not yet added):
 ```
-REACT_APP_SUPPORT_EMAIL   # replace support@planningpoker.app placeholder in privacy.html
+REACT_APP_SUPPORT_EMAIL   # set to support@pointpoker.app in Vercel/local env
 ```
 
 ---
@@ -65,14 +96,14 @@ REACT_APP_SUPPORT_EMAIL   # replace support@planningpoker.app placeholder in pri
 ```
 planning-poker/
 ├── public/
-│   ├── index.html          # 7× YOUR_DOMAIN_HERE placeholders — replace after domain purchase
+│   ├── index.html          # SEO shell — canonical and OG now point to www.pointpoker.app
 │   ├── favicon.svg         # Branded SVG: dark green card, gold spade
 │   ├── favicon.ico         # 7-size ICO (16/24/32/48/64/128/256px)
 │   ├── logo192.png         # PWA icon — branded casino card
 │   ├── logo512.png         # PWA icon — branded casino card
 │   ├── manifest.json       # PWA manifest with SEO copy
-│   ├── robots.txt          # YOUR_DOMAIN_HERE placeholder
-│   ├── sitemap.xml         # YOUR_DOMAIN_HERE placeholder
+│   ├── robots.txt          # Sitemap points to www.pointpoker.app
+│   ├── sitemap.xml         # Root URL sitemap for www.pointpoker.app
 │   ├── privacy.html        # GDPR/UK ICO privacy policy (styled, noindex)
 │   ├── terms.html          # Terms of Service — England & Wales (styled, noindex)
 │   └── fonts/              # Self-hosted: Outfit v15, Cormorant Garamond v21
@@ -140,15 +171,15 @@ All components are functions in `src/App.js`. Listed in render order:
 | Component | Description |
 |---|---|
 | `CasinoChip` | SVG casino chip — 8-segment dashed rim, inner felt, gold rings, "PP" logotype. Props: `onClick`, `size` (default 44), `label`. Used at 34/44/52/56px. |
-| `NavBar` | Global sticky nav (z-index: 200). Left: chip + brand. Right: Log in + Get Pro. Props: `screen`, `onLogoClick`, `onLogin`, `onRegister`. |
+| `NavBar` | Global sticky nav (z-index: 200). Left: chip + brand. Right: account badge/log out when signed in, otherwise Log in + Get Pro. Props: `onLogoClick`, `onLogin`, `onRegister`, `currentUser`, `currentPlan`, `onLogout`. |
 | `SiteFooter` | 3-column footer — brand desc, Legal links, Product links. Bottom bar: copyright + legal disclaimer. Props: `onCookieSettings`. |
-| `LoginModal` | Pro key entry modal. Validates `PPRO-XXXX-XXXX-XXXX` against Firebase `/licenses/`. "Email auth coming soon" notice. Props: `onClose`, `onProActivated`. |
+| `LoginModal` | Account modal. Supports sign in, create account, password reset, and Pro key activation against Firebase `/licenses/`. Props: `onClose`, `onAuthSuccess`, `onProActivated`, `currentUser`. |
 | `CookieBanner` | GDPR consent bar — shown until `pp_cookie_ok = "1"` in localStorage. Props: `onAccept`. |
 | `App` | Root — manages all screen state, Firebase subscriptions, room lifecycle. |
 | `Confetti` | Pure-canvas confetti burst — no external deps. Props: `onDone`, `big`. |
-| `PricingModal` | Monthly/annual billing toggle, GBP/USD/EUR currency, Pro CTA (Stripe links placeholder), collapsible key activation. Props: `onClose`, `onProActivated`. |
+| `PricingModal` | Monthly/annual billing toggle, GBP/USD/EUR currency, account-aware Pro checkout CTA, collapsible key activation. Props: `onClose`, `onProActivated`, `currentUser`, `currentPlan`, `onRequireLogin`. |
 | `JoinScreen` | Landing form — Create/Join/Team Room tabs, role selector, deck picker. Props: `onCreate`, `onJoin`, `onTeamRoom`, `prefillCode`, `prefillTeam`, `proMode`, `onShowPricing`. |
-| `GameScreen` | Full estimation room UI — timer, playing cards, results, observer controls, analytics. Props: see § GameScreen Props. |
+| `GameScreen` | Full estimation room UI — timer, playing cards, results, facilitator controls, analytics. Props: see § GameScreen Props. |
 
 ### GameScreen Props
 
@@ -183,14 +214,15 @@ STRIPE_LINKS = {
 // ↑ ALL PLACEHOLDERS — replace with real Stripe Payment Links after setup
 ```
 
-### Pro status flow
+### Account & Pro status flow
 
-1. User opens `PricingModal` or `LoginModal`
-2. Enters key matching `PPRO-XXXX-XXXX-XXXX`
-3. `validateAndSavePro(key)` → checks `db /licenses/{key}` for `{ active: true }`
-4. On success → `localStorage.setItem("pp_pro", JSON.stringify({ key, activatedAt }))`
-5. `readProStatus()` reads localStorage on every App() mount → `proMode` boolean state
-6. `proMode` controls `plan` field on room create (`"free"` or `"pro"`)
+1. User opens `LoginModal`
+2. Signs in / creates account with Firebase Auth Email/Password, or activates a Pro key
+3. `saveUserProfile(user)` persists `/users/{uid}` with `email`, `displayName`, `plan`, `billingStatus`, timestamps
+4. `validateAndSavePro(key, user)` checks `db /licenses/{key}` for `{ active: true }`
+5. On success → writes legacy `localStorage pp_pro` and upgrades `/users/{uid}` to `plan: "pro"` when signed in
+6. `App()` derives `proMode` from the signed-in user profile first, with localStorage as a backwards-compatible fallback
+7. `proMode` controls `plan` field on room create and Team Room access
 
 ### Room lifecycle
 
@@ -207,18 +239,18 @@ Expiry:  SESSION_MAX_MS = 3h → remove /rooms/{code}, redirect to join
 
 ```
 PATH A — Named story queue (hasStories = true):
-  Observer adds stories → recordAndNextStory(estimate, isConsensus)
+  Facilitator adds stories → recordAndNextStory(estimate, isConsensus)
   → writes /rooms/{code}/stories/{idx}/estimate
   → increments storiesDone, streak, consensusCount
   → increments activeStory index
 
 PATH B — No story queue (hasStories = false):
-  Observer clicks "Agreed" → newRound(estimate, isConsensus)
+  Facilitator clicks "Agreed" → newRound(estimate, isConsensus)
   → writes /rooms/{code}/rounds/{storiesDone} = { estimate, isConsensus }
   → increments storiesDone, streak, consensusCount
 
 Re-vote (either path):
-  Observer clicks "Re-vote" → newRound(null, false)
+  Facilitator clicks "Re-vote" → newRound(null, false)
   → does NOT increment storiesDone — resets streak only
 ```
 
@@ -299,6 +331,25 @@ Read via Firebase Console → Realtime Database only (client read is blocked by 
 ```
 Keys are of the form `PPRO-XXXX-XXXX-XXXX`. Currently added manually in Firebase Console. Stripe webhook automation is a future task.
 
+### `/users/{uid}`
+
+```json
+{
+  "email": "string ≤ 200 chars",
+  "displayName": "string ≤ 40 chars",
+  "plan": "free | pro",
+  "billingStatus": "inactive | checkout_started | active",
+  "billingCycle": "monthly | annual",
+  "currency": "GBP | USD | EUR",
+  "createdAt": "number (Date.now)",
+  "lastLoginAt": "number (Date.now)",
+  "checkoutStartedAt": "number (optional)",
+  "proActivatedAt": "number (optional)",
+  "proKey": "string length 19 (optional)"
+}
+```
+Readable/writable only by the authenticated user with matching `auth.uid`.
+
 ### `/analytics/daily/{YYYY-MM-DD}/{eventName}`
 
 Integer counter. Client write only. Admin read only via Firebase Console.
@@ -350,9 +401,9 @@ T-shirt deck: story points are non-numeric — `avgSP`, `totalSP`, and estimate 
 - No refunds except 14-day trial cancellation (monthly) / pro-rated (annual) — **Stripe not yet wired**
 - Governing law: England & Wales; courts of England & Wales have exclusive jurisdiction
 - Third-party disclosures: Firebase (Google LLC), Vercel Inc., Stripe Inc.
-- Data: no PII beyond display name and votes within a live session — all ephemeral
+- Data: account email + display name are now stored for signed-in users; session names/votes remain session-scoped
 
-**Placeholder to fill**: `support@planningpoker.app` in `privacy.html` — replace with real address after domain setup.
+**Support contact chosen**: `support@pointpoker.app`
 
 ---
 
@@ -384,6 +435,54 @@ T-shirt deck: story points are non-numeric — `avgSP`, `totalSP`, and estimate 
 ## § Completed Work
 
 Listed chronologically newest-first.
+
+### 2026-03 — Facilitator role copy clarification
+- Join-screen role label changed from user-facing `Observer` to `Facilitator` while keeping the Firebase role value as `observer`
+- Facilitator helper copy now explicitly says this role runs the session and does not vote
+- Waiting-state text now references the facilitator consistently, reducing false bug reports during QA
+- Player list row now shows `Facilitator · No vote` instead of `Observer · Facilitator`
+- Manual QA confirmed facilitator controls, participant flow, timer, end session, leave/rejoin, and Team Room gating all work as intended
+
+### 2026-03 — Privacy policy updated for account auth
+- `public/privacy.html` now discloses Firebase Authentication account data, account email storage, account metadata, and password reset email handling
+- Browser storage section now reflects signed-in Firebase session storage and the legacy `pp_pro` key fallback
+- GDPR rights/retention sections now distinguish between temporary room data and persistent account data
+- Stripe remains non-live and is described as future billing infrastructure only
+
+### 2026-03 — pointpoker brand + domain update
+- Public domain references updated to `https://www.pointpoker.app` in `public/index.html`, `public/robots.txt`, and `public/sitemap.xml`
+- Public-facing brand name updated from `Planning Poker` to `pointpoker` across app chrome, legal pages, manifest, and docs where it refers to the product name
+- Generic SEO/category references to "planning poker" were preserved where they describe the product category rather than the brand
+
+### 2026-03 — Support email + SEO metadata refinement
+- Support contact updated to `support@pointpoker.app` in legal pages and app fallback copy
+- `public/index.html` metadata refined for keyword coverage and share cards: stronger title/description, `application-name`, image alt text, and consistent canonical/OG URL with trailing slash
+- `public/manifest.json` description updated to reflect planning-poker category keywords without stuffing
+
+### 2026-03 — Senior quality hardening pass
+- Accessibility semantics improved for segmented controls in `src/App.js` by adding explicit `type="button"` and `aria-pressed` states to auth, pricing, tab, currency, and role toggles
+- Broken footer deep-links were fixed by adding real `#data` and `#contact` anchors to `public/privacy.html`
+- Misleading and stale copy was corrected:
+  - pricing now says `Facilitator mode` instead of `Observer mode`
+  - checkout note no longer claims a trial before Stripe is live
+  - `public/terms.html` now accurately states that live card billing is not yet enabled
+- Structured SEO data was strengthened with `og:image:type`, `twitter:url`, and a matching `FAQPage` JSON-LD block in `public/index.html`
+- Supporting internal copy/docs were cleaned up for brand consistency, including the self-hosted font note
+
+### 2026-03 — Mobile voting stability fix
+- Vote selection no longer toggles off when the same card is tapped again; selecting a card is now idempotent until the user chooses a different card or the round resets
+- Vote cards now include explicit keyboard/button semantics plus `:focus-visible` styling and mobile tap hardening (`touch-action: manipulation`, no tap highlight)
+- This change targets the reported defect where mobile users could see a card appear selected and then become unselected again in later rounds
+
+### 2026-03 — Firebase Auth accounts + account-aware Pro gating
+- `firebase.js` now exports `auth` alongside `db`
+- `LoginModal` now supports sign in, create account, password reset, and legacy Pro key activation
+- `/users/{uid}` profile store added in Realtime Database for `email`, `displayName`, `plan`, `billingStatus`, timestamps
+- `NavBar` now shows signed-in account state and log out
+- `PricingModal` now requires an account before checkout and records checkout intent to `/users/{uid}`
+- `validateAndSavePro(key, user)` upgrades the signed-in user record to `plan: "pro"` while preserving legacy localStorage compatibility
+- Team Room creation is now gated to Pro/founder access instead of being open to every anonymous user
+- `database.rules.json` now includes `/users/{uid}` rules; build verified with `npm run build`
 
 ### 2026-03 — Anonymous usage analytics
 - `track()` utility using `runTransaction` — daily counters in `/analytics/daily/`
@@ -441,7 +540,7 @@ Listed chronologically newest-first.
 - Free/Pro player tiers (6/20 max)
 - Team rooms with stable slug codes
 - Three card decks: Fibonacci, T-shirt, Powers of 2
-- Role system: Voter (votes) / Observer (facilitates, sees analytics)
+- Role system: Voter (votes) / Facilitator (backend value: `observer`, facilitates and sees analytics)
 - Timer: configurable 10–300s countdown
 - Auto-reveal, consensus detection, confetti burst
 - Estimation Spree streak panel
@@ -459,26 +558,17 @@ Items are grouped by dependency. Do not mark complete until fully deployed/verif
 
 ### IMMEDIATE — Deploy (user action required)
 
-- [ ] **Push local commits to remote**
+- [ ] **Commit and push local changes to remote**
   ```bash
   cd ~/Documents/planning-poker && git push
   ```
-  6 commits ready on `main`, not yet pushed.
+  Local changes exist in the working tree and still need to be committed and pushed.
 
-- [ ] **Deploy Firebase rules** (critical — do after push)
-  1. Firebase Console → Realtime Database → Rules
-  2. Replace current rules with contents of `database.rules.json`
-  3. Click Publish
-  Without this: `rounds/` writes fail silently (analytics shows "—"), and `analytics/` writes fail.
+### DOMAIN / LAUNCH CONFIG
 
-### BLOCKED ON: Domain purchase
-
-- [ ] Replace `YOUR_DOMAIN_HERE` in `public/index.html` (5 occurrences)
-- [ ] Replace `YOUR_DOMAIN_HERE` in `public/sitemap.xml`
-- [ ] Replace `YOUR_DOMAIN_HERE` in `public/robots.txt`
 - [ ] Create `public/og-image.png` (1200×630px) for OG/Twitter meta preview
-- [ ] Update `support@planningpoker.app` → real support email in `public/privacy.html`
 - [ ] Add `REACT_APP_SUPPORT_EMAIL` to Vercel environment variables
+- [ ] Connect `www.pointpoker.app` to Vercel and verify production routing
 - [ ] Submit sitemap to Google Search Console
 
 ### BLOCKED ON: Stripe account setup
@@ -492,14 +582,7 @@ Items are grouped by dependency. Do not mark complete until fully deployed/verif
   - Annual EUR €6/mo (billed annually = €72/yr)
 - [ ] Replace all 6 `#upgrade` values in the `STRIPE_LINKS` constant in `src/App.js`
 - [ ] Optional: Vercel serverless function `api/stripe-webhook.js` — on payment complete → write `{ active: true }` to `/licenses/{generated_key}` in Firebase
-
-### PHASE 1.2 — Firebase Auth (Email/Password)
-
-- [ ] Enable Email/Password auth in Firebase Console
-- [ ] Add sign-up / sign-in forms (replace `LoginModal` placeholder copy)
-- [ ] Persist Pro status to Firebase user record (not just localStorage)
-- [ ] Display user's name/email in NavBar when logged in
-- [ ] "Forgot password" flow
+- [ ] Replace temporary checkout-intent-only flow with real Stripe success/cancel handling once links or Checkout are live
 
 ### PHASE 2 — Teams plan (B2B)
 
@@ -570,10 +653,8 @@ f5323af  feat: branded favicon/icons + privacy policy + manifest copy update
 
 | Issue | Status | Notes |
 |---|---|---|
-| `database.rules.json` not yet deployed | Pending user action | rounds/ and analytics/ writes will fail until deployed |
-| Stripe links are `#upgrade` placeholders | Pending Stripe setup | PricingModal CTA does not complete a payment |
+| Stripe links are `#upgrade` placeholders | Pending Stripe setup | PricingModal is account-aware but cannot open a real paid checkout yet |
 | Pro key must be manually added to Firebase | Temporary | Stripe webhook will automate in Phase 3 |
-| No Firebase Auth | By design (Phase 1.2) | Pro status stored in localStorage only — can be cleared |
 | App.js is ~3800 lines | Acceptable | Split into components at next major feature milestone |
 | `startedBy` in timer not validated by Firebase rules | Low risk | Internal field, not exploitable |
 
@@ -589,7 +670,8 @@ f5323af  feat: branded favicon/icons + privacy policy + manifest copy update
 4. All CSS goes inside the `CSS` template literal in `src/App.js`. Append at the end of the string, before the closing backtick.
 5. All components go in `src/App.js`. Add them before `export default function App()`.
 6. When adding Firebase reads/writes, check `database.rules.json` — if the path is new, add a validation rule.
-7. Run `npm run build` after changes to confirm zero errors/warnings before committing.
+7. Hold every change to a high code-quality bar: self-review for bugs, regressions, edge cases, and incomplete logic before calling the task done.
+8. Run the relevant verification after changes. At minimum, run `npm run build` after code changes to confirm zero errors/warnings before committing.
 
 ### After completing work
 
@@ -597,7 +679,9 @@ f5323af  feat: branded favicon/icons + privacy policy + manifest copy update
 2. Update the relevant section (schema, components, constants, etc.) if it changed.
 3. Add the new commit hash to **§ Commit History Summary**.
 4. Update **§ Known Issues** if a known issue was resolved or a new one was found.
-5. Do NOT rewrite sections you didn't touch.
+5. Update `PROGRESS.md` in the same task so future AI sessions inherit the current reality.
+6. Update `AGENTS.md` too if the top-level project truth changed.
+7. Do NOT rewrite sections you didn't touch.
 
 ### Coding conventions
 

@@ -1,8 +1,8 @@
-# Planning Poker
+# pointpoker
 
 A free online planning poker tool for agile and scrum teams. Run story points estimation sessions in seconds — no account required.
 
-**Live site:** [planningpoker.app](https://planningpoker.app) _(update once domain is purchased)_
+**Production domain:** [www.pointpoker.app](https://www.pointpoker.app)
 
 ---
 
@@ -26,7 +26,7 @@ A free online planning poker tool for agile and scrum teams. Run story points es
 - **Frontend:** React (single-page app)
 - **Database:** Firebase Realtime Database
 - **Hosting:** Vercel
-- **Fonts:** Cormorant Garamond + Outfit (Google Fonts)
+- **Fonts:** Cormorant Garamond + Outfit (self-hosted)
 
 ---
 
@@ -53,7 +53,7 @@ REACT_APP_FIREBASE_PROJECT_ID=...
 REACT_APP_FIREBASE_STORAGE_BUCKET=...
 REACT_APP_FIREBASE_MESSAGING_SENDER_ID=...
 REACT_APP_FIREBASE_APP_ID=...
-REACT_APP_SUPPORT_EMAIL=support@yourdomain.com
+REACT_APP_SUPPORT_EMAIL=support@pointpoker.app
 ```
 
 ---
@@ -74,8 +74,8 @@ Deploy `database.rules.json` to Firebase Console → Realtime Database → Rules
 
 ## Before Launch Checklist
 
-- [ ] Buy domain and replace `YOUR_DOMAIN_HERE` in `public/index.html`, `public/robots.txt`, `public/sitemap.xml`
 - [ ] Set `REACT_APP_SUPPORT_EMAIL` in Vercel environment variables
+- [ ] Connect `www.pointpoker.app` to Vercel and verify production routing
 - [ ] Deploy `database.rules.json` to Firebase Console
 - [ ] Submit sitemap to Google Search Console
 - [ ] Create `public/og-image.png` (1200×630px) for social media previews

@@ -1,18 +1,7 @@
 /*
-  Self-hosted fonts for Planning Poker
-  =====================================
-  Replace Google Fonts with these local @font-face declarations to eliminate
-  third-party cookie exposure and improve Core Web Vitals (no external DNS lookup).
-
-  HOW TO SET UP:
-  1. Download Outfit (wght 300, 400, 500, 600, 700) from:
-     https://gwfh.mranftl.com/fonts/outfit?subsets=latin
-  2. Download Cormorant Garamond (wght 400, 600, 700 + italic 400) from:
-     https://gwfh.mranftl.com/fonts/cormorant-garamond?subsets=latin
-  3. Place the .woff2 files in this /public/fonts/ directory.
-  4. In public/index.html, replace the Google Fonts <link> tags with:
-     <link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" />
-  5. Also remove the @import line at the top of src/App.js CSS section.
+  Self-hosted fonts for pointpoker.
+  These local @font-face declarations avoid third-party font requests,
+  reduce external network dependency, and support stronger privacy and CWV.
 */
 
 /* ── Outfit ─────────────────────────────────────────────────── */

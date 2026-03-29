@@ -1,18 +1,52 @@
-# Planning Poker — Launch Progress Tracker
+# pointpoker — Launch Progress Tracker
 <!-- Share this file at the start of every session so Claude knows exactly where we are -->
 
+## Current Truth Snapshot
+- Brand: `pointpoker`
+- Production domain: `https://www.pointpoker.app/`
+- Support email: `support@pointpoker.app`
+- Current phase focus: product QA/hardening while launch plumbing is completed in parallel
+- Product state:
+  - Firebase Auth email/password implemented and enabled
+  - Auth QA passed
+  - Core room-flow QA passed
+  - Facilitator wording clarified
+  - Privacy policy aligned with auth
+  - Domain placeholders replaced with `www.pointpoker.app`
+  - Copy, legal accuracy, accessibility semantics, and structured SEO hardened
+  - Mobile vote-selection bug hardened so repeat taps no longer clear the selected card
+- Remaining priorities:
+  - Connect domain to Vercel and verify production routing
+  - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
+  - Create `public/og-image.png`
+  - Replace Stripe placeholders and finish paid activation wiring
+
+Treat this section as the fastest current-status read. Historical session notes below are useful context, but this snapshot is the authoritative present-tense state.
+
+---
+
 ## 🗓 Last Session
-- **Date:** 28 March 2026
+- **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** Competitive analysis vs planningpokeronline.com, then implementing 4 competitive gap features
-- **Completed:** Multiple card decks (Fibonacci/T-shirt/Powers of 2 + deck picker UI). Story queue (add stories any time, navigate, record estimates). Results panel enhanced (median, min, max, spread). Session summary with copy-to-clipboard. Auth deferred — waiting on Firebase Console.
+- **Worked on:** Final quality hardening across copy, legal accuracy, structured SEO, accessibility semantics, tracker consistency, and mobile voting stability
+- **Completed:** Added FAQPage structured data and richer social metadata, fixed stale `Observer` copy in pricing, removed misleading trial language before Stripe launch, aligned Terms with current non-live billing state, fixed broken legal-page anchor links, improved segmented-control accessibility semantics, hardened vote cards for mobile/keyboard use, and removed the fragile tap-to-unselect behavior that could clear a vote on phones.
 
 ---
 
 ## 📍 Current Status
-**Phase:** 2 — SEO Overhaul (in progress, most steps now complete)
-**Active step:** 2.7 — Register Google Search Console + submit sitemap (Ali to do manually)
-**Remaining:** OG image creation (2.8), domain purchase, Firebase rules deployment
+**Phase:** 1 / 3 crossover — Auth foundation coded, monetisation still blocked on Stripe setup
+**Active step:** Product QA and UX hardening on the core planning flow, with launch-copy and metadata consistency tightened
+**Remaining:** Vercel domain connection, Vercel support-email env var, OG image, Stripe links/webhook, continued product QA/hardening
+
+## Update Rule
+- Any AI that completes a meaningful task must update this file in the same task.
+- Update at least:
+  - `Current Truth Snapshot`
+  - `Last Session`
+  - `Current Status`
+  - the relevant phase rows
+  - the dated session log entry
+- Do not leave this file stale for a later tool or later session unless the user explicitly says not to edit it.
 
 ---
 
@@ -39,10 +73,10 @@
 | 1.1d | Session summary + copy-to-clipboard | ✅ Done | Sprint Summary panel in right column, appears as stories get estimates |
 | 1.1e | Team Room (fixed named room) | ✅ Done | Third tab — team name → stable code (e.g. RPADEVTEAM) — create-or-join |
 | 1.1f | Timer dropdown + button label fix | ✅ Done | "60 seconds" → "1 minute", start button shows "1 min" when 1 min selected |
-| 1.2 | Firebase Email/Password auth | ⏳ Not started | Ali enables provider in Firebase Console first |
+| 1.2 | Firebase Email/Password auth | ✅ Done | UI shipped and verified: sign up, sign in, reset password, NavBar account state, `/users/{uid}` profile persistence. Email/Password provider enabled in Firebase Console. |
 | 1.3 | Invite system (up to 11 members) | ⏳ Not started | Invite link = room URL — capacity enforcement already done in 1.1 |
-| 1.4 | Register custom domain | ⏳ Not started | ~£10/year — Ali to do this manually |
-| 1.5 | Connect domain to Vercel | ⏳ Not started | Wait for 1.4 |
+| 1.4 | Register custom domain | ✅ Done | Domain purchased: `www.pointpoker.app` |
+| 1.5 | Connect domain to Vercel | ⏳ Not started | Domain is purchased (`www.pointpoker.app`); next step is Vercel connection + verification |
 
 ---
 
@@ -52,7 +86,7 @@
 | 2.1 | Update public/index.html — title, meta, OG tags | ✅ Done | Session 7 |
 | 2.2 | Add JSON-LD structured data to index.html | ✅ Done | SoftwareApplication schema. Session 7 |
 | 2.3 | Add robots.txt to /public | ✅ Done | Session 7 |
-| 2.4 | Add sitemap.xml to /public | ✅ Done | Session 7. Update YOUR_DOMAIN_HERE after domain purchase |
+| 2.4 | Add sitemap.xml to /public | ✅ Done | Session 7. Updated to `www.pointpoker.app` in Session 9e. |
 | 2.5 | Add content section to JoinScreen (features, FAQ) | ✅ Done | Session 8. Semantic HTML: h2/h3/h4/p/ol/ul/FAQ grid. Keyword-rich, WCAG compliant, responsive. |
 | 2.6 | Google Fonts preconnect + Core Web Vitals | ✅ Done | display=swap confirmed. Preconnect in index.html head. Session 7/8. |
 | 2.7 | Register Google Search Console + submit sitemap | ⏳ Not started | Ali to do manually after domain purchase |
@@ -64,8 +98,8 @@
 | Step | Task | Status | Notes |
 |------|------|--------|-------|
 | 3.1 | Set up Stripe account | ⏳ Not started | Ali to do manually |
-| 3.2 | Add freemium tier logic to App.js | ⏳ Not started | Gate: >4 voters, multiple rooms, export |
-| 3.3 | Build Stripe Checkout flow | ⏳ Not started | Hosted by Stripe — minimal code |
+| 3.2 | Add freemium tier logic to App.js | 🔄 In progress | Team Room is now gated behind Pro/founder access; room create still uses free/pro plan state from account or key |
+| 3.3 | Build Stripe Checkout flow | 🔄 In progress | Pricing modal is account-aware and records checkout intent; still needs real Stripe Payment Links or Checkout |
 | 3.4 | Firebase Function webhook (payment events) | ⏳ Not started | Updates plan field in Firebase |
 | 3.5 | Add upgrade prompt UI | ⏳ Not started | Shows when free tier limit hit |
 
@@ -84,6 +118,60 @@
 | 4.8 | Write blog articles 3–5 | ⏳ Not started | See launch plan doc for topics |
 
 ---
+
+### Session 9 — 28 March 2026 (Auth + monetisation foundation)
+- **Firebase rules deployed:** User manually published `database.rules.json` to Realtime Database. Story totals and analytics now work correctly in live testing.
+- **Firebase Auth wired in code:** `src/firebase.js` now exports `auth`. `LoginModal` now supports sign up, sign in, password reset, and Pro key activation.
+- **User profile persistence added:** `/users/{uid}` stores `email`, `displayName`, `plan`, `billingStatus`, timestamps, and optional checkout/pro-key metadata. New RTDB rules added for authenticated self-read/self-write only.
+- **NavBar updated:** Signed-in users now see their account label, plan badge, and a log-out action.
+- **Pricing modal updated:** Checkout now requires a signed-in account and records checkout intent before redirect. Still blocked on real Stripe links replacing `#upgrade`.
+- **Pro gating tightened:** Team Rooms are no longer open to every anonymous visitor; they now require Pro or founder access.
+- **Build verification:** `npm run build` completed successfully.
+- **Manual follow-up required:** Enable Firebase Console → Authentication → Sign-in method → Email/Password, then update `public/privacy.html` to disclose account storage/password resets.
+
+### Session 9b — 29 March 2026 (Permanent quality gate)
+- **AGENTS.md updated:** Added a standing quality gate requiring self-review for bugs/regressions, mandatory verification on every code task, and `PROJECT.md`/`PROGRESS.md` updates whenever project state changes.
+- **PROJECT.md instructions updated:** Future tasks must explicitly pass a code-quality review and run verification, with `PROGRESS.md` updated in the same task.
+
+### Session 9c — 29 March 2026 (Console enablement + facilitator UX)
+- **Firebase Console tasks completed:** Email/Password sign-in provider enabled in Firebase Authentication. Updated Realtime Database rules re-published so `/users/{uid}` is live.
+- **Manual auth QA passed:** Account creation, sign in, sign out, password reset, Firebase Authentication user creation, and `/users/{uid}` persistence all worked as expected.
+- **Manual room-flow QA passed:** Free room create/join, participant voting, reveal, timer, re-vote/new round, leave/rejoin, end session, and Team Room free-user block all passed when the room creator used the facilitator role.
+- **Facilitator wording fixed:** Join-screen role copy now labels the non-voting host role as `Facilitator` instead of user-facing `Observer`; in-room copy now consistently refers to the facilitator controls and `Facilitator · No vote`.
+- **Build verification:** `npm run build` completed successfully after the copy changes.
+
+### Session 9d — 29 March 2026 (Privacy policy aligned with auth)
+- **Privacy policy updated:** `public/privacy.html` now accurately discloses Firebase Authentication account data, password reset emails, signed-in browser storage, and the distinction between temporary room data and persistent account data.
+- **Product/docs alignment restored:** Removed the remaining documented mismatch between the shipped auth system and the legal/privacy copy.
+- **Build verification:** `npm run build` completed successfully after the policy update.
+
+### Session 9e — 29 March 2026 (pointpoker domain + brand update)
+- **Domain received from user:** Production domain is now `www.pointpoker.app`.
+- **Public domain references updated:** `public/index.html`, `public/robots.txt`, and `public/sitemap.xml` now use `https://www.pointpoker.app`.
+- **Branding updated:** Public-facing product name changed from `Planning Poker` to `pointpoker` across app chrome, manifest, privacy/terms pages, README, and tracker headings where they refer to the brand.
+- **SEO/category wording preserved:** Generic "planning poker" terminology remains in descriptive copy where it helps explain the product category and search intent.
+- **Remaining launch items after domain purchase:** Vercel domain connection/deployment verification, support email wiring, OG image creation, Stripe links/webhook.
+- **Build verification:** `npm run build` completed successfully after the domain/brand update.
+
+### Session 9f — 29 March 2026 (Support email + SEO metadata polish)
+- **Support email set in code/docs:** Public legal pages and app fallback copy now use `support@pointpoker.app`.
+- **SEO metadata refined:** `public/index.html` title, description, keywords, application name, OG/Twitter copy, image alt text, and canonical consistency were tightened for stronger code-level SEO.
+- **Manifest copy refined:** `public/manifest.json` description now better reflects the product category and search intent.
+- **Remaining launch step:** still set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel so production uses the configured address rather than fallback code.
+
+### Session 9g — 29 March 2026 (Senior quality hardening pass)
+- **Accessibility semantics improved:** Segmented controls in `src/App.js` now use explicit `type="button"` and `aria-pressed` states for auth mode, pricing toggle, currency switcher, create/join/team tabs, and role selection.
+- **Copy consistency fixed:** Pricing copy now says `Facilitator mode` instead of stale `Observer mode`. The temporary checkout note no longer implies a trial before Stripe is live.
+- **Legal accuracy improved:** `public/terms.html` now accurately states that live Stripe card billing is not yet enabled while keeping future billing terms clear. The Last updated date was normalised to `29 March 2026`.
+- **Broken legal anchors fixed:** `public/privacy.html` now includes working `#data` and `#contact` anchors used by the footer links.
+- **Structured SEO improved:** `public/index.html` now includes `og:image:type`, `twitter:url`, and a matching `FAQPage` JSON-LD block aligned with the visible FAQ content on the landing page.
+- **Docs cleaned up:** Internal font notes and tracker files were refreshed so future AIs inherit the current product truth instead of stale intermediate assumptions.
+
+### Session 9h — 29 March 2026 (Mobile vote-selection hardening)
+- **Reported defect:** On mobile, a vote could appear selected and then become unselected again during later rounds, especially after repeated taps.
+- **Likely root cause removed:** Vote selection previously toggled the same card back to `null` when tapped again. That behavior is now disabled; selecting a card is idempotent until the user actively chooses a different card or the round resets.
+- **Interaction semantics improved:** Vote cards now expose `role="button"`, keyboard activation, `aria-pressed`, `:focus-visible`, and mobile tap hardening via `touch-action: manipulation`.
+- **Verification:** `npm run build` completed successfully after the fix.
 
 ### Session 8b — 28 March 2026 (UX & background fixes)
 - **Background bug fixed:** `body::before` had 3 background layers but only 2 `background-size` values (`cover, 200px 200px`). Browser cycled values — second radial gradient rendered as a 200×200px tile instead of covering the viewport. Root cause of the "overstretched/broken" visual artifact. Fixed to `cover, cover, 200px 200px`. Also softened the bottom-right gradient (0.18→0.12 opacity).
@@ -119,7 +207,7 @@
 | public/index.html | public/ | SEO-optimised HTML shell — OG, JSON-LD, preconnect |
 | public/manifest.json | public/ | Fixed PWA manifest |
 | public/robots.txt | public/ | Crawl rules + sitemap pointer |
-| public/sitemap.xml | public/ | Sitemap — update YOUR_DOMAIN_HERE after domain purchase |
+| public/sitemap.xml | public/ | Sitemap — now points to `www.pointpoker.app` |
 | PROGRESS.md | repo root | This file |
 
 ---

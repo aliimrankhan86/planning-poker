@@ -138,6 +138,47 @@
       }
     },
 
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+
+        "email": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+        },
+        "displayName": {
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "plan": {
+          ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro')"
+        },
+        "billingStatus": {
+          ".validate": "newData.isString() && (newData.val() === 'inactive' || newData.val() === 'checkout_started' || newData.val() === 'active')"
+        },
+        "billingCycle": {
+          ".validate": "!newData.exists() || (newData.isString() && (newData.val() === 'monthly' || newData.val() === 'annual'))"
+        },
+        "currency": {
+          ".validate": "!newData.exists() || (newData.isString() && (newData.val() === 'GBP' || newData.val() === 'USD' || newData.val() === 'EUR'))"
+        },
+        "proKey": {
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length === 19)"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "lastLoginAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "checkoutStartedAt": {
+          ".validate": "!newData.exists() || newData.isNumber()"
+        },
+        "proActivatedAt": {
+          ".validate": "!newData.exists() || newData.isNumber()"
+        }
+      }
+    },
+
     // Block all reads/writes to any path not explicitly defined above.
     // This prevents abuse of arbitrary Firebase paths.
     "$other": {
