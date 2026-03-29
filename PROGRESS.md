@@ -86,6 +86,9 @@
     - signed-in Pro users who open their own bookmarked `/t/<team-slug>` URL now enter the room directly
     - guest join forms clear the previous signed-in user's display name on sign-out/shared-device flows
     - free-tier upsell strip is now suppressed inside Pro rooms even if Firebase auth is interrupted on another tab mid-session
+  - Final polish after the latest Atlas rerun:
+    - `Plans` anchor now lands closer to the actual plans cards instead of feeling too low
+    - signed-in Free footer copy is now phrased as workspace guidance rather than public-marketing tagline copy
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
@@ -138,7 +141,6 @@
   - Connect `www.pointpoker.app` domain to Vercel and verify production routing
   - Re-run final live QA on production after the latest mobile/account-state/team-room fixes
   - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate
-  - Decide whether the signed-out `Plans` anchor should scroll slightly higher for cleaner landing-page alignment
   - Run full E2E QA pass on production URL (see `QA_TEST_PLAN.md`)
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist

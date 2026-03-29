@@ -613,6 +613,7 @@ body::before {
 .seo-ul li::before { content: "♦"; position: absolute; left: 0; color: var(--gold); font-size: .6rem; top: .35em; opacity: .7; }
 .seo-ul strong { color: rgba(239,242,247,.88); font-weight: 600; }
 .scroll-target { scroll-margin-top: 92px; }
+#plans.scroll-target { scroll-margin-top: 72px; }
 .seo-plan-section {
   background: rgba(255,255,255,.045);
   border: 1px solid rgba(255,255,255,.10);
@@ -2455,7 +2456,7 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
             {signedIn
               ? isPro
                 ? "Your Pro workspace is live. Reuse your fixed Team Room, share invite links quickly, and keep sprint history attached to your account."
-                : "You are signed in on the free plan. Create and join sessions instantly now, then upgrade later when you need a permanent Team Room."
+                : "Your Free workspace is ready. Create and join sessions now, then upgrade only when you want a permanent Team Room."
               : "Free, real-time planning poker for agile and Scrum teams. No sign-up required. Works in any browser."}
           </p>
           {!signedIn && (
