@@ -5028,6 +5028,8 @@ function JoinScreen({
   const teamUrlCopiedRef = useRef(null);
   const autoEnterOwnTeamRoomRef = useRef(false);
   const lastNameSeedKeyRef = useRef(nameSeedKey);
+  const lastNameSeedValueRef = useRef(signedIn ? defaultName : "");
+  const nameEditedRef = useRef(false);
   const nameValueRef = useRef(signedIn ? defaultName : "");
 
   const clearErr = () => setErr("");
@@ -5052,13 +5054,35 @@ function JoinScreen({
   }, []);
 
   useEffect(() => {
+    nameEditedRef.current = nameEdited;
+  }, [nameEdited]);
+
+  useEffect(() => {
     if (lastNameSeedKeyRef.current !== nameSeedKey) {
+      const prevSeedKey = lastNameSeedKeyRef.current;
+      const prevUserKey = String(prevSeedKey).split(":")[0];
+      const nextUserKey = String(nameSeedKey).split(":")[0];
+      const currentVisibleName = (nameInputRef.current?.value || nameValueRef.current || "").trim();
+      const previousSeedName = lastNameSeedValueRef.current;
       lastNameSeedKeyRef.current = nameSeedKey;
-      setNameEdited(false);
       const nextName = signedIn ? defaultName : "";
-      nameValueRef.current = nextName;
-      setNameDraft(nextName);
-      if (nameInputRef.current) nameInputRef.current.value = nextName;
+      const sameSignedInUser = !!signedIn && prevUserKey && prevUserKey === nextUserKey;
+      const preserveCustomName =
+        sameSignedInUser &&
+        nameEditedRef.current &&
+        !!currentVisibleName &&
+        currentVisibleName !== previousSeedName;
+
+      if (preserveCustomName) {
+        nameValueRef.current = currentVisibleName;
+        setNameDraft(currentVisibleName);
+      } else {
+        setNameEdited(false);
+        nameValueRef.current = nextName;
+        setNameDraft(nextName);
+        if (nameInputRef.current) nameInputRef.current.value = nextName;
+      }
+      lastNameSeedValueRef.current = preserveCustomName ? currentVisibleName : nextName;
     }
   }, [nameSeedKey, signedIn, defaultName]);
 
