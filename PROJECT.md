@@ -49,8 +49,17 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Pricing/account state messaging is more explicit about Free vs Pro and about Stripe checkout still being blocked by missing live links
   - Short-term monetisation direction is now explicit: activation code remains the simplest temporary Pro-entitlement path until live Stripe checkout exists
   - Pricing and auth surfaces now explicitly guide users toward account creation + activation code when Stripe checkout is not yet live
+  - LoginModal is now wider and shorter, with a themed internal scrollbar and a clearer SaaS hierarchy: auth first, Pro activation second, billing/plans third
+  - Pro activation now depends on an explicit Firebase `/licenses/{key}` rules path; `database.rules.json` includes read-only client validation rules for activation keys
+  - Pro activation UX is now account-bound by design: anonymous users are gated into sign-in/create-account first, while signed-in users get the actual activation form with Enter-to-activate support
+  - Home screen is now account-aware: signed-in users no longer see the public landing page or marketing nav, and instead get a simpler workspace dashboard
+  - Free users now see a simplified logged-in workspace with Create/Join/Team actions plus a focused Upgrade-to-Pro path
+  - Pro users now see a dedicated Team Room workspace card with a stable shareable URL derived from a persisted `teamRoomName` field on their account profile
+  - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
+  - Live verification now confirms deployment parity, free auth, free-account state, and the signed-out upgrade flow on production
 - Still pending:
-  - Reconcile Atlas-reported live auth/sign-in failure against the currently deployed build
+  - Create or verify a real Pro test account so Pro navbar/history/team-room behaviour can be verified on production
+  - Re-publish Firebase Realtime Database rules so the new `/licenses/{key}` activation path is live
   - Connect domain in Vercel and verify production routing
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist

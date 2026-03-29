@@ -39,6 +39,18 @@
   - Short-term paid-user recommendation clarified: activation code remains the simplest clean entitlement path before live Stripe checkout exists
   - Pricing CTA now explicitly pivots to activation-code setup when checkout links are still placeholders
   - Auth modal now explains the short-term Pro path more clearly: create account, then activate Pro with code
+  - Latest Atlas live check passed deployment parity, free auth, signed-out upgrade flow, and free-account state on production
+  - Atlas confirmed `Plans` and `FAQ` now exist and scroll correctly on the live site
+  - Remaining live gap is now limited to Pro-account verification; current evidence suggests the supplied Pro credentials may not correspond to a valid account yet
+  - LoginModal widened and rebalanced to feel more SaaS-like: primary auth actions first, activation code behind a secondary panel, pricing/help tertiary
+  - LoginModal now has an explicit themed internal scrollbar and reduced vertical density on desktop
+  - Root cause found for activation-code failure: Firebase rules did not expose `/licenses/{key}`; `database.rules.json` now includes a read-only `licenses` path for client validation
+  - Activation UX tightened after Atlas review: anonymous users no longer see a runnable Pro-code form; they are explicitly gated into sign-in/create-account first, while signed-in users retain the real activation form with Enter support
+  - Home screen is now account-aware: signed-in users no longer see the public marketing landing page, plans CTA, or FAQ nav; they see a workspace-style dashboard instead
+  - Free users now see a simplified signed-in dashboard with Create/Join/Team actions plus a focused Upgrade-to-Pro route
+  - Pro users now see a dedicated Team Room card with a stable account-linked room URL and one-click copy/open actions
+  - User profiles now persist `teamRoomName`, enabling a stable dedicated Team Room identity for signed-in Pro accounts
+  - Signed-in users now have their display name prefilled in room flows, and the footer becomes account-oriented rather than generic plan-marketing
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
@@ -67,7 +79,8 @@
   - Firebase Database Rules deployed with history path ✅
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
-  - Reconcile Atlas-reported auth/login failure against the live deployed build and confirm deployment parity
+  - Create or verify a real Pro test account, then re-run Atlas checks for Pro navbar/history/team-room state
+  - Re-publish Firebase rules so `/licenses/{key}` activation works in production
   - Connect `www.pointpoker.app` domain to Vercel and verify production routing
   - Run full E2E QA pass on production URL (see `QA_TEST_PLAN.md`)
   - Replace Stripe placeholder links and finish paid activation wiring
@@ -92,14 +105,20 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Replaced the overly long QA prompt with a concise reusable Atlas prompt in `QA_PROMPT.md`
   - Reviewed the simplest pre-Stripe paid-user path: keep account creation + activation code as the primary entitlement route until Stripe is live
   - Updated pricing/auth copy so the app now explicitly guides users toward activation-code Pro setup while Stripe checkout is unavailable
-  - `npm run build` clean — 182.76 kB gzipped
+  - Captured newer Atlas findings: deployment parity and free auth are now passing on live; remaining blocker is lack of a working Pro test account for entitlement verification
+  - Widened LoginModal, reduced vertical density, added themed internal scrolling, and moved activation code into a more sensible secondary SaaS-style panel
+  - Found and fixed the real activation-code blocker in Firebase rules: `/licenses/{key}` is now defined as a read-only validation path in `database.rules.json`
+  - Tightened Pro activation flow so activation is clearly account-bound: signed-out users now see a sign-in gate instead of a misleading activatable code field; signed-in users can activate via button or Enter
+  - Reworked the signed-in home experience into an account-aware workspace: public landing content is signed-out only, while logged-in Free vs Pro users see simpler dashboards aligned to their plan state
+  - Persisted `teamRoomName` on user profiles and used it to generate a stable dedicated Team Room card/URL for signed-in Pro accounts
+  - `npm run build` clean — 185.75 kB gzipped
 
 ---
 
 ## 📍 Current Status
 **Phase:** 1 / 3 crossover — Auth foundation coded, monetisation still blocked on Stripe setup
-**Active step:** Production-focused QA and auth/upgrade hardening, including live verification of the deployed sign-in flow
-**Remaining:** Resolve Atlas auth mismatch if real, connect domain, add live Stripe links/webhook, then verify real Pro after Stripe is live
+**Active step:** Push the account-aware home/workspace redesign, then verify Pro activation + signed-in home UX on production
+**Remaining:** verify a working Pro account, then continue Stripe/domain launch work
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

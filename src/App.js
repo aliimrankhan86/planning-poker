@@ -340,6 +340,164 @@ body::before {
   text-align: center; color: rgba(245,251,247,.76);
   font-size: .92rem; margin-bottom: 36px; font-weight: 300; letter-spacing: .5px;
 }
+.join-sub.workspace {
+  margin-bottom: 24px;
+  letter-spacing: .2px;
+}
+.workspace-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.workspace-card {
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(158,234,196,.14);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(255,255,255,.02);
+}
+.workspace-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.workspace-label {
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.46);
+  margin-bottom: 8px;
+}
+.workspace-title {
+  color: var(--cream);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+.workspace-copy {
+  margin: 6px 0 0;
+  color: rgba(239,242,247,.62);
+  font-size: .8rem;
+  line-height: 1.55;
+}
+.workspace-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  color: rgba(239,242,247,.70);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.workspace-pill.pro {
+  color: var(--gold2);
+  background: rgba(241,185,63,.10);
+  border-color: rgba(241,185,63,.26);
+}
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.workspace-stat {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(158,234,196,.10);
+  background: rgba(255,255,255,.025);
+}
+.workspace-stat-k {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.44);
+}
+.workspace-stat-v {
+  display: block;
+  color: var(--cream);
+  font-size: .86rem;
+  line-height: 1.45;
+}
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.workspace-action-btn {
+  flex: 1;
+  min-width: 160px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(158,234,196,.14);
+  background: rgba(255,255,255,.03);
+  color: var(--cream);
+  font-family: 'Outfit', sans-serif;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.workspace-action-btn:hover {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(158,234,196,.24);
+}
+.workspace-action-btn.gold {
+  border-color: rgba(241,185,63,.24);
+  background: rgba(241,185,63,.08);
+  color: var(--gold2);
+}
+.workspace-team-url {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(126,230,255,.16);
+  background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06));
+}
+.workspace-team-url code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: .8rem;
+  color: var(--mint2);
+}
+.workspace-team-url button {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(158,234,196,.16);
+  background: rgba(7,17,14,.42);
+  color: var(--cream);
+  font-family: 'Outfit', sans-serif;
+  font-size: .76rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.workspace-team-url button:hover {
+  background: rgba(255,255,255,.08);
+}
+.workspace-inline-note {
+  margin-top: 10px;
+  color: rgba(239,242,247,.52);
+  font-size: .76rem;
+  line-height: 1.5;
+}
 .lbl {
   display: block; font-size: .72rem; font-weight: 600;
   letter-spacing: 1.8px; text-transform: uppercase;
@@ -532,6 +690,12 @@ body::before {
   .seo-grid, .seo-faq-grid, .seo-plan-grid { grid-template-columns: 1fr; }
   .seo-section h2.seo-h2 { font-size: 1.5rem; }
   .seo-section { margin-top: 40px; }
+  .workspace-grid { grid-template-columns: 1fr; }
+  .workspace-top,
+  .workspace-team-url,
+  .workspace-actions { flex-direction: column; align-items: stretch; }
+  .workspace-action-btn { min-width: 0; width: 100%; }
+  .workspace-pill { align-self: flex-start; }
 }
 
 /* ══════════════════════ ROOM HEADER (game view) ══════════════════════
@@ -1178,12 +1342,19 @@ body::before {
 }
 .pro-key-toggle:hover { color: var(--gold2); }
 .pro-key-body { margin-top: 12px; }
+.pro-key-gate {
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(158,234,196,.12);
+  background: rgba(255,255,255,.03);
+}
 .pro-key-copy {
   font-size: .78rem;
   line-height: 1.55;
   color: rgba(239,242,247,.60);
   margin-bottom: 12px;
 }
+.pro-key-copy:last-child { margin-bottom: 0; }
 .pro-key-row { display: flex; gap: 8px; }
 .pro-key-input {
   flex: 1; padding: 10px 14px; border-radius: var(--radius-sm);
@@ -1202,6 +1373,12 @@ body::before {
 }
 .pro-key-btn:hover:not(:disabled) { background: rgba(201,145,42,.18); border-color: rgba(201,146,42,.55); }
 .pro-key-btn:disabled { opacity: .5; cursor: not-allowed; }
+.pro-key-btn.full {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .pro-key-status { font-size: .76rem; margin-top: 8px; line-height: 1.45; }
 .pro-key-status.success { color: #2ecc71; }
 .pro-key-status.error   { color: #e74c3c; }
@@ -1417,9 +1594,28 @@ body::before {
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
     linear-gradient(155deg, rgba(12,28,23,.96) 0%, rgba(7,15,13,.98) 58%, rgba(4,10,9,1) 100%);
   border: 1px solid rgba(158,234,196,.14); border-radius: 24px;
-  padding: 40px 36px 36px; width: 100%; max-width: 400px;
+  padding: 38px 34px 32px; width: 100%; max-width: 476px;
   box-shadow: 0 44px 110px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.06);
   position: relative; animation: fadeUp .3s ease;
+  max-height: min(820px, calc(100vh - 48px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) rgba(255,255,255,.05);
+}
+.login-modal::-webkit-scrollbar { width: 10px; }
+.login-modal::-webkit-scrollbar-track {
+  background: rgba(255,255,255,.04);
+  border-radius: 999px;
+}
+.login-modal::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--gold2), var(--gold));
+  border: 2px solid rgba(255,255,255,.03);
+}
+.login-modal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--gold3), var(--gold2));
 }
 .login-modal::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 20px 20px 0 0;
@@ -1436,19 +1632,19 @@ body::before {
 .login-modal-chip { display: flex; justify-content: center; margin-bottom: 20px; }
 .login-modal-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.9rem; font-weight: 700; color: var(--cream);
+  font-size: 1.86rem; font-weight: 700; color: var(--cream);
   letter-spacing: -0.03em; text-align: center; margin-bottom: 6px;
 }
 .login-modal-sub {
   font-size: .84rem; color: rgba(239,242,247,.60); text-align: center;
-  margin-bottom: 28px; font-weight: 300; line-height: 1.55;
+  margin-bottom: 20px; font-weight: 300; line-height: 1.55;
 }
 .account-status-card {
-  margin-bottom: 18px;
+  margin-bottom: 14px;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(158,234,196,.12);
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 13px 16px;
 }
 .account-status-row {
   display: flex;
@@ -1486,15 +1682,76 @@ body::before {
 }
 .account-status-copy {
   font-size: .8rem;
-  line-height: 1.55;
+  line-height: 1.6;
   color: rgba(239,242,247,.68);
 }
 .login-mode-hint {
-  margin: -4px 0 18px;
+  margin: -2px 0 16px;
   text-align: center;
   font-size: .78rem;
   line-height: 1.5;
   color: rgba(255,217,120,.82);
+}
+.login-upgrade-card {
+  margin-top: 18px;
+  padding: 16px 18px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(158,234,196,.12);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
+    rgba(255,255,255,.02);
+}
+.login-upgrade-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.login-upgrade-title {
+  color: var(--cream);
+  font-size: .92rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+.login-upgrade-sub {
+  margin: 5px 0 0;
+  color: rgba(239,242,247,.56);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.login-upgrade-link {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(241,185,63,.20);
+  background: rgba(241,185,63,.08);
+  color: var(--gold2);
+  font-family: 'Outfit', sans-serif;
+  font-size: .74rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.login-upgrade-link:hover {
+  background: rgba(241,185,63,.13);
+  border-color: rgba(241,185,63,.34);
+  color: var(--gold3);
+}
+.login-upgrade-note {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(158,234,196,.10);
+  background: rgba(255,255,255,.02);
+  color: rgba(239,242,247,.60);
+  font-size: .78rem;
+  line-height: 1.55;
+}
+.login-upgrade-note strong {
+  color: rgba(255,217,120,.92);
+  font-weight: 600;
 }
 .login-modal-divider {
   display: flex; align-items: center; gap: 12px;
@@ -1521,8 +1778,8 @@ body::before {
 .login-modal-upgrade a:hover { border-bottom-color: var(--gold2); }
 .login-secondary-btn {
   width: 100%;
-  margin-top: 14px;
-  margin-bottom: 14px;
+  margin-top: 12px;
+  margin-bottom: 8px;
   padding: 11px 14px;
   border-radius: 12px;
   border: 1px solid rgba(158,234,196,.14);
@@ -1538,8 +1795,36 @@ body::before {
   background: rgba(255,255,255,.06);
   border-color: rgba(158,234,196,.24);
 }
+.login-pro-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.07);
+}
+.login-section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: rgba(255,217,120,.88);
+  font-family: 'Outfit', sans-serif;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.login-section-toggle:hover { color: var(--gold3); }
+.login-pro-copy {
+  margin: 10px 0 14px;
+  font-size: .78rem;
+  line-height: 1.55;
+  color: rgba(239,242,247,.58);
+}
 .auth-mode-row {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;
 }
 .auth-mode-btn {
   appearance: none; border: 1px solid rgba(158,234,196,.12); background: rgba(255,255,255,.03);
@@ -1838,8 +2123,10 @@ body::before {
   .nav-link-btn { padding: 6px 10px; font-size: .68rem; }
   .nav-btn-register { font-size: .78rem; padding: 7px 14px; }
   .nav-upgrade-sub { display: none; }
-  .login-modal { padding: 36px 22px 28px; }
+  .login-modal { padding: 34px 22px 26px; max-width: 100%; }
   .auth-mode-row { grid-template-columns: 1fr; }
+  .login-upgrade-head { flex-direction: column; align-items: stretch; }
+  .login-upgrade-link { width: 100%; justify-content: center; }
   .nav-account { display: none; }
   .game-upgrade-strip { flex-direction: column; align-items: flex-start; gap: 8px; }
   .footer-plan-item:last-of-type .footer-plan-text { display: none; }
@@ -1989,16 +2276,17 @@ function NavBar({
    Three-column footer: brand, legal links, product links.
    onCookieSettings: resets cookie consent so the banner re-appears.
 ═══════════════════════════════════════════════════════════════ */
-function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, onNavTerms, onNavPrivacy }) {
+function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser, onNavTerms, onNavPrivacy }) {
   const year = new Date().getFullYear();
   const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
   const isPro = currentPlan === "pro";
+  const signedIn = !!currentUser;
 
   return (
     <footer className="site-footer" aria-label="Site footer">
 
       {/* ── Free vs Pro comparison bar ── */}
-      <div className="footer-plan-bar">
+      {!signedIn && <div className="footer-plan-bar">
         <div className="footer-plan-item">
           <span className="footer-plan-badge free">Free</span>
           <span className="footer-plan-text">Up to 6 voters · All card decks · No account needed</span>
@@ -2018,7 +2306,7 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, onNavTerms, 
             ✓ You're on Pro
           </span>
         )}
-      </div>
+      </div>}
 
       <div className="footer-inner">
 
@@ -2049,16 +2337,30 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, onNavTerms, 
 
         {/* Column 3 — Product */}
         <div className="footer-col-links">
-          <div className="footer-col-title">Product</div>
-          <a href="/" className="footer-link">Free Planning Poker</a>
-          {isPro ? (
-            <span className="footer-link" style={{ color: "var(--gold2)", cursor: "default" }}>
-              Pro Plan ✓ Active
-            </span>
+          <div className="footer-col-title">{signedIn ? "Account" : "Product"}</div>
+          {signedIn ? (
+            <>
+              <span className="footer-link" style={{ color: "rgba(239,242,247,.62)", cursor: "default" }}>
+                {isPro ? "Pro workspace active" : "Free workspace active"}
+              </span>
+              {!isPro && (
+                <button className="footer-link" onClick={onShowPricing}>Upgrade to Pro</button>
+              )}
+              <a href={`mailto:${support}`} className="footer-link">Billing &amp; Support</a>
+            </>
           ) : (
-            <button className="footer-link" onClick={onShowPricing}>Pro Plan — what's included</button>
+            <>
+              <a href="/" className="footer-link">Free Planning Poker</a>
+              {isPro ? (
+                <span className="footer-link" style={{ color: "var(--gold2)", cursor: "default" }}>
+                  Pro Plan ✓ Active
+                </span>
+              ) : (
+                <button className="footer-link" onClick={onShowPricing}>Pro Plan — what's included</button>
+              )}
+              <a href={`mailto:${support}`} className="footer-link">Contact &amp; Support</a>
+            </>
           )}
-          <a href={`mailto:${support}`} className="footer-link">Contact &amp; Support</a>
         </div>
       </div>
 
@@ -2113,6 +2415,9 @@ function LoginModal({
   const [keyStatus, setKeyStatus] = useState(null);
   const isPro = currentPlan === "pro";
   const upgradeIntent = entryIntent === "upgrade";
+  const [showActivation, setShowActivation] = useState(
+    () => upgradeIntent || (!!currentUser && !isPro)
+  );
 
   const title = currentUser
     ? isPro
@@ -2231,6 +2536,10 @@ function LoginModal({
   };
 
   const handleKey = async () => {
+    if (!currentUser) {
+      setKeyStatus("login");
+      return;
+    }
     if (!keyInput.trim()) return;
     setKeyStatus("loading");
     const result = await validateAndSavePro(keyInput.trim(), currentUser);
@@ -2247,7 +2556,7 @@ function LoginModal({
 
   return (
     <div className="login-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="login-modal" role="dialog" aria-modal="true" aria-label="Log in">
+      <div className="login-modal" role="dialog" aria-modal="true" aria-label={title}>
         <button className="login-modal-close" onClick={onClose} aria-label="Close">×</button>
 
         {/* Chip */}
@@ -2372,8 +2681,6 @@ function LoginModal({
                 {authStatus === "loading" ? "Sending reset…" : "Send reset link"}
               </button>
             )}
-
-            <div className="login-modal-divider">or</div>
           </>
         )}
 
@@ -2402,55 +2709,90 @@ function LoginModal({
           </button>
         )}
 
-        {!isPro && onShowPricing && (
-          <button
-            type="button"
-            className="login-secondary-btn"
-            onClick={onShowPricing}
-          >
-            View plans and Pro features
-          </button>
-        )}
+        {!isPro && (
+          <div className="login-upgrade-card">
+            <div className="login-upgrade-head">
+              <div>
+                <div className="login-upgrade-title">Need Pro for your team?</div>
+                <p className="login-upgrade-sub">
+                  Permanent Team Room, Sprint History, and up to 20 voters.
+                </p>
+              </div>
+              {onShowPricing && (
+                <button
+                  type="button"
+                  className="login-upgrade-link"
+                  onClick={onShowPricing}
+                >
+                  View plans
+                </button>
+              )}
+            </div>
 
-        <label className="lbl">Pro Activation Key</label>
-        <input
-          className="inp"
-          placeholder="PPRO-XXXX-XXXX-XXXX"
-          value={keyInput}
-          onChange={(e) => { setKeyInput(e.target.value.toUpperCase()); setKeyStatus(null); }}
-          onKeyDown={(e) => e.key === "Enter" && handleKey()}
-          style={{ letterSpacing: "0.1em", fontFamily: "monospace", marginBottom: 8 }}
-          maxLength={19}
-        />
-        {keyStatus === "loading" && (
-          <div className="pro-key-status" style={{ color: "rgba(239,242,247,.55)" }}>Verifying…</div>
+            {currentUser ? (
+              <div className="login-pro-panel">
+                <button
+                  type="button"
+                  className="login-section-toggle"
+                  onClick={() => setShowActivation((v) => !v)}
+                  aria-expanded={showActivation}
+                >
+                  {showActivation ? "▾" : "▸"} I already have an activation code
+                </button>
+                {showActivation && (
+                  <>
+                    <p className="login-pro-copy">
+                      Best for early customers and internal team access before Stripe checkout is live. Activate once and this account switches to Pro immediately.
+                    </p>
+                    <label className="lbl">Pro Activation Key</label>
+                    <input
+                      className="inp"
+                      placeholder="PPRO-XXXX-XXXX-XXXX"
+                      value={keyInput}
+                      onChange={(e) => { setKeyInput(e.target.value.toUpperCase()); setKeyStatus(null); }}
+                      onKeyDown={(e) => e.key === "Enter" && handleKey()}
+                      style={{ letterSpacing: "0.1em", fontFamily: "monospace", marginBottom: 8 }}
+                      maxLength={19}
+                    />
+                    {keyStatus === "loading" && (
+                      <div className="pro-key-status" style={{ color: "rgba(239,242,247,.55)" }}>Verifying…</div>
+                    )}
+                    {keyStatus === "ok" && (
+                      <div className="pro-key-status success">✓ Pro activated for this account.</div>
+                    )}
+                    {keyStatus === "invalid" && (
+                      <div className="pro-key-status error">Key not recognised. Check the format: PPRO-XXXX-XXXX-XXXX</div>
+                    )}
+                    {keyStatus === "error" && (
+                      <div className="pro-key-status error">Could not verify your code right now. Check your connection and confirm activation access is configured.</div>
+                    )}
+                    <button
+                      className="btn-primary"
+                      style={{ marginTop: 12 }}
+                      onClick={handleKey}
+                      disabled={keyStatus === "loading" || keyStatus === "ok"}
+                    >
+                      {keyStatus === "loading" ? "Verifying…" : "Activate Pro"}
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="login-upgrade-note">
+                <strong>Pro access attaches to an account.</strong> Create or sign in first, then come back here to activate your code so Team Room, billing, and sprint history stay with you across devices.
+              </div>
+            )}
+          </div>
         )}
-        {keyStatus === "ok" && (
-          <div className="pro-key-status success">✓ Pro activated for this account.</div>
-        )}
-        {keyStatus === "invalid" && (
-          <div className="pro-key-status error">Key not recognised. Check the format: PPRO-XXXX-XXXX-XXXX</div>
-        )}
-        {keyStatus === "error" && (
-          <div className="pro-key-status error">Could not connect. Check your internet and try again.</div>
-        )}
-        <button
-          className="btn-primary"
-          style={{ marginTop: 12 }}
-          onClick={handleKey}
-          disabled={keyStatus === "loading" || keyStatus === "ok"}
-        >
-          {keyStatus === "loading" ? "Verifying…" : "Activate Pro"}
-        </button>
 
         <div className="login-modal-upgrade">
-          Don't have a key?{" "}
+          Need help with access or billing?{" "}
           <button
             type="button"
             onClick={onShowPricing}
             style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600, border: "none", background: "none", padding: 0, cursor: "pointer" }}
           >
-            See Pro plans ↗
+            Review plans ↗
           </button>
         </div>
       </div>
@@ -2605,9 +2947,11 @@ export default function App() {
             createdAt: Date.now(),
           });
         } else {
+          const current = snap.val() || {};
           await update(ref(db, `users/${user.uid}`), {
             email: user.email || "",
             displayName: user.displayName || "",
+            teamRoomName: current.teamRoomName || deriveTeamRoomName(user.displayName || "", user.email || ""),
             lastLoginAt: Date.now(),
           });
         }
@@ -3210,7 +3554,7 @@ export default function App() {
           currentPlan={currentPlan}
           onLogout={handleLogout}
           onHistory={() => setShowHistoryModal(true)}
-          showMarketingNav={screen !== "game"}
+          showMarketingNav={screen !== "game" && !authUser}
         />
 
         <div className="app">
@@ -3229,6 +3573,9 @@ export default function App() {
               prefillTeam={prefillTeam}
               proMode={proMode}
               onShowPricing={openPricingModal}
+              currentUser={authUser}
+              currentPlan={currentPlan}
+              accountProfile={accountProfile}
             />
           )}
           {screen === "game" && !roomData && (
@@ -3270,6 +3617,7 @@ export default function App() {
           onCookieSettings={resetCookieBanner}
           onShowPricing={openPricingModal}
           currentPlan={currentPlan}
+          currentUser={authUser}
           onNavTerms={() => navTo("/terms")}
           onNavPrivacy={() => navTo("/privacy")}
         />
@@ -3495,11 +3843,31 @@ function getAuthErrorMessage(error) {
   }
 }
 
+function deriveDisplayNameFallback(email = "") {
+  const local = (email || "").split("@")[0]?.trim();
+  if (!local) return "Alex Johnson";
+  return local
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function deriveTeamRoomName(displayName = "", email = "") {
+  const base = (displayName || deriveDisplayNameFallback(email) || "Team").trim();
+  if (!base) return "My Team";
+  return /team$/i.test(base) ? base : `${base} Team`;
+}
+
 async function saveUserProfile(user, profile = {}) {
   if (!user?.uid) return;
   const nextProfile = {
     email: user.email || profile.email || "",
     displayName: profile.displayName || user.displayName || "",
+    teamRoomName: profile.teamRoomName || deriveTeamRoomName(profile.displayName || user.displayName || "", user.email || profile.email || ""),
     plan: profile.plan || "free",
     billingStatus: profile.billingStatus || "inactive",
     createdAt: profile.createdAt || Date.now(),
@@ -3517,6 +3885,7 @@ async function markCheckoutIntent(user, billing, currency) {
     checkoutStartedAt: Date.now(),
     email: user.email || "",
     displayName: user.displayName || "",
+    teamRoomName: deriveTeamRoomName(user.displayName || "", user.email || ""),
   });
 }
 
@@ -3532,6 +3901,7 @@ async function validateAndSavePro(key, user = null) {
       await update(ref(db, `users/${user.uid}`), {
         email: user.email || "",
         displayName: user.displayName || "",
+        teamRoomName: deriveTeamRoomName(user.displayName || "", user.email || ""),
         plan: "pro",
         billingStatus: "active",
         proKey: formatted,
@@ -4186,6 +4556,11 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
   ];
 
   const handleActivate = async () => {
+    if (!currentUser) {
+      setBillingStatus("login");
+      if (onRequireLogin) onRequireLogin();
+      return;
+    }
     if (!keyInput.trim()) return;
     setKeyStatus("checking");
     const result = await validateAndSavePro(keyInput, currentUser);
@@ -4362,49 +4737,66 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
             onClick={() => setShowKey(v => !v)}
             aria-expanded={showKey}
           >
-            {showKey ? "▾" : "▸"} Activate Pro with a code
+            {showKey ? "▾" : "▸"} {currentUser ? "Activate Pro with a code" : "Sign in to activate Pro with a code"}
           </button>
           {showKey && (
             <div className="pro-key-body">
-              <p className="pro-key-copy">
-                This is the simplest short-term Pro path while Stripe checkout is still being finalised. Create or sign in to your account first, then activate your code here.
-              </p>
-              <div className="pro-key-row">
-                <input
-                  type="text"
-                  className="pro-key-input"
-                  placeholder="PPRO-XXXX-XXXX-XXXX"
-                  value={keyInput}
-                  onChange={e => {
-                    setKeyInput(e.target.value.toUpperCase());
-                    setKeyStatus(null);
-                  }}
-                  maxLength={19}
-                  spellCheck={false}
-                />
-                <button
-                  className="pro-key-btn"
-                  onClick={handleActivate}
-                  disabled={keyStatus === "checking" || !keyInput.trim()}
-                >
-                  {keyStatus === "checking" ? "…" : "Activate"}
-                </button>
-              </div>
-              {keyStatus === "ok" && (
-                <p className="pro-key-status success">
-                  ✓ Pro activated — your permanent team room is unlocked. Refresh to continue.
-                </p>
-              )}
-              {keyStatus === "invalid" && (
-                <p className="pro-key-status error">
-                  Key not recognised. Check your confirmation email or{" "}
-                  <a href={`mailto:${support}`}>contact support</a>.
-                </p>
-              )}
-              {keyStatus === "error" && (
-                <p className="pro-key-status error">
-                  Could not reach our servers. Check your connection and try again.
-                </p>
+              {!currentUser ? (
+                <div className="pro-key-gate">
+                  <p className="pro-key-copy">
+                    Pro access is attached to your account, not just this browser. Sign in or create your account first, then return here to activate your code.
+                  </p>
+                  <button
+                    className="pro-key-btn full"
+                    onClick={() => onRequireLogin?.()}
+                  >
+                    Sign in or create account
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="pro-key-copy">
+                    This is the simplest short-term Pro path while Stripe checkout is still being finalised. Sign in once, then activate your code here.
+                  </p>
+                  <div className="pro-key-row">
+                    <input
+                      type="text"
+                      className="pro-key-input"
+                      placeholder="PPRO-XXXX-XXXX-XXXX"
+                      value={keyInput}
+                      onChange={e => {
+                        setKeyInput(e.target.value.toUpperCase());
+                        setKeyStatus(null);
+                      }}
+                      onKeyDown={(e) => e.key === "Enter" && handleActivate()}
+                      maxLength={19}
+                      spellCheck={false}
+                    />
+                    <button
+                      className="pro-key-btn"
+                      onClick={handleActivate}
+                      disabled={keyStatus === "checking" || !keyInput.trim()}
+                    >
+                      {keyStatus === "checking" ? "…" : "Activate"}
+                    </button>
+                  </div>
+                  {keyStatus === "ok" && (
+                    <p className="pro-key-status success">
+                      ✓ Pro activated — your permanent team room is unlocked.
+                    </p>
+                  )}
+                  {keyStatus === "invalid" && (
+                    <p className="pro-key-status error">
+                      Key not recognised. Check your confirmation email or{" "}
+                      <a href={`mailto:${support}`}>contact support</a>.
+                    </p>
+                  )}
+                  {keyStatus === "error" && (
+                    <p className="pro-key-status error">
+                      Could not reach our servers. Check your connection and try again.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -4424,19 +4816,43 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
 }
 
 /* ═══════════════════════ JOIN SCREEN ═══════════════════════ */
-function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, proMode, onShowPricing }) {
+function JoinScreen({
+  onCreate,
+  onJoin,
+  onTeamRoom,
+  prefillCode,
+  prefillTeam,
+  proMode,
+  onShowPricing,
+  currentUser,
+  currentPlan = "free",
+  accountProfile,
+}) {
+  const signedIn = !!currentUser;
+  const isPro = currentPlan === "pro";
+  const defaultName = currentUser?.displayName || deriveDisplayNameFallback(currentUser?.email || "");
+  const dedicatedTeamName = accountProfile?.teamRoomName || deriveTeamRoomName(currentUser?.displayName || "", currentUser?.email || "");
+  const dedicatedTeamCode = dedicatedTeamName ? teamCode(dedicatedTeamName) : "";
+  const dedicatedTeamUrl = dedicatedTeamCode ? `${window.location.origin}${teamRoomPath(dedicatedTeamCode)}` : "";
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
-  const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : "create");
-  const [name, setName] = useState("");
+  const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : (signedIn && isPro ? "team" : "create"));
+  const [name, setName] = useState(signedIn ? defaultName : "");
   const [role, setRole] = useState("voter");
   const [deck, setDeck] = useState("fibonacci");
   const [rc, setRc] = useState(prefillCode || "");
-  const [teamName, setTeamName] = useState(prefillTeam || "");
+  const [teamName, setTeamName] = useState(prefillTeam || (signedIn && isPro ? dedicatedTeamName : ""));
   const [err, setErr] = useState("");
 
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
   const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
+
+  useEffect(() => {
+    if (signedIn) {
+      setName(defaultName);
+      if (!prefillTeam && isPro) setTeamName(dedicatedTeamName);
+    }
+  }, [signedIn, defaultName, prefillTeam, isPro, dedicatedTeamName]);
 
   const go = () => {
     if (!name.trim()) { setErr("Please enter your name"); return; }
@@ -4457,6 +4873,11 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
     { r: "observer", icon: "👁", l: "Facilitator", s: "Runs the session and does not vote" },
   ];
 
+  const copyTeamUrl = () => {
+    if (!dedicatedTeamUrl) return;
+    navigator.clipboard.writeText(dedicatedTeamUrl);
+  };
+
   return (
     <div className="join-wrap">
       <div className="join-box">
@@ -4466,13 +4887,104 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
           <BrandMark size={56} label="pointpoker"/>
         </div>
 
-        <h1 className="join-title">Start Estimating</h1>
-        <p className="join-sub">Real-time planning poker for agile teams · Free · No sign-up</p>
+        <h1 className="join-title">{signedIn ? `Welcome back${defaultName ? `, ${defaultName.split(" ")[0]}` : ""}` : "Start Estimating"}</h1>
+        <p className={`join-sub${signedIn ? " workspace" : ""}`}>
+          {signedIn
+            ? isPro
+              ? "Your workspace is ready. Start a room, open your fixed Team Room, or join a shared session."
+              : "Create a room instantly, join a shared session, or upgrade when you want a permanent Team Room."
+            : "Real-time planning poker for agile teams · Free · No sign-up"}
+        </p>
 
-        {/* Pricing CTA — delegates to App-level modal via prop */}
-        <button className="btn-pricing" onClick={onShowPricing}>
-          ✦ Free &amp; Pro Plans — See What's Included
-        </button>
+        {signedIn ? (
+          <div className="workspace-shell">
+            <div className="workspace-card">
+              <div className="workspace-top">
+                <div>
+                  <div className="workspace-label">Account workspace</div>
+                  <div className="workspace-title">
+                    {isPro ? "Your Pro workspace is ready" : "You are signed in on the free plan"}
+                  </div>
+                  <p className="workspace-copy">
+                    {isPro
+                      ? "Use your dedicated Team Room for recurring sprint planning, or create ad-hoc rooms when you need a one-off session."
+                      : "Use Create Room or Join Room for normal sessions. Upgrade only when you want a dedicated Team Room, sprint history, and higher voter capacity."}
+                  </p>
+                </div>
+                <span className={`workspace-pill${isPro ? " pro" : ""}`}>
+                  {isPro ? "Pro active" : "Free plan"}
+                </span>
+              </div>
+            </div>
+
+            <div className="workspace-grid">
+              <div className="workspace-stat">
+                <span className="workspace-stat-k">Display name</span>
+                <span className="workspace-stat-v">{defaultName}</span>
+              </div>
+              <div className="workspace-stat">
+                <span className="workspace-stat-k">{isPro ? "Dedicated Team Room" : "Upgrade when ready"}</span>
+                <span className="workspace-stat-v">
+                  {isPro ? dedicatedTeamCode : `Unlock a fixed Team Room and up to ${PRO_MAX_PLAYERS} voters`}
+                </span>
+              </div>
+            </div>
+
+            {isPro ? (
+              <div className="workspace-card">
+                <div className="workspace-label">Permanent Team Room</div>
+                <div className="workspace-title">{dedicatedTeamName}</div>
+                <p className="workspace-copy">
+                  This is your fixed Team Room URL. Share it once, bookmark it, and reuse the same room every sprint.
+                </p>
+                <div className="workspace-team-url">
+                  <code>{dedicatedTeamUrl}</code>
+                  <button type="button" onClick={copyTeamUrl}>Copy link</button>
+                </div>
+                <div className="workspace-actions" style={{ marginTop: 12 }}>
+                  <button
+                    type="button"
+                    className="workspace-action-btn gold"
+                    onClick={() => { setTab("team"); clearErr(); }}
+                  >
+                    Open Team Room
+                  </button>
+                  <button
+                    type="button"
+                    className="workspace-action-btn"
+                    onClick={() => { setTab("create"); clearErr(); }}
+                  >
+                    Create one-off room
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="workspace-card">
+                <div className="workspace-label">Upgrade path</div>
+                <div className="workspace-title">Get a fixed Team Room when your team is ready</div>
+                <p className="workspace-copy">
+                  Free users can still create and join sessions instantly. Upgrade when you want a permanent URL, sprint history, and more voter capacity.
+                </p>
+                <div className="workspace-actions">
+                  <button type="button" className="workspace-action-btn gold" onClick={onShowPricing}>
+                    Upgrade to Pro
+                  </button>
+                  <button
+                    type="button"
+                    className="workspace-action-btn"
+                    onClick={() => { setTab("create"); clearErr(); }}
+                  >
+                    Create free room
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button className="btn-pricing" onClick={onShowPricing}>
+            ✦ Free &amp; Pro Plans — See What's Included
+          </button>
+        )}
 
         {/* Three-tab navigation */}
         <div className="tab-row">
@@ -4511,8 +5023,13 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
           value={name}
           onChange={(e) => { setName(e.target.value); clearErr(); }}
           onKeyDown={(e) => e.key === "Enter" && go()}
-          autoFocus
+          autoFocus={!signedIn}
         />
+        {signedIn && (
+          <div className="workspace-inline-note">
+            Prefilled from your account. Change it only if you want to join this session under a different visible name.
+          </div>
+        )}
 
         {/* Join Room: room code input */}
         {tab === "join" && (
@@ -4540,6 +5057,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
               value={teamName}
               onChange={(e) => { setTeamName(e.target.value); clearErr(); }}
               onKeyDown={(e) => e.key === "Enter" && go()}
+              readOnly={signedIn && isPro}
             />
             {previewCode && (
               <div className="team-code-preview">
@@ -4548,7 +5066,9 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
               </div>
             )}
             <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
-              Your team's permanent room — reuse the same link every sprint. No setup, no link sharing. Anyone on the team just types the team name and they're in.
+              {signedIn && isPro
+                ? "Your Pro account has a fixed Team Room. Share the same link every sprint and keep it bookmarked for the whole team."
+                : "Your team's permanent room — reuse the same link every sprint. No setup, no link sharing. Anyone on the team just types the team name and they're in."}
             </p>
           </>
         )}
@@ -4600,19 +5120,19 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
             : tab === "join" ? "Join Room →"
             : "Enter Team Room →"}
         </button>
-        {tab === "create" && (
+        {!signedIn && tab === "create" && (
           <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
             Free forever · Up to {FREE_MAX_PLAYERS} voters · Ready in under 10 seconds
           </p>
         )}
-        {tab === "team" && (
+        {!signedIn && tab === "team" && (
           <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
             Pro · Your team's permanent space — same link, every sprint
           </p>
         )}
       </div>
 
-      {/* ── SEO content — rendered in DOM for Googlebot, visible to users ── */}
+      {!signedIn && (
       <section className="seo-section" aria-label="About pointpoker">
         <h2 className="seo-h2">The Fastest Way to Run Sprint Planning — Free, No Sign-up</h2>
         <p className="seo-intro">
@@ -4749,6 +5269,7 @@ function JoinScreen({ onCreate, onJoin, onTeamRoom, prefillCode, prefillTeam, pr
           </div>
         </div>
       </section>
+      )}
     </div>
   );
 }

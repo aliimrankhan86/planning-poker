@@ -149,6 +149,9 @@
         "displayName": {
           ".validate": "newData.isString() && newData.val().length <= 40"
         },
+        "teamRoomName": {
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length > 0 && newData.val().length <= 60)"
+        },
         "plan": {
           ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro')"
         },
@@ -175,6 +178,21 @@
         },
         "proActivatedAt": {
           ".validate": "!newData.exists() || newData.isNumber()"
+        }
+      }
+    },
+
+    // ── LICENSE KEYS ─────────────────────────────────────────────────────────
+    // Temporary pre-Stripe Pro entitlement store. Clients may read an exact key
+    // they already know in order to validate activation, but may never list or
+    // write license data from the app.
+    "licenses": {
+      "$licenseKey": {
+        ".read": true,
+        ".write": false,
+
+        "active": {
+          ".validate": "newData.isBoolean()"
         }
       }
     },
