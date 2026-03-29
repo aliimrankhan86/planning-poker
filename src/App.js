@@ -3060,6 +3060,7 @@ export default function App() {
   const [sessionWarning, setSessionWarning] = useState(false);
   const toastRef = useRef(null);
   const sessionCheckRef = useRef(null);
+  const pendingSessionNameRef = useRef("");
   const showToast = useCallback((msg) => {
     setToast(msg);
     setToastOn(true);
@@ -3201,6 +3202,19 @@ export default function App() {
     });
     return () => unsub();
   }, [code, screen]); // eslint-disable-line
+
+  useEffect(() => {
+    if (screen !== "game" || !code || !myId || !roomData?.players?.[myId]) return;
+    const intendedName = (pendingSessionNameRef.current || "").trim();
+    if (!intendedName) return;
+    const currentPlayerName = (roomData.players[myId]?.name || "").trim();
+    if (!currentPlayerName) return;
+    if (currentPlayerName === intendedName) {
+      pendingSessionNameRef.current = "";
+      return;
+    }
+    update(ref(db, `rooms/${code}/players/${myId}`), { name: intendedName });
+  }, [screen, code, myId, roomData]);
 
   // ── TIMER EFFECT ──────────────────────────────────────────────────
   // Uses refs to avoid the Firebase write → roomData update → effect re-run loop.
@@ -3392,6 +3406,7 @@ export default function App() {
   }, [code, myId]);
 
   const handleCreate = async (name, role, deck = "fibonacci") => {
+    pendingSessionNameRef.current = name;
     const c = mkCode();
     setMyRole(role);
     setCode(c);
@@ -3421,6 +3436,7 @@ export default function App() {
   };
 
   const handleJoin = async (name, role, c) => {
+    pendingSessionNameRef.current = name;
     const snap = await new Promise((res) =>
       onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
     );
@@ -3461,6 +3477,7 @@ export default function App() {
   // team always lands in the same room without needing to share a link.
   // The room is created fresh if nobody is there, or joined if active.
   const handleTeamRoom = async (name, role, teamName, deck = "fibonacci") => {
+    pendingSessionNameRef.current = name;
     const c = teamCode(teamName);
     const founderRoom = isFounderRoom(c);
     // Team Room is a Pro feature. Founder team is always Pro.

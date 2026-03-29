@@ -87,6 +87,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - room-entry actions now resolve the latest typed name from a live ref-backed value so automation timing and quick clicks cannot silently fall back to the account name
     - room-entry actions now also read the live DOM input value first, so browser automation and blur/timing edge cases cannot revert the visible edited name back to the stored account name
     - same-user auth/profile hydration no longer re-seeds the field after a manual edit, so a late-arriving account display name cannot clobber a custom session name typed immediately after page load
+    - room entry now also carries the intended session name into the live room shell and reconciles the player record if needed, eliminating the last remaining race between room creation/join and later state hydration
   - Scrollbar styling is now aligned more closely with the brand system:
     - scrollbar tracks use the same deep-green surface tone as the app background/body
     - scrollbar thumbs remain the existing premium gold/yellow accent

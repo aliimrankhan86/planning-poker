@@ -96,6 +96,7 @@
     - room-entry actions now read the latest typed name from a ref-backed value so fast interactions / automation timing do not fall back to the stored account name
     - room-entry actions now also read the live DOM input value first, so browser automation and blur/timing edge cases cannot fall back to the stored account name
     - late same-user auth/profile hydration no longer re-seeds the field after the user has already typed a custom name
+    - room entry now carries the intended session name into the live room shell and reconciles the player record if needed, removing the last race between room creation/join and later state hydration
   - Scrollbar polish refreshed again:
     - scrollbar tracks now use the same deep-green brand surface as the page background/body
     - scrollbar thumbs remain the existing gold/yellow accent
