@@ -929,6 +929,17 @@ body::before {
 
 /* ══════════════════════ OBSERVER CONTROLS ══════════════════════ */
 .obs-controls { display: flex; flex-direction: column; gap: 10px; }
+/* Danger zone separator — visual break between session management and End Session */
+.obs-danger-divider {
+  display: flex; align-items: center; gap: 8px; margin: 4px 0 2px;
+}
+.obs-danger-divider::before, .obs-danger-divider::after {
+  content: ''; flex: 1; height: 1px; background: rgba(224,72,72,.12);
+}
+.obs-danger-divider span {
+  font-size: .52rem; letter-spacing: 1.8px; text-transform: uppercase;
+  color: rgba(231,76,60,.30); white-space: nowrap;
+}
 .btn-reveal-primary {
   width: 100%; padding: 16px 20px; border: none; border-radius: var(--radius-sm);
   background: linear-gradient(135deg, var(--gold), var(--gold2));
@@ -951,12 +962,14 @@ body::before {
 .btn-next-round:hover { background: linear-gradient(180deg, rgba(75,216,137,.20), rgba(75,216,137,.10)); border-color: rgba(75,216,137,.42); }
 .btn-new-session {
   padding: 13px 14px; border-radius: var(--radius-sm);
-  background: rgba(224,72,72,.08); border: 1px solid rgba(224,72,72,.20);
-  color: rgba(231,76,60,.65); font-family: 'Outfit', sans-serif;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.10);
+  color: rgba(239,242,247,.58); font-family: 'Outfit', sans-serif;
   font-size: .86rem; font-weight: 600; cursor: pointer; transition: all .2s;
   display: flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap;
 }
-.btn-new-session:hover { background: rgba(192,57,43,.15); border-color: rgba(192,57,43,.35); color: #e74c3c; }
+.btn-new-session:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); color: var(--cream); }
+/* When New Sprint is the only button in the row, stretch it full-width */
+.obs-secondary-row .btn-new-session:only-child { flex: 1; }
 .btn-hint { font-size: .6rem; color: rgba(239,242,247,.50); text-align: center; margin-top: 1px; font-style: italic; }
 .btn-end-session {
   width: 100%; padding: 12px 16px; border-radius: var(--radius-sm);
@@ -1121,15 +1134,18 @@ body::before {
 .a-align-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
 .a-align-title { font-size: .72rem; font-weight: 500; color: rgba(239,242,247,.72); }
 .a-align-score { font-size: 1.08rem; font-weight: 700; }
-.a-align-score.good { color: #2ecc71; }
-.a-align-score.ok   { color: var(--gold); }
-.a-align-score.low  { color: #e74c3c; }
+.a-align-score.good    { color: #2ecc71; }
+.a-align-score.ok      { color: var(--gold); }
+.a-align-score.low     { color: rgba(230,126,34,.90); }   /* amber — coaching signal, not an error */
+.a-align-score.neutral { color: rgba(239,242,247,.40); }  /* muted — not enough data yet */
 .a-align-bar-track { height: 5px; border-radius: 3px; background: rgba(255,255,255,.09); overflow: hidden; }
 .a-align-bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
-.a-align-bar-fill.good { background: linear-gradient(90deg,#2ecc71,#27ae60); }
-.a-align-bar-fill.ok   { background: linear-gradient(90deg,var(--gold),var(--gold2)); }
-.a-align-bar-fill.low  { background: linear-gradient(90deg,#e74c3c,#c0392b); }
-.a-align-sub { font-size: .68rem; color: rgba(239,242,247,.48); margin-top: 5px; line-height: 1.4; }
+.a-align-bar-fill.good    { background: linear-gradient(90deg,#2ecc71,#27ae60); }
+.a-align-bar-fill.ok      { background: linear-gradient(90deg,var(--gold),var(--gold2)); }
+.a-align-bar-fill.low     { background: linear-gradient(90deg,#e67e22,#d35400); }  /* amber, not red */
+.a-align-bar-fill.neutral { background: rgba(255,255,255,.07); }
+.a-align-sub  { font-size: .68rem; color: rgba(239,242,247,.48); margin-top: 5px; line-height: 1.4; }
+.a-align-note { font-size: .60rem; color: rgba(239,242,247,.28); margin-top: 3px; font-style: italic; }
 /* Per-story breakdown */
 .a-stories { margin-top: 14px; }
 .a-section-title {
@@ -6065,7 +6081,8 @@ function GameScreen({
                     </div>
                   </>
                 )}
-                {!revealed && (
+
+                {!revealed && (round > 1 || storiesDone > 0) && (
                   <div className="obs-secondary-row">
                     <button
                       className="btn-new-session"
@@ -6077,16 +6094,17 @@ function GameScreen({
                     </button>
                   </div>
                 )}
+                <div className="obs-danger-divider"><span>End session</span></div>
                 <button
                   className="btn-end-session"
                   onClick={() => {
                     if (window.confirm("End the session? This disconnects everyone and permanently deletes all session data.")) onEndSession();
                   }}
                 >
-                  🔴 End Session — Disconnect Everyone
+                  🔴 End Session
                 </button>
                 <div className="end-session-hint">
-                  Deletes all data and sends everyone back to the home screen
+                  Disconnects everyone and deletes all session data
                 </div>
               </div>
             )}
@@ -6199,19 +6217,21 @@ function GameScreen({
                 : null;
               const extraRounds = Math.max(0, round - 1 - storiesDone);
 
-              const fillClass = consensusRate === null ? "ok"
+              // fillClass: neutral until 2+ stories are done — avoids alarming red for a single-story mismatch
+              const fillClass = (consensusRate === null || storiesDone < 2) ? "neutral"
                 : consensusRate >= 70 ? "good"
                 : consensusRate >= 40 ? "ok" : "low";
 
-              const alignLabel = consensusRate === null ? null
+              // alignLabel: suppress until meaningful sample size (2+ stories); avoid judgmental "Needs work"
+              const alignLabel = (consensusRate === null || storiesDone < 2) ? null
                 : consensusRate >= 80 ? "Excellent"
                 : consensusRate >= 60 ? "Good"
                 : consensusRate >= 40 ? "Fair"
-                : "Needs work";
+                : "Low consensus";
 
               const alignSub = consensusRate === null
                 ? "Record your first story to start tracking alignment."
-                : `${consensusCount} of ${storiesDone} ${storiesDone === 1 ? "story" : "stories"} agreed first round`
+                : `${consensusCount} of ${storiesDone} ${storiesDone === 1 ? "story" : "stories"} agreed first vote`
                   + (extraRounds > 0 ? ` · ${extraRounds} re-vote${extraRounds !== 1 ? "s" : ""}` : "");
 
               // Deck breakdown — frequency map across all sized stories/rounds
@@ -6269,7 +6289,7 @@ function GameScreen({
                       <span className="a-align-title">Team Alignment</span>
                       {consensusRate !== null && (
                         <span className={`a-align-score ${fillClass}`}>
-                          {alignLabel} · {consensusRate}%
+                          {alignLabel ? `${alignLabel} · ${consensusRate}%` : `${consensusRate}%`}
                         </span>
                       )}
                     </div>
@@ -6280,6 +6300,7 @@ function GameScreen({
                       ></div>
                     </div>
                     <div className="a-align-sub">{alignSub}</div>
+                    <div className="a-align-note">% of stories where all voters agreed on the first vote</div>
                   </div>
 
                   {/* ── Section 3: Sized this sprint ── */}
