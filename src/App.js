@@ -188,7 +188,7 @@ const CSS = `
   --blue:     #6ccff6;
   --ink:      #08110e;
   --card-bg:  #fffdfa;
-  --scroll-track: rgba(255,255,255,0.05);
+  --scroll-track: rgba(7,17,14,0.94);
   --scroll-thumb: linear-gradient(180deg, #ffe08f 0%, #f5c659 42%, #dd9c22 100%);
   --scroll-thumb-border: rgba(5,10,9,0.62);
   --radius:   20px;
@@ -1669,11 +1669,11 @@ body::before {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
-  scrollbar-color: var(--gold) rgba(255,255,255,.05);
+  scrollbar-color: var(--gold) var(--scroll-track);
 }
 .login-modal::-webkit-scrollbar { width: 10px; }
 .login-modal::-webkit-scrollbar-track {
-  background: rgba(255,255,255,.04);
+  background: var(--scroll-track);
   border-radius: 999px;
 }
 .login-modal::-webkit-scrollbar-thumb {

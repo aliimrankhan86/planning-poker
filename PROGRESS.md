@@ -93,6 +93,9 @@
     - signed-in room-name input now seeds once from account identity and then respects manual edits
     - creating or joining a room now uses the edited session name instead of silently reverting to the account display name
     - room-entry actions now read the latest typed name from a ref-backed value so fast interactions / automation timing do not fall back to the stored account name
+  - Scrollbar polish refreshed again:
+    - scrollbar tracks now use the same deep-green brand surface as the page background/body
+    - scrollbar thumbs remain the existing gold/yellow accent
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
@@ -156,15 +159,11 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** Facilitator controls redesign + Team Alignment panel fix + copy/UX language audit
+- **Worked on:** final free-flow hardening + scrollbar-track brand polish
 - **Completed:**
-  - Deep product review across JoinScreen, GameScreen, NavBar, PricingModal, SiteFooter, and routing
-  - **Fix 1 — Team Room PRO badge (critical UX bug):** Badge logic was inverted — showed for Pro users (meaningless) and hidden for non-Pro (where it's needed). Fixed. Non-Pro users now see the PRO badge immediately on the tab.
-  - **Fix 1b — Inline pro-gate callout:** Non-Pro users on the Team Room tab now see a contextual note explaining the feature requires Pro, with a direct link to the pricing modal. Prevents the "surprise gate" at form submission.
-  - **Fix 2 — 1-click workspace actions:** Workspace "Open Team Room" / "Create free room" buttons now directly call `onTeamRoom()` / `onCreate()` with pre-filled values. Previously they only switched tab and scrolled, requiring a second click. Also corrected CTA priority for Free users: "Create Room →" is now the gold primary.
-  - **Fix 3 — Solo invite banner:** GameScreen now shows a prominent gold banner when the creator is alone in the room — "Your room is ready. Share the link to bring your team in." with a direct copy button. Dismisses on copy or close. Eliminates first-action friction after room creation.
-  - **Fix 4 — Stale-room sweeper:** Added a throttled background cleanup pass on the join/workspace screen that reads `/rooms` once and batch-deletes sessions older than the existing 5-hour expiry window when they are clearly inactive. Keeps Firebase leaner on the Spark plan without touching live sessions.
-  - Build clean, latest UX/IA and facilitator redesign commits are already pushed to `main`
+  - Final free-flow hardening is live: room entry now uses the latest typed session name reliably instead of occasionally falling back to the stored account name.
+  - Scrollbar theming refined so the track now matches the app's deep-green body surface while the gold/yellow thumb remains unchanged.
+  - Build clean.
 
 ---
 
