@@ -25,6 +25,7 @@
   - OG social image now exists at `public/og-image.png`
   - The visual design system has been modernised toward a cleaner 2026 casino-app look with brighter amber, deeper emerald surfaces, and more premium glass UI
   - OG social image now matches the refreshed UI theme and uses clearer, more readable social-preview text
+  - Vercel Speed Insights is installed and mounted for production performance monitoring
 - Remaining priorities:
   - Connect domain to Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
@@ -38,7 +39,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
 - **Worked on:** UI modernisation and launch polish
-- **Completed:** Refreshed the app visual system in `src/App.js` toward a more modern 2026 casino-style product while keeping the pointpoker green-and-gold brand. Updated palette, glass surfaces, CTA/buttons, navbar, pricing modal, join screen, footer, auth modal, toast, and cookie banner. Also regenerated `public/og-image.png` so social previews match the new theme and use clearer text. `npm run build` passed after the visual refresh.
+- **Completed:** Refreshed the app visual system in `src/App.js` toward a more modern 2026 casino-style product while keeping the pointpoker green-and-gold brand. Updated palette, glass surfaces, CTA/buttons, navbar, pricing modal, join screen, footer, auth modal, toast, and cookie banner. Also regenerated `public/og-image.png` so social previews match the new theme and use clearer text, and installed Vercel Speed Insights in the React root. `npm run build` passed after the visual refresh.
 
 ---
 
@@ -240,6 +241,11 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Social asset updated:** Rebuilt `public/og-image.png` to match the modernised emerald/amber visual system instead of the older rustic version.
 - **Readability improved:** Headline, supporting copy, and feature pills were redrawn for stronger contrast and better legibility in shared link previews.
 - **Visual consistency:** The new OG image now matches the refreshed product chrome with darker emerald backgrounds, cleaner glass panels, and brighter premium amber highlights.
+
+### Session 9r — 29 March 2026 (Vercel Speed Insights)
+- **Performance telemetry added:** Installed `@vercel/speed-insights` and mounted `<SpeedInsights />` in `src/index.js`.
+- **Compatibility note:** Package installation required `--legacy-peer-deps` because the current CRA/TypeScript dependency tree conflicts with Vercel's newer peer expectations.
+- **Outcome:** Production deployments can now start reporting field-performance metrics in Vercel Speed Insights.
 
 ### Session 8b — 28 March 2026 (UX & background fixes)
 - **Background bug fixed:** `body::before` had 3 background layers but only 2 `background-size` values (`cover, 200px 200px`). Browser cycled values — second radial gradient rendered as a 200×200px tile instead of covering the viewport. Root cause of the "overstretched/broken" visual artifact. Fixed to `cover, cover, 200px 200px`. Also softened the bottom-right gradient (0.18→0.12 opacity).

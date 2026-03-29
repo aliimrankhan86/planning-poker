@@ -38,6 +38,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Team-room routing and founder-room URL handling were hardened after a real regression was found
   - Core UI palette and surface system were refreshed toward a more modern 2026 casino-app look while preserving the green/gold brand
   - OG social image was refreshed to match the modernised theme and improve text readability in social previews
+  - Vercel Speed Insights was added to the React root for live production performance telemetry
 - Still pending:
   - Connect domain in Vercel and verify production routing
   - Set `REACT_APP_SUPPORT_EMAIL=support@pointpoker.app` in Vercel
@@ -68,6 +69,7 @@ If older historical notes below conflict with this section, treat this snapshot 
 | Framework | React | 19.2.4 | Create React App scaffold |
 | Database | Firebase Realtime Database | SDK 12.10.0 | Spark (free) plan, US region |
 | Hosting | Vercel | — | Auto-deploys from `main` branch on GitHub |
+| Performance | Vercel Speed Insights | latest | Installed in `src/index.js` for production field-performance monitoring |
 | Build tool | react-scripts | 5.0.1 | CRA — no custom webpack config |
 | Fonts | Outfit v15, Cormorant Garamond v21 | — | **Self-hosted** in `public/fonts/` — no Google Fonts CDN |
 | Payments | Stripe | — | Account-aware checkout UI in place; real Stripe links/webhook still pending |
@@ -441,6 +443,11 @@ T-shirt deck: story points are non-numeric — `avgSP`, `totalSP`, and estimate 
 ## § Completed Work
 
 Listed chronologically newest-first.
+
+### 2026-03 — Vercel Speed Insights installed
+- Added `@vercel/speed-insights` to the project dependencies
+- Mounted `<SpeedInsights />` in `src/index.js` so production deployments can start collecting field-performance metrics
+- Installed with `--legacy-peer-deps` due dependency-resolution conflicts between the current CRA toolchain and Vercel’s package peers
 
 ### 2026-03 — Modern 2026 casino-style visual refresh
 - The app visual system in `src/App.js` was refreshed away from a dull/rustic casino look toward a cleaner 2026 product feel while preserving the casino identity
