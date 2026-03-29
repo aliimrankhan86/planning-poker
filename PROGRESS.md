@@ -39,9 +39,15 @@
   - Short-term paid-user recommendation clarified: activation code remains the simplest clean entitlement path before live Stripe checkout exists
   - Pricing CTA now explicitly pivots to activation-code setup when checkout links are still placeholders
   - Auth modal now explains the short-term Pro path more clearly: create account, then activate Pro with code
-  - Latest Atlas live check passed deployment parity, free auth, signed-out upgrade flow, and free-account state on production
+  - Latest Atlas live check passed deployment parity, free auth, and signed-out upgrade flow on production
   - Atlas confirmed `Plans` and `FAQ` now exist and scroll correctly on the live site
-  - Remaining live gap is now limited to Pro-account verification; current evidence suggests the supplied Pro credentials may not correspond to a valid account yet
+  - Production Pro verification now passes end-to-end after account creation + activation:
+    - sign-in works
+    - activation code upgrades the account to Pro
+    - navbar switches to `📊 History | <name> ✓ Pro | Sign out`
+    - dedicated Team Room URL/share flow works
+    - anonymous teammates can still join shared Team Room links with only name + role
+  - Firebase rules for `/licenses/{key}` are now published in production and activation-code validation is live
   - LoginModal widened and rebalanced to feel more SaaS-like: primary auth actions first, activation code behind a secondary panel, pricing/help tertiary
   - LoginModal now has an explicit themed internal scrollbar and reduced vertical density on desktop
   - Root cause found for activation-code failure: Firebase rules did not expose `/licenses/{key}`; `database.rules.json` now includes a read-only `licenses` path for client validation
@@ -51,6 +57,12 @@
   - Pro users now see a dedicated Team Room card with a stable account-linked room URL and one-click copy/open actions
   - User profiles now persist `teamRoomName`, enabling a stable dedicated Team Room identity for signed-in Pro accounts
   - Signed-in users now have their display name prefilled in room flows, and the footer becomes account-oriented rather than generic plan-marketing
+  - Final polish pass after Atlas/Comet QA now fixes the remaining low-friction issues:
+    - workspace copy-link button now shows `Copied!`
+    - in-room copy buttons now show a visible copied state as well as the toast
+    - pricing modal leaves the Pro-success state visible briefly before closing
+    - permanent Team Room URL wraps cleanly rather than truncating
+    - workspace `Open Team Room` now scrolls to the Team Room entry controls so it no longer feels inert
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
@@ -79,9 +91,8 @@
   - Firebase Database Rules deployed with history path ✅
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
-  - Create or verify a real Pro test account, then re-run Atlas checks for Pro navbar/history/team-room state
-  - Re-publish Firebase rules so `/licenses/{key}` activation works in production
   - Connect `www.pointpoker.app` domain to Vercel and verify production routing
+  - Recreate or reserve a true free-only QA account, because the old free account now appears to be Pro in production and blocks free-tier regression testing
   - Run full E2E QA pass on production URL (see `QA_TEST_PLAN.md`)
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
@@ -93,7 +104,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** Navigation discoverability, auth/upgrade UX clarity, pricing state messaging, reusable QA prompt
+- **Worked on:** Account-aware workspace UX, activation-code flow, production QA triage, dedicated Team Room polish
 - **Completed:**
   - Added `Plans` and `FAQ` NavBar shortcuts on non-game screens
   - Added a compact landing-page plans section with a stable `#plans` target
@@ -105,20 +116,21 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Replaced the overly long QA prompt with a concise reusable Atlas prompt in `QA_PROMPT.md`
   - Reviewed the simplest pre-Stripe paid-user path: keep account creation + activation code as the primary entitlement route until Stripe is live
   - Updated pricing/auth copy so the app now explicitly guides users toward activation-code Pro setup while Stripe checkout is unavailable
-  - Captured newer Atlas findings: deployment parity and free auth are now passing on live; remaining blocker is lack of a working Pro test account for entitlement verification
+  - Captured newer live QA findings: deployment parity and free auth are passing; Pro verification now also passes after account creation + activation
   - Widened LoginModal, reduced vertical density, added themed internal scrolling, and moved activation code into a more sensible secondary SaaS-style panel
   - Found and fixed the real activation-code blocker in Firebase rules: `/licenses/{key}` is now defined as a read-only validation path in `database.rules.json`
   - Tightened Pro activation flow so activation is clearly account-bound: signed-out users now see a sign-in gate instead of a misleading activatable code field; signed-in users can activate via button or Enter
   - Reworked the signed-in home experience into an account-aware workspace: public landing content is signed-out only, while logged-in Free vs Pro users see simpler dashboards aligned to their plan state
   - Persisted `teamRoomName` on user profiles and used it to generate a stable dedicated Team Room card/URL for signed-in Pro accounts
+  - Applied a final polish pass after Atlas/Comet QA: visible copied-state feedback, better Team Room CTA behaviour, non-truncated permanent Team Room URL, and a more visible Pro activation success moment
   - `npm run build` clean — 185.75 kB gzipped
 
 ---
 
 ## 📍 Current Status
 **Phase:** 1 / 3 crossover — Auth foundation coded, monetisation still blocked on Stripe setup
-**Active step:** Push the account-aware home/workspace redesign, then verify Pro activation + signed-in home UX on production
-**Remaining:** verify a working Pro account, then continue Stripe/domain launch work
+**Active step:** Re-run live QA after the latest polish pass, then restore a genuinely free-only QA account for free-plan regression coverage
+**Remaining:** finish free-tier regression coverage, then continue Stripe/domain launch work
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

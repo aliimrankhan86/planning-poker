@@ -56,12 +56,14 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Free users now see a simplified logged-in workspace with Create/Join/Team actions plus a focused Upgrade-to-Pro path
   - Pro users now see a dedicated Team Room workspace card with a stable shareable URL derived from a persisted `teamRoomName` field on their account profile
   - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
-  - Live verification now confirms deployment parity, free auth, free-account state, and the signed-out upgrade flow on production
+  - Live verification now confirms deployment parity, signed-out landing nav, free auth, signed-out upgrade flow, account-bound Pro activation, Pro navbar state, Pro workspace layout, dedicated Team Room URL/share flow, and anonymous join-via-link behaviour on production
+  - Firebase Realtime Database rules for `/licenses/{key}` are now published in production and activation-code validation is live
+  - A real production Pro account is now working for `misteraliimran@gmail.com`
+  - Workspace UX was tightened after live QA: copy-link actions now show visible feedback, the permanent Team Room URL wraps cleanly instead of truncating, the pricing modal keeps activation success visible briefly before closing, and the workspace `Open Team Room` CTA now scrolls to the actual Team Room entry controls
 - Still pending:
-  - Create or verify a real Pro test account so Pro navbar/history/team-room behaviour can be verified on production
-  - Re-publish Firebase Realtime Database rules so the new `/licenses/{key}` activation path is live
   - Connect domain in Vercel and verify production routing
   - Replace Stripe placeholder links and complete paid activation wiring
+  - Re-establish a true free-only QA account, because the previously used free test account now appears to have Pro state in production and no longer validates free-only upgrade/gating flows cleanly
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 
 If older historical notes below conflict with this section, treat this snapshot as the authoritative current state and update the older sections when touching them.

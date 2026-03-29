@@ -470,11 +470,12 @@ body::before {
 .workspace-team-url code {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
   font-family: monospace;
   font-size: .8rem;
+  line-height: 1.45;
   color: var(--mint2);
 }
 .workspace-team-url button {
@@ -4521,6 +4522,7 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
   const [keyStatus, setKeyStatus] = useState(null);      // null | "checking" | "ok" | "invalid" | "error"
   const [showKey,  setShowKey]    = useState(false);
   const [billingStatus, setBillingStatus] = useState(null);
+  const activationTimerRef = useRef(null);
 
   const p       = PRICING[currency];
   const isAnn   = billing === "annual";
@@ -4567,9 +4569,14 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
     setKeyStatus(result);
     if (result === "ok") {
       track("pro_activated");
-      if (onProActivated) onProActivated();
+      clearTimeout(activationTimerRef.current);
+      activationTimerRef.current = setTimeout(() => {
+        if (onProActivated) onProActivated();
+      }, 1100);
     }
   };
+
+  useEffect(() => () => clearTimeout(activationTimerRef.current), []);
 
   const handleCheckout = async () => {
     if (isPro) return;
@@ -4842,6 +4849,9 @@ function JoinScreen({
   const [rc, setRc] = useState(prefillCode || "");
   const [teamName, setTeamName] = useState(prefillTeam || (signedIn && isPro ? dedicatedTeamName : ""));
   const [err, setErr] = useState("");
+  const [teamUrlCopied, setTeamUrlCopied] = useState(false);
+  const teamEntryRef = useRef(null);
+  const teamUrlCopiedRef = useRef(null);
 
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
@@ -4853,6 +4863,12 @@ function JoinScreen({
       if (!prefillTeam && isPro) setTeamName(dedicatedTeamName);
     }
   }, [signedIn, defaultName, prefillTeam, isPro, dedicatedTeamName]);
+
+  const focusTeamEntry = useCallback(() => {
+    setTimeout(() => {
+      teamEntryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 40);
+  }, []);
 
   const go = () => {
     if (!name.trim()) { setErr("Please enter your name"); return; }
@@ -4876,7 +4892,12 @@ function JoinScreen({
   const copyTeamUrl = () => {
     if (!dedicatedTeamUrl) return;
     navigator.clipboard.writeText(dedicatedTeamUrl);
+    setTeamUrlCopied(true);
+    clearTimeout(teamUrlCopiedRef.current);
+    teamUrlCopiedRef.current = setTimeout(() => setTeamUrlCopied(false), 1600);
   };
+
+  useEffect(() => () => clearTimeout(teamUrlCopiedRef.current), []);
 
   return (
     <div className="join-wrap">
@@ -4939,13 +4960,19 @@ function JoinScreen({
                 </p>
                 <div className="workspace-team-url">
                   <code>{dedicatedTeamUrl}</code>
-                  <button type="button" onClick={copyTeamUrl}>Copy link</button>
+                  <button type="button" onClick={copyTeamUrl}>
+                    {teamUrlCopied ? "Copied!" : "Copy link"}
+                  </button>
                 </div>
                 <div className="workspace-actions" style={{ marginTop: 12 }}>
                   <button
                     type="button"
                     className="workspace-action-btn gold"
-                    onClick={() => { setTab("team"); clearErr(); }}
+                    onClick={() => {
+                      setTab("team");
+                      clearErr();
+                      focusTeamEntry();
+                    }}
                   >
                     Open Team Room
                   </button>
@@ -5049,7 +5076,7 @@ function JoinScreen({
 
         {/* Team Room: team name input + live code preview */}
         {tab === "team" && (
-          <>
+          <div ref={teamEntryRef}>
             <label className="lbl">Team Name</label>
             <input
               className="inp"
@@ -5070,7 +5097,7 @@ function JoinScreen({
                 ? "Your Pro account has a fixed Team Room. Share the same link every sprint and keep it bookmarked for the whole team."
                 : "Your team's permanent room — reuse the same link every sprint. No setup, no link sharing. Anyone on the team just types the team name and they're in."}
             </p>
-          </>
+          </div>
         )}
 
         {/* Role picker — always shown */}
@@ -5301,10 +5328,13 @@ function GameScreen({
   const [tsel, setTsel] = useState(30);
   const [storyInput, setStoryInput] = useState("");
   const [optimisticVote, setOptimisticVote] = useState(null);
+  const [headerLinkCopied, setHeaderLinkCopied] = useState(false);
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
   // Confetti fires once per consensus reveal, keyed by round number
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConsensus, setShowConsensus] = useState(false);
   const confettiFiredForRoundRef = useRef(null);
+  const copyFeedbackRef = useRef(null);
 
   const players = Object.values(rd.players || {});
   const voters = players.filter((p) => p.role === "voter");
@@ -5397,6 +5427,26 @@ function GameScreen({
     setOptimisticVote(null);
   }, [round]);
 
+  useEffect(() => () => clearTimeout(copyFeedbackRef.current), []);
+
+  const handleCopyLink = useCallback((source = "header") => {
+    navigator.clipboard.writeText(shareUrl);
+    track("invite_copied");
+    toast("🔗 Link copied!");
+    if (source === "header") {
+      setHeaderLinkCopied(true);
+      setInviteLinkCopied(false);
+    } else {
+      setInviteLinkCopied(true);
+      setHeaderLinkCopied(false);
+    }
+    clearTimeout(copyFeedbackRef.current);
+    copyFeedbackRef.current = setTimeout(() => {
+      setHeaderLinkCopied(false);
+      setInviteLinkCopied(false);
+    }, 1600);
+  }, [shareUrl, toast]);
+
   const prog = timer.running ? timer.remaining / timer.duration : 1;
   const offset = CIRC * (1 - prog);
   const urgent = timer.remaining <= 5;
@@ -5441,14 +5491,10 @@ function GameScreen({
           <div className="hdr-r">
             <button
               className="btn-sm"
-              onClick={() => {
-                navigator.clipboard.writeText(shareUrl);
-                track("invite_copied");
-                toast("🔗 Link copied!");
-              }}
+              onClick={() => handleCopyLink("header")}
               aria-label="Copy invite link to clipboard"
             >
-              🔗 Copy Link
+              {headerLinkCopied ? "✓ Copied!" : "🔗 Copy Link"}
             </button>
           </div>
         </div>
@@ -6201,13 +6247,9 @@ function GameScreen({
               <div className="inv-url">{shareUrl}</div>
               <button
                 className="btn-inv"
-                onClick={() => {
-                  navigator.clipboard.writeText(shareUrl);
-                  track("invite_copied");
-                  toast("🔗 Link copied!");
-                }}
+                onClick={() => handleCopyLink("panel")}
               >
-                🔗 Copy Invite Link
+                {inviteLinkCopied ? "✓ Invite link copied!" : "🔗 Copy Invite Link"}
               </button>
             </div>
 
