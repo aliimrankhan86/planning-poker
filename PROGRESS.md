@@ -85,6 +85,13 @@
   - Cookie banner links open in new tab; banner copy updated to accurately describe essential-only storage
   - `vercel.json` updated with `/terms` and `/privacy` rewrites for direct URL and browser refresh
   - `npm run build` clean — 180.9 kB gzipped
+- UX/IA improvements (29 March 2026 — second session):
+  - PRO badge on Team Room tab was backwards: it showed for Pro users (redundant) and not for non-Pro users (where it's needed). Fixed — badge now shows only for non-Pro users so the gate is visible before attempting to use the feature.
+  - Inline `team-pro-gate` callout added inside the Team Room tab content for non-Pro users: explains the feature requires Pro, shows a team name preview so the value is tangible, and links directly to the pricing modal.
+  - Workspace quick-action buttons now directly submit instead of switching tab + scrolling. Pro "Enter Team Room →" calls `onTeamRoom()` immediately with pre-filled values. Free "Create Room →" calls `onCreate()` immediately. Both are genuine 1-click actions for returning users.
+  - Free workspace card CTA order fixed: "Create Room →" is now the gold primary CTA, "Upgrade to Pro" is the secondary — matches what a free user actually wants to do first.
+  - `solo-invite-banner` added to GameScreen: when the room has only 1 player (the creator), a gold dismissible banner appears in the game area with a direct "Copy invite link" button. Dismisses on copy or manual close. Addresses the first-action gap between creating a room and getting the team in.
+  - `npm run build` clean — 186.94 kB gzipped
 - Infrastructure completed (29 March 2026):
   - `REACT_APP_SUPPORT_EMAIL` set in Vercel ✅
   - All Firebase env vars confirmed in Vercel ✅
@@ -104,26 +111,14 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 29 March 2026
 - **Chat name:** planning-poker
-- **Worked on:** Account-aware workspace UX, activation-code flow, production QA triage, dedicated Team Room polish
+- **Worked on:** Deep UX/IA audit — identified and implemented top 3 highest-value product improvements
 - **Completed:**
-  - Added `Plans` and `FAQ` NavBar shortcuts on non-game screens
-  - Added a compact landing-page plans section with a stable `#plans` target
-  - Added section-scroll behaviour for `Plans` and `FAQ` navigation
-  - Improved LoginModal copy and account-state messaging for signed-out, free, and Pro users
-  - Added signed-in password-reset action inside the account modal
-  - Improved upgrade flow so pricing -> create account/sign in -> pricing is coherent
-  - Updated PricingModal to clearly reflect active Pro, free-account readiness, and Stripe-not-live state
-  - Replaced the overly long QA prompt with a concise reusable Atlas prompt in `QA_PROMPT.md`
-  - Reviewed the simplest pre-Stripe paid-user path: keep account creation + activation code as the primary entitlement route until Stripe is live
-  - Updated pricing/auth copy so the app now explicitly guides users toward activation-code Pro setup while Stripe checkout is unavailable
-  - Captured newer live QA findings: deployment parity and free auth are passing; Pro verification now also passes after account creation + activation
-  - Widened LoginModal, reduced vertical density, added themed internal scrolling, and moved activation code into a more sensible secondary SaaS-style panel
-  - Found and fixed the real activation-code blocker in Firebase rules: `/licenses/{key}` is now defined as a read-only validation path in `database.rules.json`
-  - Tightened Pro activation flow so activation is clearly account-bound: signed-out users now see a sign-in gate instead of a misleading activatable code field; signed-in users can activate via button or Enter
-  - Reworked the signed-in home experience into an account-aware workspace: public landing content is signed-out only, while logged-in Free vs Pro users see simpler dashboards aligned to their plan state
-  - Persisted `teamRoomName` on user profiles and used it to generate a stable dedicated Team Room card/URL for signed-in Pro accounts
-  - Applied a final polish pass after Atlas/Comet QA: visible copied-state feedback, better Team Room CTA behaviour, non-truncated permanent Team Room URL, and a more visible Pro activation success moment
-  - `npm run build` clean — 185.75 kB gzipped
+  - Deep product review across JoinScreen, GameScreen, NavBar, PricingModal, SiteFooter, and routing
+  - **Fix 1 — Team Room PRO badge (critical UX bug):** Badge logic was inverted — showed for Pro users (meaningless) and hidden for non-Pro (where it's needed). Fixed. Non-Pro users now see the PRO badge immediately on the tab.
+  - **Fix 1b — Inline pro-gate callout:** Non-Pro users on the Team Room tab now see a contextual note explaining the feature requires Pro, with a direct link to the pricing modal. Prevents the "surprise gate" at form submission.
+  - **Fix 2 — 1-click workspace actions:** Workspace "Open Team Room" / "Create free room" buttons now directly call `onTeamRoom()` / `onCreate()` with pre-filled values. Previously they only switched tab and scrolled, requiring a second click. Also corrected CTA priority for Free users: "Create Room →" is now the gold primary.
+  - **Fix 3 — Solo invite banner:** GameScreen now shows a prominent gold banner when the creator is alone in the room — "Your room is ready. Share the link to bring your team in." with a direct copy button. Dismisses on copy or close. Eliminates first-action friction after room creation.
+  - Build clean, commit `bf7ee1d` staged — push to origin required from terminal (VM network restricted)
 
 ---
 
