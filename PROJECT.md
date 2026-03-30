@@ -57,6 +57,9 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Pro users now see a dedicated Team Room workspace card with a stable shareable URL derived from a persisted `teamRoomName` field on their account profile
   - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
   - Live verification now confirms deployment parity, signed-out landing nav, free auth, signed-out upgrade flow, account-bound Pro activation, Pro navbar state, Pro workspace layout, dedicated Team Room URL/share flow, and anonymous join-via-link behaviour on production
+  - Final focused production QA now passes for the real product flows:
+    - Free flow passes, including Team Room gating, copy feedback, scrollbar polish, and edited session-name persistence into the room
+    - Pro flow passes, including Team Room collaboration, vote sync, History access, and dedicated Team Room reuse
   - Firebase Realtime Database rules for `/licenses/{key}` are now published in production and activation-code validation is live
   - A real production Pro account is now working for `misteraliimran@gmail.com`
   - Workspace UX was tightened after live QA: copy-link actions now show visible feedback, the permanent Team Room URL wraps cleanly instead of truncating, the pricing modal keeps activation success visible briefly before closing, and the workspace `Open Team Room` CTA now scrolls to the actual Team Room entry controls
@@ -91,6 +94,9 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Scrollbar styling is now aligned more closely with the brand system:
     - scrollbar tracks use the same deep-green surface tone as the app background/body
     - scrollbar thumbs remain the existing premium gold/yellow accent
+  - Production domain/routing is confirmed live:
+    - `https://www.pointpoker.app/` serves the correct production app
+    - founder Team Room route `/t/rpa-build-team` works on the live domain
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened
@@ -100,9 +106,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
-  - Connect domain in Vercel and verify production routing
   - Replace Stripe placeholder links and complete paid activation wiring
-  - Run a fresh final live QA pass after the latest account-state/mobile/team-room fixes (Atlas for signed-out + Free, Comet for Pro + Team Room + mobile)
   - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate/stale profile data
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 

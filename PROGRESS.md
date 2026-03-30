@@ -97,9 +97,14 @@
     - room-entry actions now also read the live DOM input value first, so browser automation and blur/timing edge cases cannot fall back to the stored account name
     - late same-user auth/profile hydration no longer re-seeds the field after the user has already typed a custom name
     - room entry now carries the intended session name into the live room shell and reconciles the player record if needed, removing the last race between room creation/join and later state hydration
+  - Final targeted Atlas recheck now confirms the last free-flow blocker is resolved:
+    - edited signed-in session names persist correctly into the live room
   - Scrollbar polish refreshed again:
     - scrollbar tracks now use the same deep-green brand surface as the page background/body
     - scrollbar thumbs remain the existing gold/yellow accent
+  - Production domain/routing confirmed live:
+    - `https://www.pointpoker.app/` serves the live app
+    - `/t/rpa-build-team` works correctly on the production domain
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
@@ -149,10 +154,8 @@
   - Firebase Database Rules deployed with history path ✅
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
-  - Connect `www.pointpoker.app` domain to Vercel and verify production routing
-  - Re-run final live QA on production after the latest mobile/account-state/team-room fixes
   - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate
-  - Run full E2E QA pass on production URL (see `QA_TEST_PLAN.md`)
+  - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
 
@@ -172,9 +175,9 @@ Treat this section as the fastest current-status read. Historical session notes 
 ---
 
 ## 📍 Current Status
-**Phase:** 1 / 3 crossover — Auth foundation coded, monetisation still blocked on Stripe setup
-**Active step:** Re-run live QA after the stale-room cleanup pass, then restore a genuinely free-only QA account for free-plan regression coverage
-**Remaining:** finish free-tier regression coverage, then continue domain launch work
+**Phase:** 1 / 3 crossover — Product flows hardened; operational cleanup and monetisation remain
+**Active step:** keep production stable, then clean Firebase account duplication and resume billing work only when needed
+**Remaining:** Firebase user-record cleanup, optional broader E2E sweep, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -214,7 +217,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 1.2 | Firebase Email/Password auth | ✅ Done | UI shipped and verified: sign up, sign in, reset password, NavBar account state, `/users/{uid}` profile persistence. Email/Password provider enabled in Firebase Console. |
 | 1.3 | Invite system (up to 11 members) | ⏳ Not started | Invite link = room URL — capacity enforcement already done in 1.1 |
 | 1.4 | Register custom domain | ✅ Done | Domain purchased: `www.pointpoker.app` |
-| 1.5 | Connect domain to Vercel | ⏳ Not started | Domain is purchased (`www.pointpoker.app`); next step is Vercel connection + verification |
+| 1.5 | Connect domain to Vercel | ✅ Done | Production domain is live and confirmed working, including `/t/rpa-build-team` |
 
 ---
 
