@@ -97,6 +97,10 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Production domain/routing is confirmed live:
     - `https://www.pointpoker.app/` serves the correct production app
     - founder Team Room route `/t/rpa-build-team` works on the live domain
+  - Sprint History presentation has been cleaned up for Pro users:
+    - the modal header/close control now uses the correct visual styling instead of falling back to a broken default button
+    - empty-state copy is now intentional, polished, and clearly explains when sessions are saved
+    - history insight cards and session rows now use consistent dedicated classes instead of mismatched/un-styled markup
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened

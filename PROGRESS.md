@@ -105,6 +105,10 @@
   - Production domain/routing confirmed live:
     - `https://www.pointpoker.app/` serves the live app
     - `/t/rpa-build-team` works correctly on the production domain
+  - Sprint History UX polished for the Pro account experience:
+    - fixed the history modal close-button styling regression caused by mismatched class names
+    - empty-state messaging is now cleaner and more presentational
+    - history stat cards / session rows now use a consistent class system instead of partially broken styles
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players

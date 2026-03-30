@@ -2081,6 +2081,10 @@ body::before {
   box-shadow: 0 44px 110px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.06);
   position: relative; animation: fadeUp .28s ease;
 }
+.history-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; margin-bottom: 22px;
+}
 .history-close {
   position: absolute; top: 18px; right: 18px;
   background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10);
@@ -2096,27 +2100,32 @@ body::before {
   letter-spacing: -0.03em; margin-bottom: 4px;
 }
 .history-sub {
-  font-size: .82rem; color: rgba(239,242,247,.48); margin-bottom: 22px;
+  font-size: .82rem; color: rgba(239,242,247,.48); margin: 0;
 }
 .history-insights {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 10px; margin-bottom: 24px;
 }
-.hi-stat {
+.hi-card {
   background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
-  border-radius: 14px; padding: 14px 10px; text-align: center;
+  border-radius: 16px; padding: 14px 12px; text-align: center;
+  display: flex; flex-direction: column; gap: 6px; min-height: 108px;
+  justify-content: center;
+}
+.hi-label {
+  font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(239,242,247,.42);
 }
 .hi-v {
   font-size: 1.8rem; font-weight: 700; color: var(--gold2);
   letter-spacing: -0.04em; line-height: 1;
 }
+.hi-unit {
+  font-size: .7rem; color: rgba(239,242,247,.46); line-height: 1.35;
+}
 .hi-trend-up   { color: #4bd889; }
 .hi-trend-down { color: #e74c3c; }
 .hi-trend-flat { color: rgba(239,242,247,.55); }
-.hi-l {
-  font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase;
-  color: rgba(239,242,247,.42); margin-top: 6px;
-}
 .history-list { display: flex; flex-direction: column; gap: 10px; }
 .history-item {
   background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
@@ -2126,31 +2135,52 @@ body::before {
 }
 .history-item:hover { border-color: rgba(158,234,196,.18); }
 .hi-item-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.hi-item-sprint {
+.hi-sprint-label {
   font-size: .72rem; font-weight: 700; letter-spacing: 1.2px;
   text-transform: uppercase; color: rgba(239,242,247,.38);
 }
-.hi-item-label {
-  font-size: .96rem; font-weight: 600; color: var(--cream);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.hi-item-date { font-size: .72rem; color: rgba(239,242,247,.38); }
+.hi-sprint-date { font-size: .72rem; color: rgba(239,242,247,.38); }
 .hi-item-stats { display: flex; gap: 20px; flex-shrink: 0; }
-.hi-item-stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.hi-item-v {
+.hi-stat {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  min-width: 58px;
+}
+.hi-stat-val {
   font-size: 1.2rem; font-weight: 700; color: var(--cream);
   letter-spacing: -0.03em; line-height: 1;
 }
-.hi-item-v.gold { color: var(--gold2); }
-.hi-item-l {
+.hi-stat-val.gold { color: var(--gold2); }
+.hi-stat-key {
   font-size: .58rem; letter-spacing: 1.2px; text-transform: uppercase;
   color: rgba(239,242,247,.38);
 }
 .history-empty {
-  text-align: center; padding: 40px 20px; color: rgba(239,242,247,.45);
+  text-align: center; padding: 52px 28px 46px; color: rgba(239,242,247,.45);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
 }
-.history-empty p { font-size: .88rem; line-height: 1.6; }
-.history-empty p:first-child { font-size: 1.1rem; color: rgba(239,242,247,.65); margin-bottom: 8px; }
+.history-empty-icon {
+  width: 68px; height: 68px; border-radius: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+  background: radial-gradient(circle at 30% 20%, rgba(241,185,63,.16), rgba(241,185,63,.04));
+  border: 1px solid rgba(241,185,63,.12);
+  color: var(--gold2); font-size: 1.8rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+.history-empty-title {
+  font-size: 1.12rem; line-height: 1.3; color: rgba(239,242,247,.86);
+  margin: 0 0 8px;
+}
+.history-empty-copy {
+  font-size: .92rem; line-height: 1.7; color: rgba(239,242,247,.58);
+  max-width: 520px; margin: 0 auto;
+}
+.history-empty-copy strong {
+  color: rgba(239,242,247,.84);
+  font-weight: 600;
+}
 
 /* NavBar history button */
 .nav-btn-history {
@@ -4612,25 +4642,29 @@ function HistoryModal({ onClose, history }) {
   return (
     <div className="history-overlay" role="dialog" aria-modal="true" aria-label="Sprint history">
       <div className="history-modal">
-        {/* Header */}
         <div className="history-header">
           <div>
             <h2 className="history-title">Sprint History</h2>
-            <p className="history-sub">{totalSprints} session{totalSprints !== 1 ? "s" : ""} recorded</p>
+            <p className="history-sub">
+              {totalSprints === 0
+                ? "No sprint sessions recorded yet"
+                : `${totalSprints} session${totalSprints !== 1 ? "s" : ""} recorded`}
+            </p>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Close history">✕</button>
+          <button className="history-close" onClick={onClose} aria-label="Close history">✕</button>
         </div>
 
         {totalSprints === 0 ? (
           <div className="history-empty">
-            <div style={{ fontSize: "2.2rem", marginBottom: "10px" }}>📋</div>
-            <p style={{ color: "rgba(239,242,247,.62)", fontSize: ".9rem", lineHeight: 1.5 }}>
-              No sprint sessions recorded yet. Sessions are saved automatically when you end a session or after 5 hours.
+            <div className="history-empty-icon" aria-hidden="true">📋</div>
+            <p className="history-empty-title">Your sprint archive is ready</p>
+            <p className="history-empty-copy">
+              Finish a Pro session and it will appear here automatically. Sprint history is saved when you
+              <strong> end a session</strong> or when a room auto-expires after <strong>5 hours</strong>.
             </p>
           </div>
         ) : (
           <>
-            {/* Insights row */}
             <div className="history-insights">
               <div className="hi-card">
                 <span className="hi-label">Avg velocity</span>
@@ -4656,7 +4690,6 @@ function HistoryModal({ onClose, history }) {
               </div>
             </div>
 
-            {/* Session list */}
             <div className="history-list">
               {history.map((h, i) => {
                 const sprintNum = totalSprints - i;
