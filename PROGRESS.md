@@ -109,6 +109,9 @@
     - fixed the history modal close-button styling regression caused by mismatched class names
     - empty-state messaging is now cleaner and more presentational
     - history stat cards / session rows now use a consistent class system instead of partially broken styles
+  - Post-reveal estimate flow corrected:
+    - the facilitator can no longer save a derived average like Fibonacci `4` when the active deck does not contain that value
+    - reveal analytics remain visible for discussion, but the final recorded estimate must now be an explicit valid deck choice whenever votes differ
   - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
   - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players

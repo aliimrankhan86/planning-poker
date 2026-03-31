@@ -1010,6 +1010,45 @@ body::before {
 .btn-record-next { width: 100%; padding: 11px; border-radius: var(--radius-sm); border: none; background: linear-gradient(135deg, rgba(75,216,137,.80), rgba(44,176,112,.62)); color: #04100b; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: all .2s; margin-top: 4px; box-shadow: 0 12px 28px rgba(75,216,137,.18); }
 .btn-record-next:hover { background: linear-gradient(135deg, rgba(95,230,154,.88), rgba(52,194,123,.72)); }
 .btn-record-next:disabled { opacity: .3; cursor: not-allowed; }
+.final-estimate-panel {
+  margin-top: 12px;
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(241,185,63,.16);
+  background: linear-gradient(180deg, rgba(241,185,63,.08), rgba(255,255,255,.02));
+}
+.final-estimate-title {
+  font-size: .72rem; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--gold2); margin-bottom: 6px;
+}
+.final-estimate-copy {
+  font-size: .76rem; line-height: 1.6; color: rgba(239,242,247,.72); margin-bottom: 12px;
+}
+.final-estimate-copy strong { color: rgba(239,242,247,.92); font-weight: 600; }
+.final-estimate-grid {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
+}
+.final-estimate-chip {
+  min-width: 52px; padding: 10px 12px; border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04); color: var(--cream);
+  font-family: 'Outfit', sans-serif; font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: all .18s;
+}
+.final-estimate-chip:hover {
+  border-color: rgba(241,185,63,.34);
+  background: rgba(241,185,63,.10);
+  transform: translateY(-1px);
+}
+.final-estimate-chip.active {
+  border-color: rgba(241,185,63,.52);
+  background: linear-gradient(180deg, rgba(241,185,63,.20), rgba(241,185,63,.10));
+  color: var(--gold3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 10px 22px rgba(241,185,63,.14);
+}
+.final-estimate-footnote {
+  font-size: .68rem; line-height: 1.5; color: rgba(239,242,247,.48);
+}
 .story-name-banner { background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06)); border: 1px solid rgba(126,230,255,.16); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; }
 .story-name-label { font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); display: block; margin-bottom: 3px; }
 .story-name-text { font-size: .9rem; font-weight: 600; color: var(--cream); line-height: 1.3; }
@@ -5679,6 +5718,7 @@ function GameScreen({
   const [tsel, setTsel] = useState(30);
   const [storyInput, setStoryInput] = useState("");
   const [optimisticVote, setOptimisticVote] = useState(null);
+  const [finalEstimate, setFinalEstimate] = useState("");
   const [headerLinkCopied, setHeaderLinkCopied] = useState(false);
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
   const [solobannerDismissed, setSoloBannerDismissed] = useState(false);
@@ -5716,6 +5756,7 @@ function GameScreen({
   const notVoted = voters.filter((p) => !p.voted);
 
   const voted = voters.filter((p) => p.voted);
+  const finalEstimateOptions = cards.map((c) => c.val);
   // Filter to numeric-only votes. T-shirt values (XS/S/M/L/XL/XXL) are
   // intentionally excluded — they would produce NaN and corrupt stats.
   const nums = voted
@@ -5743,6 +5784,26 @@ function GameScreen({
       ? Number.isInteger(medianV) ? medianV : medianV.toFixed(1)
       : "—";
   const spread = minV !== null && maxV !== null ? maxV - minV : null;
+  const consensusEstimate = allSame ? voted[0]?.vote || "" : "";
+  const chosenFinalEstimate = allSame ? consensusEstimate : finalEstimate;
+  const requiresManualFinalEstimate = revealed && isObs && voted.length > 0 && !allSame;
+  const finalEstimateLabel = chosenFinalEstimate
+    ? (deck === "tshirt" || chosenFinalEstimate === "?"
+        ? chosenFinalEstimate
+        : `${chosenFinalEstimate} pts`)
+    : "estimate";
+
+  useEffect(() => {
+    if (!revealed) {
+      setFinalEstimate("");
+      return;
+    }
+    if (allSame) {
+      setFinalEstimate(consensusEstimate);
+      return;
+    }
+    setFinalEstimate("");
+  }, [revealed, allSame, consensusEstimate, round]);
 
   // Fire confetti + consensus banner exactly once per consensus reveal
   useEffect(() => {
@@ -6320,22 +6381,54 @@ function GameScreen({
                 {/* Primary forward action — shown after reveal only */}
                 {revealed && (
                   <>
+                    {requiresManualFinalEstimate && (
+                      <div className="final-estimate-panel">
+                        <div className="final-estimate-title">Choose final estimate</div>
+                        <div className="final-estimate-copy">
+                          Votes are split. <strong>Discuss the difference</strong>, then choose the final estimate from the active deck.
+                          Average and median are shown above for context only and are <strong>not saved automatically</strong>.
+                        </div>
+                        <div className="final-estimate-grid" role="group" aria-label="Choose final estimate">
+                          {finalEstimateOptions.map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              className={`final-estimate-chip${finalEstimate === val ? " active" : ""}`}
+                              aria-pressed={finalEstimate === val}
+                              onClick={() => setFinalEstimate(val)}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="final-estimate-footnote">
+                          Best practice: use the reveal analytics to guide the discussion, but save only the final estimate your team agrees to record.
+                        </div>
+                      </div>
+                    )}
                     {hasStories && !allStoriesDone ? (
                       <button
                         className="btn-record-next"
-                        onClick={() => onRecordStory(avgDisp !== "—" ? avgDisp : (allSame ? voted[0]?.vote : "?"), allSame)}
+                        disabled={!chosenFinalEstimate}
+                        onClick={() => onRecordStory(chosenFinalEstimate, allSame)}
                       >
-                        ✅ Record {avgDisp !== "—" ? `${avgDisp} pts` : "estimate"} &amp; Next Story
+                        {allSame
+                          ? `✅ Record ${finalEstimateLabel} & Next Story`
+                          : chosenFinalEstimate
+                            ? `✅ Save ${finalEstimateLabel} & Next Story`
+                            : "Choose final estimate to continue"}
                       </button>
                     ) : (
                       <button
                         className="btn-record-next"
-                        onClick={() => onNewRound(
-                          avgDisp !== "—" ? avgDisp : (allSame ? voted[0]?.vote : "?"),
-                          allSame
-                        )}
+                        disabled={!chosenFinalEstimate}
+                        onClick={() => onNewRound(chosenFinalEstimate, allSame)}
                       >
-                        ✅ Agreed{avgDisp !== "—" ? ` — ${avgDisp} pts` : ""} — Start Next Story
+                        {allSame
+                          ? `✅ Agreed — ${finalEstimateLabel} — Start Next Story`
+                          : chosenFinalEstimate
+                            ? `✅ Save ${finalEstimateLabel} — Start Next Story`
+                            : "Choose final estimate to continue"}
                       </button>
                     )}
                     <div className="obs-secondary-row" style={{ marginTop: 8 }}>
