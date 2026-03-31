@@ -1011,28 +1011,40 @@ body::before {
 .btn-record-next:hover { background: linear-gradient(135deg, rgba(95,230,154,.88), rgba(52,194,123,.72)); }
 .btn-record-next:disabled { opacity: .3; cursor: not-allowed; }
 .final-estimate-panel {
-  margin-top: 12px;
-  padding: 14px 14px 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(241,185,63,.16);
-  background: linear-gradient(180deg, rgba(241,185,63,.08), rgba(255,255,255,.02));
+  margin: 4px 0 2px;
+  padding: 18px 18px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(241,185,63,.26);
+  background:
+    radial-gradient(circle at top, rgba(241,185,63,.10), rgba(241,185,63,0) 58%),
+    linear-gradient(180deg, rgba(241,185,63,.11), rgba(255,255,255,.025));
+  box-shadow: 0 18px 38px rgba(241,185,63,.10), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.final-estimate-kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: .62rem; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase;
+  color: var(--gold2);
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(241,185,63,.10);
+  border: 1px solid rgba(241,185,63,.18);
+  margin-bottom: 10px;
 }
 .final-estimate-title {
-  font-size: .72rem; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
-  color: var(--gold2); margin-bottom: 6px;
+  font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--cream); margin-bottom: 8px;
 }
 .final-estimate-copy {
-  font-size: .76rem; line-height: 1.6; color: rgba(239,242,247,.72); margin-bottom: 12px;
+  font-size: .82rem; line-height: 1.65; color: rgba(239,242,247,.78); margin-bottom: 14px;
 }
 .final-estimate-copy strong { color: rgba(239,242,247,.92); font-weight: 600; }
 .final-estimate-grid {
-  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
 }
 .final-estimate-chip {
-  min-width: 52px; padding: 10px 12px; border-radius: 14px;
+  min-width: 60px; padding: 12px 14px; border-radius: 15px;
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(255,255,255,.04); color: var(--cream);
-  font-family: 'Outfit', sans-serif; font-size: .88rem; font-weight: 700;
+  font-family: 'Outfit', sans-serif; font-size: .98rem; font-weight: 700;
   cursor: pointer; transition: all .18s;
 }
 .final-estimate-chip:hover {
@@ -1046,8 +1058,18 @@ body::before {
   color: var(--gold3);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 10px 22px rgba(241,185,63,.14);
 }
+.final-estimate-actions {
+  display: flex; gap: 10px; align-items: stretch; margin-bottom: 10px;
+}
+.final-estimate-save {
+  flex: 1;
+  min-height: 50px;
+}
 .final-estimate-footnote {
   font-size: .68rem; line-height: 1.5; color: rgba(239,242,247,.48);
+}
+@media (max-width: 680px) {
+  .final-estimate-actions { flex-direction: column; }
 }
 .story-name-banner { background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06)); border: 1px solid rgba(126,230,255,.16); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; }
 .story-name-label { font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); display: block; margin-bottom: 3px; }
@@ -5727,6 +5749,7 @@ function GameScreen({
   const [showConsensus, setShowConsensus] = useState(false);
   const confettiFiredForRoundRef = useRef(null);
   const copyFeedbackRef = useRef(null);
+  const finalEstimateRef = useRef(null);
 
   const players = Object.values(rd.players || {});
   const voters = players.filter((p) => p.role === "voter");
@@ -5804,6 +5827,14 @@ function GameScreen({
     }
     setFinalEstimate("");
   }, [revealed, allSame, consensusEstimate, round]);
+
+  useEffect(() => {
+    if (!requiresManualFinalEstimate) return;
+    const t = setTimeout(() => {
+      finalEstimateRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [requiresManualFinalEstimate, round]);
 
   // Fire confetti + consensus banner exactly once per consensus reveal
   useEffect(() => {
@@ -6305,6 +6336,52 @@ function GameScreen({
             {/* Facilitator Controls */}
             {isObs && (
               <div className="obs-controls">
+                {revealed && requiresManualFinalEstimate && (
+                  <div className="final-estimate-panel" ref={finalEstimateRef}>
+                    <div className="final-estimate-kicker">Facilitator action required</div>
+                    <div className="final-estimate-title">Resolve the split vote before moving on</div>
+                    <div className="final-estimate-copy">
+                      Votes are split. <strong>Discuss the difference</strong>, then choose the final estimate from the active deck.
+                      The analytics above are for discussion only and are <strong>not saved automatically</strong>.
+                    </div>
+                    <div className="final-estimate-grid" role="group" aria-label="Choose final estimate">
+                      {finalEstimateOptions.map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          className={`final-estimate-chip${finalEstimate === val ? " active" : ""}`}
+                          aria-pressed={finalEstimate === val}
+                          onClick={() => setFinalEstimate(val)}
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="final-estimate-actions">
+                      <button
+                        className="btn-record-next final-estimate-save"
+                        disabled={!chosenFinalEstimate}
+                        onClick={() => {
+                          if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, false);
+                          else onNewRound(chosenFinalEstimate, false);
+                        }}
+                      >
+                        {chosenFinalEstimate
+                          ? hasStories && !allStoriesDone
+                            ? `✅ Save ${finalEstimateLabel} & Next Story`
+                            : `✅ Save ${finalEstimateLabel} — Start Next Story`
+                          : "Choose final estimate to continue"}
+                      </button>
+                      <button className="btn-next-round" onClick={() => onNewRound(null, false)}>
+                        ↺ Re-vote this story
+                      </button>
+                    </div>
+                    <div className="final-estimate-footnote">
+                      Best practice: use the reveal analytics to guide the discussion, but record only the final estimate your team agrees to commit.
+                    </div>
+                  </div>
+                )}
+
                 {/* Story queue manager */}
                 <div className="story-panel">
                   <div className="story-panel-title">📋 Story Queue <span className="story-panel-optional">optional</span></div>
@@ -6381,32 +6458,7 @@ function GameScreen({
                 {/* Primary forward action — shown after reveal only */}
                 {revealed && (
                   <>
-                    {requiresManualFinalEstimate && (
-                      <div className="final-estimate-panel">
-                        <div className="final-estimate-title">Choose final estimate</div>
-                        <div className="final-estimate-copy">
-                          Votes are split. <strong>Discuss the difference</strong>, then choose the final estimate from the active deck.
-                          Average and median are shown above for context only and are <strong>not saved automatically</strong>.
-                        </div>
-                        <div className="final-estimate-grid" role="group" aria-label="Choose final estimate">
-                          {finalEstimateOptions.map((val) => (
-                            <button
-                              key={val}
-                              type="button"
-                              className={`final-estimate-chip${finalEstimate === val ? " active" : ""}`}
-                              aria-pressed={finalEstimate === val}
-                              onClick={() => setFinalEstimate(val)}
-                            >
-                              {val}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="final-estimate-footnote">
-                          Best practice: use the reveal analytics to guide the discussion, but save only the final estimate your team agrees to record.
-                        </div>
-                      </div>
-                    )}
-                    {hasStories && !allStoriesDone ? (
+                    {!requiresManualFinalEstimate && hasStories && !allStoriesDone && (
                       <button
                         className="btn-record-next"
                         disabled={!chosenFinalEstimate}
@@ -6418,7 +6470,8 @@ function GameScreen({
                             ? `✅ Save ${finalEstimateLabel} & Next Story`
                             : "Choose final estimate to continue"}
                       </button>
-                    ) : (
+                    )}
+                    {!requiresManualFinalEstimate && (!hasStories || allStoriesDone) && (
                       <button
                         className="btn-record-next"
                         disabled={!chosenFinalEstimate}
@@ -6431,22 +6484,37 @@ function GameScreen({
                             : "Choose final estimate to continue"}
                       </button>
                     )}
-                    <div className="obs-secondary-row" style={{ marginTop: 8 }}>
-                      <button className="btn-next-round" onClick={() => onNewRound(null, false)}>
-                        ↺ Re-vote this story
-                      </button>
-                      <button
-                        className="btn-new-session"
-                        onClick={() => {
-                          if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
-                        }}
-                      >
-                        🔄 New Sprint
-                      </button>
-                    </div>
-                    <div className="btn-hint">
-                      "Re-vote" keeps the same story · "New Sprint" resets everything
-                    </div>
+                    {requiresManualFinalEstimate ? (
+                      <div className="obs-secondary-row">
+                        <button
+                          className="btn-new-session"
+                          onClick={() => {
+                            if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
+                          }}
+                        >
+                          🔄 New Sprint
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="obs-secondary-row" style={{ marginTop: 8 }}>
+                          <button className="btn-next-round" onClick={() => onNewRound(null, false)}>
+                            ↺ Re-vote this story
+                          </button>
+                          <button
+                            className="btn-new-session"
+                            onClick={() => {
+                              if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
+                            }}
+                          >
+                            🔄 New Sprint
+                          </button>
+                        </div>
+                        <div className="btn-hint">
+                          "Re-vote" keeps the same story · "New Sprint" resets everything
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
 
