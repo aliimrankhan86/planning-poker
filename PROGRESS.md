@@ -182,6 +182,10 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Final free-flow hardening is live: room entry now uses the latest typed session name reliably instead of occasionally falling back to the stored account name.
   - Scrollbar theming refined so the track now matches the app's deep-green body surface while the gold/yellow thumb remains unchanged.
   - Build clean.
+  - Split-vote facilitator UX upgraded:
+    - after reveal with mixed votes, the facilitator now gets a delayed full overlay rather than a subtle inline panel
+    - overlay wording now clearly explains the two valid next steps: choose the agreed estimate from the active deck or run another vote
+    - reveal-state copy was tightened so average/spread are clearly framed as discussion guidance rather than the saved result
 
 ---
 

@@ -300,6 +300,187 @@ body::before {
   text-shadow: 0 2px 8px rgba(0,0,0,.9);
 }
 
+/* ══════════════════════ FACILITATOR RESOLUTION OVERLAY ══════════════════════ */
+.facilitator-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 996;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 18px;
+  background:
+    radial-gradient(circle at top, rgba(241,185,63,.10), transparent 34%),
+    rgba(4,10,8,.76);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.facilitator-overlay {
+  width: min(780px, 100%);
+  max-height: min(88vh, 760px);
+  overflow-y: auto;
+  border-radius: 28px;
+  border: 1px solid rgba(241,185,63,.28);
+  background:
+    radial-gradient(circle at top, rgba(241,185,63,.12), rgba(241,185,63,0) 48%),
+    linear-gradient(180deg, rgba(15,32,27,.98), rgba(8,18,15,.98));
+  box-shadow: 0 36px 100px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.05);
+  padding: 28px 28px 24px;
+}
+.facilitator-overlay-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(241,185,63,.22);
+  background: rgba(241,185,63,.10);
+  color: var(--gold2);
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.facilitator-overlay-title {
+  font-size: clamp(1.5rem, 2.8vw, 2.15rem);
+  font-weight: 700;
+  letter-spacing: -.04em;
+  line-height: 1.08;
+  color: var(--cream);
+  margin-bottom: 10px;
+}
+.facilitator-overlay-copy {
+  max-width: 62ch;
+  font-size: .98rem;
+  line-height: 1.72;
+  color: rgba(239,242,247,.78);
+  margin-bottom: 18px;
+}
+.facilitator-overlay-copy strong {
+  color: rgba(239,242,247,.96);
+  font-weight: 600;
+}
+.facilitator-overlay-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.facilitator-overlay-summary-card {
+  padding: 14px 14px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(158,234,196,.14);
+  background: rgba(255,255,255,.04);
+}
+.facilitator-overlay-summary-k {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.46);
+}
+.facilitator-overlay-summary-v {
+  display: block;
+  color: var(--cream);
+  font-size: .98rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.facilitator-overlay-summary-v.gold { color: var(--gold2); }
+.facilitator-overlay-decision {
+  border-radius: 22px;
+  border: 1px solid rgba(241,185,63,.22);
+  background: linear-gradient(180deg, rgba(241,185,63,.09), rgba(255,255,255,.03));
+  padding: 18px 18px 16px;
+}
+.facilitator-overlay-decision-title {
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold2);
+  margin-bottom: 8px;
+}
+.facilitator-overlay-decision-copy {
+  color: rgba(239,242,247,.72);
+  font-size: .88rem;
+  line-height: 1.62;
+  margin-bottom: 16px;
+}
+.facilitator-overlay-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.facilitator-overlay-chip {
+  min-width: 68px;
+  padding: 13px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  color: var(--cream);
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.facilitator-overlay-chip:hover {
+  border-color: rgba(241,185,63,.34);
+  background: rgba(241,185,63,.10);
+  transform: translateY(-1px);
+}
+.facilitator-overlay-chip.active {
+  border-color: rgba(241,185,63,.56);
+  background: linear-gradient(180deg, rgba(241,185,63,.22), rgba(241,185,63,.11));
+  color: var(--gold3);
+  box-shadow: 0 16px 34px rgba(241,185,63,.14), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.facilitator-overlay-actions {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+.facilitator-overlay-save {
+  flex: 1;
+  margin-top: 0;
+  min-height: 52px;
+}
+.facilitator-overlay-revote {
+  flex: 0 0 auto;
+  min-width: 180px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(158,234,196,.16);
+  background: rgba(255,255,255,.04);
+  color: rgba(239,242,247,.86);
+  font-family: 'Outfit', sans-serif;
+  font-size: .86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.facilitator-overlay-revote:hover {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(158,234,196,.26);
+}
+.facilitator-overlay-footnote {
+  margin-top: 14px;
+  color: rgba(239,242,247,.52);
+  font-size: .75rem;
+  line-height: 1.6;
+}
+@media (max-width: 680px) {
+  .facilitator-overlay { padding: 22px 18px 20px; }
+  .facilitator-overlay-summary { grid-template-columns: 1fr; }
+  .facilitator-overlay-actions { flex-direction: column; }
+  .facilitator-overlay-revote { width: 100%; min-width: 0; }
+}
+
 /* ══════════════════════ JOIN SCREEN ══════════════════════ */
 .join-wrap {
   flex: 1; display: flex; flex-direction: column; align-items: center;
@@ -5755,11 +5936,13 @@ function GameScreen({
   const [headerLinkCopied, setHeaderLinkCopied] = useState(false);
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
   const [solobannerDismissed, setSoloBannerDismissed] = useState(false);
+  const [showFinalEstimateOverlay, setShowFinalEstimateOverlay] = useState(false);
   // Confetti fires once per consensus reveal, keyed by round number
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConsensus, setShowConsensus] = useState(false);
   const confettiFiredForRoundRef = useRef(null);
   const copyFeedbackRef = useRef(null);
+  const finalEstimateOverlayTimerRef = useRef(null);
   const finalEstimateRef = useRef(null);
 
   const players = Object.values(rd.players || {});
@@ -5826,6 +6009,23 @@ function GameScreen({
         ? chosenFinalEstimate
         : `${chosenFinalEstimate} pts`)
     : "estimate";
+  const revealedVotesSummary = voted.map((p) => p.vote).join(" • ");
+  const revealHeroLabel = allSame ? "Agreed estimate" : "Average vote";
+  const revealHeroHelper = allSame
+    ? "Everyone picked the same card on this vote."
+    : "Use the range below to guide the discussion. The facilitator records the final agreed estimate next.";
+
+  const saveFinalEstimateAndContinue = useCallback(() => {
+    if (!chosenFinalEstimate) return;
+    setShowFinalEstimateOverlay(false);
+    if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, false);
+    else onNewRound(chosenFinalEstimate, false);
+  }, [chosenFinalEstimate, hasStories, allStoriesDone, onRecordStory, onNewRound]);
+
+  const handleRevoteStory = useCallback(() => {
+    setShowFinalEstimateOverlay(false);
+    onNewRound(null, false);
+  }, [onNewRound]);
 
   useEffect(() => {
     if (!revealed) {
@@ -5840,12 +6040,25 @@ function GameScreen({
   }, [revealed, allSame, consensusEstimate, round]);
 
   useEffect(() => {
-    if (!requiresManualFinalEstimate) return;
-    const t = setTimeout(() => {
-      finalEstimateRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 80);
-    return () => clearTimeout(t);
+    clearTimeout(finalEstimateOverlayTimerRef.current);
+    if (!requiresManualFinalEstimate) {
+      setShowFinalEstimateOverlay(false);
+      return;
+    }
+    setShowFinalEstimateOverlay(false);
+    finalEstimateOverlayTimerRef.current = setTimeout(() => {
+      setShowFinalEstimateOverlay(true);
+    }, 2600);
+    return () => clearTimeout(finalEstimateOverlayTimerRef.current);
   }, [requiresManualFinalEstimate, round]);
+
+  useEffect(() => {
+    if (!showFinalEstimateOverlay) return;
+    const t = setTimeout(() => {
+      finalEstimateRef.current?.focus();
+    }, 40);
+    return () => clearTimeout(t);
+  }, [showFinalEstimateOverlay]);
 
   // Fire confetti + consensus banner exactly once per consensus reveal
   useEffect(() => {
@@ -5882,7 +6095,10 @@ function GameScreen({
     setOptimisticVote(null);
   }, [round]);
 
-  useEffect(() => () => clearTimeout(copyFeedbackRef.current), []);
+  useEffect(() => () => {
+    clearTimeout(copyFeedbackRef.current);
+    clearTimeout(finalEstimateOverlayTimerRef.current);
+  }, []);
 
   const handleCopyLink = useCallback((source = "header") => {
     navigator.clipboard.writeText(shareUrl);
@@ -5920,6 +6136,75 @@ function GameScreen({
             <div className="consensus-burst-text">Perfect Consensus!</div>
             <div className="consensus-burst-sub">
               Everyone picked {voted[0].vote} — the team agrees
+            </div>
+          </div>
+        </div>
+      )}
+      {showFinalEstimateOverlay && requiresManualFinalEstimate && (
+        <div className="facilitator-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="final-estimate-title">
+          <div className="facilitator-overlay" ref={finalEstimateRef} tabIndex="-1">
+            <div className="facilitator-overlay-kicker">Facilitator action required</div>
+            <h2 className="facilitator-overlay-title" id="final-estimate-title">
+              The team is split. Choose the estimate you agreed to record.
+            </h2>
+            <div className="facilitator-overlay-copy">
+              The cards are revealed and the votes differ. <strong>Take a quick discussion</strong>, then either
+              choose the final estimate your team agreed on or start another vote for this story.
+              The summary numbers are here to guide the conversation only and <strong>are not saved automatically</strong>.
+            </div>
+            <div className="facilitator-overlay-summary">
+              <div className="facilitator-overlay-summary-card">
+                <span className="facilitator-overlay-summary-k">Votes shown</span>
+                <span className="facilitator-overlay-summary-v">{revealedVotesSummary || "—"}</span>
+              </div>
+              <div className="facilitator-overlay-summary-card">
+                <span className="facilitator-overlay-summary-k">Average</span>
+                <span className="facilitator-overlay-summary-v gold">{avgDisp}</span>
+              </div>
+              <div className="facilitator-overlay-summary-card">
+                <span className="facilitator-overlay-summary-k">Spread</span>
+                <span className="facilitator-overlay-summary-v">
+                  {spread !== null ? `${spread} point${spread !== 1 ? "s" : ""}` : "Different votes"}
+                </span>
+              </div>
+            </div>
+            <div className="facilitator-overlay-decision">
+              <div className="facilitator-overlay-decision-title">What should be recorded for this story?</div>
+              <div className="facilitator-overlay-decision-copy">
+                Choose one value from the active deck. This is the estimate that will be saved into the sprint analytics and history.
+              </div>
+              <div className="facilitator-overlay-grid" role="group" aria-label="Choose final estimate">
+                {finalEstimateOptions.map((val) => (
+                  <button
+                    key={val}
+                    type="button"
+                    className={`facilitator-overlay-chip${finalEstimate === val ? " active" : ""}`}
+                    aria-pressed={finalEstimate === val}
+                    onClick={() => setFinalEstimate(val)}
+                  >
+                    {val}
+                  </button>
+                ))}
+              </div>
+              <div className="facilitator-overlay-actions">
+                <button
+                  className="btn-record-next facilitator-overlay-save"
+                  disabled={!chosenFinalEstimate}
+                  onClick={saveFinalEstimateAndContinue}
+                >
+                  {chosenFinalEstimate
+                    ? hasStories && !allStoriesDone
+                      ? `✅ Save ${finalEstimateLabel} & Next Story`
+                      : `✅ Save ${finalEstimateLabel} — Start Next Story`
+                    : "Select the agreed estimate to continue"}
+                </button>
+                <button className="facilitator-overlay-revote" type="button" onClick={handleRevoteStory}>
+                  ↺ Run another vote
+                </button>
+              </div>
+              <div className="facilitator-overlay-footnote">
+                Best practice: let the summary guide the conversation, but record only the single value the team explicitly agrees to commit.
+              </div>
             </div>
           </div>
         </div>
@@ -6090,7 +6375,9 @@ function GameScreen({
                   )}
                   {revealed && (
                     <div className="waiting-hint">
-                      Round complete — start the next story below
+                      {requiresManualFinalEstimate
+                        ? "Votes are split — discuss briefly, then confirm the agreed estimate."
+                        : "Round complete — record the estimate and start the next story below."}
                     </div>
                   )}
                 </>
@@ -6148,7 +6435,9 @@ function GameScreen({
                   ) : (
                     <div className="waiting-hint">
                       {revealed
-                        ? "✓ Cards revealed — results below"
+                        ? allSame
+                          ? "✓ Cards revealed — consensus reached"
+                          : "✓ Cards revealed — review the spread below"
                         : "Waiting for the facilitator to start voting…"}
                     </div>
                   )}
@@ -6220,7 +6509,9 @@ function GameScreen({
                   style={{ marginTop: 10 }}
                 >
                   {revealed
-                    ? "⏳ Waiting for the facilitator to start the next story…"
+                    ? allSame
+                      ? "⏳ Consensus reached — waiting for the facilitator to record the story and move on."
+                      : "💬 Cards are revealed — discuss briefly while the facilitator confirms the final estimate or starts another vote."
                     : myVote
                       ? `✓ You picked ${myVote} — waiting for reveal…`
                       : "Pick a card to cast your vote"}
@@ -6235,16 +6526,16 @@ function GameScreen({
                   <>
                     <div className="avg-hero">
                       <div className="avg-hero-label">
-                        Team Average Story Points
+                        {revealHeroLabel}
                       </div>
                       <div className="avg-hero-num">{avgDisp}</div>
                       {allSame ? (
                         <div className="avg-hero-consensus">
-                          🎉 Perfect consensus — everyone picked {voted[0].vote}
+                          🎉 Everyone picked {voted[0].vote} on this vote
                         </div>
                       ) : (
                         <div className="avg-hero-sub">
-                          See individual votes below
+                          {revealHeroHelper}
                         </div>
                       )}
                       {!allSame && minV !== null && (
@@ -6273,7 +6564,7 @@ function GameScreen({
                           </div>
                           {spread > 0 && (
                             <div style={{ textAlign: "center", marginTop: "10px", fontSize: ".72rem", color: "rgba(239,242,247,.65)", letterSpacing: ".5px" }}>
-                              Spread: {spread} point{spread !== 1 ? "s" : ""} — discuss before finalising
+                              Spread: {spread} point{spread !== 1 ? "s" : ""} — discuss, then record one final deck value
                             </div>
                           )}
                         </>
@@ -6347,48 +6638,12 @@ function GameScreen({
             {/* Facilitator Controls */}
             {isObs && (
               <div className="obs-controls">
-                {revealed && requiresManualFinalEstimate && (
-                  <div className="final-estimate-panel" ref={finalEstimateRef}>
-                    <div className="final-estimate-kicker">Facilitator action required</div>
-                    <div className="final-estimate-title">Resolve the split vote before moving on</div>
+                {revealed && requiresManualFinalEstimate && !showFinalEstimateOverlay && (
+                  <div className="final-estimate-panel">
+                    <div className="final-estimate-kicker">Discussion time</div>
+                    <div className="final-estimate-title">Votes are split. Talk it through for a moment.</div>
                     <div className="final-estimate-copy">
-                      Votes are split. <strong>Discuss the difference</strong>, then choose the final estimate from the active deck.
-                      The analytics above are for discussion only and are <strong>not saved automatically</strong>.
-                    </div>
-                    <div className="final-estimate-grid" role="group" aria-label="Choose final estimate">
-                      {finalEstimateOptions.map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          className={`final-estimate-chip${finalEstimate === val ? " active" : ""}`}
-                          aria-pressed={finalEstimate === val}
-                          onClick={() => setFinalEstimate(val)}
-                        >
-                          {val}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="final-estimate-actions">
-                      <button
-                        className="btn-record-next final-estimate-save"
-                        disabled={!chosenFinalEstimate}
-                        onClick={() => {
-                          if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, false);
-                          else onNewRound(chosenFinalEstimate, false);
-                        }}
-                      >
-                        {chosenFinalEstimate
-                          ? hasStories && !allStoriesDone
-                            ? `✅ Save ${finalEstimateLabel} & Next Story`
-                            : `✅ Save ${finalEstimateLabel} — Start Next Story`
-                          : "Choose final estimate to continue"}
-                      </button>
-                      <button className="btn-next-round" onClick={() => onNewRound(null, false)}>
-                        ↺ Re-vote this story
-                      </button>
-                    </div>
-                    <div className="final-estimate-footnote">
-                      Best practice: use the reveal analytics to guide the discussion, but record only the final estimate your team agrees to commit.
+                      A facilitator prompt will appear shortly so you can record the agreed estimate or start another vote.
                     </div>
                   </div>
                 )}
@@ -6509,7 +6764,7 @@ function GameScreen({
                     ) : (
                       <>
                         <div className="obs-secondary-row" style={{ marginTop: 8 }}>
-                          <button className="btn-next-round" onClick={() => onNewRound(null, false)}>
+                          <button className="btn-next-round" onClick={handleRevoteStory}>
                             ↺ Re-vote this story
                           </button>
                           <button

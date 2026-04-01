@@ -105,7 +105,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - mixed votes are no longer auto-saved as numeric averages such as Fibonacci `4`
     - average/median/min/max remain visible as discussion analytics only
     - when votes differ, the facilitator must choose the final estimate explicitly from valid deck values before the story can be recorded
-    - the split-vote resolution step is now elevated into the facilitator's primary post-reveal action area with stronger hierarchy and auto-scroll, making it hard to miss
+    - the split-vote resolution step now escalates into a delayed facilitator-only overlay after reveal, making the next action explicit after a brief discussion pause
+    - split-vote wording was rewritten so teams understand that averages are for discussion only, while the facilitator must either record the agreed deck value or run another vote
   - Room entry now requires a real participant/facilitator name:
     - joining/creating a room no longer falls back to placeholder-like names
     - placeholder values such as `Alex Johnson` are rejected instead of being accepted as the live participant name
