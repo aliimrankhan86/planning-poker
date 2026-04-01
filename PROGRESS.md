@@ -5,7 +5,7 @@
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
-- Current phase focus: SEO Phase 2 rollout while keeping the live product stable
+- Current phase focus: SEO Phase 3 trust/support content and Search Console monitoring while keeping the live product stable
 - Product state:
   - Firebase Auth email/password implemented and enabled
   - Auth QA passed
@@ -109,6 +109,14 @@
     - fixed the history modal close-button styling regression caused by mismatched class names
     - empty-state messaging is now cleaner and more presentational
     - history stat cards / session rows now use a consistent class system instead of partially broken styles
+  - SEO trust/support layer now has its first live pages:
+    - `/about` explains why pointpoker exists, what it optimises for, and the trust signals already in place
+    - `/support` gives a clearer support/contact surface tied to `support@pointpoker.app` and explains common room/account questions
+    - signed-out footer now links into About and Support so they are discoverable to users and crawlers
+  - Google Search Console initial setup is now completed:
+    - domain ownership for `pointpoker.app` verified
+    - `sitemap.xml` submitted successfully
+    - homepage and key marketing routes requested for indexing
   - Post-reveal estimate flow corrected:
     - the facilitator can no longer save a derived average like Fibonacci `4` when the active deck does not contain that value
     - reveal analytics remain visible for discussion, but the final recorded estimate must now be an explicit valid deck choice whenever votes differ
@@ -177,22 +185,20 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 1 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** SEO Phase 2 first-wave implementation
+- **Worked on:** SEO trust/support pages and Search Console follow-through
 - **Completed:**
-  - Added dedicated indexable marketing routes for `/pricing`, `/features`, `/planning-poker-online`, `/scrum-poker`, `/story-point-estimation`, and `/remote-sprint-planning`.
-  - Added unique route-level metadata and canonical handling for each new marketing route while keeping legal and room/session URLs non-indexable.
-  - Added crawlable internal linking from the signed-out footer and home-page SEO content into the new marketing routes.
-  - Updated `vercel.json` rewrites so the new marketing routes load correctly on direct visit and refresh.
-  - Expanded `public/sitemap.xml` to include the new indexable marketing URLs.
-  - Kept the live app safe by limiting the work to additive routing, metadata, content, and internal linking rather than touching room/auth/gameplay logic.
+  - Added dedicated trust/support routes for `/about` and `/support` using the existing marketing-page shell so the work stayed additive and safe.
+  - Added route-level metadata, internal linking, sitemap entries, and `vercel.json` rewrites for the new trust/support pages.
+  - Updated footer navigation so signed-out users can discover About and Support pages, while signed-in users keep a clearer support path.
+  - Completed the initial Google Search Console setup manually with the owner: domain ownership verified, sitemap submitted, and key marketing URLs requested for indexing.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
-**Phase:** 2 — SEO growth layer now in first-wave delivery while live product flows remain stable
-**Active step:** move from the new marketing-route rollout into supporting content, trust signals, and Search Console operational work
-**Remaining:** Search Console setup/submission, supporting guide/trust content, Firebase user-record cleanup, then Stripe/payment work when resumed
+**Phase:** 2/3 crossover — SEO growth layer is live and the first trust/support routes are now in place
+**Active step:** keep adding trust/supporting content and monitor Search Console indexing/performance
+**Remaining:** deeper trust/proof/supporting guide content, Search Console monitoring, Firebase user-record cleanup, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -245,11 +251,12 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 2.4 | Add sitemap.xml to /public | ✅ Done | Session 7. Updated to `www.pointpoker.app` in Session 9e. |
 | 2.5 | Add content section to JoinScreen (features, FAQ) | ✅ Done | Session 8. Semantic HTML: h2/h3/h4/p/ol/ul/FAQ grid. Keyword-rich, WCAG compliant, responsive. |
 | 2.6 | Google Fonts preconnect + Core Web Vitals | ✅ Done | display=swap confirmed. Preconnect in index.html head. Session 7/8. |
-| 2.7 | Register Google Search Console + submit sitemap | ⏳ Not started | Ali to do manually after domain purchase |
+| 2.7 | Register Google Search Console + submit sitemap | ✅ Done | Domain ownership verified, sitemap submitted, and key marketing URLs requested for indexing on 1 April 2026 |
 | 2.8 | Create OG social image (1200×630px) | ✅ Done | Added as `public/og-image.png` in Session 9o |
 | 2.9 | Add dedicated indexable marketing routes | ✅ Done | `/pricing`, `/features`, `/planning-poker-online`, `/scrum-poker`, `/story-point-estimation`, `/remote-sprint-planning` now render unique route content in the SPA. |
 | 2.10 | Expand route-level metadata + internal linking for marketing pages | ✅ Done | Route-specific title/description/canonical added; signed-out footer and home content now link into the new marketing routes. |
 | 2.11 | Expand SPA rewrites + sitemap for marketing routes | ✅ Done | `vercel.json` rewrites and `public/sitemap.xml` now include the new indexable URLs. |
+| 2.12 | Add trust/support routes and internal linking | ✅ Done | `/about` and `/support` now exist as indexable trust pages, with footer discovery and route-aware metadata. |
 
 ---
 

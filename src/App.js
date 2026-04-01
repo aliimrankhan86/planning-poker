@@ -98,6 +98,8 @@ const STATIC_SCREEN_BY_PATH = {
   "/": "join",
   "/terms": "terms",
   "/privacy": "privacy",
+  "/about": "about",
+  "/support": "support",
   "/pricing": "pricing",
   "/features": "features",
   "/planning-poker-online": "planningPokerOnline",
@@ -106,6 +108,22 @@ const STATIC_SCREEN_BY_PATH = {
   "/remote-sprint-planning": "remoteSprintPlanning",
 };
 const STATIC_ROUTE_META = {
+  "/about": {
+    title: "About pointpoker | Why This Planning Poker Tool Exists",
+    description:
+      "Learn why pointpoker was built for fast, low-friction agile estimation, what makes it different from bloated sprint-planning tools, and how the product is designed to earn team trust.",
+    canonical: `${SITE_URL}/about`,
+    ogUrl: `${SITE_URL}/about`,
+    robots: "index, follow",
+  },
+  "/support": {
+    title: "Support pointpoker | Help, Contact, and Product Guidance",
+    description:
+      "Get support for pointpoker, understand how rooms and Team Rooms work, find help for account and Pro access questions, and contact the team directly.",
+    canonical: `${SITE_URL}/support`,
+    ogUrl: `${SITE_URL}/support`,
+    robots: "index, follow",
+  },
   "/pricing": {
     title: "Planning Poker Pricing | Free and Pro Plans | pointpoker",
     description:
@@ -3346,15 +3364,17 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
               {!isPro && (
                 <button className="footer-link" onClick={onShowPricing}>Upgrade to Pro</button>
               )}
+              <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>Support</RouteLink>
               <a href={`mailto:${support}`} className="footer-link">Billing &amp; Support</a>
             </>
           ) : (
             <>
               <RouteLink href="/" className="footer-link" onNavigate={onNavigate}>Free Planning Poker</RouteLink>
+              <RouteLink href="/about" className="footer-link" onNavigate={onNavigate}>About pointpoker</RouteLink>
               <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>Features</RouteLink>
               <RouteLink href="/pricing" className="footer-link" onNavigate={onNavigate}>Pricing &amp; plans</RouteLink>
               <RouteLink href="/planning-poker-online" className="footer-link" onNavigate={onNavigate}>Planning poker online</RouteLink>
-              <a href={`mailto:${support}`} className="footer-link">Contact &amp; Support</a>
+              <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>Support &amp; contact</RouteLink>
             </>
           )}
         </div>
@@ -4682,6 +4702,12 @@ export default function App() {
           {screen === "privacy" && (
             <PrivacyPage onBack={() => navTo("/")} />
           )}
+          {screen === "about" && (
+            <AboutPage onNavigate={navTo} />
+          )}
+          {screen === "support" && (
+            <SupportPage onNavigate={navTo} />
+          )}
           {screen === "pricing" && (
             <PricingPage onNavigate={navTo} />
           )}
@@ -5134,6 +5160,187 @@ function PricingPage({ onNavigate }) {
           <RouteLink href="/features" onNavigate={onNavigate} className="marketing-btn-secondary">See feature detail</RouteLink>
         </div>
       </section>
+    </MarketingPageShell>
+  );
+}
+
+function AboutPage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="About pointpoker"
+      title="A planning poker tool built to stay fast, trustworthy, and usable in real sprint planning"
+      intro="pointpoker exists for teams that want the useful parts of online estimation without the usual product bloat. The goal is simple: make it easy to open a room, invite the team, vote fairly, discuss clearly, and keep sprint planning moving."
+      highlights={[
+        { value: "Fast", label: "Browser-first estimation with minimal setup" },
+        { value: "Clear", label: "Facilitator-led flow with explicit next steps" },
+        { value: "Trusted", label: "Transparent pricing, support, and legal pages" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Start free room"
+      secondaryHref="/support"
+      secondaryLabel="Get support"
+    >
+      <MarketingSection
+        title="Why pointpoker was built"
+        intro="A lot of planning poker tools feel like generic whiteboards or overbuilt agile suites. pointpoker takes the opposite approach: make the estimation ceremony faster, clearer, and easier to repeat."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Less friction to start</h3>
+            <p className="marketing-card-copy">
+              Free rooms do not force account creation for normal participation, so a facilitator can drop a link into Slack or Teams and start estimating without turning setup into a ceremony of its own.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Better structure once the team is inside</h3>
+            <p className="marketing-card-copy">
+              Simultaneous reveal, queue-based flow, split-vote resolution, and facilitator-only controls make the session feel purposeful instead of improvised.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">A clean upgrade path when repeatability matters</h3>
+            <p className="marketing-card-copy">
+              Pro is intentionally focused on permanent Team Rooms, higher voter limits, and sprint history. It is designed for recurring team rhythm, not for locking basic estimation behind billing first.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="What the product is designed to optimise"
+        intro="The product is tuned around the real moments that make planning sessions feel smooth or frustrating."
+      >
+        <ul className="marketing-list">
+          <li><strong>Independent first votes:</strong> teams should see honest spread before the discussion starts.</li>
+          <li><strong>Clear facilitator guidance:</strong> reveals, re-votes, moderation, and final estimate capture should be hard to miss and easy to run.</li>
+          <li><strong>Low-friction invites:</strong> the share link should always be nearby, copy quickly, and stay understandable to the whole team.</li>
+          <li><strong>Trustworthy data:</strong> sprint history and final estimates should reflect actual agreed deck values, not misleading derived numbers.</li>
+          <li><strong>Repeatable ceremonies:</strong> teams that estimate together every sprint should be able to keep a stable room and return without re-teaching the workflow.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Trust and product signals"
+        intro="pointpoker is still growing, but the product already exposes the practical signals teams expect before using a lightweight SaaS tool in real ceremonies."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Public legal and privacy pages</h3>
+            <p className="marketing-card-copy">
+              Terms of Service and Privacy Policy are available on the live domain, with UK GDPR-aware privacy language and clear third-party processor disclosure.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Live support route</h3>
+            <p className="marketing-card-copy">
+              Support is reachable through a dedicated support page and the published support email, so teams are not left guessing how to get help.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Focused product scope</h3>
+            <p className="marketing-card-copy">
+              The product is deliberately narrow: run planning poker well, keep the room flow clean, and add only the Pro features that improve repeat use rather than adding unnecessary complexity.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Continue exploring"
+        intro="These pages explain the product from the pricing, feature, and remote-team angles so teams can evaluate pointpoker from the perspective that matters most to them."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the live room flow, facilitator controls, Team Alignment analytics, and sprint-history layer." },
+          { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "Understand when Free is enough and when Pro becomes operationally useful." },
+          { href: "/remote-sprint-planning", kicker: "Remote", title: "Remote sprint planning", copy: "See how the browser-first workflow fits distributed teams and recurring ceremonies." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function SupportPage({ onNavigate }) {
+  const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
+
+  return (
+    <MarketingPageShell
+      eyebrow="Support"
+      title="Get help with pointpoker, understand the workflow, and know where to go when your team has questions"
+      intro="pointpoker is designed to feel simple in the room, but good support still matters. This page explains the most common product questions, when Free vs Pro matters, and how to contact support directly."
+      highlights={[
+        { value: "Email", label: support },
+        { value: "Free", label: "Normal room participation without account setup" },
+        { value: "Pro", label: "Account-linked Team Room and sprint history" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Open the app"
+      secondaryHref="/pricing"
+      secondaryLabel="Compare plans"
+    >
+      <MarketingSection
+        title="Best place to start when something feels unclear"
+        intro="Most support questions fall into one of a few buckets. Starting with the right explanation usually resolves things fast."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Room join questions</h3>
+            <p className="marketing-card-copy">
+              Free participation does not require an account. Guests can join a shared room with a real name and the correct role, then vote or facilitate straight away.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Pro access questions</h3>
+            <p className="marketing-card-copy">
+              Pro access is attached to an account. That is what keeps Team Room ownership and sprint history tied to one reusable identity across sessions and devices.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Workflow questions</h3>
+            <p className="marketing-card-copy">
+              When votes split, the facilitator can either run another vote or choose the final agreed estimate from the active deck. Averages are shown for discussion only and are not saved automatically.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Contact support"
+        intro="If the product behaves unexpectedly or you need help with account access, Team Rooms, or sprint history, contact support directly."
+      >
+        <div className="marketing-note-panel">
+          <strong>Support email:</strong>{" "}
+          <a href={`mailto:${support}`} className="seo-inline-link">{support}</a>
+          <div style={{ marginTop: 10, color: "rgba(239,242,247,.72)" }}>
+            Include the room code or Team Room URL, what you expected to happen, and what you saw instead. That makes it much easier to reproduce and fix the issue quickly.
+          </div>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Helpful product guidance"
+        intro="These are the explanations that tend to reduce confusion fastest for teams using the product for the first time."
+      >
+        <ul className="marketing-list">
+          <li><strong>Free rooms are for fast ad-hoc estimation:</strong> create a room, invite the team, and run the ceremony without forcing everyone through accounts.</li>
+          <li><strong>Pro is for repeatability:</strong> permanent Team Rooms, sprint history, and higher voter limits are useful when the same team estimates together every sprint.</li>
+          <li><strong>Facilitators do not need to vote:</strong> the facilitator role exists to manage reveal, re-vote, moderation, and final estimate capture.</li>
+          <li><strong>Real names are required:</strong> participants and facilitators must enter a genuine name so the room stays understandable to the whole team.</li>
+          <li><strong>Support questions are easier to solve with context:</strong> sharing the room code, team slug, or exact flow that failed usually shortens the back-and-forth significantly.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Related pages"
+        intro="If the question is really about plan fit, workflow, or how the product is intended to be used, these pages cover that in more detail."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/about", kicker: "About", title: "Why pointpoker exists", copy: "Understand the product philosophy and why the workflow is intentionally lightweight." },
+          { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the full room workflow, facilitator controls, Team Alignment, Team Rooms, and history features." },
+          { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "See when Free is enough and when Pro becomes the right operational step." },
+        ]}
+      />
     </MarketingPageShell>
   );
 }

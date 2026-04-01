@@ -20,6 +20,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/about",  "destination": "/" },
+    { "source": "/support",  "destination": "/" },
     { "source": "/pricing",  "destination": "/" },
     { "source": "/features",  "destination": "/" },
     { "source": "/planning-poker-online",  "destination": "/" },

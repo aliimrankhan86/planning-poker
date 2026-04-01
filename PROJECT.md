@@ -130,11 +130,19 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - each route now has unique route-level title, description, canonical, robots, and social metadata
     - signed-out footer and home-page content now provide crawlable internal links into the new marketing routes
     - Vercel rewrites and `sitemap.xml` now include the new indexable marketing URLs
+  - SEO Phase 3 trust layer is now started:
+    - dedicated `/about` and `/support` routes now exist as additive trust/support pages
+    - footer navigation now links into those pages so they are discoverable to both users and crawlers
+    - support messaging is now clearer and anchored to the published support email
+  - Search Console operational setup is now complete at the initial level:
+    - domain ownership for `pointpoker.app` has been verified in Google Search Console
+    - `sitemap.xml` has been submitted successfully
+    - homepage and key marketing routes have been manually requested for indexing
   - SEO implementation plan is now explicit for future work:
     - Phase 1: metadata/canonical/noindex control and crawl hygiene ✅
     - Phase 2: dedicated indexable marketing pages (`/pricing`, `/features`, keyword landing pages) ✅
-    - Phase 3: supporting educational content and trust/proof content
-    - Phase 4: Search Console, sitemap submission, monitoring, and performance refinement
+    - Phase 3: supporting educational content and trust/proof content 🔄 Started (`/about`, `/support`)
+    - Phase 4: Search Console monitoring and performance refinement 🔄 Started (ownership + sitemap + indexing requests complete)
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened
@@ -144,7 +152,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
-  - SEO Phase 3/4: add supporting guides/trust signals and complete Search Console submission/monitoring
+  - SEO Phase 3/4: continue adding supporting guide/trust content and monitor indexing/query performance in Search Console
   - Replace Stripe placeholder links and complete paid activation wiring
   - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate/stale profile data
   - Verify real paid/pro account state end-to-end once live Stripe links exist
@@ -744,19 +752,10 @@ Listed chronologically newest-first.
 
 Items are grouped by dependency. Do not mark complete until fully deployed/verified.
 
-### IMMEDIATE — Deploy (user action required)
-
-- [ ] **Push 2 committed commits to remote to trigger Vercel deploy**
-  ```bash
-  cd ~/Documents/planning-poker && git push origin main
-  ```
-  Commits `bf7ee1d` (UX improvements) and `cff462a` (PROGRESS.md update) are committed locally but not yet pushed. VM network is restricted — run from your terminal.
-
 ### DOMAIN / LAUNCH CONFIG
 
-- [ ] Add `REACT_APP_SUPPORT_EMAIL` to Vercel environment variables
-- [ ] Connect `www.pointpoker.app` to Vercel and verify production routing
-- [ ] Submit sitemap to Google Search Console
+- [ ] Monitor Google Search Console indexing status and query performance for the homepage plus the new marketing routes
+- [ ] Continue Phase 3 trust/proof content beyond the initial `/about` and `/support` pages
 
 ### BLOCKED ON: Stripe account setup
 
