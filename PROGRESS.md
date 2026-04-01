@@ -197,6 +197,15 @@ Treat this section as the fastest current-status read. Historical session notes 
     - anonymous auth CTA now reads `Sign in / Create account` so the header matches the actual auth modal capability
     - invite-team action is now compact and moved into the sticky room header for faster copying/sharing
     - landing-page and feature copy were tightened to explain the workflow more clearly and strengthen planning-poker / scrum-poker keyword coverage
+  - SEO Phase 1 implemented:
+    - route-aware metadata now updates title, description, canonical, robots, and social metadata for home, legal pages, room URLs, and Team Room URLs
+    - Vercel now sends `X-Robots-Tag: noindex, nofollow` headers for `/terms`, `/privacy`, and `/t/:slug`
+    - sitemap refreshed to match the current indexable surface
+  - SEO roadmap now explicitly staged for future AI:
+    - Phase 1 complete: metadata/canonical/noindex/crawl hygiene
+    - Phase 2 pending: dedicated marketing pages with unique URLs/content
+    - Phase 3 pending: supporting guides and trust/proof content
+    - Phase 4 pending: Search Console submission, indexing monitoring, and deeper performance refinement
 
 ---
 

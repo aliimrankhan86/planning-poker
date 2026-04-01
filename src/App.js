@@ -84,6 +84,52 @@ async function saveSessionHistory(uid, roomData, roomCode) {
   }
 }
 
+const SITE_URL = "https://www.pointpoker.app";
+const DEFAULT_META = {
+  title: "pointpoker — Free Online Planning Poker for Agile & Scrum Teams",
+  description:
+    "pointpoker is a free online planning poker tool for agile and scrum teams. Run sprint planning with real-time voting, story point estimation, story queues, and team alignment analytics.",
+  canonical: `${SITE_URL}/`,
+  robots: "index, follow",
+  ogUrl: `${SITE_URL}/`,
+};
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
+
+function upsertMeta(selector, createTag, attrs, content) {
+  let node = document.head.querySelector(selector);
+  if (!node) {
+    node = document.createElement(createTag);
+    Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+    document.head.appendChild(node);
+  }
+  node.setAttribute("content", content);
+}
+
+function upsertLink(selector, attrs) {
+  let node = document.head.querySelector(selector);
+  if (!node) {
+    node = document.createElement("link");
+    document.head.appendChild(node);
+  }
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+}
+
+function applyRouteMeta(meta) {
+  const next = { ...DEFAULT_META, ...meta };
+  document.title = next.title;
+  upsertMeta('meta[name="description"]', "meta", { name: "description" }, next.description);
+  upsertMeta('meta[name="robots"]', "meta", { name: "robots" }, next.robots);
+  upsertMeta('meta[property="og:title"]', "meta", { property: "og:title" }, next.title);
+  upsertMeta('meta[property="og:description"]', "meta", { property: "og:description" }, next.description);
+  upsertMeta('meta[property="og:url"]', "meta", { property: "og:url" }, next.ogUrl || next.canonical);
+  upsertMeta('meta[property="og:image"]', "meta", { property: "og:image" }, next.ogImage || DEFAULT_OG_IMAGE);
+  upsertMeta('meta[name="twitter:title"]', "meta", { name: "twitter:title" }, next.title);
+  upsertMeta('meta[name="twitter:description"]', "meta", { name: "twitter:description" }, next.description);
+  upsertMeta('meta[name="twitter:url"]', "meta", { name: "twitter:url" }, next.ogUrl || next.canonical);
+  upsertMeta('meta[name="twitter:image"]', "meta", { name: "twitter:image" }, next.ogImage || DEFAULT_OG_IMAGE);
+  upsertLink('link[rel="canonical"]', { rel: "canonical", href: next.canonical });
+}
+
 // ── CARD DECKS ────────────────────────────────────────────────────
 // Each deck is an array of card objects. The facilitator selects a deck
 // when creating a room; the choice is stored in Firebase so all players
@@ -3414,6 +3460,63 @@ export default function App() {
     clearTimeout(toastRef.current);
     toastRef.current = setTimeout(() => setToastOn(false), 3400);
   }, []);
+
+  useEffect(() => {
+    const pathname = window.location.pathname;
+    const roomCode = new URLSearchParams(window.location.search).get("room");
+    const teamMatch = pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+    const teamSlug = teamMatch?.[1] || "";
+
+    if (pathname === "/terms" || screen === "terms") {
+      applyRouteMeta({
+        title: "Terms of Service | pointpoker",
+        description:
+          "Read the pointpoker Terms of Service, including acceptable use, liability limits, and account rules for the planning poker app.",
+        canonical: `${SITE_URL}/terms`,
+        ogUrl: `${SITE_URL}/terms`,
+        robots: "noindex, nofollow",
+      });
+      return;
+    }
+
+    if (pathname === "/privacy" || screen === "privacy") {
+      applyRouteMeta({
+        title: "Privacy Policy | pointpoker",
+        description:
+          "Read the pointpoker Privacy Policy, including data handling, Firebase usage, UK GDPR rights, and retention details.",
+        canonical: `${SITE_URL}/privacy`,
+        ogUrl: `${SITE_URL}/privacy`,
+        robots: "noindex, nofollow",
+      });
+      return;
+    }
+
+    if (teamSlug) {
+      applyRouteMeta({
+        title: "Team Room | pointpoker",
+        description:
+          "Join a pointpoker Team Room to estimate stories live with your team. Team Room URLs are for active sessions and are not indexed.",
+        canonical: `${SITE_URL}/`,
+        ogUrl: `${SITE_URL}/t/${teamSlug}`,
+        robots: "noindex, nofollow",
+      });
+      return;
+    }
+
+    if (roomCode || screen === "game") {
+      applyRouteMeta({
+        title: "Planning Poker Room | pointpoker",
+        description:
+          "Live pointpoker estimation room for sprint planning. Room URLs are for active sessions and are not indexed.",
+        canonical: `${SITE_URL}/`,
+        ogUrl: roomCode ? `${SITE_URL}/?room=${encodeURIComponent(roomCode)}` : `${SITE_URL}/`,
+        robots: "noindex, nofollow",
+      });
+      return;
+    }
+
+    applyRouteMeta(DEFAULT_META);
+  }, [screen, code, prefillTeam]);
 
   // ── STABLE REFS ──────────────────────────────────────────────────
   // roomDataRef: always holds the latest roomData for use in goBack /
