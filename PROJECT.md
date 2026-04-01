@@ -42,7 +42,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - The provided transparent brand-mark asset is now used in the app logo sections in place of the old inline SVG chip mark
   - App chrome wordmark now renders as `Point Poker` with white `Point`, gold `Poker`, and explicit spacing/capitalization
   - The same approved brand mark is now used for favicon and app-icon assets across browser and PWA contexts
-  - Landing-page discoverability improved: NavBar now exposes `Plans` and `FAQ` shortcuts that jump to real on-page sections
+  - Landing-page discoverability improved: signed-out NavBar now exposes `Plans` and `FAQ` shortcuts, with `Plans` routing to the dedicated pricing page and `FAQ` jumping to the home-page FAQ section
   - Landing page now contains a compact plans overview section in addition to the pricing modal
   - Auth flow is clearer: login/register/reset messaging now distinguishes free use from account-linked Pro access
   - Upgrade flow is smoother: starting checkout while signed out now routes through account creation/sign-in and then returns the user to pricing
@@ -125,9 +125,14 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - route-aware metadata now updates title, description, canonical, robots, and social metadata for home, legal routes, room URLs, and Team Room URLs
     - legal routes and room/team session routes now send server-level `X-Robots-Tag: noindex, nofollow` headers via Vercel
     - sitemap refreshed to reflect the currently intended indexable surface
+  - SEO hardening Phase 2 first wave is now implemented:
+    - dedicated indexable marketing routes now exist for `/pricing`, `/features`, `/planning-poker-online`, `/scrum-poker`, `/story-point-estimation`, and `/remote-sprint-planning`
+    - each route now has unique route-level title, description, canonical, robots, and social metadata
+    - signed-out footer and home-page content now provide crawlable internal links into the new marketing routes
+    - Vercel rewrites and `sitemap.xml` now include the new indexable marketing URLs
   - SEO implementation plan is now explicit for future work:
     - Phase 1: metadata/canonical/noindex control and crawl hygiene ✅
-    - Phase 2: dedicated indexable marketing pages (`/pricing`, `/features`, keyword landing pages)
+    - Phase 2: dedicated indexable marketing pages (`/pricing`, `/features`, keyword landing pages) ✅
     - Phase 3: supporting educational content and trust/proof content
     - Phase 4: Search Console, sitemap submission, monitoring, and performance refinement
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
@@ -139,7 +144,6 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
-  - SEO Phase 2: ship dedicated indexable marketing pages with unique route content and route-level metadata
   - SEO Phase 3/4: add supporting guides/trust signals and complete Search Console submission/monitoring
   - Replace Stripe placeholder links and complete paid activation wiring
   - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate/stale profile data
@@ -210,7 +214,7 @@ planning-poker/
 │   ├── logo512.png         # PWA icon generated from approved brand mark
 │   ├── manifest.json       # PWA manifest with SEO copy
 │   ├── robots.txt          # Sitemap points to www.pointpoker.app
-│   ├── sitemap.xml         # Root URL sitemap for www.pointpoker.app
+│   ├── sitemap.xml         # Indexable marketing-route sitemap for www.pointpoker.app
 │   ├── privacy.html        # GDPR/UK ICO privacy policy (styled, noindex)
 │   ├── terms.html          # Terms of Service — England & Wales (styled, noindex)
 │   └── fonts/              # Self-hosted: Outfit v15 (active)
@@ -281,13 +285,15 @@ All components are functions in `src/App.js`. Listed in render order:
 |---|---|
 | `CasinoChip` | SVG casino chip — 8-segment dashed rim, inner felt, gold rings, "PP" logotype. Props: `onClick`, `size` (default 44), `label`. Used at 34/44/52/56px. |
 | `NavBar` | Global sticky nav (z-index: 200). Left: chip + brand. Right: account badge/log out when signed in, otherwise Log in + Get Pro. Props: `onLogoClick`, `onLogin`, `onRegister`, `currentUser`, `currentPlan`, `onLogout`. |
+| `RouteLink` | Crawlable internal anchor helper — preserves real `href` values for SEO while using SPA navigation on click. |
 | `SiteFooter` | 3-column footer — brand desc, Legal links, Product links. Bottom bar: copyright + legal disclaimer. Props: `onCookieSettings`. |
 | `LoginModal` | Account modal. Supports sign in, create account, password reset, and Pro key activation against Firebase `/licenses/`. Props: `onClose`, `onAuthSuccess`, `onProActivated`, `currentUser`. |
 | `CookieBanner` | GDPR consent bar — shown until `pp_cookie_ok = "1"` in localStorage. Props: `onAccept`. |
 | `App` | Root — manages all screen state, Firebase subscriptions, room lifecycle. |
 | `Confetti` | Pure-canvas confetti burst — no external deps. Props: `onDone`, `big`. |
 | `PricingModal` | Monthly/annual billing toggle, GBP/USD/EUR currency, account-aware Pro checkout CTA, collapsible key activation. Props: `onClose`, `onProActivated`, `currentUser`, `currentPlan`, `onRequireLogin`. |
-| `JoinScreen` | Landing form — Create/Join/Team Room tabs, role selector, deck picker. Props: `onCreate`, `onJoin`, `onTeamRoom`, `prefillCode`, `prefillTeam`, `proMode`, `onShowPricing`. |
+| `PricingPage` / `FeaturesPage` / keyword pages | Dedicated indexable marketing routes used for Phase 2 SEO discovery. |
+| `JoinScreen` | Landing/workspace form — Create/Join/Team Room tabs, role selector, deck picker, signed-in workspace state, and on-page SEO content. |
 | `GameScreen` | Full estimation room UI — timer, playing cards, results, facilitator controls, analytics. Props: see § GameScreen Props. |
 
 ### GameScreen Props

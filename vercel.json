@@ -20,6 +20,12 @@
     }
   ],
   "rewrites": [
+    { "source": "/pricing",  "destination": "/" },
+    { "source": "/features",  "destination": "/" },
+    { "source": "/planning-poker-online",  "destination": "/" },
+    { "source": "/scrum-poker",  "destination": "/" },
+    { "source": "/story-point-estimation",  "destination": "/" },
+    { "source": "/remote-sprint-planning",  "destination": "/" },
     { "source": "/t/:slug",  "destination": "/" },
     { "source": "/terms",    "destination": "/" },
     { "source": "/privacy",  "destination": "/" }

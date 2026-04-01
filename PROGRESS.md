@@ -5,7 +5,7 @@
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
-- Current phase focus: product QA/hardening while launch plumbing is completed in parallel
+- Current phase focus: SEO Phase 2 rollout while keeping the live product stable
 - Product state:
   - Firebase Auth email/password implemented and enabled
   - Auth QA passed
@@ -30,8 +30,8 @@
   - The approved transparent brand mark is now used across the app’s logo sections
   - The app wordmark now displays as `Point Poker` with white `Point`, gold `Poker`, and stronger spacing/capitalization
   - The approved brand mark now also drives favicon and app-icon assets across browser and PWA contexts
-  - NavBar now includes direct `Plans` and `FAQ` shortcuts to improve landing-page discoverability
-  - JoinScreen now includes a compact plans overview section that the new `Plans` nav item scrolls to
+  - NavBar now includes direct `Plans` and `FAQ` shortcuts to improve landing-page discoverability; `Plans` routes to the dedicated pricing page and `FAQ` jumps to the home FAQ section
+  - JoinScreen now includes a compact plans overview section in addition to the pricing modal
   - Login/register/reset copy now more clearly separates free use from account-linked Pro access
   - Upgrade flow now returns signed-out users to pricing after account creation/sign-in instead of leaving them stranded
   - Pricing modal now makes free vs Pro account state clearer and explicitly blocks misleading checkout copy while Stripe links are still placeholders
@@ -175,44 +175,24 @@ Treat this section as the fastest current-status read. Historical session notes 
 ---
 
 ## 🗓 Last Session
-- **Date:** 29 March 2026
+- **Date:** 1 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** final free-flow hardening + scrollbar-track brand polish
+- **Worked on:** SEO Phase 2 first-wave implementation
 - **Completed:**
-  - Final free-flow hardening is live: room entry now uses the latest typed session name reliably instead of occasionally falling back to the stored account name.
-  - Scrollbar theming refined so the track now matches the app's deep-green body surface while the gold/yellow thumb remains unchanged.
-  - Build clean.
-  - Split-vote facilitator UX upgraded:
-    - after reveal with mixed votes, the facilitator now gets a delayed full overlay rather than a subtle inline panel
-    - overlay wording now clearly explains the two valid next steps: choose the agreed estimate from the active deck or run another vote
-    - reveal-state copy was tightened so average/spread are clearly framed as discussion guidance rather than the saved result
-  - Stale-room cleanup strengthened:
-    - ad-hoc rooms older than the 5-hour session lifespan are now hard-deleted during the background sweep
-    - persistent Team Rooms older than the same threshold are reset back to a clean reusable shell instead of retaining stale live-session state
-    - this keeps Firebase leaner without breaking permanent Team Room URLs
-  - Facilitator moderation added:
-    - facilitators can now remove voters or other facilitators from the `At the Table` panel
-    - removed users are forced back to the home screen with a clear explanatory toast instead of staying inside a broken stale-room view
-  - Header/copy/SEO polish added:
-    - anonymous auth CTA now reads `Sign in / Create account` so the header matches the actual auth modal capability
-    - invite-team action is now compact and moved into the sticky room header for faster copying/sharing
-    - landing-page and feature copy were tightened to explain the workflow more clearly and strengthen planning-poker / scrum-poker keyword coverage
-  - SEO Phase 1 implemented:
-    - route-aware metadata now updates title, description, canonical, robots, and social metadata for home, legal pages, room URLs, and Team Room URLs
-    - Vercel now sends `X-Robots-Tag: noindex, nofollow` headers for `/terms`, `/privacy`, and `/t/:slug`
-    - sitemap refreshed to match the current indexable surface
-  - SEO roadmap now explicitly staged for future AI:
-    - Phase 1 complete: metadata/canonical/noindex/crawl hygiene
-    - Phase 2 pending: dedicated marketing pages with unique URLs/content
-    - Phase 3 pending: supporting guides and trust/proof content
-    - Phase 4 pending: Search Console submission, indexing monitoring, and deeper performance refinement
+  - Added dedicated indexable marketing routes for `/pricing`, `/features`, `/planning-poker-online`, `/scrum-poker`, `/story-point-estimation`, and `/remote-sprint-planning`.
+  - Added unique route-level metadata and canonical handling for each new marketing route while keeping legal and room/session URLs non-indexable.
+  - Added crawlable internal linking from the signed-out footer and home-page SEO content into the new marketing routes.
+  - Updated `vercel.json` rewrites so the new marketing routes load correctly on direct visit and refresh.
+  - Expanded `public/sitemap.xml` to include the new indexable marketing URLs.
+  - Kept the live app safe by limiting the work to additive routing, metadata, content, and internal linking rather than touching room/auth/gameplay logic.
+  - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
-**Phase:** 1 / 3 crossover — Product flows hardened; operational cleanup and monetisation remain
-**Active step:** keep production stable, then clean Firebase account duplication and resume billing work only when needed
-**Remaining:** Firebase user-record cleanup, optional broader E2E sweep, then Stripe/payment work when resumed
+**Phase:** 2 — SEO growth layer now in first-wave delivery while live product flows remain stable
+**Active step:** move from the new marketing-route rollout into supporting content, trust signals, and Search Console operational work
+**Remaining:** Search Console setup/submission, supporting guide/trust content, Firebase user-record cleanup, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -267,6 +247,9 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 2.6 | Google Fonts preconnect + Core Web Vitals | ✅ Done | display=swap confirmed. Preconnect in index.html head. Session 7/8. |
 | 2.7 | Register Google Search Console + submit sitemap | ⏳ Not started | Ali to do manually after domain purchase |
 | 2.8 | Create OG social image (1200×630px) | ✅ Done | Added as `public/og-image.png` in Session 9o |
+| 2.9 | Add dedicated indexable marketing routes | ✅ Done | `/pricing`, `/features`, `/planning-poker-online`, `/scrum-poker`, `/story-point-estimation`, `/remote-sprint-planning` now render unique route content in the SPA. |
+| 2.10 | Expand route-level metadata + internal linking for marketing pages | ✅ Done | Route-specific title/description/canonical added; signed-out footer and home content now link into the new marketing routes. |
+| 2.11 | Expand SPA rewrites + sitemap for marketing routes | ✅ Done | `vercel.json` rewrites and `public/sitemap.xml` now include the new indexable URLs. |
 
 ---
 

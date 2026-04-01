@@ -94,6 +94,87 @@ const DEFAULT_META = {
   ogUrl: `${SITE_URL}/`,
 };
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
+const STATIC_SCREEN_BY_PATH = {
+  "/": "join",
+  "/terms": "terms",
+  "/privacy": "privacy",
+  "/pricing": "pricing",
+  "/features": "features",
+  "/planning-poker-online": "planningPokerOnline",
+  "/scrum-poker": "scrumPoker",
+  "/story-point-estimation": "storyPointEstimation",
+  "/remote-sprint-planning": "remoteSprintPlanning",
+};
+const STATIC_ROUTE_META = {
+  "/pricing": {
+    title: "Planning Poker Pricing | Free and Pro Plans | pointpoker",
+    description:
+      "Compare Free and Pro planning poker pricing. Start free, then upgrade for a permanent Team Room, higher voter limits, and sprint history.",
+    canonical: `${SITE_URL}/pricing`,
+    ogUrl: `${SITE_URL}/pricing`,
+    robots: "index, follow",
+  },
+  "/features": {
+    title: "Planning Poker Features for Agile Teams | pointpoker",
+    description:
+      "Explore pointpoker features for agile estimation: simultaneous reveal, facilitator controls, story queues, Team Alignment analytics, Team Rooms, and sprint history.",
+    canonical: `${SITE_URL}/features`,
+    ogUrl: `${SITE_URL}/features`,
+    robots: "index, follow",
+  },
+  "/planning-poker-online": {
+    title: "Planning Poker Online for Remote Agile Teams | pointpoker",
+    description:
+      "Run planning poker online in any browser. Create a room, invite the team, reveal together, and estimate stories fast without installs or account setup.",
+    canonical: `${SITE_URL}/planning-poker-online`,
+    ogUrl: `${SITE_URL}/planning-poker-online`,
+    robots: "index, follow",
+  },
+  "/scrum-poker": {
+    title: "Scrum Poker App for Sprint Planning | pointpoker",
+    description:
+      "Use pointpoker as a scrum poker app for sprint planning and backlog refinement. Facilitate fast, unbiased story-point discussions with distributed teams.",
+    canonical: `${SITE_URL}/scrum-poker`,
+    ogUrl: `${SITE_URL}/scrum-poker`,
+    robots: "index, follow",
+  },
+  "/story-point-estimation": {
+    title: "Story Point Estimation Tool and Guide | pointpoker",
+    description:
+      "Improve story point estimation with planning poker, Fibonacci cards, facilitator guidance, and clearer team consensus during backlog refinement.",
+    canonical: `${SITE_URL}/story-point-estimation`,
+    ogUrl: `${SITE_URL}/story-point-estimation`,
+    robots: "index, follow",
+  },
+  "/remote-sprint-planning": {
+    title: "Remote Sprint Planning Tool | pointpoker",
+    description:
+      "Run remote sprint planning with a shared planning poker room, facilitator controls, reusable Team Room links, and live sprint analytics.",
+    canonical: `${SITE_URL}/remote-sprint-planning`,
+    ogUrl: `${SITE_URL}/remote-sprint-planning`,
+    robots: "index, follow",
+  },
+  "/terms": {
+    title: "Terms of Service | pointpoker",
+    description:
+      "Read the pointpoker Terms of Service, including acceptable use, liability limits, and account rules for the planning poker app.",
+    canonical: `${SITE_URL}/terms`,
+    ogUrl: `${SITE_URL}/terms`,
+    robots: "noindex, nofollow",
+  },
+  "/privacy": {
+    title: "Privacy Policy | pointpoker",
+    description:
+      "Read the pointpoker Privacy Policy, including data handling, Firebase usage, UK GDPR rights, and retention details.",
+    canonical: `${SITE_URL}/privacy`,
+    ogUrl: `${SITE_URL}/privacy`,
+    robots: "noindex, nofollow",
+  },
+};
+
+function getScreenForPath(pathname) {
+  return STATIC_SCREEN_BY_PATH[pathname] || "join";
+}
 
 function upsertMeta(selector, createTag, attrs, content) {
   let node = document.head.querySelector(selector);
@@ -840,6 +921,12 @@ body::before {
 .seo-ul li { padding-left: 1.4em; position: relative; margin-bottom: 6px; }
 .seo-ul li::before { content: "♦"; position: absolute; left: 0; color: var(--gold); font-size: .6rem; top: .35em; opacity: .7; }
 .seo-ul strong { color: rgba(239,242,247,.88); font-weight: 600; }
+.seo-inline-link {
+  color: var(--gold2);
+  text-decoration: none;
+  font-weight: 600;
+}
+.seo-inline-link:hover { color: var(--gold3); text-decoration: underline; }
 .scroll-target { scroll-margin-top: 92px; }
 #plans.scroll-target { scroll-margin-top: 72px; }
 .seo-plan-section {
@@ -2404,6 +2491,368 @@ body::before {
   background: rgba(255,255,255,.07); padding: 1px 6px; border-radius: 4px;
 }
 
+/* ══════════════════════ MARKETING PAGES ══════════════════════ */
+.marketing-page {
+  width: 100%;
+  padding: 48px 24px 88px;
+  display: flex;
+  justify-content: center;
+}
+.marketing-inner {
+  width: 100%;
+  max-width: 1040px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.marketing-hero {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+    linear-gradient(155deg, rgba(12,28,23,.96) 0%, rgba(7,15,13,.98) 58%, rgba(4,10,9,1) 100%);
+  border: 1px solid rgba(158,234,196,.14);
+  border-radius: 28px;
+  padding: 34px 32px 30px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.marketing-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(241,185,63,.24);
+  background: rgba(241,185,63,.08);
+  color: var(--gold2);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.marketing-title {
+  margin-top: 18px;
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(2.1rem, 4.6vw, 3.3rem);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+  color: var(--cream);
+  max-width: 820px;
+}
+.marketing-intro {
+  margin-top: 16px;
+  max-width: 760px;
+  font-size: 1rem;
+  line-height: 1.78;
+  color: rgba(239,242,247,.72);
+  font-weight: 300;
+}
+.marketing-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.marketing-btn-primary,
+.marketing-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-family: 'Outfit', sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+  transition: all .2s ease;
+}
+.marketing-btn-primary {
+  border: none;
+  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
+  color: var(--ink);
+  box-shadow: 0 16px 36px rgba(241,185,63,.22), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.marketing-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 42px rgba(241,185,63,.28), inset 0 1px 0 rgba(255,255,255,.58);
+}
+.marketing-btn-secondary {
+  border: 1px solid rgba(158,234,196,.16);
+  background: rgba(255,255,255,.04);
+  color: rgba(239,242,247,.84);
+}
+.marketing-btn-secondary:hover {
+  background: rgba(255,255,255,.08);
+  color: var(--cream);
+  border-color: rgba(158,234,196,.28);
+}
+.marketing-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 28px;
+}
+.marketing-stat {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+}
+.marketing-stat-value {
+  display: block;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--cream);
+}
+.marketing-stat-label {
+  display: block;
+  margin-top: 6px;
+  font-size: .76rem;
+  line-height: 1.55;
+  color: rgba(239,242,247,.58);
+}
+.marketing-section {
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 24px;
+  padding: 28px;
+}
+.marketing-section-head {
+  margin-bottom: 18px;
+  max-width: 760px;
+}
+.marketing-section-title {
+  font-size: 1.32rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--cream);
+}
+.marketing-section-intro {
+  margin-top: 8px;
+  font-size: .93rem;
+  line-height: 1.75;
+  color: rgba(239,242,247,.66);
+}
+.marketing-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.marketing-card {
+  background: rgba(255,255,255,.028);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  padding: 20px 18px;
+}
+.marketing-card-title {
+  font-size: .98rem;
+  font-weight: 700;
+  color: var(--gold3);
+}
+.marketing-card-copy {
+  margin-top: 10px;
+  font-size: .88rem;
+  line-height: 1.7;
+  color: rgba(239,242,247,.68);
+}
+.marketing-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.marketing-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: .86rem;
+  line-height: 1.6;
+  color: rgba(239,242,247,.76);
+}
+.marketing-list li::before {
+  content: "♦";
+  position: absolute;
+  left: 0;
+  top: .22rem;
+  color: var(--gold2);
+  font-size: .6rem;
+}
+.marketing-list strong {
+  color: rgba(239,242,247,.92);
+  font-weight: 600;
+}
+.marketing-steps {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+.marketing-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 16px 16px 15px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.marketing-step-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(241,185,63,.12);
+  border: 1px solid rgba(241,185,63,.22);
+  color: var(--gold2);
+  font-weight: 700;
+  font-size: .88rem;
+}
+.marketing-step-title {
+  font-size: .94rem;
+  font-weight: 700;
+  color: var(--cream);
+}
+.marketing-step-copy {
+  margin-top: 4px;
+  font-size: .86rem;
+  line-height: 1.65;
+  color: rgba(239,242,247,.68);
+}
+.marketing-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.marketing-plan-card {
+  padding: 22px 20px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.marketing-plan-card.pro {
+  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(241,185,63,.04));
+  border-color: rgba(241,185,63,.22);
+}
+.marketing-plan-topline {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.48);
+  margin-bottom: 10px;
+}
+.marketing-plan-card.pro .marketing-plan-topline { color: var(--gold2); }
+.marketing-plan-price {
+  font-size: 1.95rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--cream);
+}
+.marketing-plan-card.pro .marketing-plan-price { color: var(--gold2); }
+.marketing-plan-sub {
+  margin-top: 6px;
+  font-size: .82rem;
+  color: rgba(239,242,247,.58);
+  line-height: 1.6;
+}
+.marketing-note-panel {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(126,230,255,.16);
+  background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.05));
+  color: rgba(239,242,247,.78);
+  font-size: .86rem;
+  line-height: 1.65;
+}
+.marketing-related-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.marketing-link-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 100%;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  text-decoration: none;
+  transition: all .18s ease;
+}
+.marketing-link-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(158,234,196,.22);
+  background: rgba(255,255,255,.05);
+}
+.marketing-link-kicker {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.44);
+}
+.marketing-link-title {
+  font-size: .96rem;
+  font-weight: 700;
+  color: var(--cream);
+  letter-spacing: -0.02em;
+}
+.marketing-link-copy {
+  font-size: .83rem;
+  line-height: 1.65;
+  color: rgba(239,242,247,.66);
+}
+.marketing-cta-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 24px 26px;
+  border-radius: 24px;
+  border: 1px solid rgba(241,185,63,.18);
+  background: linear-gradient(135deg, rgba(241,185,63,.10), rgba(126,230,255,.05));
+}
+.marketing-cta-title {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--cream);
+}
+.marketing-cta-copy {
+  margin-top: 6px;
+  max-width: 620px;
+  font-size: .88rem;
+  line-height: 1.68;
+  color: rgba(239,242,247,.68);
+}
+@media (max-width: 900px) {
+  .marketing-card-grid,
+  .marketing-related-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 680px) {
+  .marketing-page { padding: 34px 16px 72px; }
+  .marketing-hero,
+  .marketing-section { padding: 24px 20px; }
+  .marketing-actions,
+  .marketing-cta-strip { align-items: stretch; }
+  .marketing-btn-primary,
+  .marketing-btn-secondary { width: 100%; }
+  .marketing-stat-grid,
+  .marketing-card-grid,
+  .marketing-related-grid,
+  .marketing-plan-grid { grid-template-columns: 1fr; }
+  .marketing-title { font-size: 2rem; }
+}
+
 /* ══════════════════════ HISTORY MODAL ══════════════════════ */
 .history-overlay {
   position: fixed; inset: 0; z-index: 950;
@@ -2713,6 +3162,23 @@ function NavLinkButton({ children, onClick, ariaLabel }) {
   );
 }
 
+function RouteLink({ href, onNavigate, className, children, ...props }) {
+  return (
+    <a
+      href={href}
+      className={className}
+      onClick={(e) => {
+        if (!onNavigate) return;
+        e.preventDefault();
+        onNavigate(href);
+      }}
+      {...props}
+    >
+      {children}
+    </a>
+  );
+}
+
 /* ═══════════════════════ GLOBAL NAVBAR ═══════════════════════
    Persistent top bar shown on all screens.
    - Left:  Brand mark + "pointpoker" brand name
@@ -2805,7 +3271,7 @@ function NavBar({
    Three-column footer: brand, legal links, product links.
    onCookieSettings: resets cookie consent so the banner re-appears.
 ═══════════════════════════════════════════════════════════════ */
-function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser, onNavTerms, onNavPrivacy }) {
+function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser, onNavTerms, onNavPrivacy, onNavigate }) {
   const year = new Date().getFullYear();
   const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
   const isPro = currentPlan === "pro";
@@ -2884,14 +3350,10 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
             </>
           ) : (
             <>
-              <a href="/" className="footer-link">Free Planning Poker</a>
-              {isPro ? (
-                <span className="footer-link" style={{ color: "var(--gold2)", cursor: "default" }}>
-                  Pro Plan ✓ Active
-                </span>
-              ) : (
-                <button className="footer-link" onClick={onShowPricing}>Pro Plan — what's included</button>
-              )}
+              <RouteLink href="/" className="footer-link" onNavigate={onNavigate}>Free Planning Poker</RouteLink>
+              <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>Features</RouteLink>
+              <RouteLink href="/pricing" className="footer-link" onNavigate={onNavigate}>Pricing &amp; plans</RouteLink>
+              <RouteLink href="/planning-poker-online" className="footer-link" onNavigate={onNavigate}>Planning poker online</RouteLink>
               <a href={`mailto:${support}`} className="footer-link">Contact &amp; Support</a>
             </>
           )}
@@ -3358,12 +3820,7 @@ function CookieBanner({ onAccept }) {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState(() => {
-    const path = window.location.pathname;
-    if (path === "/terms")   return "terms";
-    if (path === "/privacy") return "privacy";
-    return "join";
-  });
+  const [screen, setScreen] = useState(() => getScreenForPath(window.location.pathname));
   const [myId] = useState(uid);
   const [myRole, setMyRole] = useState("voter");
   const [authUser, setAuthUser] = useState(() => auth.currentUser);
@@ -3393,9 +3850,8 @@ export default function App() {
   // Used by footer links and the back button on legal pages.
   const navTo = (path) => {
     window.history.pushState({}, "", path);
-    if (path === "/terms")   { setScreen("terms");   return; }
-    if (path === "/privacy") { setScreen("privacy"); return; }
-    setScreen("join");
+    setScreen(getScreenForPath(path));
+    window.scrollTo({ top: 0, behavior: "auto" });
   };
   const openLoginModal = useCallback((initialMode = "signin", entryIntent = "general") => {
     setLoginModalConfig({ initialMode, entryIntent });
@@ -3418,17 +3874,26 @@ export default function App() {
       requestAnimationFrame(focusSection);
       return;
     }
-    if (screen === "terms" || screen === "privacy") {
-      navTo("/");
-      window.history.replaceState({}, "", `/#${sectionId}`);
-      setTimeout(focusSection, 40);
-    }
+    navTo("/");
+    window.history.replaceState({}, "", `/#${sectionId}`);
+    setTimeout(focusSection, 40);
   }, [screen]);
   // Global modal states — NavBar triggers these from any screen
   const [showLoginModal,   setShowLoginModal]   = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [sprintHistory,    setSprintHistory]    = useState([]);
+  useEffect(() => {
+    const handlePopState = () => {
+      const pathname = window.location.pathname;
+      const roomCode = new URLSearchParams(window.location.search).get("room");
+      const teamMatch = pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+      if (roomCode || teamMatch) return;
+      setScreen(getScreenForPath(pathname));
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
   // Initialise room code and team name synchronously from the URL so JoinScreen
   // receives the correct prefill on the very first render — no flash or double-update.
   // ?room=CODE  → Join Room tab pre-filled with code
@@ -3467,27 +3932,8 @@ export default function App() {
     const teamMatch = pathname.match(/^\/t\/([a-z0-9-]+)$/i);
     const teamSlug = teamMatch?.[1] || "";
 
-    if (pathname === "/terms" || screen === "terms") {
-      applyRouteMeta({
-        title: "Terms of Service | pointpoker",
-        description:
-          "Read the pointpoker Terms of Service, including acceptable use, liability limits, and account rules for the planning poker app.",
-        canonical: `${SITE_URL}/terms`,
-        ogUrl: `${SITE_URL}/terms`,
-        robots: "noindex, nofollow",
-      });
-      return;
-    }
-
-    if (pathname === "/privacy" || screen === "privacy") {
-      applyRouteMeta({
-        title: "Privacy Policy | pointpoker",
-        description:
-          "Read the pointpoker Privacy Policy, including data handling, Firebase usage, UK GDPR rights, and retention details.",
-        canonical: `${SITE_URL}/privacy`,
-        ogUrl: `${SITE_URL}/privacy`,
-        robots: "noindex, nofollow",
-      });
+    if (STATIC_ROUTE_META[pathname]) {
+      applyRouteMeta(STATIC_ROUTE_META[pathname]);
       return;
     }
 
@@ -4215,12 +4661,12 @@ export default function App() {
         <NavBar
           onLogoClick={() => {
             if (screen === "game") { goBack(); return; }
-            if (screen === "terms" || screen === "privacy") { navTo("/"); return; }
+            if (screen !== "join") { navTo("/"); return; }
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           onLogin={()    => { openLoginModal("signin", "general"); track("login_modal_opened"); }}
           onRegister={openPricingModal}
-          onPlans={() => jumpToMarketingSection("plans")}
+          onPlans={() => navTo("/pricing")}
           onFaq={() => jumpToMarketingSection("faq")}
           currentUser={authUser}
           currentPlan={currentPlan}
@@ -4236,6 +4682,24 @@ export default function App() {
           {screen === "privacy" && (
             <PrivacyPage onBack={() => navTo("/")} />
           )}
+          {screen === "pricing" && (
+            <PricingPage onNavigate={navTo} />
+          )}
+          {screen === "features" && (
+            <FeaturesPage onNavigate={navTo} />
+          )}
+          {screen === "planningPokerOnline" && (
+            <PlanningPokerOnlinePage onNavigate={navTo} />
+          )}
+          {screen === "scrumPoker" && (
+            <ScrumPokerPage onNavigate={navTo} />
+          )}
+          {screen === "storyPointEstimation" && (
+            <StoryPointEstimationPage onNavigate={navTo} />
+          )}
+          {screen === "remoteSprintPlanning" && (
+            <RemoteSprintPlanningPage onNavigate={navTo} />
+          )}
           {screen === "join" && (
             <JoinScreen
               onCreate={handleCreate}
@@ -4247,6 +4711,7 @@ export default function App() {
               currentUser={authUser}
               currentPlan={currentPlan}
               accountProfile={accountProfile}
+              onNavigate={navTo}
             />
           )}
           {screen === "game" && !roomData && (
@@ -4292,6 +4757,7 @@ export default function App() {
           currentUser={authUser}
           onNavTerms={() => navTo("/terms")}
           onNavPrivacy={() => navTo("/privacy")}
+          onNavigate={navTo}
         />
       </div>
 
@@ -4483,6 +4949,586 @@ const STRIPE_LINKS = {
   monthly: { GBP: "#upgrade", USD: "#upgrade", EUR: "#upgrade" },
   annual:  { GBP: "#upgrade", USD: "#upgrade", EUR: "#upgrade" },
 };
+
+function MarketingSection({ title, intro, children }) {
+  return (
+    <section className="marketing-section">
+      <div className="marketing-section-head">
+        <h2 className="marketing-section-title">{title}</h2>
+        {intro && <p className="marketing-section-intro">{intro}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function MarketingRelatedLinks({ title, intro, links, onNavigate }) {
+  return (
+    <MarketingSection title={title} intro={intro}>
+      <div className="marketing-related-grid">
+        {links.map((link) => (
+          <RouteLink
+            key={link.href}
+            href={link.href}
+            onNavigate={onNavigate}
+            className="marketing-link-card"
+          >
+            <span className="marketing-link-kicker">{link.kicker}</span>
+            <span className="marketing-link-title">{link.title}</span>
+            <span className="marketing-link-copy">{link.copy}</span>
+          </RouteLink>
+        ))}
+      </div>
+    </MarketingSection>
+  );
+}
+
+function MarketingPageShell({
+  eyebrow,
+  title,
+  intro,
+  highlights,
+  primaryHref = "/",
+  primaryLabel = "Start free room",
+  secondaryHref = "/pricing",
+  secondaryLabel = "View pricing",
+  onNavigate,
+  children,
+}) {
+  return (
+    <div className="marketing-page">
+      <div className="marketing-inner">
+        <section className="marketing-hero">
+          <button className="legal-back" onClick={() => onNavigate("/")}>
+            ← Back to home
+          </button>
+          <span className="marketing-eyebrow">{eyebrow}</span>
+          <h1 className="marketing-title">{title}</h1>
+          <p className="marketing-intro">{intro}</p>
+          <div className="marketing-actions">
+            <RouteLink href={primaryHref} onNavigate={onNavigate} className="marketing-btn-primary">
+              {primaryLabel}
+            </RouteLink>
+            <RouteLink href={secondaryHref} onNavigate={onNavigate} className="marketing-btn-secondary">
+              {secondaryLabel}
+            </RouteLink>
+          </div>
+          <div className="marketing-stat-grid">
+            {highlights.map((item) => (
+              <div className="marketing-stat" key={item.label}>
+                <span className="marketing-stat-value">{item.value}</span>
+                <span className="marketing-stat-label">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function PricingPage({ onNavigate }) {
+  const monthly = `${PRICING.GBP.symbol}${PRICING.GBP.pro}/mo`;
+  const annual = `${PRICING.GBP.symbol}${PRICING.GBP.proAnnual}/mo`;
+
+  return (
+    <MarketingPageShell
+      eyebrow="Pricing"
+      title="Planning poker pricing that starts free and only upgrades when the team truly needs it"
+      intro="pointpoker is designed for real sprint planning, not gated demos. Run free sessions instantly, then move to Pro when your team wants a permanent Team Room, higher voter capacity, and sprint history attached to an account."
+      highlights={[
+        { value: "£0", label: "Free rooms with no account required" },
+        { value: `${FREE_MAX_PLAYERS}/${PRO_MAX_PLAYERS}`, label: "Voter capacity from Free to Pro" },
+        { value: annual, label: "Annual Pro rate from per month" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Start free room"
+      secondaryHref="/features"
+      secondaryLabel="See all features"
+    >
+      <MarketingSection
+        title="Choose the plan that matches how your team runs sprint planning"
+        intro="Free is built for quick, low-friction estimation. Pro is for recurring teams that want one permanent room and reusable sprint context."
+      >
+        <div className="marketing-plan-grid">
+          <article className="marketing-plan-card">
+            <div className="marketing-plan-topline">Free</div>
+            <div className="marketing-plan-price">£0</div>
+            <p className="marketing-plan-sub">
+              Best for ad-hoc sprint planning, client sessions, and teams that want to start estimating in seconds.
+            </p>
+            <ul className="marketing-list">
+              <li>Up to {FREE_MAX_PLAYERS} voters per session</li>
+              <li>All three card decks and simultaneous reveal</li>
+              <li>Story queue, facilitator controls, and live analytics</li>
+              <li>No account required for normal room participation</li>
+            </ul>
+          </article>
+          <article className="marketing-plan-card pro">
+            <div className="marketing-plan-topline">Pro</div>
+            <div className="marketing-plan-price">{monthly}</div>
+            <p className="marketing-plan-sub">
+              Starts at {monthly} monthly or {annual} annually. Best for teams that estimate together every sprint and want a room they can bookmark and reuse.
+            </p>
+            <ul className="marketing-list">
+              <li>Permanent Team Room with a stable shareable URL</li>
+              <li>Up to {PRO_MAX_PLAYERS} voters per session</li>
+              <li>Sprint history, trend visibility, and reusable team workflow</li>
+              <li>Account-linked access that follows the user across devices</li>
+            </ul>
+          </article>
+        </div>
+        <div className="marketing-note-panel">
+          <strong>Current rollout note:</strong> Stripe checkout wiring is still being finalised. Today, the cleanest route into Pro is to create an account and activate access on that account so Team Room and sprint history stay attached to one identity.
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="When teams normally upgrade"
+        intro="The right upgrade trigger is operational repeatability, not curiosity. Most teams stay happily on Free until estimation becomes a recurring habit."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Stay on Free when estimation is occasional</h3>
+            <p className="marketing-card-copy">
+              If you only need a room for backlog refinement, sprint planning workshops, or one-off client sessions, Free already gives you the full card decks, facilitator mode, and live reveal flow.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Upgrade when the same team estimates together repeatedly</h3>
+            <p className="marketing-card-copy">
+              Pro becomes worthwhile when you want one Team Room your team can bookmark, reuse every sprint, and join without chasing a fresh link each time.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Upgrade when sprint history starts to matter</h3>
+            <p className="marketing-card-copy">
+              Teams that want to track throughput, consensus rate, and pacing over time should use Pro so those session summaries stay attached to an account.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Compare the product before you commit"
+        intro="If you are still deciding, these pages cover the core workflow, Scrum use cases, and story-point estimation approach in more depth."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/features", kicker: "Product", title: "Explore all features", copy: "See how simultaneous reveal, facilitator controls, Team Rooms, and sprint history fit together." },
+          { href: "/planning-poker-online", kicker: "Guide", title: "Planning poker online", copy: "Understand how the product works for remote estimation without installs or account friction." },
+          { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "See how the workflow supports structured estimates and better team agreement." },
+        ]}
+      />
+
+      <section className="marketing-cta-strip">
+        <div>
+          <h2 className="marketing-cta-title">Start with the free workflow, then upgrade only when your team needs permanence</h2>
+          <p className="marketing-cta-copy">
+            pointpoker is intentionally simple to adopt. Create a room, run a live session, and only move to Pro when the Team Room and sprint history become operationally useful.
+          </p>
+        </div>
+        <div className="marketing-actions">
+          <RouteLink href="/" onNavigate={onNavigate} className="marketing-btn-primary">Create a free room</RouteLink>
+          <RouteLink href="/features" onNavigate={onNavigate} className="marketing-btn-secondary">See feature detail</RouteLink>
+        </div>
+      </section>
+    </MarketingPageShell>
+  );
+}
+
+function FeaturesPage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="Features"
+      title="Everything an agile team needs to estimate clearly, reveal fairly, and keep sprint planning moving"
+      intro="pointpoker is built for live estimation, not static voting widgets. It gives facilitators structure, participants a frictionless join flow, and teams enough context to move from discussion to agreement quickly."
+      highlights={[
+        { value: "3", label: "Card decks: Fibonacci, T-Shirt, Powers of 2" },
+        { value: "Live", label: "Realtime reveal, votes, and participant sync" },
+        { value: "Pro", label: "Permanent Team Room and sprint history when ready" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Start free room"
+      secondaryHref="/pricing"
+      secondaryLabel="Compare plans"
+    >
+      <MarketingSection
+        title="Core estimation workflow"
+        intro="The product is designed around what teams actually do in planning poker: create a room, add stories, vote simultaneously, discuss differences, and move on without resetting the whole session."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Simultaneous reveal</h3>
+            <p className="marketing-card-copy">
+              Everyone votes independently first, then cards reveal together. That keeps louder voices from anchoring the team before the conversation has started.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Story queue and session flow</h3>
+            <p className="marketing-card-copy">
+              Add stories as you go or preload the queue, record the agreed estimate, and move straight into the next story without rebuilding the room.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Facilitator controls</h3>
+            <p className="marketing-card-copy">
+              Facilitators can reveal cards, run another vote, record the agreed estimate, moderate participants, manage the timer, and keep the session moving.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Designed for discussion, not just number collection"
+        intro="A good planning poker tool helps teams think better. pointpoker adds the structure that makes disagreement productive instead of noisy."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Split-vote resolution</h3>
+            <p className="marketing-card-copy">
+              When estimates differ, the app keeps averages visible for context but requires the facilitator to record only a valid agreed deck value or run another vote.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Team Alignment analytics</h3>
+            <p className="marketing-card-copy">
+              Facilitators can see consensus rate, total points, story throughput, and how often the team agrees on the first vote, helping uncover backlog clarity problems early.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Built for remote teams</h3>
+            <p className="marketing-card-copy">
+              Browser-first join flow, frictionless invite links, and compact facilitator controls make it practical for Slack, Teams, Zoom, and hybrid sprint ceremonies.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Features teams rely on as they grow"
+        intro="Free handles the live planning flow. Pro adds the repeatable operational layer that helps the same team come back sprint after sprint."
+      >
+        <ul className="marketing-list">
+          <li><strong>Permanent Team Room:</strong> one URL the team can bookmark and reuse every sprint.</li>
+          <li><strong>Sprint history:</strong> session summaries stay attached to the account and become a reliable archive.</li>
+          <li><strong>Higher voter limits:</strong> Pro rooms support up to {PRO_MAX_PLAYERS} voters instead of {FREE_MAX_PLAYERS}.</li>
+          <li><strong>Name, role, and invite clarity:</strong> participants can still join shared rooms without unnecessary account friction.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Related pages"
+        intro="These pages explain the workflow from different angles: search intent, Scrum language, and story-point estimation practice."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "See exactly when Free is enough and when Pro becomes worth it." },
+          { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker use cases", copy: "See how the same workflow supports Scrum Masters, Product Owners, and remote engineering teams." },
+          { href: "/remote-sprint-planning", kicker: "Remote", title: "Remote sprint planning", copy: "Learn how the product fits distributed ceremonies and recurring shared-room workflows." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function PlanningPokerOnlinePage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="Planning poker online"
+      title="Run planning poker online without slowing the team down with setup, sign-up friction, or awkward reveal flow"
+      intro="pointpoker is built for teams that want to open a room, share a link, vote together, and move through a backlog quickly. It works in any browser, so the whole team can join from desktop or mobile in seconds."
+      highlights={[
+        { value: "10 sec", label: "Typical time to create and share a room" },
+        { value: "Zero", label: "Install or account requirement for free sessions" },
+        { value: "Live", label: "Realtime reveal and room sync across the team" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Start free room"
+      secondaryHref="/features"
+      secondaryLabel="Explore features"
+    >
+      <MarketingSection
+        title="Why teams look for planning poker online"
+        intro="Most teams are trying to solve the same problem: they want unbiased estimates, a simple remote join flow, and enough structure that the sprint planning meeting does not drift."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">No install barrier</h3>
+            <p className="marketing-card-copy">
+              Everyone joins from a browser link. That makes it easy to drop a room into Slack, Teams, Zoom chat, or a calendar invite and start estimating immediately.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Clear reveal flow</h3>
+            <p className="marketing-card-copy">
+              The room supports true simultaneous reveal, so estimates stay independent until the team is ready to discuss them.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Room stays focused</h3>
+            <p className="marketing-card-copy">
+              Story queue, timer, facilitator controls, and explicit next-step prompts keep the team in one workflow instead of juggling notes, chat, and spreadsheets.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="How a typical online planning poker session runs"
+        intro="The product flow stays intentionally simple so the team spends time discussing the backlog, not learning the tool."
+      >
+        <div className="marketing-steps">
+          {[
+            ["Create or join the room", "Start a free room instantly or join from a shared link with your name and role."],
+            ["Add the story you are estimating", "Work from a backlog queue or estimate one story at a time during refinement."],
+            ["Vote privately", "Each voter picks a card before the reveal, which reduces anchoring bias."],
+            ["Discuss only when the spread matters", "Facilitators can reveal, time-box discussion, and either re-vote or record the agreed estimate."],
+            ["Move straight to the next item", "The room keeps momentum without forcing the team to rebuild context for every story."],
+          ].map(([stepTitle, stepCopy], index) => (
+            <article className="marketing-step" key={stepTitle}>
+              <span className="marketing-step-num">{index + 1}</span>
+              <div>
+                <h3 className="marketing-step-title">{stepTitle}</h3>
+                <p className="marketing-step-copy">{stepCopy}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Explore the workflow in more detail"
+        intro="If you are evaluating tools for estimation practice, these related pages show the Scrum, story-point, and remote-team angles."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "See how the same flow supports backlog refinement and sprint planning in Scrum teams." },
+          { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "Learn how the product supports Fibonacci-based discussions and facilitator-led agreement." },
+          { href: "/pricing", kicker: "Plans", title: "Free vs Pro", copy: "Compare when the free room flow is enough and when a permanent Team Room is worth it." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function ScrumPokerPage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="Scrum poker"
+      title="A scrum poker app that keeps sprint planning focused, fair, and easy to run with remote teams"
+      intro="Scrum teams often search for scrum poker when what they really need is a low-friction planning poker workflow. pointpoker supports that exact ceremony pattern: independent voting, reveal, discussion, agreement, then straight into the next story."
+      highlights={[
+        { value: "Scrum", label: "Built for backlog refinement and sprint planning" },
+        { value: "Fair", label: "Votes reveal together to reduce anchoring" },
+        { value: "Fast", label: "Facilitator can re-vote or record agreement quickly" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Start scrum poker room"
+      secondaryHref="/features"
+      secondaryLabel="See facilitator features"
+    >
+      <MarketingSection
+        title="Where scrum poker fits best"
+        intro="The tool is most useful in the ceremonies where the team needs shared understanding before committing to sprint scope."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Sprint planning</h3>
+            <p className="marketing-card-copy">
+              Use the queue, vote through the backlog, and leave the session with a cleaner sense of the sprint’s scope and the stories that still need clarification.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Backlog refinement</h3>
+            <p className="marketing-card-copy">
+              Smaller estimation sessions still benefit from the same reveal-and-discuss pattern, especially when stories are unclear or acceptance criteria are thin.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Cross-functional alignment</h3>
+            <p className="marketing-card-copy">
+              Scrum poker surfaces differences between engineering, product, and delivery expectations before those differences become sprint risk.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="What Scrum Masters and facilitators need from the tool"
+        intro="A usable scrum poker app should help the facilitator manage the flow without dominating the conversation."
+      >
+        <ul className="marketing-list">
+          <li><strong>Role separation:</strong> facilitators can join without casting a vote card.</li>
+          <li><strong>Clear post-reveal decisions:</strong> when the team splits, the facilitator can record the agreed deck value or run another vote.</li>
+          <li><strong>Moderation controls:</strong> facilitators can manage participants and keep the room focused.</li>
+          <li><strong>Lightweight join flow:</strong> guests can enter with a name and role instead of being forced through account creation.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Keep evaluating from the right angle"
+        intro="These pages cover the broader online-estimation workflow, pricing, and story-point estimation practice around Scrum poker."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/planning-poker-online", kicker: "Guide", title: "Planning poker online", copy: "See the full browser-first flow for remote teams and ad-hoc sessions." },
+          { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "Understand how the tool helps teams converge on meaningful estimates." },
+          { href: "/pricing", kicker: "Plans", title: "Pricing and Team Room fit", copy: "See when recurring Scrum teams benefit from the permanent Team Room workflow." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function StoryPointEstimationPage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="Story point estimation"
+      title="Use story point estimation to drive better planning conversations, not false precision"
+      intro="pointpoker is built around the reality that estimates are a team decision, not a spreadsheet formula. The product helps teams vote independently, expose differences, discuss trade-offs, and record the final agreed value from the active deck."
+      highlights={[
+        { value: "Fibonacci", label: "Default deck for effort and uncertainty" },
+        { value: "3", label: "Deck options for different team habits" },
+        { value: "Clear", label: "Facilitator flow for split estimates and agreement" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Try story estimation free"
+      secondaryHref="/features"
+      secondaryLabel="See the estimation flow"
+    >
+      <MarketingSection
+        title="Why teams use story points instead of hours"
+        intro="Story points help teams compare relative effort and uncertainty without pretending the work is already perfectly understood."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Relative sizing beats fake precision</h3>
+            <p className="marketing-card-copy">
+              Teams can usually agree faster on whether something feels closer to a 3 or an 8 than on whether it will take exactly 9.5 hours.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Fibonacci highlights uncertainty</h3>
+            <p className="marketing-card-copy">
+              Wider gaps at larger values push the team to acknowledge risk and complexity instead of compressing everything into tiny numeric differences.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Consensus matters more than average</h3>
+            <p className="marketing-card-copy">
+              The product keeps discussion analytics visible, but it only saves final agreed deck values so sprint history stays trustworthy.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Best-practice estimation flow"
+        intro="Good estimation is structured. The app is designed to make the next decision obvious at every stage."
+      >
+        <div className="marketing-steps">
+          {[
+            ["Let everyone vote independently", "Private voting reduces anchoring and produces a more honest first signal."],
+            ["Reveal the cards together", "Use the spread, average, and median to guide discussion, not as an automatic answer."],
+            ["Discuss the differences", "The stories with the widest spread are usually where acceptance criteria or scope still need work."],
+            ["Either re-vote or record the agreed estimate", "Facilitators can capture only valid deck values, keeping the estimate aligned with the team’s chosen method."],
+          ].map(([stepTitle, stepCopy], index) => (
+            <article className="marketing-step" key={stepTitle}>
+              <span className="marketing-step-num">{index + 1}</span>
+              <div>
+                <h3 className="marketing-step-title">{stepTitle}</h3>
+                <p className="marketing-step-copy">{stepCopy}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Related pages"
+        intro="These routes cover the broader estimation workflow, Scrum ceremony context, and pricing trade-offs."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "See how the browser-first room flow supports live estimation from anywhere." },
+          { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "Understand how the same estimation flow fits sprint planning and backlog refinement." },
+          { href: "/pricing", kicker: "Plans", title: "Pricing and Team Room fit", copy: "Compare Free and Pro when estimation becomes a recurring team ritual." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function RemoteSprintPlanningPage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="Remote sprint planning"
+      title="Run remote sprint planning with one browser link, structured facilitation, and a room your team can actually reuse"
+      intro="Distributed teams need sprint planning tools that are fast to join, easy to facilitate, and reliable enough to reuse every sprint. pointpoker keeps the estimation part of the ceremony compact so the team can focus on scope and delivery decisions."
+      highlights={[
+        { value: "1 link", label: "Share in Slack, Teams, Zoom, or calendar invites" },
+        { value: "Live", label: "Votes, reveals, and story flow sync in real time" },
+        { value: "Reuse", label: "Pro Team Room keeps the same URL every sprint" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Start remote room"
+      secondaryHref="/pricing"
+      secondaryLabel="See Team Room pricing"
+    >
+      <MarketingSection
+        title="What remote teams usually need"
+        intro="The biggest friction in remote sprint planning is not estimation itself. It is getting everyone into the same place quickly and keeping the meeting moving."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Fast join flow</h3>
+            <p className="marketing-card-copy">
+              Participants can join free rooms or shared Team Rooms with a name and role, so the facilitator is not blocked by account setup.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Clear facilitator workflow</h3>
+            <p className="marketing-card-copy">
+              Reveal, re-vote, timer control, participant moderation, and final estimate capture all sit inside one flow built for the person running the ceremony.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Persistent room when the team is ready</h3>
+            <p className="marketing-card-copy">
+              Pro adds a permanent Team Room so recurring squads stop recreating and re-sharing the same room every sprint.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="A simple remote planning routine"
+        intro="These are the habits that usually make remote sprint planning feel lightweight rather than exhausting."
+      >
+        <ul className="marketing-list">
+          <li><strong>Share the room before the meeting starts</strong> so people can join as the call opens.</li>
+          <li><strong>Keep story names visible and estimates structured</strong> so discussion stays anchored to one backlog item at a time.</li>
+          <li><strong>Use facilitator-only controls</strong> to keep reveals, re-votes, and final estimate decisions consistent.</li>
+          <li><strong>Reuse the same Team Room</strong> when the team estimates together every sprint and wants a stable operating rhythm.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Related pages"
+        intro="These links explain the planning-poker workflow, Scrum ceremony angle, and pricing choices for recurring remote teams."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "Understand the browser-first room flow and live reveal model." },
+          { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the facilitator controls, story queue, Team Alignment, and history features." },
+          { href: "/pricing", kicker: "Plans", title: "Free vs Pro for remote teams", copy: "See when a reusable Team Room becomes the right operational upgrade." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
 
 // ── Pro status ───────────────────────────────────────────────────────────────
 const PRO_KEY_REGEX = /^PPRO-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
@@ -5507,6 +6553,7 @@ function JoinScreen({
   currentUser,
   currentPlan = "free",
   accountProfile,
+  onNavigate,
 }) {
   const signedIn = !!currentUser;
   const isPro = currentPlan === "pro";
@@ -6035,9 +7082,9 @@ function JoinScreen({
             </article>
           </div>
           <div className="seo-plan-actions">
-            <button type="button" className="btn-pricing seo-plan-cta" onClick={onShowPricing}>
-              Open full pricing
-            </button>
+            <RouteLink href="/pricing" onNavigate={onNavigate} className="btn-pricing seo-plan-cta">
+              View full pricing
+            </RouteLink>
           </div>
         </div>
 
@@ -6055,6 +7102,17 @@ function JoinScreen({
             <li><strong>Facilitator mode</strong> — join without a vote card and manage reveal, re-votes, participant moderation, and session flow from the analytics view</li>
             <li><strong>Team Room (Pro)</strong> — one permanent URL your team reuses every sprint, no link sharing ever again</li>
           </ul>
+          <p className="seo-p" style={{ marginTop: 16 }}>
+            Explore the dedicated pages for{" "}
+            <RouteLink href="/features" onNavigate={onNavigate} className="seo-inline-link">features</RouteLink>
+            {", "}
+            <RouteLink href="/planning-poker-online" onNavigate={onNavigate} className="seo-inline-link">planning poker online</RouteLink>
+            {", "}
+            <RouteLink href="/scrum-poker" onNavigate={onNavigate} className="seo-inline-link">Scrum poker</RouteLink>
+            {" and "}
+            <RouteLink href="/story-point-estimation" onNavigate={onNavigate} className="seo-inline-link">story point estimation</RouteLink>
+            {" to learn how the workflow fits your team."}
+          </p>
         </div>
 
         <div className="seo-divider" role="separator"></div>
