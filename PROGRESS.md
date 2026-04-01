@@ -122,6 +122,16 @@
     - domain ownership for `pointpoker.app` verified
     - `sitemap.xml` submitted successfully
     - homepage and key marketing routes requested for indexing
+    - additional trust/support/guide routes also requested for indexing:
+      - `/about`
+      - `/support`
+      - `/what-is-planning-poker`
+      - `/fibonacci-story-points`
+      - `/agile-estimation-tool`
+  - Firebase user-profile cleanup is now resolved:
+    - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
+    - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
+    - the active Pro profile now carries the correct merged Pro fields
   - Post-reveal estimate flow corrected:
     - the facilitator can no longer save a derived average like Fibonacci `4` when the active deck does not contain that value
     - reveal analytics remain visible for discussion, but the final recorded estimate must now be an explicit valid deck choice whenever votes differ
@@ -201,8 +211,8 @@ Treat this section as the fastest current-status read. Historical session notes 
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth layer is live and trust/guide content is expanding around it
-**Active step:** keep adding trust/supporting guide content and then move to Search Console monitoring plus the remaining operational cleanup
-**Remaining:** deeper trust/proof content, Search Console monitoring, Firebase user-record cleanup, then Stripe/payment work when resumed
+**Active step:** choose between broader production QA or deeper trust/proof content while Search Console indexing settles
+**Remaining:** deeper trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

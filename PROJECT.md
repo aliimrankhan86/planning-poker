@@ -143,6 +143,16 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - domain ownership for `pointpoker.app` has been verified in Google Search Console
     - `sitemap.xml` has been submitted successfully
     - homepage and key marketing routes have been manually requested for indexing
+    - trust/support/guide routes have also now been manually requested for indexing:
+      - `/about`
+      - `/support`
+      - `/what-is-planning-poker`
+      - `/fibonacci-story-points`
+      - `/agile-estimation-tool`
+  - Firebase user-profile cleanup is now resolved:
+    - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
+    - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
+    - the active Pro profile now carries the correct merged Pro fields (`plan`, `billingStatus`, `proKey`, `proActivatedAt`)
   - SEO implementation plan is now explicit for future work:
     - Phase 1: metadata/canonical/noindex control and crawl hygiene ✅
     - Phase 2: dedicated indexable marketing pages (`/pricing`, `/features`, keyword landing pages) ✅
@@ -159,7 +169,6 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Still pending:
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Replace Stripe placeholder links and complete paid activation wiring
-  - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate/stale profile data
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 
 If older historical notes below conflict with this section, treat this snapshot as the authoritative current state and update the older sections when touching them.
