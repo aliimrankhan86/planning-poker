@@ -138,6 +138,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - dedicated educational routes now exist for `/what-is-planning-poker` and `/fibonacci-story-points`
     - these pages explain the estimation method itself, not just the product, and link back into the live planning-poker workflow
     - home-page SEO content now links into those guide pages so they are not orphaned from the primary entry surface
+    - a keyword-targeted `/agile-estimation-tool` route now exists to capture the broader agile-estimation search intent and explain where pointpoker fits inside sprint planning and backlog refinement
   - Search Console operational setup is now complete at the initial level:
     - domain ownership for `pointpoker.app` has been verified in Google Search Console
     - `sitemap.xml` has been submitted successfully
@@ -156,7 +157,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
-  - SEO Phase 3/4: continue adding supporting guide/trust/proof content and monitor indexing/query performance in Search Console
+  - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Replace Stripe placeholder links and complete paid activation wiring
   - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate/stale profile data
   - Verify real paid/pro account state end-to-end once live Stripe links exist

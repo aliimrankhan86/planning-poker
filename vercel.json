@@ -24,6 +24,7 @@
     { "source": "/support",  "destination": "/" },
     { "source": "/what-is-planning-poker",  "destination": "/" },
     { "source": "/fibonacci-story-points",  "destination": "/" },
+    { "source": "/agile-estimation-tool",  "destination": "/" },
     { "source": "/pricing",  "destination": "/" },
     { "source": "/features",  "destination": "/" },
     { "source": "/planning-poker-online",  "destination": "/" },

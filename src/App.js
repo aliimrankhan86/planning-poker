@@ -102,6 +102,7 @@ const STATIC_SCREEN_BY_PATH = {
   "/support": "support",
   "/what-is-planning-poker": "whatIsPlanningPoker",
   "/fibonacci-story-points": "fibonacciStoryPoints",
+  "/agile-estimation-tool": "agileEstimationTool",
   "/pricing": "pricing",
   "/features": "features",
   "/planning-poker-online": "planningPokerOnline",
@@ -140,6 +141,14 @@ const STATIC_ROUTE_META = {
       "Understand why agile teams use Fibonacci story points, what the numbers mean, and how to use planning poker to reach a final agreed estimate without false precision.",
     canonical: `${SITE_URL}/fibonacci-story-points`,
     ogUrl: `${SITE_URL}/fibonacci-story-points`,
+    robots: "index, follow",
+  },
+  "/agile-estimation-tool": {
+    title: "Agile Estimation Tool for Sprint Planning | pointpoker",
+    description:
+      "Use pointpoker as an agile estimation tool for sprint planning, backlog refinement, facilitator-led voting, and clearer story-point discussions across remote teams.",
+    canonical: `${SITE_URL}/agile-estimation-tool`,
+    ogUrl: `${SITE_URL}/agile-estimation-tool`,
     robots: "index, follow",
   },
   "/pricing": {
@@ -4732,6 +4741,9 @@ export default function App() {
           {screen === "fibonacciStoryPoints" && (
             <FibonacciStoryPointsPage onNavigate={navTo} />
           )}
+          {screen === "agileEstimationTool" && (
+            <AgileEstimationToolPage onNavigate={navTo} />
+          )}
           {screen === "pricing" && (
             <PricingPage onNavigate={navTo} />
           )}
@@ -5550,6 +5562,101 @@ function FibonacciStoryPointsPage({ onNavigate }) {
           { href: "/what-is-planning-poker", kicker: "Guide", title: "What is planning poker?", copy: "Understand the method itself and why simultaneous reveal matters for fair estimation." },
           { href: "/story-point-estimation", kicker: "Workflow", title: "Story point estimation", copy: "See how the product supports better estimation conversations and explicit final agreement." },
           { href: "/planning-poker-online", kicker: "Remote", title: "Planning poker online", copy: "See how distributed teams can use the workflow in a browser without setup friction." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function AgileEstimationToolPage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="Agile estimation tool"
+      title="An agile estimation tool should help the team reach clearer decisions, not just collect votes"
+      intro="pointpoker works as an agile estimation tool for sprint planning and backlog refinement because it gives teams a clear workflow: define the story, vote independently, reveal together, discuss the gap, and record the agreed estimate without losing momentum."
+      highlights={[
+        { value: "Realtime", label: "Votes, reveals, and room state stay in sync" },
+        { value: "Facilitated", label: "Built for the person running the ceremony" },
+        { value: "Practical", label: "Works for backlog refinement and sprint planning" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Open estimation room"
+      secondaryHref="/features"
+      secondaryLabel="See feature detail"
+    >
+      <MarketingSection
+        title="What teams usually expect from an agile estimation tool"
+        intro="The tool does not need to be a giant agile suite. It needs to remove the friction around the specific estimation conversation the team is trying to have."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Fast setup</h3>
+            <p className="marketing-card-copy">
+              Teams should be able to open a room and invite everyone from a browser link, especially when estimation is only one part of a larger planning session.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Unbiased initial estimates</h3>
+            <p className="marketing-card-copy">
+              Independent first votes and simultaneous reveal help the team see genuine spread before stronger opinions steer the discussion.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Clear facilitator controls</h3>
+            <p className="marketing-card-copy">
+              Reveal, re-vote, moderation, timer control, and final estimate capture should all be obvious to the facilitator when the room is live.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Where pointpoker fits in the agile workflow"
+        intro="The product is narrow by design. It supports the estimation portion of agile planning well, instead of trying to replace your backlog tool, ticketing system, or roadmap process."
+      >
+        <ul className="marketing-list">
+          <li><strong>Backlog refinement:</strong> estimate stories before sprint commitment and surface unclear scope early.</li>
+          <li><strong>Sprint planning:</strong> move through the queue, discuss disagreement, and come out with a clearer sense of sprint scope.</li>
+          <li><strong>Remote estimation ceremonies:</strong> share one link, keep everyone in sync, and let the facilitator keep momentum.</li>
+          <li><strong>Recurring team rituals:</strong> Pro Team Rooms make it easy to reuse the same room every sprint once the team has a repeatable cadence.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Why this tool works for real estimation conversations"
+        intro="A good agile estimation tool should reinforce healthy team behaviour rather than flatten everything into a silent number picker."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">It supports discussion after reveal</h3>
+            <p className="marketing-card-copy">
+              Split votes do not get averaged into misleading answers. The team can discuss the difference and the facilitator records the final agreed deck value explicitly.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">It keeps the room understandable</h3>
+            <p className="marketing-card-copy">
+              Real names are required, roles are explicit, and the invite flow stays visible so the meeting does not become confusing for late joiners or mixed-discipline teams.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">It creates reusable context over time</h3>
+            <p className="marketing-card-copy">
+              With Pro, sprint history and permanent Team Rooms help the same team come back to a consistent estimation workflow instead of starting from scratch every sprint.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Related pages"
+        intro="These routes cover the method itself, online workflow, and the story-point side of agile estimation in more detail."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/what-is-planning-poker", kicker: "Method", title: "What is planning poker?", copy: "Understand the estimation ceremony and why simultaneous reveal matters." },
+          { href: "/story-point-estimation", kicker: "Workflow", title: "Story point estimation", copy: "See how the product supports relative sizing and explicit final agreement." },
+          { href: "/planning-poker-online", kicker: "Remote", title: "Planning poker online", copy: "See the browser-first workflow that makes the tool practical for distributed teams." },
         ]}
       />
     </MarketingPageShell>
@@ -7531,8 +7638,10 @@ function JoinScreen({
             <RouteLink href="/story-point-estimation" onNavigate={onNavigate} className="seo-inline-link">story point estimation</RouteLink>
             {", "}
             <RouteLink href="/what-is-planning-poker" onNavigate={onNavigate} className="seo-inline-link">what planning poker is</RouteLink>
-            {" and "}
+            {", "}
             <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">Fibonacci story points</RouteLink>
+            {" and "}
+            <RouteLink href="/agile-estimation-tool" onNavigate={onNavigate} className="seo-inline-link">agile estimation tools</RouteLink>
             {" to learn how the workflow fits your team."}
           </p>
         </div>

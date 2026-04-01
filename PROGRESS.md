@@ -117,6 +117,7 @@
     - `/what-is-planning-poker` now explains the method itself, why teams use it, and how pointpoker fits the workflow
     - `/fibonacci-story-points` now explains why agile teams use Fibonacci-style cards and why final estimates should remain deck-valid
     - the home-page SEO content now links into these guides so they are crawlable from the main entry surface
+    - `/agile-estimation-tool` now targets the broader agile-estimation search intent and explains how pointpoker fits sprint planning and backlog refinement without trying to replace a full agile suite
   - Google Search Console initial setup is now completed:
     - domain ownership for `pointpoker.app` verified
     - `sitemap.xml` submitted successfully
@@ -189,18 +190,18 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 1 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** SEO educational guide pages
+- **Worked on:** SEO agile-estimation landing page expansion
 - **Completed:**
-  - Added dedicated educational guide routes for `/what-is-planning-poker` and `/fibonacci-story-points` using the existing marketing-page shell so the work stayed additive and safe.
-  - Added route-level metadata, internal linking, sitemap entries, and `vercel.json` rewrites for the new guide pages.
-  - Updated home-page SEO copy so the new guides are linked from the primary signed-out entry surface instead of existing as isolated routes.
+  - Added a dedicated `/agile-estimation-tool` route using the existing marketing-page shell so the work stayed additive and safe.
+  - Added route-level metadata, sitemap entry, and `vercel.json` rewrite for the new landing page.
+  - Updated home-page SEO copy so the signed-out landing surface now links into the agile-estimation page alongside the existing guides.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth layer is live and trust/guide content is expanding around it
-**Active step:** keep adding trust/supporting guide content and monitor Search Console indexing/performance
+**Active step:** keep adding trust/supporting guide content and then move to Search Console monitoring plus the remaining operational cleanup
 **Remaining:** deeper trust/proof content, Search Console monitoring, Firebase user-record cleanup, then Stripe/payment work when resumed
 
 ## Update Rule
@@ -261,6 +262,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 2.11 | Expand SPA rewrites + sitemap for marketing routes | ✅ Done | `vercel.json` rewrites and `public/sitemap.xml` now include the new indexable URLs. |
 | 2.12 | Add trust/support routes and internal linking | ✅ Done | `/about` and `/support` now exist as indexable trust pages, with footer discovery and route-aware metadata. |
 | 2.13 | Add educational guide pages and home-surface internal links | ✅ Done | `/what-is-planning-poker` and `/fibonacci-story-points` now exist with route metadata, sitemap entries, rewrites, and home-page discovery links. |
+| 2.14 | Add agile-estimation landing page | ✅ Done | `/agile-estimation-tool` now exists with route metadata, rewrite, sitemap entry, and home-page internal linking. |
 
 ---
 
