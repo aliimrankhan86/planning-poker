@@ -5,7 +5,7 @@
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
-- Current phase focus: SEO Phase 3 trust/support content and Search Console monitoring, with security hardening now live
+- Current phase focus: SEO Phase 3 trust/support content and Search Console monitoring, with account/capacity expansion now implemented in repo
 - Product state:
   - Firebase Auth email/password implemented and enabled
   - Auth QA passed
@@ -54,8 +54,10 @@
   - Activation UX tightened after Atlas review: anonymous users no longer see a runnable Pro-code form; they are explicitly gated into sign-in/create-account first, while signed-in users retain the real activation form with Enter support
   - Home screen is now account-aware: signed-in users no longer see the public marketing landing page, plans CTA, or FAQ nav; they see a workspace-style dashboard instead
   - Free users now see a simplified signed-in dashboard with Create/Join/Team actions plus a focused Upgrade-to-Pro route
-  - Pro users now see a dedicated Team Room card with a stable account-linked room URL and one-click copy/open actions
-  - User profiles now persist `teamRoomName`, enabling a stable dedicated Team Room identity for signed-in Pro accounts
+  - Pro users now see dedicated Team Room cards with stable account-linked room URLs and one-click copy/open actions
+  - User profiles now persist account state in Firebase `/users/{uid}` for both free and Pro users
+  - Pro accounts now carry a primary `teamRoomName` plus `teamRooms.secondary`, enabling two fixed dedicated Team Room URLs without breaking the original room slug
+  - Free room capacity is now 8 total participants including the facilitator; Pro room capacity is 20 total participants including facilitators
   - Signed-in users now have their display name prefilled in room flows, and the footer becomes account-oriented rather than generic plan-marketing
   - Final polish pass after Atlas/Comet QA now fixes the remaining low-friction issues:
     - workspace copy-link button now shows `Copied!`
@@ -149,9 +151,9 @@
   - Room-entry validation tightened:
     - both Participant and Facilitator must provide a real name before entering a room
     - placeholder-like values such as `Alex Johnson` are now blocked instead of being accepted as live participant names
-  - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing Team Room, 20 players, and sprint history
+  - NavBar updated: Pro users see "📊 History" button; Free/anonymous users see "Upgrade to Pro" with updated subtitle listing 2 Team Rooms, 20 participants, and sprint history
   - SiteFooter updated: footer plan bar Pro column now mentions sprint history
-  - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 players
+  - GameScreen: free-user upgrade strip copy updated to mention sprint history and 20 participants
   - PricingModal: PRO_FEATURES and FREE_FEATURES updated to include sprint history as a Pro differentiator
   - Sprint History feature (Pro-only) fully implemented:
     - `saveSessionHistory()` utility writes session records to Firebase `/history/{uid}` on session end or auto-expire
@@ -209,23 +211,22 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 1 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** Firebase entitlement/rules hardening
+- **Worked on:** account persistence, capacity, and dedicated Team Room expansion
 - **Completed:**
-  - Removed the last legacy `pp_pro` browser-storage entitlement bootstrap from the app so new user profiles always start free/inactive.
-  - Retired the legacy `pp_pro` local-storage write path during Pro activation and now clear the key on no-auth/sign-out paths.
-  - Hardened `database.rules.json` so Pro profiles require an active license-backed `proKey`, room plan/deck metadata are immutable, and votes/recorded estimates must match the active deck.
-  - Added rule-level schema guards that block undeclared fields under `rooms`, `users`, and `history`.
-  - Generated `database.rules.publish.json` as a comment-free console-safe publish file and published the hardened rules in Firebase Realtime Database.
-  - Post-rules production regression QA completed successfully: Atlas passed the free/gate/validation paths and Comet passed the Pro/team-room/history/moderation paths with no Firebase permission failures.
-  - Refined the one-off room invite wording so temporary ad-hoc rooms now explicitly say they are active-session links, while Team Rooms continue using permanent/reusable wording.
+  - Confirmed the backend registration/update mechanism already exists through Firebase Auth plus `/users/{uid}`, then extended the profile model so both Free and Pro accounts persist richer account state cleanly.
+  - Added two dedicated fixed Team Room URLs for Pro accounts while preserving the existing primary Team Room slug as the stable first room.
+  - Updated checkout/activation/profile hydration so account writes preserve the two-room model instead of regenerating or clobbering existing dedicated room identities.
+  - Changed Free capacity from 6 voters to 8 total participants including the facilitator, and updated room-full logic accordingly.
+  - Rewrote product copy across workspace, pricing, SEO pages, room entry, upgrade prompts, and support messaging so it consistently reflects 2 dedicated Team Rooms and participant-based capacity.
+  - Updated `database.rules.json` and regenerated `database.rules.publish.json` so Firebase can accept the new optional `/users/{uid}/teamRooms` structure.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
-**Phase:** 2/3 crossover — SEO growth is expanding and security hardening is live
-**Active step:** continue Search Console monitoring and deeper trust/proof content
-**Remaining:** trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
+**Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
+**Active step:** publish the latest Firebase rules update for `teamRooms`, then continue Search Console monitoring and deeper trust/proof content
+**Remaining:** Firebase rules republish for `teamRooms`, trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

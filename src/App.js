@@ -154,7 +154,7 @@ const STATIC_ROUTE_META = {
   "/pricing": {
     title: "Planning Poker Pricing | Free and Pro Plans | pointpoker",
     description:
-      "Compare Free and Pro planning poker pricing. Start free, then upgrade for a permanent Team Room, higher voter limits, and sprint history.",
+      "Compare Free and Pro planning poker pricing. Start free, then upgrade for two dedicated Team Rooms, higher participant limits, and sprint history.",
     canonical: `${SITE_URL}/pricing`,
     ogUrl: `${SITE_URL}/pricing`,
     robots: "index, follow",
@@ -324,8 +324,10 @@ const teamCode = (name) =>
 const homePath = () => "/";
 const roomPath = (code) => `/?room=${encodeURIComponent(code)}`;
 const teamRoomPath = (teamNameOrCode) => `/t/${teamCode(teamNameOrCode)}`;
-const countVoters = (players = {}) =>
-  Object.values(players).filter((p) => p?.role === "voter").length;
+const countParticipants = (players = {}, excludeId = null) =>
+  Object.entries(players)
+    .filter(([playerId, player]) => !!player && playerId !== excludeId)
+    .length;
 const ini = (n = "") =>
   n
     .split(" ")
@@ -783,6 +785,54 @@ body::before {
   font-size: .86rem;
   line-height: 1.45;
 }
+.workspace-room-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+.workspace-room-card {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(158,234,196,.10);
+  background: rgba(255,255,255,.025);
+}
+.workspace-room-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.workspace-room-k {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.44);
+}
+.workspace-room-v {
+  display: block;
+  color: var(--cream);
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.workspace-room-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(241,185,63,.18);
+  background: rgba(241,185,63,.08);
+  color: var(--gold2);
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 .workspace-actions {
   display: flex;
   flex-wrap: wrap;
@@ -910,6 +960,50 @@ body::before {
 .pro-tab-badge { font-size: .52rem; font-weight: 700; letter-spacing: .08em; background: var(--gold); color: var(--ink); border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
 
 /* Team Room preview chip */
+.team-room-choice-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.team-room-choice-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(158,234,196,.12);
+  background: rgba(255,255,255,.03);
+  color: rgba(239,242,247,.78);
+  font-family: 'Outfit', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.team-room-choice-btn:hover {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(158,234,196,.22);
+}
+.team-room-choice-btn.active {
+  border-color: rgba(241,185,63,.30);
+  background: linear-gradient(180deg, rgba(241,185,63,.14), rgba(241,185,63,.06));
+  color: var(--gold2);
+}
+.team-room-choice-label {
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.46);
+}
+.team-room-choice-btn.active .team-room-choice-label {
+  color: rgba(255,217,120,.82);
+}
+.team-room-choice-name {
+  font-size: .84rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
 .team-code-preview { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(180deg, rgba(126,230,255,.10), rgba(241,185,63,.08)); border: 1px solid rgba(126,230,255,.18); border-radius: 12px; padding: 10px 12px; margin-bottom: 18px; width: 100%; }
 .tcp-label { font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.65); white-space: nowrap; }
 .tcp-code { font-family: monospace; font-size: .9rem; font-weight: 700; color: var(--mint2); letter-spacing: .1em; flex: 1; }
@@ -1055,7 +1149,7 @@ body::before {
   margin: 44px auto;
 }
 @media (max-width: 680px) {
-  .seo-grid, .seo-faq-grid, .seo-plan-grid { grid-template-columns: 1fr; }
+  .seo-grid, .seo-faq-grid, .seo-plan-grid, .workspace-room-grid, .team-room-choice-row { grid-template-columns: 1fr; }
   .seo-section h2.seo-h2 { font-size: 1.5rem; }
   .seo-section { margin-top: 40px; }
   .workspace-grid { grid-template-columns: 1fr; }
@@ -3087,8 +3181,8 @@ body::before {
 /* ═══════════════════════ ROOM CONFIG ═══════════════════════ */
 // Dynamic rooms: each Create generates a unique 5-char code.
 // URL is updated via replaceState so links can be shared directly.
-const FREE_MAX_PLAYERS = 6;   // Free tier participant limit
-const PRO_MAX_PLAYERS  = 20;  // Pro tier: full team + stakeholders
+const FREE_MAX_PARTICIPANTS = 8;  // Free tier: total people in room, including facilitator
+const PRO_MAX_PARTICIPANTS  = 20; // Pro tier: total people in room, including facilitators
 const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours — auto-end + save history
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
 const ROOM_SWEEP_INTERVAL_MS = 15 * 60 * 1000;       // Best-effort stale-room cleanup cadence per browser
@@ -3300,7 +3394,7 @@ function NavBar({
               {!isPro && (
                 <div className="nav-btn-wrapper">
                   <button className="nav-btn-register" onClick={onRegister}>✦ Upgrade to Pro</button>
-                  <span className="nav-upgrade-sub">Team Room · 20 players · Sprint history</span>
+                  <span className="nav-upgrade-sub">2 Team Rooms · 20 participants · Sprint history</span>
                 </div>
               )}
             </>
@@ -3309,7 +3403,7 @@ function NavBar({
               <button className="nav-btn-login" onClick={onLogin}>Sign in / Create account</button>
               <div className="nav-btn-wrapper">
                 <button className="nav-btn-register" onClick={onRegister}>✦ Get Pro</button>
-                <span className="nav-upgrade-sub">Team Room · 20 players · Sprint history</span>
+                <span className="nav-upgrade-sub">2 Team Rooms · 20 participants · Sprint history</span>
               </div>
             </>
           )}
@@ -3336,12 +3430,12 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
       {!signedIn && <div className="footer-plan-bar">
         <div className="footer-plan-item">
           <span className="footer-plan-badge free">Free</span>
-          <span className="footer-plan-text">Up to 6 voters · All card decks · No account needed</span>
+          <span className="footer-plan-text">Up to 8 participants · All card decks · No account needed</span>
         </div>
         <div className="footer-plan-divider" aria-hidden="true" />
         <div className="footer-plan-item">
           <span className="footer-plan-badge pro">Pro</span>
-          <span className="footer-plan-text">Permanent Team Room · Up to 20 voters · Sprint history · From £5/mo</span>
+          <span className="footer-plan-text">2 dedicated Team Rooms · Up to 20 participants · Sprint history · From £5/mo</span>
         </div>
         {!isPro && (
           <button className="footer-plan-cta" onClick={onShowPricing}>
@@ -3366,8 +3460,8 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
           <p className="footer-brand-desc">
             {signedIn
               ? isPro
-                ? "Your Pro workspace is live. Reuse your fixed Team Room, share invite links quickly, and keep sprint history attached to your account."
-                : "Your Free workspace is ready. Create and join sessions now, then upgrade only when you want a permanent Team Room."
+                ? "Your Pro workspace is live. Reuse either dedicated Team Room, share invite links quickly, and keep sprint history attached to your account."
+                : "Your Free workspace is ready. Create and join sessions now, then upgrade only when you want two dedicated Team Rooms."
               : "Free, real-time planning poker for agile and Scrum teams. No sign-up required. Works in any browser."}
           </p>
           {!signedIn && (
@@ -3483,10 +3577,10 @@ function LoginModal({
 
   const subtitle = currentUser
     ? isPro
-      ? "This account already has Pro access, sprint history, and your permanent team room."
-      : "This account is on the free plan. Upgrade when you want a permanent team room, 20 voters, and sprint history."
+      ? "This account already has Pro access, sprint history, and two dedicated Team Rooms."
+      : "This account is on the free plan. Upgrade when you want two dedicated Team Rooms, 20 participants, and sprint history."
     : mode === "register"
-      ? "Accounts keep billing, Pro access, and sprint history tied to one place across devices."
+      ? "Accounts keep plan status, dedicated Team Rooms, billing, and sprint history tied to one place across devices."
       : mode === "reset"
         ? "Enter your account email and we’ll send a password reset link."
         : upgradeIntent
@@ -3494,7 +3588,7 @@ function LoginModal({
           : "Free rooms work without an account. Sign in only if you already have one or want account-linked Pro access.";
   const modeHint = currentUser
     ? isPro
-      ? "You can use Team Room and Sprint History immediately on this account."
+      ? "You can use both dedicated Team Rooms and Sprint History immediately on this account."
       : "Short-term Pro access is activated with a code while checkout is being finalised."
     : upgradeIntent
       ? "Short-term Pro setup: create your account, then activate Pro with your code."
@@ -3765,7 +3859,7 @@ function LoginModal({
               <div>
                 <div className="login-upgrade-title">Need Pro for your team?</div>
                 <p className="login-upgrade-sub">
-                  Permanent Team Room, Sprint History, and up to 20 voters.
+                  2 dedicated Team Rooms, Sprint History, and up to 20 participants.
                 </p>
               </div>
               {onShowPricing && (
@@ -3829,7 +3923,7 @@ function LoginModal({
               </div>
             ) : (
               <div className="login-upgrade-note">
-                <strong>Pro access attaches to an account.</strong> Create or sign in first, then come back here to activate your code so Team Room, billing, and sprint history stay with you across devices.
+                <strong>Pro access attaches to an account.</strong> Create or sign in first, then come back here to activate your code so your dedicated Team Rooms, billing, and sprint history stay with you across devices.
               </div>
             )}
           </div>
@@ -4046,10 +4140,12 @@ export default function App() {
           });
         } else {
           const current = snap.val() || {};
+          const teamRooms = resolveDedicatedTeamRooms(current, user);
           await update(ref(db, `users/${user.uid}`), {
-            email: user.email || "",
-            displayName: user.displayName || "",
-            teamRoomName: current.teamRoomName || deriveTeamRoomName(user.displayName || "", user.email || ""),
+            email: user.email || current.email || "",
+            displayName: user.displayName || current.displayName || "",
+            teamRoomName: teamRooms.primary,
+            teamRooms,
             lastLoginAt: Date.now(),
           });
         }
@@ -4411,13 +4507,13 @@ export default function App() {
       return;
     }
     const data = snap.val();
-    const currentCount = countVoters(data.players || {});
-    const maxForPlan = data.plan === "pro" ? PRO_MAX_PLAYERS : FREE_MAX_PLAYERS;
-    if (role === "voter" && currentCount >= maxForPlan) {
+    const currentCount = countParticipants(data.players || {}, myId);
+    const maxForPlan = data.plan === "pro" ? PRO_MAX_PARTICIPANTS : FREE_MAX_PARTICIPANTS;
+    if (currentCount >= maxForPlan) {
       if (data.plan !== "pro") {
-        showToast(`Room full for voters (free tier: ${FREE_MAX_PLAYERS} max). The host can upgrade to Pro for up to ${PRO_MAX_PLAYERS} voters.`);
+        showToast(`Room full (free tier: ${FREE_MAX_PARTICIPANTS} participants including facilitator). The host can upgrade to Pro for up to ${PRO_MAX_PARTICIPANTS} participants.`);
       } else {
-        showToast(`This room is full for voters (max ${PRO_MAX_PLAYERS}).`);
+        showToast(`This room is full (max ${PRO_MAX_PARTICIPANTS} participants).`);
       }
       return;
     }
@@ -4459,16 +4555,16 @@ export default function App() {
     if (!canEnterExistingTeamRoom && !canCreateDedicatedTeamRoom) {
       setShowPricingModal(true);
       track("pricing_opened");
-      showToast("Team Rooms are a Pro feature for hosts. Upgrade to unlock your own permanent team URL.");
+      showToast("Team Rooms are a Pro feature for hosts. Upgrade to unlock two dedicated fixed room URLs.");
       return;
     }
     const existingPlan = existingRoom ? (existingRoom.plan || "pro") : plan;
     const currentCount = existingRoom
-      ? countVoters(existingRoom.players || {})
+      ? countParticipants(existingRoom.players || {}, myId)
       : 0;
-    const maxForPlan = existingPlan === "pro" ? PRO_MAX_PLAYERS : FREE_MAX_PLAYERS;
-    if (role === "voter" && currentCount >= maxForPlan) {
-      showToast(`This room is full for voters (max ${maxForPlan}).`);
+    const maxForPlan = existingPlan === "pro" ? PRO_MAX_PARTICIPANTS : FREE_MAX_PARTICIPANTS;
+    if (currentCount >= maxForPlan) {
+      showToast(`This room is full (max ${maxForPlan} participants).`);
       return;
     }
     setMyRole(role);
@@ -5106,10 +5202,10 @@ function PricingPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Pricing"
       title="Planning poker pricing that starts free and only upgrades when the team truly needs it"
-      intro="pointpoker is designed for real sprint planning, not gated demos. Run free sessions instantly, then move to Pro when your team wants a permanent Team Room, higher voter capacity, and sprint history attached to an account."
+      intro="pointpoker is designed for real sprint planning, not gated demos. Run free sessions instantly, then move to Pro when your team wants two dedicated Team Rooms, higher participant capacity, and sprint history attached to an account."
       highlights={[
         { value: "£0", label: "Free rooms with no account required" },
-        { value: `${FREE_MAX_PLAYERS}/${PRO_MAX_PLAYERS}`, label: "Voter capacity from Free to Pro" },
+        { value: `${FREE_MAX_PARTICIPANTS}/${PRO_MAX_PARTICIPANTS}`, label: "Participant capacity from Free to Pro" },
         { value: annual, label: "Annual Pro rate from per month" },
       ]}
       onNavigate={onNavigate}
@@ -5120,7 +5216,7 @@ function PricingPage({ onNavigate }) {
     >
       <MarketingSection
         title="Choose the plan that matches how your team runs sprint planning"
-        intro="Free is built for quick, low-friction estimation. Pro is for recurring teams that want one permanent room and reusable sprint context."
+        intro="Free is built for quick, low-friction estimation. Pro is for recurring teams that want two dedicated reusable rooms and sprint context that carries forward."
       >
         <div className="marketing-plan-grid">
           <article className="marketing-plan-card">
@@ -5130,7 +5226,7 @@ function PricingPage({ onNavigate }) {
               Best for ad-hoc sprint planning, client sessions, and teams that want to start estimating in seconds.
             </p>
             <ul className="marketing-list">
-              <li>Up to {FREE_MAX_PLAYERS} voters per session</li>
+              <li>Up to {FREE_MAX_PARTICIPANTS} participants including the facilitator</li>
               <li>All three card decks and simultaneous reveal</li>
               <li>Story queue, facilitator controls, and live analytics</li>
               <li>No account required for normal room participation</li>
@@ -5143,15 +5239,15 @@ function PricingPage({ onNavigate }) {
               Starts at {monthly} monthly or {annual} annually. Best for teams that estimate together every sprint and want a room they can bookmark and reuse.
             </p>
             <ul className="marketing-list">
-              <li>Permanent Team Room with a stable shareable URL</li>
-              <li>Up to {PRO_MAX_PLAYERS} voters per session</li>
+              <li>Two dedicated Team Rooms with fixed shareable URLs</li>
+              <li>Up to {PRO_MAX_PARTICIPANTS} participants per session</li>
               <li>Sprint history, trend visibility, and reusable team workflow</li>
               <li>Account-linked access that follows the user across devices</li>
             </ul>
           </article>
         </div>
         <div className="marketing-note-panel">
-          <strong>Current rollout note:</strong> Stripe checkout wiring is still being finalised. Today, the cleanest route into Pro is to create an account and activate access on that account so Team Room and sprint history stay attached to one identity.
+          <strong>Current rollout note:</strong> Stripe checkout wiring is still being finalised. Today, the cleanest route into Pro is to create an account and activate access on that account so your dedicated Team Rooms and sprint history stay attached to one identity.
         </div>
       </MarketingSection>
 
@@ -5169,7 +5265,7 @@ function PricingPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">Upgrade when the same team estimates together repeatedly</h3>
             <p className="marketing-card-copy">
-              Pro becomes worthwhile when you want one Team Room your team can bookmark, reuse every sprint, and join without chasing a fresh link each time.
+              Pro becomes worthwhile when you want two dedicated Team Rooms your team can bookmark, reuse every sprint, and keep separate by squad, product, or ceremony.
             </p>
           </article>
           <article className="marketing-card">
@@ -5196,7 +5292,7 @@ function PricingPage({ onNavigate }) {
         <div>
           <h2 className="marketing-cta-title">Start with the free workflow, then upgrade only when your team needs permanence</h2>
           <p className="marketing-cta-copy">
-            pointpoker is intentionally simple to adopt. Create a room, run a live session, and only move to Pro when the Team Room and sprint history become operationally useful.
+            pointpoker is intentionally simple to adopt. Create a room, run a live session, and only move to Pro when dedicated Team Rooms and sprint history become operationally useful.
           </p>
         </div>
         <div className="marketing-actions">
@@ -5245,7 +5341,7 @@ function AboutPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">A clean upgrade path when repeatability matters</h3>
             <p className="marketing-card-copy">
-              Pro is intentionally focused on permanent Team Rooms, higher voter limits, and sprint history. It is designed for recurring team rhythm, not for locking basic estimation behind billing first.
+              Pro is intentionally focused on two dedicated Team Rooms, higher participant limits, and sprint history. It is designed for recurring team rhythm, not for locking basic estimation behind billing first.
             </p>
           </article>
         </div>
@@ -5315,7 +5411,7 @@ function SupportPage({ onNavigate }) {
       highlights={[
         { value: "Email", label: support },
         { value: "Free", label: "Normal room participation without account setup" },
-        { value: "Pro", label: "Account-linked Team Room and sprint history" },
+        { value: "Pro", label: "2 dedicated Team Rooms and sprint history" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
@@ -5337,7 +5433,7 @@ function SupportPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">Pro access questions</h3>
             <p className="marketing-card-copy">
-              Pro access is attached to an account. That is what keeps Team Room ownership and sprint history tied to one reusable identity across sessions and devices.
+              Pro access is attached to an account. That is what keeps dedicated Team Room ownership and sprint history tied to one reusable identity across sessions and devices.
             </p>
           </article>
           <article className="marketing-card">
@@ -5368,7 +5464,7 @@ function SupportPage({ onNavigate }) {
       >
         <ul className="marketing-list">
           <li><strong>Free rooms are for fast ad-hoc estimation:</strong> create a room, invite the team, and run the ceremony without forcing everyone through accounts.</li>
-          <li><strong>Pro is for repeatability:</strong> permanent Team Rooms, sprint history, and higher voter limits are useful when the same team estimates together every sprint.</li>
+          <li><strong>Pro is for repeatability:</strong> two dedicated Team Rooms, sprint history, and higher participant limits are useful when the same team estimates together every sprint.</li>
           <li><strong>Facilitators do not need to vote:</strong> the facilitator role exists to manage reveal, re-vote, moderation, and final estimate capture.</li>
           <li><strong>Real names are required:</strong> participants and facilitators must enter a genuine name so the room stays understandable to the whole team.</li>
           <li><strong>Support questions are easier to solve with context:</strong> sharing the room code, team slug, or exact flow that failed usually shortens the back-and-forth significantly.</li>
@@ -5651,7 +5747,7 @@ function AgileEstimationToolPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">It creates reusable context over time</h3>
             <p className="marketing-card-copy">
-              With Pro, sprint history and permanent Team Rooms help the same team come back to a consistent estimation workflow instead of starting from scratch every sprint.
+              With Pro, sprint history and two dedicated Team Rooms help the same team come back to a consistent estimation workflow instead of starting from scratch every sprint.
             </p>
           </article>
         </div>
@@ -5680,7 +5776,7 @@ function FeaturesPage({ onNavigate }) {
       highlights={[
         { value: "3", label: "Card decks: Fibonacci, T-Shirt, Powers of 2" },
         { value: "Live", label: "Realtime reveal, votes, and participant sync" },
-        { value: "Pro", label: "Permanent Team Room and sprint history when ready" },
+        { value: "Pro", label: "2 dedicated Team Rooms and sprint history when ready" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
@@ -5745,9 +5841,9 @@ function FeaturesPage({ onNavigate }) {
         intro="Free handles the live planning flow. Pro adds the repeatable operational layer that helps the same team come back sprint after sprint."
       >
         <ul className="marketing-list">
-          <li><strong>Permanent Team Room:</strong> one URL the team can bookmark and reuse every sprint.</li>
+          <li><strong>Dedicated Team Rooms:</strong> two fixed URLs the team can bookmark and reuse every sprint.</li>
           <li><strong>Sprint history:</strong> session summaries stay attached to the account and become a reliable archive.</li>
-          <li><strong>Higher voter limits:</strong> Pro rooms support up to {PRO_MAX_PLAYERS} voters instead of {FREE_MAX_PLAYERS}.</li>
+          <li><strong>Higher participant limits:</strong> Pro rooms support up to {PRO_MAX_PARTICIPANTS} people instead of {FREE_MAX_PARTICIPANTS}.</li>
           <li><strong>Name, role, and invite clarity:</strong> participants can still join shared rooms without unnecessary account friction.</li>
         </ul>
       </MarketingSection>
@@ -5839,7 +5935,7 @@ function PlanningPokerOnlinePage({ onNavigate }) {
         links={[
           { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "See how the same flow supports backlog refinement and sprint planning in Scrum teams." },
           { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "Learn how the product supports Fibonacci-based discussions and facilitator-led agreement." },
-          { href: "/pricing", kicker: "Plans", title: "Free vs Pro", copy: "Compare when the free room flow is enough and when a permanent Team Room is worth it." },
+          { href: "/pricing", kicker: "Plans", title: "Free vs Pro", copy: "Compare when the free room flow is enough and when two dedicated Team Rooms are worth it." },
         ]}
       />
     </MarketingPageShell>
@@ -5908,7 +6004,7 @@ function ScrumPokerPage({ onNavigate }) {
         links={[
           { href: "/planning-poker-online", kicker: "Guide", title: "Planning poker online", copy: "See the full browser-first flow for remote teams and ad-hoc sessions." },
           { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "Understand how the tool helps teams converge on meaningful estimates." },
-          { href: "/pricing", kicker: "Plans", title: "Pricing and Team Room fit", copy: "See when recurring Scrum teams benefit from the permanent Team Room workflow." },
+          { href: "/pricing", kicker: "Plans", title: "Pricing and Team Room fit", copy: "See when recurring Scrum teams benefit from two dedicated reusable Team Rooms." },
         ]}
       />
     </MarketingPageShell>
@@ -5987,7 +6083,7 @@ function StoryPointEstimationPage({ onNavigate }) {
         links={[
           { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "See how the browser-first room flow supports live estimation from anywhere." },
           { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "Understand how the same estimation flow fits sprint planning and backlog refinement." },
-          { href: "/pricing", kicker: "Plans", title: "Pricing and Team Room fit", copy: "Compare Free and Pro when estimation becomes a recurring team ritual." },
+          { href: "/pricing", kicker: "Plans", title: "Pricing and Team Room fit", copy: "Compare Free and Pro when estimation becomes a recurring team ritual with dedicated reusable rooms." },
         ]}
       />
     </MarketingPageShell>
@@ -6003,13 +6099,13 @@ function RemoteSprintPlanningPage({ onNavigate }) {
       highlights={[
         { value: "1 link", label: "Share in Slack, Teams, Zoom, or calendar invites" },
         { value: "Live", label: "Votes, reveals, and story flow sync in real time" },
-        { value: "Reuse", label: "Pro Team Room keeps the same URL every sprint" },
+        { value: "Reuse", label: "Pro gives you 2 fixed Team Room URLs every sprint" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
       primaryLabel="Start remote room"
       secondaryHref="/pricing"
-      secondaryLabel="See Team Room pricing"
+      secondaryLabel="See Pro pricing"
     >
       <MarketingSection
         title="What remote teams usually need"
@@ -6031,7 +6127,7 @@ function RemoteSprintPlanningPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">Persistent room when the team is ready</h3>
             <p className="marketing-card-copy">
-              Pro adds a permanent Team Room so recurring squads stop recreating and re-sharing the same room every sprint.
+              Pro adds two dedicated Team Rooms so recurring squads stop recreating and re-sharing the same room every sprint.
             </p>
           </article>
         </div>
@@ -6045,7 +6141,7 @@ function RemoteSprintPlanningPage({ onNavigate }) {
           <li><strong>Share the room before the meeting starts</strong> so people can join as the call opens.</li>
           <li><strong>Keep story names visible and estimates structured</strong> so discussion stays anchored to one backlog item at a time.</li>
           <li><strong>Use facilitator-only controls</strong> to keep reveals, re-votes, and final estimate decisions consistent.</li>
-          <li><strong>Reuse the same Team Room</strong> when the team estimates together every sprint and wants a stable operating rhythm.</li>
+          <li><strong>Reuse one of your two dedicated Team Rooms</strong> when the team estimates together every sprint and wants a stable operating rhythm.</li>
         </ul>
       </MarketingSection>
 
@@ -6056,7 +6152,7 @@ function RemoteSprintPlanningPage({ onNavigate }) {
         links={[
           { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "Understand the browser-first room flow and live reveal model." },
           { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the facilitator controls, story queue, Team Alignment, and history features." },
-          { href: "/pricing", kicker: "Plans", title: "Free vs Pro for remote teams", copy: "See when a reusable Team Room becomes the right operational upgrade." },
+          { href: "/pricing", kicker: "Plans", title: "Free vs Pro for remote teams", copy: "See when reusable dedicated Team Rooms become the right operational upgrade." },
         ]}
       />
     </MarketingPageShell>
@@ -6104,12 +6200,51 @@ function deriveTeamRoomName(displayName = "", email = "") {
   return /team$/i.test(base) ? base : `${base} Team`;
 }
 
+function clampTeamRoomLabel(name = "", fallback = "My Team") {
+  const cleaned = String(name || "").replace(/\s+/g, " ").trim();
+  const nextValue = cleaned || fallback;
+  return nextValue.length <= 60
+    ? nextValue
+    : nextValue.slice(0, 60).trim();
+}
+
+function deriveSecondaryTeamRoomName(primaryName = "", displayName = "", email = "") {
+  const fallbackPrimary = deriveTeamRoomName(displayName, email);
+  const primary = clampTeamRoomLabel(primaryName || fallbackPrimary, fallbackPrimary);
+  const suffix = " 2";
+  const base = primary.replace(/\s+2$/i, "");
+  const trimmedBase = base.length + suffix.length <= 60
+    ? base
+    : base.slice(0, 60 - suffix.length).trim();
+  return clampTeamRoomLabel(`${trimmedBase}${suffix}`, "My Team 2");
+}
+
+function resolveDedicatedTeamRooms(profile = {}, user = null) {
+  const displayName = profile.displayName || user?.displayName || "";
+  const email = profile.email || user?.email || "";
+  const primaryFallback = deriveTeamRoomName(displayName, email);
+  const primary = clampTeamRoomLabel(
+    profile?.teamRooms?.primary || profile.teamRoomName || primaryFallback,
+    primaryFallback,
+  );
+  let secondary = clampTeamRoomLabel(
+    profile?.teamRooms?.secondary || deriveSecondaryTeamRoomName(primary, displayName, email),
+    deriveSecondaryTeamRoomName(primary, displayName, email),
+  );
+  if (secondary === primary) {
+    secondary = deriveSecondaryTeamRoomName(primary, displayName, email);
+  }
+  return { primary, secondary };
+}
+
 async function saveUserProfile(user, profile = {}) {
   if (!user?.uid) return;
+  const teamRooms = resolveDedicatedTeamRooms(profile, user);
   const nextProfile = {
     email: user.email || profile.email || "",
     displayName: profile.displayName || user.displayName || "",
-    teamRoomName: profile.teamRoomName || deriveTeamRoomName(profile.displayName || user.displayName || "", user.email || profile.email || ""),
+    teamRoomName: teamRooms.primary,
+    teamRooms,
     plan: profile.plan || "free",
     billingStatus: profile.billingStatus || "inactive",
     createdAt: profile.createdAt || Date.now(),
@@ -6120,6 +6255,9 @@ async function saveUserProfile(user, profile = {}) {
 
 async function markCheckoutIntent(user, billing, currency) {
   if (!user?.uid) return;
+  const snap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
+  const currentProfile = snap?.exists?.() ? snap.val() || {} : {};
+  const teamRooms = resolveDedicatedTeamRooms(currentProfile, user);
   await update(ref(db, `users/${user.uid}`), {
     billingCycle: billing,
     currency,
@@ -6127,7 +6265,8 @@ async function markCheckoutIntent(user, billing, currency) {
     checkoutStartedAt: Date.now(),
     email: user.email || "",
     displayName: user.displayName || "",
-    teamRoomName: deriveTeamRoomName(user.displayName || "", user.email || ""),
+    teamRoomName: teamRooms.primary,
+    teamRooms,
   });
 }
 
@@ -6139,10 +6278,14 @@ async function validateAndSavePro(key, user = null) {
     const snap = await get(ref(db, `licenses/${formatted}`));
     if (!snap.exists() || snap.val().active !== true) return "invalid";
     if (user?.uid) {
+      const profileSnap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
+      const currentProfile = profileSnap?.exists?.() ? profileSnap.val() || {} : {};
+      const teamRooms = resolveDedicatedTeamRooms(currentProfile, user);
       await update(ref(db, `users/${user.uid}`), {
         email: user.email || "",
         displayName: user.displayName || "",
-        teamRoomName: deriveTeamRoomName(user.displayName || "", user.email || ""),
+        teamRoomName: teamRooms.primary,
+        teamRooms,
         plan: "pro",
         billingStatus: "active",
         proKey: formatted,
@@ -6779,23 +6922,23 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
   const activationPrimary = !checkoutLive && !!currentUser && !isPro;
 
   const FREE_FEATURES = [
-    { yes: true,  text: `Up to ${FREE_MAX_PLAYERS} voters per session`           },
+    { yes: true,  text: `Up to ${FREE_MAX_PARTICIPANTS} participants per session` },
     { yes: true,  text: "All card decks — Fibonacci, T-Shirt, Powers of 2"      },
     { yes: true,  text: "Simultaneous reveal with live vote breakdown"           },
     { yes: true,  text: "Story queue and session summary export"                 },
     { yes: true,  text: "Facilitator mode and sprint analytics"                  },
-    { yes: false, text: "Permanent Team Room with your own URL"                  },
-    { yes: false, text: `Up to ${PRO_MAX_PLAYERS} voters per session`            },
+    { yes: false, text: "2 dedicated Team Rooms with fixed URLs"                 },
+    { yes: false, text: `Up to ${PRO_MAX_PARTICIPANTS} participants per session` },
     { yes: false, text: "Sprint history — velocity trends across sprints"        },
     { yes: false, text: "Priority support"                                       },
   ];
 
   const PRO_FEATURES = [
     { yes: true, text: "Everything in Free, always"                              },
-    { yes: true, text: "Permanent Team Room — same URL every sprint"             },
-    { yes: true, text: `Up to ${PRO_MAX_PLAYERS} voters per session`             },
+    { yes: true, text: "2 dedicated Team Rooms — fixed URLs every sprint"        },
+    { yes: true, text: `Up to ${PRO_MAX_PARTICIPANTS} participants per session`  },
     { yes: true, text: "Sprint history — velocity trends and consensus insights" },
-    { yes: true, text: "Team joins by name — no link sharing needed"             },
+    { yes: true, text: "Share each fixed URL once, then let teams rejoin by name" },
     { yes: true, text: "Estimation Spree streak and alignment analytics"         },
     { yes: true, text: "Priority support via email"                              },
   ];
@@ -6847,7 +6990,7 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
 
         <h2 className="pricing-title">Simple, Transparent Pricing</h2>
         <p className="pricing-sub">
-          Free forever for small teams. Pro gives you a permanent team room, more voter capacity, and sprint history.
+          Free forever for small teams. Pro gives you two dedicated Team Rooms, more participant capacity, and sprint history.
         </p>
 
         {/* ── Billing toggle ── */}
@@ -6925,7 +7068,7 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
               : <p className="pricing-billing-note">Switch to annual and save {p.symbol}{p.pro - p.proAnnual}/mo</p>}
 
             <p className="pricing-desc">
-              One permanent room your team reuses every sprint — no link sharing before every session.
+              Two dedicated Team Rooms your team can reuse every sprint — no need to recreate them before every session.
             </p>
             <div className="pricing-account-note">
               {currentUser
@@ -7032,7 +7175,7 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
                   </div>
                   {keyStatus === "ok" && (
                     <p className="pro-key-status success">
-                      ✓ Pro activated — your permanent team room is unlocked.
+                      ✓ Pro activated — your 2 dedicated Team Rooms are unlocked.
                     </p>
                   )}
                   {keyStatus === "invalid" && (
@@ -7083,9 +7226,28 @@ function JoinScreen({
   const teamRouteMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
   const teamQuery = new URLSearchParams(window.location.search).get("team");
   const defaultName = currentUser?.displayName || deriveDisplayNameFallback(currentUser?.email || "");
-  const dedicatedTeamName = accountProfile?.teamRoomName || deriveTeamRoomName(currentUser?.displayName || "", currentUser?.email || "");
-  const dedicatedTeamCode = dedicatedTeamName ? teamCode(dedicatedTeamName) : "";
-  const dedicatedTeamUrl = dedicatedTeamCode ? `${window.location.origin}${teamRoomPath(dedicatedTeamCode)}` : "";
+  const accountDedicatedRooms = resolveDedicatedTeamRooms(accountProfile || {}, currentUser || {});
+  const dedicatedTeamRooms = [
+    {
+      key: "primary",
+      label: "Dedicated Team Room 1",
+      shortLabel: "Room 1",
+      name: accountDedicatedRooms.primary,
+    },
+    {
+      key: "secondary",
+      label: "Dedicated Team Room 2",
+      shortLabel: "Room 2",
+      name: accountDedicatedRooms.secondary,
+    },
+  ].map((room) => ({
+    ...room,
+    code: teamCode(room.name),
+    url: `${window.location.origin}${teamRoomPath(room.name)}`,
+  }));
+  const matchedDedicatedRoomFromRoute = dedicatedTeamRooms.find(
+    (room) => room.code === teamRouteMatch?.[1],
+  );
   const isSharedTeamRoomEntry = !!prefillTeam && (!!teamRouteMatch || !!teamQuery);
   const canHostPermanentTeamRoom = isPro;
   const canEnterTeamRoom = canHostPermanentTeamRoom || isSharedTeamRoomEntry;
@@ -7098,9 +7260,13 @@ function JoinScreen({
   const [role, setRole] = useState("voter");
   const [deck, setDeck] = useState("fibonacci");
   const [rc, setRc] = useState(prefillCode || "");
-  const [teamName, setTeamName] = useState(prefillTeam || (signedIn && isPro ? dedicatedTeamName : ""));
+  const [selectedDedicatedRoomKey, setSelectedDedicatedRoomKey] = useState(
+    matchedDedicatedRoomFromRoute?.key || "primary",
+  );
+  const selectedDedicatedRoom = dedicatedTeamRooms.find((room) => room.key === selectedDedicatedRoomKey) || dedicatedTeamRooms[0];
+  const [teamName, setTeamName] = useState(prefillTeam || (signedIn && isPro ? selectedDedicatedRoom?.name || "" : ""));
   const [err, setErr] = useState("");
-  const [teamUrlCopied, setTeamUrlCopied] = useState(false);
+  const [copiedDedicatedRoomKey, setCopiedDedicatedRoomKey] = useState("");
   const teamEntryRef = useRef(null);
   const nameInputRef = useRef(null);
   const teamUrlCopiedRef = useRef(null);
@@ -7113,12 +7279,12 @@ function JoinScreen({
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
   const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
-  const isOwnDedicatedTeamRoom = isPro && !!previewCode && previewCode === dedicatedTeamCode;
+  const isOwnDedicatedTeamRoom = isPro && !!previewCode && dedicatedTeamRooms.some((room) => room.code === previewCode);
   const teamPrimaryLabel = !canEnterTeamRoom
-    ? "Upgrade to unlock Team Room →"
+    ? "Upgrade to unlock 2 Team Rooms →"
     : isSharedTeamRoomEntry
       ? "Join Team Room →"
-      : "Enter Team Room →";
+      : "Open selected Team Room →";
   const resolveEnteredName = useCallback(
     () => (nameInputRef.current?.value || nameValueRef.current || "").trim(),
     [],
@@ -7177,14 +7343,20 @@ function JoinScreen({
       if (!isSharedTeamRoomEntry) setTeamName("");
       return;
     }
-    if (!prefillTeam && isPro) setTeamName(dedicatedTeamName);
-  }, [signedIn, prefillTeam, isPro, dedicatedTeamName, isSharedTeamRoomEntry]);
+    if (!prefillTeam && isPro) setTeamName(selectedDedicatedRoom?.name || "");
+  }, [signedIn, prefillTeam, isPro, selectedDedicatedRoom?.name, isSharedTeamRoomEntry]);
 
   useEffect(() => {
     if (signedIn && isSharedTeamRoomEntry && teamQuery && teamName !== teamQuery) {
       setTeamName(teamQuery);
     }
   }, [signedIn, isSharedTeamRoomEntry, teamQuery, teamName]);
+
+  useEffect(() => {
+    if (matchedDedicatedRoomFromRoute?.key && matchedDedicatedRoomFromRoute.key !== selectedDedicatedRoomKey) {
+      setSelectedDedicatedRoomKey(matchedDedicatedRoomFromRoute.key);
+    }
+  }, [matchedDedicatedRoomFromRoute?.key, selectedDedicatedRoomKey]);
 
   const focusTeamEntry = useCallback(() => {
     setTimeout(() => {
@@ -7217,17 +7389,17 @@ function JoinScreen({
     { r: "observer", icon: "👁", l: "Facilitator", s: "Runs the session and does not vote" },
   ];
 
-  const copyTeamUrl = async () => {
-    if (!dedicatedTeamUrl) return;
+  const copyTeamUrl = async (room) => {
+    if (!room?.url) return;
     try {
-      await navigator.clipboard.writeText(dedicatedTeamUrl);
+      await navigator.clipboard.writeText(room.url);
     } catch {
       // Clipboard failure should still surface visible feedback to keep the action intelligible.
     }
-    setTeamUrlCopied(true);
+    setCopiedDedicatedRoomKey(room.key);
     clearErr();
     clearTimeout(teamUrlCopiedRef.current);
-    teamUrlCopiedRef.current = setTimeout(() => setTeamUrlCopied(false), 1600);
+    teamUrlCopiedRef.current = setTimeout(() => setCopiedDedicatedRoomKey(""), 1600);
   };
 
   useEffect(() => () => clearTimeout(teamUrlCopiedRef.current), []);
@@ -7235,20 +7407,19 @@ function JoinScreen({
   useEffect(() => {
     if (autoEnterOwnTeamRoomRef.current) return;
     if (!signedIn || !isPro || !isSharedTeamRoomEntry) return;
-    if (!teamRouteMatch || !dedicatedTeamCode || teamRouteMatch[1] !== dedicatedTeamCode) return;
+    if (!teamRouteMatch || !matchedDedicatedRoomFromRoute) return;
     const validatedName = validateEnteredName();
     if (!validatedName.ok) return;
     const nextName = validatedName.name;
     autoEnterOwnTeamRoomRef.current = true;
-    onTeamRoom(nextName, role, dedicatedTeamName, deck);
+    onTeamRoom(nextName, role, matchedDedicatedRoomFromRoute.name, deck);
   }, [
     signedIn,
     isPro,
     isSharedTeamRoomEntry,
     teamRouteMatch,
-    dedicatedTeamCode,
+    matchedDedicatedRoomFromRoute,
     role,
-    dedicatedTeamName,
     deck,
     onTeamRoom,
     validateEnteredName,
@@ -7267,8 +7438,8 @@ function JoinScreen({
         <p className={`join-sub${signedIn ? " workspace" : ""}`}>
           {signedIn
             ? isPro
-              ? "Your workspace is ready. Start a room, open your fixed Team Room, or join a shared session."
-              : "Create a room instantly, join a shared session, or upgrade when you want a permanent Team Room."
+              ? "Your workspace is ready. Start a room, open one of your two fixed Team Rooms, or join a shared session."
+              : "Create a room instantly, join a shared session, or upgrade when you want two dedicated Team Rooms."
             : "Free online planning poker for agile teams. Create a room in seconds, share one link, and estimate together in real time."}
         </p>
 
@@ -7283,8 +7454,8 @@ function JoinScreen({
                   </div>
                   <p className="workspace-copy">
                     {isPro
-                      ? "Use your dedicated Team Room for recurring sprint planning, or create ad-hoc rooms when you need a one-off session."
-                      : "Use Create Room or Join Room for normal sessions. Upgrade only when you want a dedicated Team Room, sprint history, and higher voter capacity."}
+                      ? "Use either dedicated Team Room for recurring sprint planning, or create ad-hoc rooms when you need a one-off session."
+                      : "Use Create Room or Join Room for normal sessions. Upgrade only when you want two dedicated Team Rooms, sprint history, and higher participant capacity."}
                   </p>
                 </div>
                 <span className={`workspace-pill${isPro ? " pro" : ""}`}>
@@ -7299,38 +7470,58 @@ function JoinScreen({
                 <span className="workspace-stat-v">{defaultName}</span>
               </div>
               <div className="workspace-stat">
-                <span className="workspace-stat-k">{isPro ? "Dedicated Team Room" : "Upgrade when ready"}</span>
+                <span className="workspace-stat-k">{isPro ? "Dedicated Team Rooms" : "Upgrade when ready"}</span>
                 <span className="workspace-stat-v">
-                  {isPro ? dedicatedTeamCode : `Unlock a fixed Team Room and up to ${PRO_MAX_PLAYERS} voters`}
+                  {isPro ? "2 fixed room URLs ready" : `Unlock 2 fixed Team Rooms and up to ${PRO_MAX_PARTICIPANTS} participants`}
                 </span>
               </div>
             </div>
 
             {isPro ? (
               <div className="workspace-card">
-                <div className="workspace-label">Permanent Team Room</div>
-                <div className="workspace-title">{dedicatedTeamName}</div>
+                <div className="workspace-label">Dedicated Team Rooms</div>
+                <div className="workspace-title">Two fixed room URLs tied to your Pro account</div>
                 <p className="workspace-copy">
-                  This is your fixed Team Room URL. Share it once, bookmark it, and reuse the same room every sprint.
+                  Every Pro account now includes two dedicated Team Rooms. Share the links once, bookmark them, and keep separate recurring spaces for different squads, products, or ceremonies.
                 </p>
-                <div className="workspace-team-url">
-                  <code>{dedicatedTeamUrl}</code>
-                  <button type="button" className={teamUrlCopied ? "copied" : ""} onClick={copyTeamUrl}>
-                    {teamUrlCopied ? "✓ Invite link copied!" : "Copy link"}
-                  </button>
+                <div className="workspace-room-grid">
+                  {dedicatedTeamRooms.map((room) => (
+                    <div className="workspace-room-card" key={room.key}>
+                      <div className="workspace-room-top">
+                        <div>
+                          <div className="workspace-room-k">{room.label}</div>
+                          <div className="workspace-room-v">{room.name}</div>
+                        </div>
+                        <span className="workspace-room-chip">{room.shortLabel}</span>
+                      </div>
+                      <div className="workspace-team-url">
+                        <code>{room.url}</code>
+                        <button
+                          type="button"
+                          className={copiedDedicatedRoomKey === room.key ? "copied" : ""}
+                          onClick={() => copyTeamUrl(room)}
+                        >
+                          {copiedDedicatedRoomKey === room.key ? "✓ Invite link copied!" : "Copy link"}
+                        </button>
+                      </div>
+                      <div className="workspace-actions" style={{ marginTop: 12 }}>
+                        <button
+                          type="button"
+                          className="workspace-action-btn gold"
+                          onClick={() => {
+                            const validatedName = validateEnteredName();
+                            if (!validatedName.ok) { setErr(validatedName.message); setTab("team"); focusTeamEntry(); return; }
+                            setSelectedDedicatedRoomKey(room.key);
+                            onTeamRoom(validatedName.name, role, room.name, deck);
+                          }}
+                        >
+                          Open {room.shortLabel} →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 <div className="workspace-actions" style={{ marginTop: 12 }}>
-                  <button
-                    type="button"
-                    className="workspace-action-btn gold"
-                    onClick={() => {
-                      const validatedName = validateEnteredName();
-                      if (!validatedName.ok) { setErr(validatedName.message); setTab("team"); focusTeamEntry(); return; }
-                      onTeamRoom(validatedName.name, role, dedicatedTeamName, deck);
-                    }}
-                  >
-                    Enter Team Room →
-                  </button>
                   <button
                     type="button"
                     className="workspace-action-btn"
@@ -7347,9 +7538,9 @@ function JoinScreen({
             ) : (
               <div className="workspace-card">
                 <div className="workspace-label">Upgrade path</div>
-                <div className="workspace-title">Get a fixed Team Room when your team is ready</div>
+                <div className="workspace-title">Get two fixed Team Rooms when your team is ready</div>
                 <p className="workspace-copy">
-                  Free users can still create and join sessions instantly. Upgrade when you want a permanent URL, sprint history, and more voter capacity.
+                  Free users can still create and join sessions instantly. Upgrade when you want two fixed URLs, sprint history, and more participant capacity.
                 </p>
                 <div className="workspace-actions">
                   <button
@@ -7449,6 +7640,29 @@ function JoinScreen({
         {/* Team Room: team name input + live code preview */}
         {tab === "team" && (
           <div ref={teamEntryRef}>
+            {signedIn && isPro && !isSharedTeamRoomEntry && (
+              <>
+                <label className="lbl">Choose Dedicated Room</label>
+                <div className="team-room-choice-row">
+                  {dedicatedTeamRooms.map((room) => (
+                    <button
+                      key={room.key}
+                      type="button"
+                      className={`team-room-choice-btn${selectedDedicatedRoomKey === room.key ? " active" : ""}`}
+                      aria-pressed={selectedDedicatedRoomKey === room.key}
+                      onClick={() => {
+                        setSelectedDedicatedRoomKey(room.key);
+                        setTeamName(room.name);
+                        clearErr();
+                      }}
+                    >
+                      <span className="team-room-choice-label">{room.label}</span>
+                      <span className="team-room-choice-name">{room.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             <label className="lbl">Team Name</label>
             <input
               className="inp"
@@ -7467,7 +7681,7 @@ function JoinScreen({
             {!canEnterTeamRoom ? (
               <div className="team-pro-gate">
                 <span className="team-pro-gate-text">
-                  Team Room requires a Pro account. Type your team name to preview the URL — then upgrade to unlock it.
+                  Team Room requires a Pro account. Type your team name to preview the URL, then upgrade to unlock two dedicated fixed room URLs.
                 </span>
                 <button type="button" className="team-pro-gate-link" onClick={onShowPricing}>
                   View Pro plans →
@@ -7477,13 +7691,13 @@ function JoinScreen({
               <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
                 {signedIn && !isPro
                   ? "You are joining a shared Team Room. Only the host needs Pro — your own plan stays Free."
-                  : "This team's permanent room is ready. Add your name, choose your role, and join the live session."}
+                  : "This team's dedicated room is ready. Add your name, choose your role, and join the live session."}
               </p>
             ) : (
               <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
                 {isOwnDedicatedTeamRoom
-                  ? "Your Pro account has a fixed Team Room. Share the same link every sprint and keep it bookmarked for the whole team."
-                  : "Your Team Room is tied to your Pro account. Use the same URL every sprint and keep it bookmarked for the whole team."}
+                  ? "This dedicated Team Room is fixed to your Pro account. Keep the link bookmarked and reuse it whenever this team estimates."
+                  : "Your Pro account includes two fixed Team Rooms. Pick the room you want to use, then keep both links bookmarked for recurring sprint planning."}
               </p>
             )}
           </div>
@@ -7538,12 +7752,12 @@ function JoinScreen({
         </button>
         {!signedIn && tab === "create" && (
           <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
-            Free forever · Up to {FREE_MAX_PLAYERS} voters · Ready in under 10 seconds
+            Free forever · Up to {FREE_MAX_PARTICIPANTS} participants including facilitator · Ready in under 10 seconds
           </p>
         )}
         {!signedIn && tab === "team" && (
           <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
-            Pro · Your team's permanent space — same link, every sprint
+            Pro · Two fixed Team Rooms per account — same links, every sprint
           </p>
         )}
       </div>
@@ -7582,14 +7796,14 @@ function JoinScreen({
         <div className="seo-plan-section scroll-target" id="plans" tabIndex="-1" aria-label="Plans overview">
           <h3 className="seo-h3">Plans that match how teams actually estimate</h3>
           <p className="seo-p seo-plan-intro">
-            Start free in seconds. Upgrade only when you want a permanent Team Room, higher voter capacity, and sprint history linked to your account.
+            Start free in seconds. Upgrade only when you want two dedicated Team Rooms, higher participant capacity, and sprint history linked to your account.
           </p>
           <div className="seo-plan-grid">
             <article className="seo-plan-card">
               <div className="seo-plan-topline">Free</div>
               <div className="seo-plan-price">£0</div>
               <ul className="seo-plan-list">
-                <li>Up to {FREE_MAX_PLAYERS} voters per session</li>
+                <li>Up to {FREE_MAX_PARTICIPANTS} participants including the facilitator</li>
                 <li>All card decks and story queue</li>
                 <li>Facilitator mode and live analytics</li>
               </ul>
@@ -7598,8 +7812,8 @@ function JoinScreen({
               <div className="seo-plan-topline">Pro</div>
               <div className="seo-plan-price">from £5/mo</div>
               <ul className="seo-plan-list">
-                <li>Permanent Team Room with your own URL</li>
-                <li>Up to {PRO_MAX_PLAYERS} voters per sprint</li>
+                <li>Two dedicated Team Rooms with fixed URLs</li>
+                <li>Up to {PRO_MAX_PARTICIPANTS} participants per sprint</li>
                 <li>Sprint history and cross-device account access</li>
               </ul>
             </article>
@@ -7623,7 +7837,7 @@ function JoinScreen({
             <li><strong>Built-in countdown timer</strong> — keep each estimation round time-boxed and the whole session on track</li>
             <li><strong>Session summary</strong> — copy all story point estimates to the clipboard at the end for your sprint tool</li>
             <li><strong>Facilitator mode</strong> — join without a vote card and manage reveal, re-votes, participant moderation, and session flow from the analytics view</li>
-            <li><strong>Team Room (Pro)</strong> — one permanent URL your team reuses every sprint, no link sharing ever again</li>
+            <li><strong>Dedicated Team Rooms (Pro)</strong> — two fixed URLs your teams can reuse every sprint, no fresh setup every time</li>
           </ul>
           <p className="seo-p" style={{ marginTop: 16 }}>
             Explore the dedicated pages for{" "}
@@ -7652,16 +7866,16 @@ function JoinScreen({
             <div className="seo-faq-item">
               <h4 className="seo-h4">Is this planning poker tool actually free?</h4>
               <p className="seo-p">
-                Yes, and it stays free. The free tier gives you up to {FREE_MAX_PLAYERS} participants,
+                Yes, and it stays free. The free tier gives you up to {FREE_MAX_PARTICIPANTS} participants,
                 all three card decks, a full story queue, session analytics, and clipboard export —
-                no credit card, no account, no time limit. Pro adds a permanent Team Room and up to {PRO_MAX_PLAYERS} participants.
+                no credit card, no account, no time limit. Pro adds two dedicated Team Rooms and up to {PRO_MAX_PARTICIPANTS} participants.
               </p>
             </div>
             <div className="seo-faq-item">
               <h4 className="seo-h4">Do I need to create an account?</h4>
               <p className="seo-p">
                 No for free sessions. Enter your name, create a room, and share the link. Create an account
-                only when you want Pro features such as a permanent Team Room and sprint history linked to you.
+                only when you want Pro features such as two dedicated Team Rooms and sprint history linked to you.
               </p>
             </div>
             <div className="seo-faq-item">
@@ -7694,9 +7908,8 @@ function JoinScreen({
             <div className="seo-faq-item">
               <h4 className="seo-h4">How many people can join a planning poker session?</h4>
               <p className="seo-p">
-                Free rooms support up to {FREE_MAX_PLAYERS} voters. Pro rooms support up to {PRO_MAX_PLAYERS}.
-                Facilitators and non-voting stakeholders join on top of
-                that limit and never use a voter slot.
+                Free rooms support up to {FREE_MAX_PARTICIPANTS} participants. Pro rooms support up to {PRO_MAX_PARTICIPANTS}.
+                That count includes the facilitator, so the room cap is based on everyone in the session, not just voters.
               </p>
             </div>
           </div>
@@ -7772,7 +7985,7 @@ function GameScreen({
   const timer = rd.timer || { running: false, duration: 30, remaining: 30 };
   const hasVotes = voters.some((p) => p.voted);
   const isPersistentRoom = !!rd.teamName;
-  const inviteLabel = isPersistentRoom ? "Permanent Team Room link" : "Temporary room link";
+  const inviteLabel = isPersistentRoom ? "Dedicated Team Room link" : "Temporary room link";
   const inviteHelper = isPersistentRoom
     ? "Share once and reuse it every sprint."
     : "Share it while this session is active.";
@@ -8055,7 +8268,7 @@ function GameScreen({
             <div className="solo-invite-body">
               {isPersistentRoom ? (
                 <>
-                  <strong>Your Team Room is ready.</strong> Share this permanent link now and your team can keep reusing it every sprint.
+                  <strong>Your dedicated Team Room is ready.</strong> Share this fixed link now and your team can keep reusing it every sprint.
                 </>
               ) : (
                 <>
@@ -8965,7 +9178,7 @@ function GameScreen({
       {currentPlan !== "pro" && rd.plan !== "pro" && (
         <div className="game-upgrade-strip">
           <span className="game-upgrade-strip-text">
-            Free plan · up to {FREE_MAX_PLAYERS} voters · upgrade for a permanent Team Room, sprint history, and up to {PRO_MAX_PLAYERS} voters
+            Free plan · up to {FREE_MAX_PARTICIPANTS} participants · upgrade for 2 dedicated Team Rooms, sprint history, and up to {PRO_MAX_PARTICIPANTS} participants
           </span>
           <button className="game-upgrade-strip-cta" onClick={onShowPricing}>
             ✦ Upgrade to Pro

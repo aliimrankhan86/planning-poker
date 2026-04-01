@@ -152,7 +152,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
-        ".validate": "newData.hasChildren(['email', 'displayName', 'teamRoomName', 'plan', 'billingStatus', 'createdAt', 'lastLoginAt']) && ((newData.child('plan').val() === 'free' && (newData.child('billingStatus').val() === 'inactive' || newData.child('billingStatus').val() === 'checkout_started') && !newData.child('proKey').exists() && !newData.child('proActivatedAt').exists()) || (newData.child('plan').val() === 'pro' && newData.child('billingStatus').val() === 'active' && newData.child('proKey').isString() && newData.child('proActivatedAt').isNumber() && root.child('licenses/' + newData.child('proKey').val() + '/active').val() === true))",
+        ".validate": "newData.hasChildren(['email', 'displayName', 'teamRoomName', 'plan', 'billingStatus', 'createdAt', 'lastLoginAt']) && (!newData.child('teamRooms').exists() || (newData.child('teamRooms').child('primary').val() === newData.child('teamRoomName').val() && newData.child('teamRooms').child('secondary').val() !== newData.child('teamRooms').child('primary').val())) && ((newData.child('plan').val() === 'free' && (newData.child('billingStatus').val() === 'inactive' || newData.child('billingStatus').val() === 'checkout_started') && !newData.child('proKey').exists() && !newData.child('proActivatedAt').exists()) || (newData.child('plan').val() === 'pro' && newData.child('billingStatus').val() === 'active' && newData.child('proKey').isString() && newData.child('proActivatedAt').isNumber() && root.child('licenses/' + newData.child('proKey').val() + '/active').val() === true))",
 
         "email": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
@@ -162,6 +162,18 @@
         },
         "teamRoomName": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+        },
+        "teamRooms": {
+          ".validate": "!newData.exists() || newData.hasChildren(['primary', 'secondary'])",
+          "primary": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+          },
+          "secondary": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60 && newData.val() !== newData.parent().child('primary').val()"
+          },
+          "$other": {
+            ".validate": false
+          }
         },
         "plan": {
           ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro')"

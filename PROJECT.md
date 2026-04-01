@@ -54,7 +54,9 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Pro activation UX is now account-bound by design: anonymous users are gated into sign-in/create-account first, while signed-in users get the actual activation form with Enter-to-activate support
   - Home screen is now account-aware: signed-in users no longer see the public landing page or marketing nav, and instead get a simpler workspace dashboard
   - Free users now see a simplified logged-in workspace with Create/Join/Team actions plus a focused Upgrade-to-Pro path
-  - Pro users now see a dedicated Team Room workspace card with a stable shareable URL derived from a persisted `teamRoomName` field on their account profile
+  - Account registration and sign-in now persist user state in Firebase `/users/{uid}` for both Free and Pro users, including plan/billing status, timestamps, and dedicated-room fields
+  - Pro users now see two dedicated Team Room URLs tied to their account: the existing primary room remains stable, and a second fixed room is now provisioned alongside it
+  - Free room capacity is now 8 total participants including the facilitator; Pro capacity is 20 total participants including facilitators
   - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
   - Live verification now confirms deployment parity, signed-out landing nav, free auth, signed-out upgrade flow, account-bound Pro activation, Pro navbar state, Pro workspace layout, dedicated Team Room URL/share flow, and anonymous join-via-link behaviour on production
   - Final focused production QA now passes for the real product flows:
@@ -177,6 +179,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
+  - Publish the latest Firebase Realtime Database rules update after this pass so production accepts `/users/{uid}/teamRooms`
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist
@@ -192,7 +195,7 @@ If older historical notes below conflict with this section, treat this snapshot 
 | **Product name** | pointpoker |
 | **Purpose** | Free real-time planning poker for agile and Scrum teams. Sign-up optional for free use; required for account-based Pro billing. |
 | **Target audience** | Product Owners, Scrum Masters, developers on distributed teams |
-| **Business model** | Freemium — Free tier (6 players) + Pro tier (20 players, team rooms) |
+| **Business model** | Freemium — Free tier (8 participants incl. facilitator) + Pro tier (20 participants, two dedicated team rooms) |
 | **Jurisdiction** | England & Wales |
 | **Current status** | Deployed on Vercel. Pre-revenue. Analytics tracking live. Firebase Auth is enabled and privacy policy updated; Stripe activation still pending. |
 | **Founder room** | `rpa-build-team` (encoded in `_FC` array as `btoa` value) |
