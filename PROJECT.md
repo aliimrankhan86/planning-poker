@@ -114,6 +114,13 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Room entry now requires a real participant/facilitator name:
     - joining/creating a room no longer falls back to placeholder-like names
     - placeholder values such as `Alex Johnson` are rejected instead of being accepted as the live participant name
+  - Facilitator moderation is now available in live rooms:
+    - facilitators can remove voters or other facilitators directly from the `At the Table` panel
+    - removed users are actively ejected back to the home screen with a clear message instead of silently lingering in a broken room state
+  - Header and copy polish improved:
+    - the anonymous header auth CTA now reflects the real modal behaviour (`Sign in / Create account`) instead of implying sign-in only
+    - room invite UX is now compact and moved into the sticky room header, making the share action easier to find and copy quickly
+    - landing-page and product copy were tightened for clarity, feature understanding, and better planning-poker / scrum-poker SEO coverage
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened

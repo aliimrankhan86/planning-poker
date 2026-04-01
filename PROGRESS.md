@@ -190,6 +190,13 @@ Treat this section as the fastest current-status read. Historical session notes 
     - ad-hoc rooms older than the 5-hour session lifespan are now hard-deleted during the background sweep
     - persistent Team Rooms older than the same threshold are reset back to a clean reusable shell instead of retaining stale live-session state
     - this keeps Firebase leaner without breaking permanent Team Room URLs
+  - Facilitator moderation added:
+    - facilitators can now remove voters or other facilitators from the `At the Table` panel
+    - removed users are forced back to the home screen with a clear explanatory toast instead of staying inside a broken stale-room view
+  - Header/copy/SEO polish added:
+    - anonymous auth CTA now reads `Sign in / Create account` so the header matches the actual auth modal capability
+    - invite-team action is now compact and moved into the sticky room header for faster copying/sharing
+    - landing-page and feature copy were tightened to explain the workflow more clearly and strengthen planning-poker / scrum-poker keyword coverage
 
 ---
 

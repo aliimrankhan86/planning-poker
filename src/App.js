@@ -923,7 +923,39 @@ body::before {
   color: rgba(245,251,247,.82);
 }
 .badge-gold { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.28); color: rgba(255,217,120,.88); }
-.hdr-r { display: flex; align-items: center; gap: 8px; }
+.hdr-r { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hdr-invite {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(126,230,255,.16);
+  background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06));
+}
+.hdr-invite-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hdr-invite-label {
+  font-size: .55rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.48);
+}
+.hdr-invite-url {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: .72rem;
+  color: var(--mint2);
+}
 .btn-sm {
   display: flex; align-items: center; gap: 5px;
   padding: 8px 13px; border-radius: 12px;
@@ -1282,6 +1314,7 @@ body::before {
 .pname { font-size: .84rem; font-weight: 500; color: var(--cream2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .prole { font-size: .72rem; color: rgba(239,242,247,.60); margin-top: 1px; }
 .prow.obs .prole { color: rgba(93,173,226,.5); }
+.prow-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .pdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .pdot.v { background: var(--gold); }
 .pdot.w { background: rgba(255,255,255,.12); animation: pulse 2s ease infinite; }
@@ -1295,6 +1328,23 @@ body::before {
 }
 .voted-label { font-size: .72rem; color: rgba(201,145,42,.7); font-weight: 600; }
 .waiting-label { font-size: .72rem; color: rgba(231,76,60,.5); font-style: italic; }
+.btn-remove-player {
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(224,72,72,.18);
+  background: rgba(224,72,72,.05);
+  color: rgba(231,76,60,.82);
+  font-family: 'Outfit', sans-serif;
+  font-size: .7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s ease;
+}
+.btn-remove-player:hover {
+  background: rgba(224,72,72,.12);
+  border-color: rgba(224,72,72,.32);
+  color: #ff8a7d;
+}
 .sep { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
 .nobody { font-size: .78rem; color: rgba(239,242,247,.50); font-style: italic; text-align: center; padding: 10px 0; }
 
@@ -1716,7 +1766,8 @@ body::before {
   .game-grid { grid-template-columns: 1fr; }
   .rcol { order: -1; }
   .hdr-c { order: 3; width: 100%; justify-content: center; padding-bottom: 6px; }
-  .hdr-r { display: none; }
+  .hdr-r { order: 2; width: 100%; justify-content: flex-end; }
+  .hdr-invite { width: 100%; justify-content: space-between; }
   .cards-grid { justify-content: center; }
   .pcard { width: 82px; height: 118px; }
   .pcard-bignum { font-size: 2.2rem; }
@@ -1752,7 +1803,7 @@ body::before {
   height: 64px; gap: 16px;
 }
 .navbar-left  { display: flex; align-items: center; gap: 12px; }
-.navbar-right { display: flex; align-items: center; gap: 8px; }
+.navbar-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .navbar-links {
   display: flex;
   align-items: center;
@@ -2691,7 +2742,7 @@ function NavBar({
             </>
           ) : (
             <>
-              <button className="nav-btn-login" onClick={onLogin}>Log in</button>
+              <button className="nav-btn-login" onClick={onLogin}>Sign in / Create account</button>
               <div className="nav-btn-wrapper">
                 <button className="nav-btn-register" onClick={onRegister}>✦ Get Pro</button>
                 <span className="nav-upgrade-sub">Team Room · 20 players · Sprint history</span>
@@ -3486,6 +3537,22 @@ export default function App() {
           update(ref(db, `rooms/${code}/timer`), { running: false });
         }
 
+        if (myId && !data.players?.[myId]) {
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          remainingRef.current = null;
+          setRoomData(null);
+          setScreen("join");
+          setSessionWarning(false);
+          setCode("");
+          setPrefillTeam("");
+          window.history.replaceState({}, "", homePath());
+          showToast("You were removed from the room by the facilitator.");
+          return;
+        }
+
         setRoomData(data);
       } else {
         // Room deleted (end session / expired) — go home
@@ -3497,7 +3564,7 @@ export default function App() {
       }
     });
     return () => unsub();
-  }, [code, screen]); // eslint-disable-line
+  }, [code, screen, myId, showToast]); // eslint-disable-line
 
   useEffect(() => {
     if (screen !== "game" || !code || !myId || !roomData?.players?.[myId]) return;
@@ -3996,6 +4063,27 @@ export default function App() {
     });
   }, [code]);
 
+  const removeParticipant = useCallback(async (targetId, targetName) => {
+    if (!code || !targetId || targetId === myId) return;
+    const currentRoom = roomDataRef.current;
+    if (!currentRoom?.players?.[targetId]) return;
+
+    const confirmed = window.confirm(
+      `Remove ${targetName || "this person"} from the room? They will be returned to the home screen immediately.`,
+    );
+    if (!confirmed) return;
+
+    if (currentRoom?.timer?.running && currentRoom.timer.startedBy === targetId) {
+      await update(ref(db, `rooms/${code}/timer`), {
+        running: false,
+        startedBy: null,
+      });
+    }
+
+    await remove(ref(db, `rooms/${code}/players/${targetId}`));
+    showToast(`${targetName || "Participant"} removed from the room.`);
+  }, [code, myId, showToast]);
+
   const handleLogout = useCallback(async () => {
     try {
       await signOut(auth);
@@ -4082,6 +4170,7 @@ export default function App() {
               onEndSession={endSession}
               onStart={startTimer}
               onStop={stopTimer}
+              onRemoveParticipant={removeParticipant}
               onAddStory={addStory}
               onRecordStory={recordAndNextStory}
               sessionWarning={sessionWarning}
@@ -5507,7 +5596,7 @@ function JoinScreen({
             ? isPro
               ? "Your workspace is ready. Start a room, open your fixed Team Room, or join a shared session."
               : "Create a room instantly, join a shared session, or upgrade when you want a permanent Team Room."
-            : "Real-time planning poker for agile teams · Free · No sign-up"}
+            : "Free online planning poker for agile teams. Create a room in seconds, share one link, and estimate together in real time."}
         </p>
 
         {signedIn ? (
@@ -5610,7 +5699,7 @@ function JoinScreen({
           </div>
         ) : (
           <button className="btn-pricing" onClick={onShowPricing}>
-            ✦ Free &amp; Pro Plans — See What's Included
+            ✦ Compare Free &amp; Pro
           </button>
         )}
 
@@ -5788,32 +5877,31 @@ function JoinScreen({
 
       {!signedIn && (
       <section className="seo-section" aria-label="About pointpoker">
-        <h2 className="seo-h2">The Fastest Way to Run Sprint Planning — Free, No Sign-up</h2>
+        <h2 className="seo-h2">Free Online Planning Poker for Sprint Planning, Scrum Poker, and Remote Estimation</h2>
         <p className="seo-intro">
-          Stop wasting the first 20 minutes of every sprint just getting the team set up. pointpoker
-          gives you a live estimation room in under 10 seconds. Create a room, share one link, and your
-          whole team is voting simultaneously — no account, no install, no friction.
+          pointpoker gives agile teams a fast, low-friction way to run planning poker online. Create a room,
+          share one link in Slack, Teams, or Zoom, and let everyone vote at the same time. No install,
+          no training, and no account required for free sessions.
         </p>
 
         <div className="seo-grid">
           <div className="seo-card">
             <h3 className="seo-h3">Why Simultaneous Reveal Matters</h3>
             <p className="seo-p">
-              pointpoker works because every team member votes
-              independently before estimates are shown. Cards reveal all at once, which eliminates
-              anchoring bias — the tendency to adjust your estimate after hearing someone else's.
-              The result is more honest, more accurate story points with less discussion time.
+              Every team member votes independently before estimates are shown. Cards reveal all at once,
+              which reduces anchoring bias and leads to better story-point conversations. You get clearer
+              estimates, faster discussions, and fewer meetings dominated by the loudest voice.
             </p>
           </div>
           <div className="seo-card">
             <h3 className="seo-h3">How It Works</h3>
             <ol className="seo-ol">
-              <li>Create a free room — no account required</li>
-              <li>Share the link in Slack, Teams, or Zoom</li>
-              <li>Load your backlog into the story queue</li>
-              <li>Vote with Fibonacci, T-Shirt, or Powers of 2 cards</li>
-              <li>Reveal all votes at once — discuss only when there's disagreement</li>
-              <li>Record the estimate and move straight to the next story</li>
+              <li>Create a room or join one from a shared link</li>
+              <li>Add the story you are estimating, or work from the queue</li>
+              <li>Vote with Fibonacci, T-Shirt sizing, or Powers of 2</li>
+              <li>Reveal cards together and discuss only when estimates differ</li>
+              <li>Let the facilitator record the final agreed estimate or run another vote</li>
+              <li>Move straight to the next story without resetting the room</li>
             </ol>
           </div>
         </div>
@@ -5821,7 +5909,7 @@ function JoinScreen({
         <div className="seo-plan-section scroll-target" id="plans" tabIndex="-1" aria-label="Plans overview">
           <h3 className="seo-h3">Plans that match how teams actually estimate</h3>
           <p className="seo-p seo-plan-intro">
-            Start free in seconds. Upgrade only when you need a permanent team room, more voter capacity, and sprint history tied to your account.
+            Start free in seconds. Upgrade only when you want a permanent Team Room, higher voter capacity, and sprint history linked to your account.
           </p>
           <div className="seo-plan-grid">
             <article className="seo-plan-card">
@@ -5850,7 +5938,7 @@ function JoinScreen({
           </div>
         </div>
 
-        <div className="seo-features">
+          <div className="seo-features">
           <h3 className="seo-h3">What Makes This Planning Poker Tool Different</h3>
           <ul className="seo-ul">
             <li><strong>Zero setup, every time</strong> — create a room and share the link in under 10 seconds, no account needed</li>
@@ -5861,7 +5949,7 @@ function JoinScreen({
             <li><strong>Estimation Spree</strong> — a live streak counter celebrates when the team aligns consistently, reinforcing good backlog clarity</li>
             <li><strong>Built-in countdown timer</strong> — keep each estimation round time-boxed and the whole session on track</li>
             <li><strong>Session summary</strong> — copy all story point estimates to the clipboard at the end for your sprint tool</li>
-            <li><strong>Facilitator mode</strong> — join without a vote card and manage the timer, reveal, and session flow from the analytics view</li>
+            <li><strong>Facilitator mode</strong> — join without a vote card and manage reveal, re-votes, participant moderation, and session flow from the analytics view</li>
             <li><strong>Team Room (Pro)</strong> — one permanent URL your team reuses every sprint, no link sharing ever again</li>
           </ul>
         </div>
@@ -5882,8 +5970,8 @@ function JoinScreen({
             <div className="seo-faq-item">
               <h4 className="seo-h4">Do I need to create an account?</h4>
               <p className="seo-p">
-                No. Enter your name, create a room, and share the link. Your team joins in one click.
-                There is no registration, no email confirmation, and no password required — ever.
+                No for free sessions. Enter your name, create a room, and share the link. Create an account
+                only when you want Pro features such as a permanent Team Room and sprint history linked to you.
               </p>
             </div>
             <div className="seo-faq-item">
@@ -5898,9 +5986,8 @@ function JoinScreen({
             <div className="seo-faq-item">
               <h4 className="seo-h4">Does this work for remote and distributed teams?</h4>
               <p className="seo-p">
-                It was built for remote teams. Paste the room link into Slack, Teams, or Zoom chat
-                and everyone joins from any browser in seconds — no install, no plugin. Works across
-                all time zones and any combination of desktop and mobile devices.
+                Yes. Paste the room link into Slack, Teams, or Zoom and everyone joins from any browser in seconds.
+                It works across desktop and mobile, and the facilitator can keep the room moving without asking the team to install anything.
               </p>
             </div>
             <div className="seo-faq-item">
@@ -5944,6 +6031,7 @@ function GameScreen({
   onEndSession,
   onStart,
   onStop,
+  onRemoveParticipant,
   onAddStory,
   onRecordStory,
   sessionWarning,
@@ -5957,7 +6045,6 @@ function GameScreen({
   const [optimisticVote, setOptimisticVote] = useState(null);
   const [finalEstimate, setFinalEstimate] = useState("");
   const [headerLinkCopied, setHeaderLinkCopied] = useState(false);
-  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
   const [solobannerDismissed, setSoloBannerDismissed] = useState(false);
   const [showFinalEstimateOverlay, setShowFinalEstimateOverlay] = useState(false);
   // Confetti fires once per consensus reveal, keyed by round number
@@ -6123,21 +6210,14 @@ function GameScreen({
     clearTimeout(finalEstimateOverlayTimerRef.current);
   }, []);
 
-  const handleCopyLink = useCallback((source = "header") => {
+  const handleCopyLink = useCallback(() => {
     navigator.clipboard.writeText(shareUrl);
     track("invite_copied");
     toast("🔗 Link copied!");
-    if (source === "header") {
-      setHeaderLinkCopied(true);
-      setInviteLinkCopied(false);
-    } else {
-      setInviteLinkCopied(true);
-      setHeaderLinkCopied(false);
-    }
+    setHeaderLinkCopied(true);
     clearTimeout(copyFeedbackRef.current);
     copyFeedbackRef.current = setTimeout(() => {
       setHeaderLinkCopied(false);
-      setInviteLinkCopied(false);
     }, 1600);
   }, [shareUrl, toast]);
 
@@ -6252,13 +6332,19 @@ function GameScreen({
             )}
           </div>
           <div className="hdr-r">
-            <button
-              className="btn-sm"
-              onClick={() => handleCopyLink("header")}
-              aria-label="Copy invite link to clipboard"
-            >
-              {headerLinkCopied ? "✓ Copied!" : "🔗 Copy Link"}
-            </button>
+            <div className="hdr-invite" aria-label="Invite team">
+              <div className="hdr-invite-copy">
+                <span className="hdr-invite-label">Invite team</span>
+                <span className="hdr-invite-url">{shareUrl}</span>
+              </div>
+              <button
+                className="btn-sm"
+                onClick={handleCopyLink}
+                aria-label="Copy invite link to clipboard"
+              >
+                {headerLinkCopied ? "✓ Invite link copied!" : "🔗 Copy Invite Link"}
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -6274,7 +6360,7 @@ function GameScreen({
             <button
               type="button"
               className="solo-invite-copy"
-              onClick={() => { handleCopyLink("banner"); setSoloBannerDismissed(true); }}
+              onClick={() => { handleCopyLink(); setSoloBannerDismissed(true); }}
             >
               Copy invite link
             </button>
@@ -6883,11 +6969,22 @@ function GameScreen({
                         )}
                       </div>
                     </div>
-                    {revealed && p.voted ? (
-                      <div className="vchip">{p.vote}</div>
-                    ) : (
-                      <div className={`pdot${p.voted ? " v" : " w"}`} />
-                    )}
+                    <div className="prow-actions">
+                      {revealed && p.voted ? (
+                        <div className="vchip">{p.vote}</div>
+                      ) : (
+                        <div className={`pdot${p.voted ? " v" : " w"}`} />
+                      )}
+                      {isObs && p.id !== myId && (
+                        <button
+                          type="button"
+                          className="btn-remove-player"
+                          onClick={() => onRemoveParticipant(p.id, p.name)}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 {observers.length > 0 && voters.length > 0 && (
@@ -6903,7 +7000,18 @@ function GameScreen({
                       </div>
                       <div className="prole">Facilitator · No vote</div>
                     </div>
-                    <div className="pdot o" />
+                    <div className="prow-actions">
+                      <div className="pdot o" />
+                      {isObs && p.id !== myId && (
+                        <button
+                          type="button"
+                          className="btn-remove-player"
+                          onClick={() => onRemoveParticipant(p.id, p.name)}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -7071,18 +7179,6 @@ function GameScreen({
                 </div>
               );
             })()}
-
-            {/* Invite */}
-            <div className="panel inv-panel">
-              <span className="ptitle">Invite Team</span>
-              <div className="inv-url">{shareUrl}</div>
-              <button
-                className="btn-inv"
-                onClick={() => handleCopyLink("panel")}
-              >
-                {inviteLinkCopied ? "✓ Invite link copied!" : "🔗 Copy Invite Link"}
-              </button>
-            </div>
 
             {/* Estimation Spree — shown when streak ≥ 1, all players saw same consensus */}
             {streak > 0 && (
