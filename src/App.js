@@ -1125,6 +1125,13 @@ body::before {
   text-transform: uppercase;
   color: rgba(239,242,247,.48);
 }
+.hdr-invite-helper {
+  font-size: .66rem;
+  color: rgba(239,242,247,.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .hdr-invite-url {
   min-width: 0;
   overflow: hidden;
@@ -4391,7 +4398,7 @@ export default function App() {
     setScreen("game");
     track(currentPlan === "pro" ? "room_created_pro" : "room_created_free");
     if (role === "observer") track("observer_joined"); else track("player_joined");
-    showToast(`🎲 Room ${c} created! Share the link to invite your team.`);
+    showToast(`🎲 Room ${c} created! Share this one-off link while the session is active.`);
   };
 
   const handleJoin = async (name, role, c) => {
@@ -4400,7 +4407,7 @@ export default function App() {
       onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
     );
     if (!snap.exists()) {
-      showToast(`Room "${c}" not found. Check the code and try again.`);
+      showToast(`Room "${c}" not found. If it was a one-off room, ask the host for a fresh link or code.`);
       return;
     }
     const data = snap.val();
@@ -7764,6 +7771,11 @@ function GameScreen({
   const allStoriesDone = hasStories && activeStoryIdx >= stories.length;
   const timer = rd.timer || { running: false, duration: 30, remaining: 30 };
   const hasVotes = voters.some((p) => p.voted);
+  const isPersistentRoom = !!rd.teamName;
+  const inviteLabel = isPersistentRoom ? "Permanent Team Room link" : "Temporary room link";
+  const inviteHelper = isPersistentRoom
+    ? "Share once and reuse it every sprint."
+    : "Share it while this session is active.";
   const votedCount = voters.filter((p) => p.voted).length;
   const notVoted = voters.filter((p) => !p.voted);
 
@@ -8019,7 +8031,8 @@ function GameScreen({
           <div className="hdr-r">
             <div className="hdr-invite" aria-label="Invite team">
               <div className="hdr-invite-copy">
-                <span className="hdr-invite-label">Invite team</span>
+                <span className="hdr-invite-label">{inviteLabel}</span>
+                <span className="hdr-invite-helper">{inviteHelper}</span>
                 <span className="hdr-invite-url">{shareUrl}</span>
               </div>
               <button
@@ -8040,7 +8053,15 @@ function GameScreen({
           <div className="solo-invite-banner" role="status">
             <span className="solo-invite-icon">👥</span>
             <div className="solo-invite-body">
-              <strong>Your room is ready.</strong> Share the link to bring your team in.
+              {isPersistentRoom ? (
+                <>
+                  <strong>Your Team Room is ready.</strong> Share this permanent link now and your team can keep reusing it every sprint.
+                </>
+              ) : (
+                <>
+                  <strong>Your one-off room is ready.</strong> Share this link while the session is active. If everyone leaves, create a fresh room next time.
+                </>
+              )}
             </div>
             <button
               type="button"

@@ -141,7 +141,7 @@
   - Post-rules live regression pass now passes:
     - Atlas confirms free sign-in, free room creation, Team Room gating, and real-name validation still work with the hardened rules
     - Comet confirms Pro sign-in, Team Room entry, split-vote resolution, re-vote flow, Sprint History access, and facilitator removal all work with no rules/write failures
-    - one medium non-blocking UX note remains: ad-hoc free-room invite copy can imply longer persistence than the actual room lifetime when the creator leaves and nobody remains
+    - the earlier non-blocking invite-copy note is now resolved: ad-hoc rooms explicitly describe themselves as temporary session links, while Team Rooms keep the permanent/reusable wording
   - Post-reveal estimate flow corrected:
     - the facilitator can no longer save a derived average like Fibonacci `4` when the active deck does not contain that value
     - reveal analytics remain visible for discussion, but the final recorded estimate must now be an explicit valid deck choice whenever votes differ
@@ -198,7 +198,6 @@
   - Firebase Database Rules deployed with history path ✅
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
-  - Decide whether to refine free-room invite copy/behaviour so empty ad-hoc rooms do not imply longer persistence than they actually have
   - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
@@ -218,15 +217,15 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Added rule-level schema guards that block undeclared fields under `rooms`, `users`, and `history`.
   - Generated `database.rules.publish.json` as a comment-free console-safe publish file and published the hardened rules in Firebase Realtime Database.
   - Post-rules production regression QA completed successfully: Atlas passed the free/gate/validation paths and Comet passed the Pro/team-room/history/moderation paths with no Firebase permission failures.
-  - Logged one non-blocking UX note from Atlas: empty ad-hoc rooms can disappear after the creator leaves, so invite persistence copy may need tightening later.
+  - Refined the one-off room invite wording so temporary ad-hoc rooms now explicitly say they are active-session links, while Team Rooms continue using permanent/reusable wording.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and security hardening is live
-**Active step:** continue Search Console monitoring and deeper trust/proof content, with a small UX decision pending on ad-hoc room persistence copy
-**Remaining:** trust/proof content, Search Console monitoring, optional free-room invite copy refinement, then Stripe/payment work when resumed
+**Active step:** continue Search Console monitoring and deeper trust/proof content
+**Remaining:** trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

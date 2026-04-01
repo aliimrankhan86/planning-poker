@@ -162,7 +162,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Post-rules production regression QA now passes:
     - Atlas confirms free sign-in, free room creation, Team Room gating, and real-name validation still work with the hardened rules
     - Comet confirms Pro sign-in, Team Room entry, split-vote resolution, re-vote flow, Sprint History access, and facilitator removal all work with no rules/write failures
-    - one medium UX note remains non-blocking: ad-hoc free-room copy implies persistence even though a room can disappear once the creator leaves and nobody remains
+    - the earlier non-blocking ad-hoc room persistence wording issue is now resolved: temporary one-off rooms explicitly say they are session-active links, while Team Rooms keep the permanent/reusable wording
   - SEO implementation plan is now explicit for future work:
     - Phase 1: metadata/canonical/noindex control and crawl hygiene ✅
     - Phase 2: dedicated indexable marketing pages (`/pricing`, `/features`, keyword landing pages) ✅
@@ -177,7 +177,6 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
-  - Decide whether to refine free-room invite copy/behaviour so empty ad-hoc rooms do not imply longer persistence than they actually have
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist
