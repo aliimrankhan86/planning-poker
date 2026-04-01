@@ -64,6 +64,10 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - A real production Pro account is now working for `misteraliimran@gmail.com`
   - Workspace UX was tightened after live QA: copy-link actions now show visible feedback, the permanent Team Room URL wraps cleanly instead of truncating, the pricing modal keeps activation success visible briefly before closing, and the workspace `Open Team Room` CTA now scrolls to the actual Team Room entry controls
   - Stale-room cleanup is now hardened in the client: the app periodically sweeps `/rooms` in the background from the join/workspace screen and batch-deletes sessions older than the 5-hour expiry window when they are clearly inactive
+  - Room cleanup is now stricter and better aligned to product intent:
+    - temporary ad-hoc rooms older than the 5-hour session lifespan are hard-deleted during background sweep
+    - persistent Team Rooms older than the 5-hour session lifespan are reset back to a clean reusable shell instead of retaining stale players/votes/story state
+    - this reduces Firebase room clutter without breaking permanent Team Room URLs
   - Firebase QA data has now been cleaned: the free QA account (`aliimrankhan86@googlemail.com`) is back on `plan: "free"` / `billingStatus: "inactive"`, stale ad-hoc rooms were removed from Realtime Database, and only the meaningful persistent team rooms remain
   - Account-state modelling has been tightened after the latest Atlas/Comet pass:
     - signed-out UI no longer inherits broad Pro state from `pp_pro` local storage

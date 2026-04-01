@@ -2495,6 +2495,7 @@ const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours — auto-end + s
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
 const ROOM_SWEEP_INTERVAL_MS = 15 * 60 * 1000;       // Best-effort stale-room cleanup cadence per browser
 const ROOM_SWEEP_STORAGE_KEY = "pp_last_room_sweep";
+const DEFAULT_TIMER_DURATION = 30;
 
 function hasSweepCooldown() {
   try {
@@ -2519,26 +2520,48 @@ async function sweepStaleRooms() {
     if (!snap.exists()) return 0;
     const rooms = snap.val() || {};
     const now = Date.now();
-    const deletions = {};
+    const updates = {};
+
+    const buildExpiredTeamRoomState = (roomId, room) => {
+      const timerDuration = Number(room?.timer?.duration || DEFAULT_TIMER_DURATION) || DEFAULT_TIMER_DURATION;
+      return {
+        createdAt: now,
+        revealed: false,
+        round: 1,
+        storiesDone: 0,
+        streak: 0,
+        consensusCount: 0,
+        deck: room?.deck || "fibonacci",
+        plan: room?.plan || "pro",
+        teamName: room?.teamName || roomId,
+        founderRoom: !!room?.founderRoom,
+        timer: {
+          running: false,
+          duration: timerDuration,
+          remaining: timerDuration,
+          startedBy: null,
+        },
+        players: {},
+      };
+    };
 
     Object.entries(rooms).forEach(([roomId, room]) => {
       const createdAt = Number(room?.createdAt || 0);
       if (!createdAt || now - createdAt < SESSION_MAX_MS) return;
 
-      const timerRunning = !!room?.timer?.running;
-      const players = Object.values(room?.players || {});
-      const lingeringPlayers = players.length;
-      const hasVotesInFlight = players.some((p) => p?.voted || p?.vote != null);
-      const hasLiveStoryProgress = (room?.storiesDone || 0) === 0 && (room?.round || 1) <= 1;
-      const inactive = !timerRunning && !hasVotesInFlight && lingeringPlayers <= 1 && hasLiveStoryProgress;
+      const isPersistentTeamRoom = !!room?.teamName || !!room?.founderRoom;
 
-      if (!inactive) return;
-      deletions[`rooms/${roomId}`] = null;
+      if (isPersistentTeamRoom) {
+        updates[`rooms/${roomId}`] = buildExpiredTeamRoomState(roomId, room);
+        return;
+      }
+
+      updates[`rooms/${roomId}`] = null;
     });
 
-    const count = Object.keys(deletions).length;
+    const count = Object.keys(updates).length;
     if (count > 0) {
-      await update(ref(db), deletions);
+      await update(ref(db), updates);
     }
     return count;
   } catch {

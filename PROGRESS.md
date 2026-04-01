@@ -186,6 +186,10 @@ Treat this section as the fastest current-status read. Historical session notes 
     - after reveal with mixed votes, the facilitator now gets a delayed full overlay rather than a subtle inline panel
     - overlay wording now clearly explains the two valid next steps: choose the agreed estimate from the active deck or run another vote
     - reveal-state copy was tightened so average/spread are clearly framed as discussion guidance rather than the saved result
+  - Stale-room cleanup strengthened:
+    - ad-hoc rooms older than the 5-hour session lifespan are now hard-deleted during the background sweep
+    - persistent Team Rooms older than the same threshold are reset back to a clean reusable shell instead of retaining stale live-session state
+    - this keeps Firebase leaner without breaking permanent Team Room URLs
 
 ---
 
