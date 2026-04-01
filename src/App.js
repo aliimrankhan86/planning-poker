@@ -4023,18 +4023,18 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setAuthUser(user);
       if (!user) {
+        try { localStorage.removeItem("pp_pro"); } catch {}
         setAccountProfile(null);
         return;
       }
       try {
-        const storedProAccess = readStoredProAccess();
         const snap = await get(ref(db, `users/${user.uid}`));
         if (!snap.exists()) {
           await saveUserProfile(user, {
             displayName: user.displayName || "",
             email: user.email || "",
-            plan: storedProAccess ? "pro" : "free",
-            billingStatus: storedProAccess ? "active" : "inactive",
+            plan: "free",
+            billingStatus: "inactive",
             createdAt: Date.now(),
           });
         } else {
@@ -4683,6 +4683,7 @@ export default function App() {
   const handleLogout = useCallback(async () => {
     try {
       await signOut(auth);
+      try { localStorage.removeItem("pp_pro"); } catch {}
       setScreen("join");
       setRoomData(null);
       setSessionWarning(false);
@@ -6058,15 +6059,6 @@ function RemoteSprintPlanningPage({ onNavigate }) {
 // ── Pro status ───────────────────────────────────────────────────────────────
 const PRO_KEY_REGEX = /^PPRO-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 
-function readStoredProAccess() {
-  try {
-    const raw = localStorage.getItem("pp_pro");
-    if (!raw) return false;
-    const { key } = JSON.parse(raw);
-    return PRO_KEY_REGEX.test(key);
-  } catch { return false; }
-}
-
 function getAuthErrorMessage(error) {
   switch (error?.code) {
     case "auth/email-already-in-use":
@@ -6139,7 +6131,6 @@ async function validateAndSavePro(key, user = null) {
     // Check Firebase license store: /licenses/{key}
     const snap = await get(ref(db, `licenses/${formatted}`));
     if (!snap.exists() || snap.val().active !== true) return "invalid";
-    localStorage.setItem("pp_pro", JSON.stringify({ key: formatted, activatedAt: Date.now() }));
     if (user?.uid) {
       await update(ref(db, `users/${user.uid}`), {
         email: user.email || "",

@@ -9,25 +9,24 @@
         ".read": true,
 
         // ── WRITE ─────────────────────────────────────────────────────────
-        // No Firebase Auth on Spark plan — allow all writes to room paths.
-        // Data integrity is enforced by .validate rules below.
-        // Cross-room writes are prevented structurally: each client only
-        // knows and writes to the code stored in their own React state.
+        // Room participation stays auth-optional so guests can join instantly.
+        // Writes remain open at room paths, but data integrity and Pro-room
+        // creation constraints are enforced by the validation rules below.
         ".write": true,
 
         // ── ROOT VALIDATION ───────────────────────────────────────────────
         // On initial room creation all required top-level fields must be present.
         // On subsequent updates the room already exists so newData always has them.
-        ".validate": "newData.hasChildren(['createdAt', 'revealed', 'round', 'plan', 'players'])",
+        ".validate": "newData.hasChildren(['createdAt', 'revealed', 'round', 'plan', 'deck', 'players', 'timer'])",
 
         // ── FIELD VALIDATION ──────────────────────────────────────────────
 
         "plan": {
-          ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro')"
+          ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro') && (!data.exists() || newData.val() === data.val()) && (newData.val() === 'free' || data.val() === 'pro' || $roomId === 'rpa-build-team' || (auth != null && root.child('users/' + auth.uid + '/plan').val() === 'pro' && root.child('users/' + auth.uid + '/billingStatus').val() === 'active'))"
         },
 
         "deck": {
-          ".validate": "newData.isString() && (newData.val() === 'fibonacci' || newData.val() === 'tshirt' || newData.val() === 'powers')"
+          ".validate": "newData.isString() && (newData.val() === 'fibonacci' || newData.val() === 'tshirt' || newData.val() === 'powers') && (!data.exists() || newData.val() === data.val())"
         },
 
         "revealed": {
@@ -57,28 +56,31 @@
         // serverTimestamp() resolves to a number before validation runs —
         // the string 'SERVER_TIMESTAMP' is never seen by the rules engine.
         "createdAt": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val())"
         },
 
         "teamName": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+          ".validate": "!newData.exists() || (newData.isString() && newData.val().length > 0 && newData.val().length <= 60 && (!data.exists() || newData.val() === data.val()))"
         },
 
         "founderRoom": {
-          ".validate": "newData.isBoolean()"
+          ".validate": "!newData.exists() || (newData.isBoolean() && (!data.exists() ? newData.val() === ($roomId === 'rpa-build-team') : newData.val() === data.val()))"
         },
 
         // ── PLAYERS ───────────────────────────────────────────────────────
         "players": {
           "$playerId": {
             ".write": true,
-            ".validate": "!newData.exists() || newData.hasChildren(['id', 'name', 'role'])",
+            ".validate": "!newData.exists() || newData.hasChildren(['id', 'name', 'role', 'voted'])",
 
-            "id":   { ".validate": "newData.isString() && newData.val().length > 0" },
+            "id":   { ".validate": "newData.isString() && newData.val().length > 0 && newData.val() === $playerId" },
             "name": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
             "role": { ".validate": "newData.isString() && (newData.val() === 'voter' || newData.val() === 'observer')" },
-            "vote": { ".validate": "!newData.exists() || newData.isString()" },
-            "voted": { ".validate": "newData.isBoolean()" }
+            "vote": {
+              ".validate": "!newData.exists() || (newData.isString() && (newData.val() === '?' || (newData.parent().parent().parent().child('deck').val() === 'fibonacci' && (newData.val() === '1' || newData.val() === '2' || newData.val() === '3' || newData.val() === '5' || newData.val() === '8' || newData.val() === '13' || newData.val() === '21' || newData.val() === '34')) || (newData.parent().parent().parent().child('deck').val() === 'tshirt' && (newData.val() === 'XS' || newData.val() === 'S' || newData.val() === 'M' || newData.val() === 'L' || newData.val() === 'XL' || newData.val() === 'XXL')) || (newData.parent().parent().parent().child('deck').val() === 'powers' && (newData.val() === '1' || newData.val() === '2' || newData.val() === '4' || newData.val() === '8' || newData.val() === '16' || newData.val() === '32'))))"
+            },
+            "voted": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
           }
         },
 
@@ -89,7 +91,9 @@
         "timer": {
           "running":   { ".validate": "newData.isBoolean()" },
           "duration":  { ".validate": "newData.isNumber() && newData.val() >= 10 && newData.val() <= 300" },
-          "remaining": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+          "remaining": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "startedBy": { ".validate": "!newData.exists() || (newData.isString() && newData.val().length > 0 && newData.val().length <= 40)" },
+          "$other": { ".validate": false }
         },
 
         // ── STORIES ───────────────────────────────────────────────────────
@@ -101,8 +105,9 @@
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
             },
             "estimate": {
-              ".validate": "!newData.exists() || newData.isString()"
-            }
+              ".validate": "!newData.exists() || (newData.isString() && (newData.val() === '?' || (newData.parent().parent().child('deck').val() === 'fibonacci' && (newData.val() === '1' || newData.val() === '2' || newData.val() === '3' || newData.val() === '5' || newData.val() === '8' || newData.val() === '13' || newData.val() === '21' || newData.val() === '34')) || (newData.parent().parent().child('deck').val() === 'tshirt' && (newData.val() === 'XS' || newData.val() === 'S' || newData.val() === 'M' || newData.val() === 'L' || newData.val() === 'XL' || newData.val() === 'XXL')) || (newData.parent().parent().child('deck').val() === 'powers' && (newData.val() === '1' || newData.val() === '2' || newData.val() === '4' || newData.val() === '8' || newData.val() === '16' || newData.val() === '32'))))"
+            },
+            "$other": { ".validate": false }
           }
         },
 
@@ -113,10 +118,15 @@
           "$roundIndex": {
             ".write": true,
             ".validate": "newData.hasChildren(['estimate', 'isConsensus'])",
-            "estimate":    { ".validate": "newData.isString()" },
-            "isConsensus": { ".validate": "newData.isBoolean()" }
+            "estimate": {
+              ".validate": "newData.isString() && (newData.val() === '?' || (newData.parent().parent().child('deck').val() === 'fibonacci' && (newData.val() === '1' || newData.val() === '2' || newData.val() === '3' || newData.val() === '5' || newData.val() === '8' || newData.val() === '13' || newData.val() === '21' || newData.val() === '34')) || (newData.parent().parent().child('deck').val() === 'tshirt' && (newData.val() === 'XS' || newData.val() === 'S' || newData.val() === 'M' || newData.val() === 'L' || newData.val() === 'XL' || newData.val() === 'XXL')) || (newData.parent().parent().child('deck').val() === 'powers' && (newData.val() === '1' || newData.val() === '2' || newData.val() === '4' || newData.val() === '8' || newData.val() === '16' || newData.val() === '32')))"
+            },
+            "isConsensus": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
           }
-        }
+        },
+
+        "$other": { ".validate": false }
       }
     },
 
@@ -142,6 +152,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['email', 'displayName', 'teamRoomName', 'plan', 'billingStatus', 'createdAt', 'lastLoginAt']) && ((newData.child('plan').val() === 'free' && (newData.child('billingStatus').val() === 'inactive' || newData.child('billingStatus').val() === 'checkout_started') && !newData.child('proKey').exists() && !newData.child('proActivatedAt').exists()) || (newData.child('plan').val() === 'pro' && newData.child('billingStatus').val() === 'active' && newData.child('proKey').isString() && newData.child('proActivatedAt').isNumber() && root.child('licenses/' + newData.child('proKey').val() + '/active').val() === true))",
 
         "email": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
@@ -150,7 +161,7 @@
           ".validate": "newData.isString() && newData.val().length <= 40"
         },
         "teamRoomName": {
-          ".validate": "!newData.exists() || (newData.isString() && newData.val().length > 0 && newData.val().length <= 60)"
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
         },
         "plan": {
           ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro')"
@@ -178,6 +189,9 @@
         },
         "proActivatedAt": {
           ".validate": "!newData.exists() || newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
         }
       }
     },
@@ -207,7 +221,7 @@
         ".write": "auth != null && auth.uid === $uid",
 
         "$entryId": {
-          ".validate": "newData.hasChildren(['roomCode', 'startedAt', 'endedAt', 'storiesDone', 'totalPoints', 'consensusRate'])",
+          ".validate": "newData.hasChildren(['roomCode', 'startedAt', 'endedAt', 'storiesDone', 'totalPoints', 'consensusRate']) && newData.child('endedAt').isNumber() && newData.child('startedAt').isNumber() && newData.child('endedAt').val() >= newData.child('startedAt').val()",
 
           "roomCode":      { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 48" },
           "teamName":      { ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 60)" },
@@ -222,8 +236,10 @@
               ".validate": "newData.hasChildren(['name', 'estimate'])",
               "name":     { ".validate": "newData.isString() && newData.val().length <= 200" },
               "estimate": { ".validate": "newData.isString()" }
-            }
-          }
+            },
+            "$other": { ".validate": false }
+          },
+          "$other": { ".validate": false }
         }
       }
     },

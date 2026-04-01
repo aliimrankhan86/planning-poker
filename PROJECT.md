@@ -153,6 +153,11 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
     - the active Pro profile now carries the correct merged Pro fields (`plan`, `billingStatus`, `proKey`, `proActivatedAt`)
+  - Security hardening pass is now landed in the repo:
+    - new `/users/{uid}` profiles no longer bootstrap Pro state from legacy `pp_pro` browser storage
+    - legacy `pp_pro` local storage is no longer written during activation and is cleared on sign-out/no-auth paths
+    - `database.rules.json` now enforces active-license-backed Pro profiles, immutable room plan/deck metadata, deck-valid votes and recorded estimates, and blocks undeclared fields under `rooms`, `users`, and `history`
+    - manual Firebase rules re-publish is still required before these protections are live in production
   - SEO implementation plan is now explicit for future work:
     - Phase 1: metadata/canonical/noindex control and crawl hygiene ✅
     - Phase 2: dedicated indexable marketing pages (`/pricing`, `/features`, keyword landing pages) ✅
@@ -167,6 +172,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
+  - Re-publish the hardened `database.rules.json` to Firebase Realtime Database so the new rule-layer protections are live
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist
@@ -357,9 +363,9 @@ STRIPE_LINKS = {
 2. Signs in / creates account with Firebase Auth Email/Password, or activates a Pro key
 3. `saveUserProfile(user)` persists `/users/{uid}` with `email`, `displayName`, `plan`, `billingStatus`, timestamps
 4. `validateAndSavePro(key, user)` checks `db /licenses/{key}` for `{ active: true }`
-5. On success → writes legacy `localStorage pp_pro` and upgrades `/users/{uid}` to `plan: "pro"` when signed in
-6. `App()` derives `proMode` from the signed-in user profile first, with localStorage as a backwards-compatible fallback
-7. `proMode` controls `plan` field on room create and Team Room access
+5. On success → upgrades `/users/{uid}` to `plan: "pro"` only after the license key is validated against Firebase
+6. New authenticated profiles now start as `plan: "free"` / `billingStatus: "inactive"` and never inherit Pro entitlement from browser storage
+7. The signed-in `/users/{uid}` profile is now the only source of truth for Pro status in the app
 
 ### Room lifecycle
 
@@ -612,9 +618,17 @@ Listed chronologically newest-first.
 
 ### 2026-03 — Privacy policy updated for account auth
 - `public/privacy.html` now discloses Firebase Authentication account data, account email storage, account metadata, and password reset email handling
-- Browser storage section now reflects signed-in Firebase session storage and the legacy `pp_pro` key fallback
+- Browser storage section now reflects signed-in Firebase session storage; the old legacy `pp_pro` fallback has since been retired from the entitlement flow
 - GDPR rights/retention sections now distinguish between temporary room data and persistent account data
 - Stripe remains non-live and is described as future billing infrastructure only
+
+### 2026-04 — Security hardening pass
+- `src/App.js` no longer seeds new user profiles from client-side `pp_pro` storage; new profiles start free/inactive until real activation occurs
+- Legacy `pp_pro` local storage is no longer written during Pro activation and is actively cleared on no-auth/sign-out paths
+- `database.rules.json` now enforces that `plan: "pro"` requires `billingStatus: "active"`, a valid active `proKey`, and a numeric `proActivatedAt`
+- Room `plan`, `deck`, `createdAt`, and founder metadata are now immutable after creation, and non-founder guests cannot create arbitrary new Pro rooms
+- Room votes and saved estimates are now validated against the active deck at the rules layer so invalid values cannot be written by bypassing the UI
+- Undeclared fields are now blocked under `rooms`, `users`, and `history` entries to reduce schema abuse
 
 ### 2026-03 — pointpoker brand + domain update
 - Public domain references updated to `https://www.pointpoker.app` in `public/index.html`, `public/robots.txt`, and `public/sitemap.xml`
@@ -690,7 +704,7 @@ Listed chronologically newest-first.
 - `/users/{uid}` profile store added in Realtime Database for `email`, `displayName`, `plan`, `billingStatus`, timestamps
 - `NavBar` now shows signed-in account state and log out
 - `PricingModal` now requires an account before checkout and records checkout intent to `/users/{uid}`
-- `validateAndSavePro(key, user)` upgrades the signed-in user record to `plan: "pro"` while preserving legacy localStorage compatibility
+- `validateAndSavePro(key, user)` upgrades the signed-in user record to `plan: "pro"` after validating the activation key against `/licenses/{key}`
 - Team Room creation is now gated to Pro/founder access instead of being open to every anonymous user
 - `database.rules.json` now includes `/users/{uid}` rules; build verified with `npm run build`
 

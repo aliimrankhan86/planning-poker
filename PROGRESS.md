@@ -5,7 +5,7 @@
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
-- Current phase focus: SEO Phase 3 trust/support content and Search Console monitoring while keeping the live product stable
+- Current phase focus: security hardening plus SEO Phase 3 trust/support content while keeping the live product stable
 - Product state:
   - Firebase Auth email/password implemented and enabled
   - Auth QA passed
@@ -132,6 +132,11 @@
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
     - the active Pro profile now carries the correct merged Pro fields
+  - Security hardening pass is now implemented in the repo:
+    - new `/users/{uid}` profiles no longer bootstrap Pro status from legacy `pp_pro` browser storage
+    - legacy `pp_pro` local storage is no longer written during activation and is cleared on sign-out/no-auth paths
+    - `database.rules.json` now enforces active-license-backed Pro profiles, immutable room plan/deck metadata, deck-valid votes and recorded estimates, and blocks undeclared fields under `rooms`, `users`, and `history`
+    - manual Firebase rules re-publish is still required before these protections are live in production
   - Post-reveal estimate flow corrected:
     - the facilitator can no longer save a derived average like Fibonacci `4` when the active deck does not contain that value
     - reveal analytics remain visible for discussion, but the final recorded estimate must now be an explicit valid deck choice whenever votes differ
@@ -188,7 +193,7 @@
   - Firebase Database Rules deployed with history path ✅
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
-  - Identify which of the two `misteraliimran@gmail.com` Firebase user records is the real active auth-linked profile before deleting any duplicate
+  - Re-publish the hardened `database.rules.json` to Firebase Realtime Database so the new rule-layer protections are live
   - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
@@ -200,19 +205,20 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 1 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** SEO agile-estimation landing page expansion
+- **Worked on:** Firebase entitlement/rules hardening
 - **Completed:**
-  - Added a dedicated `/agile-estimation-tool` route using the existing marketing-page shell so the work stayed additive and safe.
-  - Added route-level metadata, sitemap entry, and `vercel.json` rewrite for the new landing page.
-  - Updated home-page SEO copy so the signed-out landing surface now links into the agile-estimation page alongside the existing guides.
+  - Removed the last legacy `pp_pro` browser-storage entitlement bootstrap from the app so new user profiles always start free/inactive.
+  - Retired the legacy `pp_pro` local-storage write path during Pro activation and now clear the key on no-auth/sign-out paths.
+  - Hardened `database.rules.json` so Pro profiles require an active license-backed `proKey`, room plan/deck metadata are immutable, and votes/recorded estimates must match the active deck.
+  - Added rule-level schema guards that block undeclared fields under `rooms`, `users`, and `history`.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
-**Phase:** 2/3 crossover — SEO growth layer is live and trust/guide content is expanding around it
-**Active step:** choose between broader production QA or deeper trust/proof content while Search Console indexing settles
-**Remaining:** deeper trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
+**Phase:** 2/3 crossover — SEO growth is expanding and security hardening is now in the repo
+**Active step:** publish the hardened Firebase rules, then continue Search Console monitoring and trust/proof content
+**Remaining:** Firebase rules republish, deeper trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -253,6 +259,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 1.3 | Invite system (up to 11 members) | ⏳ Not started | Invite link = room URL — capacity enforcement already done in 1.1 |
 | 1.4 | Register custom domain | ✅ Done | Domain purchased: `www.pointpoker.app` |
 | 1.5 | Connect domain to Vercel | ✅ Done | Production domain is live and confirmed working, including `/t/rpa-build-team` |
+| 1.6 | Harden entitlement flow + Firebase rules | 🔄 In progress | Repo changes are done: legacy `pp_pro` fallback removed, Pro now requires active license-backed profile data, room deck/plan metadata is immutable, and deck-valid votes/estimates are enforced. Manual rules publish still required in Firebase Console. |
 
 ---
 
@@ -326,6 +333,12 @@ Treat this section as the fastest current-status read. Historical session notes 
 - **Privacy policy updated:** `public/privacy.html` now accurately discloses Firebase Authentication account data, password reset emails, signed-in browser storage, and the distinction between temporary room data and persistent account data.
 - **Product/docs alignment restored:** Removed the remaining documented mismatch between the shipped auth system and the legal/privacy copy.
 - **Build verification:** `npm run build` completed successfully after the policy update.
+
+### Session 10 — 1 April 2026 (Security hardening)
+- **Legacy client-side entitlement retired:** new authenticated profiles no longer inherit Pro state from `pp_pro`; activation no longer writes that key; sign-out/no-auth now clears it.
+- **Rules tightened in repo:** `database.rules.json` now requires active-license-backed Pro profiles, freezes room plan/deck/founder metadata after creation, validates live votes and saved estimates against the active deck, and blocks undeclared fields in `rooms`, `users`, and `history`.
+- **Important deployment note:** these protections are in the repo and committed locally, but Firebase Realtime Database rules still need to be re-published manually before they are live in production.
+- **Build verification:** `npm run build` completed successfully.
 
 ### Session 9e — 29 March 2026 (pointpoker domain + brand update)
 - **Domain received from user:** Production domain is now `www.pointpoker.app`.
