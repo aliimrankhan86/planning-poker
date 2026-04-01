@@ -139,6 +139,7 @@
     - legacy `pp_pro` local storage is no longer written during activation and is cleared on sign-out/no-auth paths
     - `database.rules.json` now enforces active-license-backed Pro profiles, immutable room plan/deck metadata, deck-valid votes and recorded estimates, and blocks undeclared fields under `rooms`, `users`, and `history`
     - the hardened Firebase rules have now been published successfully in production
+    - the latest live rules now also allow the optional `/users/{uid}/teamRooms` structure, so dual fixed Pro Team Rooms are accepted in production
     - `database.rules.publish.json` now exists as the comment-free console-safe companion for future Firebase rule updates
   - Post-rules live regression pass now passes:
     - Atlas confirms free sign-in, free room creation, Team Room gating, and real-name validation still work with the hardened rules
@@ -219,6 +220,7 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Changed Free capacity from 6 voters to 8 total participants including the facilitator, and updated room-full logic accordingly.
   - Rewrote product copy across workspace, pricing, SEO pages, room entry, upgrade prompts, and support messaging so it consistently reflects 2 dedicated Team Rooms and participant-based capacity.
   - Updated `database.rules.json` and regenerated `database.rules.publish.json` so Firebase can accept the new optional `/users/{uid}/teamRooms` structure.
+  - The latest rules JSON has now also been pasted and published in Firebase Console, so production accepts the new optional `/users/{uid}/teamRooms` structure.
   - Rebuilt `public/og-image.png` with a more premium link-preview layout that surfaces Point Poker branding, split-vote/facilitator workflow, dedicated Team Rooms, and updated participant limits more clearly.
   - Updated Open Graph / Twitter image alt text in `public/index.html` to match the new visual.
   - `npm run build` passed.

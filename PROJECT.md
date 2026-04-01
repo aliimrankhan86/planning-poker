@@ -160,6 +160,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - legacy `pp_pro` local storage is no longer written during activation and is cleared on sign-out/no-auth paths
     - `database.rules.json` now enforces active-license-backed Pro profiles, immutable room plan/deck metadata, deck-valid votes and recorded estimates, and blocks undeclared fields under `rooms`, `users`, and `history`
     - the hardened Firebase rules have now been published successfully in production
+    - the latest published rules now also accept the optional `/users/{uid}/teamRooms` structure required for the two fixed Pro Team Rooms
     - a comment-free console-safe companion file now exists at `database.rules.publish.json` for future Firebase console updates
   - Post-rules production regression QA now passes:
     - Atlas confirms free sign-in, free room creation, Team Room gating, and real-name validation still work with the hardened rules
