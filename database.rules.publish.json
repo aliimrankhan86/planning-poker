@@ -2,24 +2,12 @@
   "rules": {
     "rooms": {
       "$roomId": {
-        // ── READ ──────────────────────────────────────────────────────────
-        // Anyone with the room code can read. Security is the code itself
-        // (random 5-char base-36 = ~60M combinations for free rooms;
-        //  team rooms use a slug derived from the team name).
+
         ".read": true,
 
-        // ── WRITE ─────────────────────────────────────────────────────────
-        // Room participation stays auth-optional so guests can join instantly.
-        // Writes remain open at room paths, but data integrity and Pro-room
-        // creation constraints are enforced by the validation rules below.
         ".write": true,
 
-        // ── ROOT VALIDATION ───────────────────────────────────────────────
-        // On initial room creation all required top-level fields must be present.
-        // On subsequent updates the room already exists so newData always has them.
         ".validate": "newData.hasChildren(['createdAt', 'revealed', 'round', 'plan', 'deck', 'players', 'timer'])",
-
-        // ── FIELD VALIDATION ──────────────────────────────────────────────
 
         "plan": {
           ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro') && (!data.exists() || newData.val() === data.val()) && (newData.val() === 'free' || data.val() === 'pro' || $roomId === 'rpa-build-team' || (auth != null && root.child('users/' + auth.uid + '/plan').val() === 'pro' && root.child('users/' + auth.uid + '/billingStatus').val() === 'active'))"
@@ -53,8 +41,6 @@
           ".validate": "newData.isNumber() && newData.val() >= 0"
         },
 
-        // serverTimestamp() resolves to a number before validation runs —
-        // the string 'SERVER_TIMESTAMP' is never seen by the rules engine.
         "createdAt": {
           ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val())"
         },
@@ -67,7 +53,6 @@
           ".validate": "!newData.exists() || (newData.isBoolean() && (!data.exists() ? newData.val() === ($roomId === 'rpa-build-team') : newData.val() === data.val()))"
         },
 
-        // ── PLAYERS ───────────────────────────────────────────────────────
         "players": {
           "$playerId": {
             ".write": true,
@@ -84,10 +69,6 @@
           }
         },
 
-        // ── TIMER ─────────────────────────────────────────────────────────
-        // No hasChildren() here — the app makes partial updates to timer
-        // sub-fields (e.g. timer/remaining only). Validate each field
-        // independently so partial writes don't fail validation.
         "timer": {
           "running":   { ".validate": "newData.isBoolean()" },
           "duration":  { ".validate": "newData.isNumber() && newData.val() >= 10 && newData.val() <= 300" },
@@ -96,7 +77,6 @@
           "$other": { ".validate": false }
         },
 
-        // ── STORIES ───────────────────────────────────────────────────────
         "stories": {
           "$storyIndex": {
             ".write": true,
@@ -111,9 +91,6 @@
           }
         },
 
-        // ── ROUNDS ────────────────────────────────────────────────────────
-        // Per-round estimates recorded by newRound (no-queue path).
-        // Keyed by storiesDone index at the time of recording.
         "rounds": {
           "$roundIndex": {
             ".write": true,
@@ -130,12 +107,6 @@
       }
     },
 
-    // ── ANALYTICS ─────────────────────────────────────────────────────────
-    // Anonymous daily usage counters — no PII, no personal data.
-    // Structure: /analytics/daily/{date}/{eventName} → integer count.
-    // Clients can write (increment) but NEVER read — aggregate data
-    // is only accessible by the owner via Firebase Console.
-    // Validate: date is YYYY-MM-DD, eventName is a known safe string.
     "analytics": {
       "daily": {
         "$date": {
@@ -196,10 +167,6 @@
       }
     },
 
-    // ── LICENSE KEYS ─────────────────────────────────────────────────────────
-    // Temporary pre-Stripe Pro entitlement store. Clients may read an exact key
-    // they already know in order to validate activation, but may never list or
-    // write license data from the app.
     "licenses": {
       "$licenseKey": {
         ".read": true,
@@ -211,10 +178,6 @@
       }
     },
 
-    // ── SPRINT HISTORY ────────────────────────────────────────────────────────
-    // Per-user session records written by saveSessionHistory() on session end.
-    // Only the owning authenticated user can read or write their history.
-    // Each entry is keyed by push() auto-ID; no custom path manipulation possible.
     "history": {
       "$uid": {
         ".read":  "auth != null && auth.uid === $uid",
@@ -244,8 +207,6 @@
       }
     },
 
-    // Block all reads/writes to any path not explicitly defined above.
-    // This prevents abuse of arbitrary Firebase paths.
     "$other": {
       ".read": false,
       ".write": false

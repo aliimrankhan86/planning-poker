@@ -136,7 +136,11 @@
     - new `/users/{uid}` profiles no longer bootstrap Pro status from legacy `pp_pro` browser storage
     - legacy `pp_pro` local storage is no longer written during activation and is cleared on sign-out/no-auth paths
     - `database.rules.json` now enforces active-license-backed Pro profiles, immutable room plan/deck metadata, deck-valid votes and recorded estimates, and blocks undeclared fields under `rooms`, `users`, and `history`
-    - manual Firebase rules re-publish is still required before these protections are live in production
+    - the hardened Firebase rules have now been published successfully in production
+    - `database.rules.publish.json` now exists as the comment-free console-safe companion for future Firebase rule updates
+  - Post-rules live regression pass is now underway:
+    - Atlas has been started against the hardened production rules
+    - Comet is temporarily blocked by its own tool issue and needs to be resumed later
   - Post-reveal estimate flow corrected:
     - the facilitator can no longer save a derived average like Fibonacci `4` when the active deck does not contain that value
     - reveal analytics remain visible for discussion, but the final recorded estimate must now be an explicit valid deck choice whenever votes differ
@@ -193,7 +197,7 @@
   - Firebase Database Rules deployed with history path ✅
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
-  - Re-publish the hardened `database.rules.json` to Firebase Realtime Database so the new rule-layer protections are live
+  - Finish the post-rules live regression sweep (Atlas in progress; Comet to be resumed later)
   - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
@@ -211,14 +215,16 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Retired the legacy `pp_pro` local-storage write path during Pro activation and now clear the key on no-auth/sign-out paths.
   - Hardened `database.rules.json` so Pro profiles require an active license-backed `proKey`, room plan/deck metadata are immutable, and votes/recorded estimates must match the active deck.
   - Added rule-level schema guards that block undeclared fields under `rooms`, `users`, and `history`.
+  - Generated `database.rules.publish.json` as a comment-free console-safe publish file and published the hardened rules in Firebase Realtime Database.
+  - Started the post-rules live regression pass: Atlas launched, Comet deferred until its issue is resolved.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and security hardening is now in the repo
-**Active step:** publish the hardened Firebase rules, then continue Search Console monitoring and trust/proof content
-**Remaining:** Firebase rules republish, deeper trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
+**Active step:** finish the post-rules live regression sweep, then continue Search Console monitoring and trust/proof content
+**Remaining:** post-rules QA completion, deeper trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
