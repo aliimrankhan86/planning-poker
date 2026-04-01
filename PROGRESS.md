@@ -113,6 +113,10 @@
     - `/about` explains why pointpoker exists, what it optimises for, and the trust signals already in place
     - `/support` gives a clearer support/contact surface tied to `support@pointpoker.app` and explains common room/account questions
     - signed-out footer now links into About and Support so they are discoverable to users and crawlers
+  - SEO educational guide layer is now underway:
+    - `/what-is-planning-poker` now explains the method itself, why teams use it, and how pointpoker fits the workflow
+    - `/fibonacci-story-points` now explains why agile teams use Fibonacci-style cards and why final estimates should remain deck-valid
+    - the home-page SEO content now links into these guides so they are crawlable from the main entry surface
   - Google Search Console initial setup is now completed:
     - domain ownership for `pointpoker.app` verified
     - `sitemap.xml` submitted successfully
@@ -185,20 +189,19 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 1 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** SEO trust/support pages and Search Console follow-through
+- **Worked on:** SEO educational guide pages
 - **Completed:**
-  - Added dedicated trust/support routes for `/about` and `/support` using the existing marketing-page shell so the work stayed additive and safe.
-  - Added route-level metadata, internal linking, sitemap entries, and `vercel.json` rewrites for the new trust/support pages.
-  - Updated footer navigation so signed-out users can discover About and Support pages, while signed-in users keep a clearer support path.
-  - Completed the initial Google Search Console setup manually with the owner: domain ownership verified, sitemap submitted, and key marketing URLs requested for indexing.
+  - Added dedicated educational guide routes for `/what-is-planning-poker` and `/fibonacci-story-points` using the existing marketing-page shell so the work stayed additive and safe.
+  - Added route-level metadata, internal linking, sitemap entries, and `vercel.json` rewrites for the new guide pages.
+  - Updated home-page SEO copy so the new guides are linked from the primary signed-out entry surface instead of existing as isolated routes.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
-**Phase:** 2/3 crossover — SEO growth layer is live and the first trust/support routes are now in place
-**Active step:** keep adding trust/supporting content and monitor Search Console indexing/performance
-**Remaining:** deeper trust/proof/supporting guide content, Search Console monitoring, Firebase user-record cleanup, then Stripe/payment work when resumed
+**Phase:** 2/3 crossover — SEO growth layer is live and trust/guide content is expanding around it
+**Active step:** keep adding trust/supporting guide content and monitor Search Console indexing/performance
+**Remaining:** deeper trust/proof content, Search Console monitoring, Firebase user-record cleanup, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -257,6 +260,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 2.10 | Expand route-level metadata + internal linking for marketing pages | ✅ Done | Route-specific title/description/canonical added; signed-out footer and home content now link into the new marketing routes. |
 | 2.11 | Expand SPA rewrites + sitemap for marketing routes | ✅ Done | `vercel.json` rewrites and `public/sitemap.xml` now include the new indexable URLs. |
 | 2.12 | Add trust/support routes and internal linking | ✅ Done | `/about` and `/support` now exist as indexable trust pages, with footer discovery and route-aware metadata. |
+| 2.13 | Add educational guide pages and home-surface internal links | ✅ Done | `/what-is-planning-poker` and `/fibonacci-story-points` now exist with route metadata, sitemap entries, rewrites, and home-page discovery links. |
 
 ---
 

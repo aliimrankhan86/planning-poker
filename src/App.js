@@ -100,6 +100,8 @@ const STATIC_SCREEN_BY_PATH = {
   "/privacy": "privacy",
   "/about": "about",
   "/support": "support",
+  "/what-is-planning-poker": "whatIsPlanningPoker",
+  "/fibonacci-story-points": "fibonacciStoryPoints",
   "/pricing": "pricing",
   "/features": "features",
   "/planning-poker-online": "planningPokerOnline",
@@ -122,6 +124,22 @@ const STATIC_ROUTE_META = {
       "Get support for pointpoker, understand how rooms and Team Rooms work, find help for account and Pro access questions, and contact the team directly.",
     canonical: `${SITE_URL}/support`,
     ogUrl: `${SITE_URL}/support`,
+    robots: "index, follow",
+  },
+  "/what-is-planning-poker": {
+    title: "What Is Planning Poker? Guide for Agile Teams | pointpoker",
+    description:
+      "Learn what planning poker is, why agile teams use it, how simultaneous reveal improves estimation, and how pointpoker helps teams run the workflow online.",
+    canonical: `${SITE_URL}/what-is-planning-poker`,
+    ogUrl: `${SITE_URL}/what-is-planning-poker`,
+    robots: "index, follow",
+  },
+  "/fibonacci-story-points": {
+    title: "Fibonacci Story Points Explained | pointpoker",
+    description:
+      "Understand why agile teams use Fibonacci story points, what the numbers mean, and how to use planning poker to reach a final agreed estimate without false precision.",
+    canonical: `${SITE_URL}/fibonacci-story-points`,
+    ogUrl: `${SITE_URL}/fibonacci-story-points`,
     robots: "index, follow",
   },
   "/pricing": {
@@ -4708,6 +4726,12 @@ export default function App() {
           {screen === "support" && (
             <SupportPage onNavigate={navTo} />
           )}
+          {screen === "whatIsPlanningPoker" && (
+            <WhatIsPlanningPokerPage onNavigate={navTo} />
+          )}
+          {screen === "fibonacciStoryPoints" && (
+            <FibonacciStoryPointsPage onNavigate={navTo} />
+          )}
           {screen === "pricing" && (
             <PricingPage onNavigate={navTo} />
           )}
@@ -5339,6 +5363,193 @@ function SupportPage({ onNavigate }) {
           { href: "/about", kicker: "About", title: "Why pointpoker exists", copy: "Understand the product philosophy and why the workflow is intentionally lightweight." },
           { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the full room workflow, facilitator controls, Team Alignment, Team Rooms, and history features." },
           { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "See when Free is enough and when Pro becomes the right operational step." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function WhatIsPlanningPokerPage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="What is planning poker?"
+      title="Planning poker is a lightweight way for agile teams to estimate work without letting the loudest voice decide first"
+      intro="Planning poker is an estimation method used in sprint planning and backlog refinement. Everyone picks a card privately, the votes reveal together, and the team discusses the spread before agreeing the final estimate. The point is not mathematical precision. The point is better shared understanding."
+      highlights={[
+        { value: "Fair", label: "Private first votes reduce anchoring bias" },
+        { value: "Fast", label: "The team sees disagreement early and discusses only where needed" },
+        { value: "Useful", label: "Better scope conversations before sprint commitment" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Try planning poker free"
+      secondaryHref="/planning-poker-online"
+      secondaryLabel="See the online workflow"
+    >
+      <MarketingSection
+        title="What planning poker actually does"
+        intro="The method is simple, but the impact comes from what it prevents: anchoring, hidden uncertainty, and fake consensus."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Everyone estimates independently first</h3>
+            <p className="marketing-card-copy">
+              Each voter picks a card before seeing anyone else’s choice. That keeps stronger personalities and senior voices from steering the estimate too early.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">The reveal makes uncertainty visible</h3>
+            <p className="marketing-card-copy">
+              When one person picks 3 and another picks 8, the disagreement is useful. It usually means the team sees different risk, scope, or implementation effort.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Discussion focuses on the gap, not the whole story</h3>
+            <p className="marketing-card-copy">
+              Teams do not need to debate every item equally. Planning poker helps them spend energy where the spread tells them understanding is still uneven.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="How the process normally works"
+        intro="A good planning poker session has a clear rhythm, especially when the facilitator keeps the room moving."
+      >
+        <div className="marketing-steps">
+          {[
+            ["Read the story together", "Make sure everyone understands the scope, acceptance criteria, and what 'done' means before anyone votes."],
+            ["Vote privately", "Each voter chooses a card independently so the first visible estimate does not bias everyone else."],
+            ["Reveal the cards", "The team sees the spread, average, and median, but those numbers guide discussion rather than automatically becoming the answer."],
+            ["Discuss the difference", "Talk about why the estimates diverged: hidden complexity, dependencies, ambiguity, or assumptions."],
+            ["Either re-vote or agree a final estimate", "A facilitator can run another round or record the final agreed deck value once the team is aligned."],
+          ].map(([stepTitle, stepCopy], index) => (
+            <article className="marketing-step" key={stepTitle}>
+              <span className="marketing-step-num">{index + 1}</span>
+              <div>
+                <h3 className="marketing-step-title">{stepTitle}</h3>
+                <p className="marketing-step-copy">{stepCopy}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Why agile teams keep using planning poker"
+        intro="The method survives because it helps teams think together, not because the cards themselves are magical."
+      >
+        <ul className="marketing-list">
+          <li><strong>It improves backlog conversations:</strong> hidden ambiguity surfaces earlier, before it turns into sprint risk.</li>
+          <li><strong>It makes estimation more participatory:</strong> engineers, product, and delivery can all contribute to the final view of effort and uncertainty.</li>
+          <li><strong>It keeps velocity inputs more honest:</strong> final estimates come from agreement, not from a single person’s guess.</li>
+          <li><strong>It works well remotely:</strong> browser-based planning poker keeps the same ceremony pattern even when the team is fully distributed.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Go deeper"
+        intro="These guides explain how the method works online, how Fibonacci cards fit in, and how pointpoker supports the workflow in practice."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "See how the product turns the ceremony into a browser-first, live estimation flow." },
+          { href: "/fibonacci-story-points", kicker: "Guide", title: "Fibonacci story points", copy: "Understand why agile teams use Fibonacci numbers and what to do when estimates split." },
+          { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the facilitator controls, Team Alignment analytics, and Team Room workflow in context." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function FibonacciStoryPointsPage({ onNavigate }) {
+  return (
+    <MarketingPageShell
+      eyebrow="Fibonacci story points"
+      title="Fibonacci story points help agile teams express uncertainty as work gets bigger"
+      intro="Agile teams often use a Fibonacci-style sequence like 1, 2, 3, 5, 8, 13, 21, and 34 because the gaps get wider as work becomes less predictable. That makes it easier to express uncertainty honestly instead of pretending large stories can be sized with the same precision as small ones."
+      highlights={[
+        { value: "Fibonacci", label: "Default deck for many Scrum teams" },
+        { value: "Wider gaps", label: "Larger work carries more uncertainty" },
+        { value: "Consensus", label: "Final estimate should be an agreed deck value" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Try Fibonacci planning poker"
+      secondaryHref="/story-point-estimation"
+      secondaryLabel="See story estimation guide"
+    >
+      <MarketingSection
+        title="Why Fibonacci is used for story points"
+        intro="The sequence is useful because it reminds the team that uncertainty increases with scale. A 13-point story is not just a slightly bigger 8. It often means the team knows less, expects more variation, or sees more delivery risk."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Small differences matter less as work grows</h3>
+            <p className="marketing-card-copy">
+              Teams usually do not need to debate whether something is an 11 or a 12. Fibonacci keeps the choices coarse enough to focus on useful differences rather than false precision.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">The numbers represent relative effort</h3>
+            <p className="marketing-card-copy">
+              Story points are not hours. They reflect a mix of effort, complexity, risk, and uncertainty, compared against the rest of the backlog.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Agreement matters more than arithmetic</h3>
+            <p className="marketing-card-copy">
+              If the team splits between 3 and 5, the final answer should be the agreed Fibonacci card, not an invalid middle number like 4.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="How to use Fibonacci cards well"
+        intro="The deck works best when the team treats it as a conversation tool, not a scoring machine."
+      >
+        <ul className="marketing-list">
+          <li><strong>Pick a baseline story first</strong> so the team has a shared reference for what a 2, 3, or 5 roughly feels like.</li>
+          <li><strong>Use split votes as a signal</strong> that the story needs discussion, not as a reason to average numbers automatically.</li>
+          <li><strong>Record only valid deck values</strong> so sprint history and throughput stay consistent with the method the team chose.</li>
+          <li><strong>Re-vote when the discussion changes understanding</strong> instead of forcing a conclusion too early.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingSection
+        title="How pointpoker handles Fibonacci estimation"
+        intro="The product is designed to reinforce good estimation habits rather than bypass them."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Fibonacci is the default deck</h3>
+            <p className="marketing-card-copy">
+              Teams can start with the familiar sequence immediately, while still having T-shirt and Powers of 2 available for different estimation styles.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Averages stay contextual</h3>
+            <p className="marketing-card-copy">
+              The app can show average and median after reveal, but those numbers are there to guide discussion rather than silently becoming the recorded estimate.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Final estimate must stay deck-valid</h3>
+            <p className="marketing-card-copy">
+              When votes differ, the facilitator records the final agreed Fibonacci value or runs another vote. That keeps sprint history and analytics trustworthy.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Related guides"
+        intro="These pages explain the broader estimation method, live planning workflow, and feature layer around Fibonacci story points."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/what-is-planning-poker", kicker: "Guide", title: "What is planning poker?", copy: "Understand the method itself and why simultaneous reveal matters for fair estimation." },
+          { href: "/story-point-estimation", kicker: "Workflow", title: "Story point estimation", copy: "See how the product supports better estimation conversations and explicit final agreement." },
+          { href: "/planning-poker-online", kicker: "Remote", title: "Planning poker online", copy: "See how distributed teams can use the workflow in a browser without setup friction." },
         ]}
       />
     </MarketingPageShell>
@@ -7316,8 +7527,12 @@ function JoinScreen({
             <RouteLink href="/planning-poker-online" onNavigate={onNavigate} className="seo-inline-link">planning poker online</RouteLink>
             {", "}
             <RouteLink href="/scrum-poker" onNavigate={onNavigate} className="seo-inline-link">Scrum poker</RouteLink>
-            {" and "}
+            {", "}
             <RouteLink href="/story-point-estimation" onNavigate={onNavigate} className="seo-inline-link">story point estimation</RouteLink>
+            {", "}
+            <RouteLink href="/what-is-planning-poker" onNavigate={onNavigate} className="seo-inline-link">what planning poker is</RouteLink>
+            {" and "}
+            <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">Fibonacci story points</RouteLink>
             {" to learn how the workflow fits your team."}
           </p>
         </div>
@@ -7348,7 +7563,9 @@ function JoinScreen({
                 Fibonacci (1, 2, 3, 5, 8, 13, 21, 34) reflects how estimation uncertainty grows with
                 complexity. The widening gaps between numbers make it easy for teams to distinguish
                 small, medium, and large effort without false precision — and force a real conversation
-                when two people are far apart.
+                when two people are far apart. See the{" "}
+                <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">full Fibonacci guide</RouteLink>
+                {" "}for the reasoning in more depth.
               </p>
             </div>
             <div className="seo-faq-item">
