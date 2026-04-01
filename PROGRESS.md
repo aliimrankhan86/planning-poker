@@ -25,7 +25,7 @@
   - OG social image now exists at `public/og-image.png`
   - The visual design system has been modernised toward a cleaner 2026 casino-app look with brighter amber, deeper emerald surfaces, and more premium glass UI
   - Font system unified to Outfit only — Cormorant Garamond removed; display contexts (headings, card numbers, stats, pricing) use Outfit 700 with tight negative letter-spacing for a clean modern feel
-  - OG social image now matches the refreshed UI theme and uses clearer, more readable social-preview text
+  - OG social image now uses a stronger, more product-led social-preview composition with clearer hierarchy, visible facilitator/split-vote cues, and more explicit Team Room / capacity messaging
   - Vercel Speed Insights is installed and mounted for production performance monitoring
   - The approved transparent brand mark is now used across the app’s logo sections
   - The app wordmark now displays as `Point Poker` with white `Point`, gold `Poker`, and stronger spacing/capitalization
@@ -211,7 +211,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 1 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** account persistence, capacity, and dedicated Team Room expansion
+- **Worked on:** account persistence, capacity, dedicated Team Room expansion, and OG image polish
 - **Completed:**
   - Confirmed the backend registration/update mechanism already exists through Firebase Auth plus `/users/{uid}`, then extended the profile model so both Free and Pro accounts persist richer account state cleanly.
   - Added two dedicated fixed Team Room URLs for Pro accounts while preserving the existing primary Team Room slug as the stable first room.
@@ -219,14 +219,16 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Changed Free capacity from 6 voters to 8 total participants including the facilitator, and updated room-full logic accordingly.
   - Rewrote product copy across workspace, pricing, SEO pages, room entry, upgrade prompts, and support messaging so it consistently reflects 2 dedicated Team Rooms and participant-based capacity.
   - Updated `database.rules.json` and regenerated `database.rules.publish.json` so Firebase can accept the new optional `/users/{uid}/teamRooms` structure.
+  - Rebuilt `public/og-image.png` with a more premium link-preview layout that surfaces Point Poker branding, split-vote/facilitator workflow, dedicated Team Rooms, and updated participant limits more clearly.
+  - Updated Open Graph / Twitter image alt text in `public/index.html` to match the new visual.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** publish the latest Firebase rules update for `teamRooms`, then continue Search Console monitoring and deeper trust/proof content
-**Remaining:** Firebase rules republish for `teamRooms`, trust/proof content, Search Console monitoring, then Stripe/payment work when resumed
+**Active step:** continue Search Console monitoring and deeper Phase 3 trust/proof content while Stripe remains intentionally parked
+**Remaining:** trust/proof content, Search Console monitoring, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

@@ -37,7 +37,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Mobile voting interaction hardened so same-card repeat taps no longer clear the vote
   - Team-room routing and founder-room URL handling were hardened after a real regression was found
   - Core UI palette and surface system were refreshed toward a more modern 2026 casino-app look while preserving the green/gold brand
-  - OG social image was refreshed to match the modernised theme and improve text readability in social previews
+  - OG social image was refreshed again to feel more premium in link previews, with clearer hierarchy, stronger split-vote/facilitator cues, and better emphasis on Team Rooms and participant limits
   - Vercel Speed Insights was added to the React root for live production performance telemetry
   - The provided transparent brand-mark asset is now used in the app logo sections in place of the old inline SVG chip mark
   - App chrome wordmark now renders as `Point Poker` with white `Point`, gold `Poker`, and explicit spacing/capitalization
@@ -179,7 +179,6 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Workspace quick-actions are now genuine 1-click:** Pro "Enter Team Room →" and Free "Create Room →" buttons in the workspace card now directly call `onTeamRoom()` / `onCreate()` with pre-filled values instead of switching tab and scrolling (which required a second click). CTA priority for Free users also corrected: "Create Room →" is now the gold primary, "Upgrade to Pro" is secondary.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
-  - Publish the latest Firebase Realtime Database rules update after this pass so production accepts `/users/{uid}/teamRooms`
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist
@@ -704,6 +703,7 @@ Listed chronologically newest-first.
 - Asset uses the live pointpoker brand direction: dark green felt background, gold chip/wordmark, and planning-poker card visuals
 - Existing Open Graph and Twitter metadata in `public/index.html` already points to this file, so no code changes were required beyond creating the asset
 - Later refreshed to align with the newer premium emerald/amber UI theme and improve headline/tagline legibility in social previews
+- Refreshed again on 1 April 2026 with a more product-led composition: stronger Point Poker hierarchy, clearer premium planning-poker messaging, visible split-vote resolution cues, and explicit Team Room / capacity signals for shared-link previews
 
 ### 2026-03 — Firebase Auth accounts + account-aware Pro gating
 - `firebase.js` now exports `auth` alongside `db`
