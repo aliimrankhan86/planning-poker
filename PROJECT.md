@@ -106,6 +106,9 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - average/median/min/max remain visible as discussion analytics only
     - when votes differ, the facilitator must choose the final estimate explicitly from valid deck values before the story can be recorded
     - the split-vote resolution step is now elevated into the facilitator's primary post-reveal action area with stronger hierarchy and auto-scroll, making it hard to miss
+  - Room entry now requires a real participant/facilitator name:
+    - joining/creating a room no longer falls back to placeholder-like names
+    - placeholder values such as `Alex Johnson` are rejected instead of being accepted as the live participant name
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
     - Facilitator controls: `.obs-danger-divider` separates management from terminal action; `btn-new-session` changed to neutral (was red — wrong colour for a non-destructive action); standalone New Sprint fills its row; New Sprint hidden at true session start (round 1, 0 stories done); End Session button label shortened

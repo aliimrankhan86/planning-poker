@@ -135,6 +135,7 @@ const DECK_KEYS = Object.keys(DECK_DEFINITIONS);
 // Derive cards for a given deck key, falling back to Fibonacci.
 const getCards = (deckKey) =>
   (DECK_DEFINITIONS[deckKey] || DECK_DEFINITIONS.fibonacci).cards;
+const INVALID_PLACEHOLDER_NAMES = new Set(["alex johnson", "e.g. alex johnson"]);
 const CIRC = 201.1;
 const uid = () => Math.random().toString(36).slice(2, 10);
 const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
@@ -5153,9 +5154,17 @@ function JoinScreen({
       ? "Join Team Room →"
       : "Enter Team Room →";
   const resolveEnteredName = useCallback(
-    () => (nameInputRef.current?.value || nameValueRef.current || "").trim() || defaultName,
-    [defaultName],
+    () => (nameInputRef.current?.value || nameValueRef.current || "").trim(),
+    [],
   );
+  const validateEnteredName = useCallback(() => {
+    const enteredName = resolveEnteredName();
+    if (!enteredName) return { ok: false, message: "Please enter your name." };
+    if (INVALID_PLACEHOLDER_NAMES.has(enteredName.toLowerCase())) {
+      return { ok: false, message: "Please enter your real name before joining." };
+    }
+    return { ok: true, name: enteredName.slice(0, 40) };
+  }, [resolveEnteredName]);
 
   const syncEnteredName = useCallback((nextName) => {
     nameValueRef.current = nextName;
@@ -5218,8 +5227,9 @@ function JoinScreen({
   }, []);
 
   const go = () => {
-    const enteredName = resolveEnteredName();
-    if (!enteredName) { setErr("Please enter your name"); return; }
+    const validatedName = validateEnteredName();
+    if (!validatedName.ok) { setErr(validatedName.message); return; }
+    const enteredName = validatedName.name;
     if (tab === "create") {
       onCreate(enteredName, role, deck);
     } else if (tab === "join") {
@@ -5260,8 +5270,9 @@ function JoinScreen({
     if (autoEnterOwnTeamRoomRef.current) return;
     if (!signedIn || !isPro || !isSharedTeamRoomEntry) return;
     if (!teamRouteMatch || !dedicatedTeamCode || teamRouteMatch[1] !== dedicatedTeamCode) return;
-    const nextName = resolveEnteredName();
-    if (!nextName) return;
+    const validatedName = validateEnteredName();
+    if (!validatedName.ok) return;
+    const nextName = validatedName.name;
     autoEnterOwnTeamRoomRef.current = true;
     onTeamRoom(nextName, role, dedicatedTeamName, deck);
   }, [
@@ -5274,7 +5285,7 @@ function JoinScreen({
     dedicatedTeamName,
     deck,
     onTeamRoom,
-    resolveEnteredName,
+    validateEnteredName,
   ]);
 
   return (
@@ -5347,9 +5358,9 @@ function JoinScreen({
                     type="button"
                     className="workspace-action-btn gold"
                     onClick={() => {
-                      const n = resolveEnteredName();
-                      if (!n) { setErr("Please enter your name"); setTab("team"); focusTeamEntry(); return; }
-                      onTeamRoom(n, role, dedicatedTeamName, deck);
+                      const validatedName = validateEnteredName();
+                      if (!validatedName.ok) { setErr(validatedName.message); setTab("team"); focusTeamEntry(); return; }
+                      onTeamRoom(validatedName.name, role, dedicatedTeamName, deck);
                     }}
                   >
                     Enter Team Room →
@@ -5358,9 +5369,9 @@ function JoinScreen({
                     type="button"
                     className="workspace-action-btn"
                     onClick={() => {
-                      const n = resolveEnteredName();
-                      if (!n) { setErr("Please enter your name"); setTab("create"); return; }
-                      onCreate(n, role, deck);
+                      const validatedName = validateEnteredName();
+                      if (!validatedName.ok) { setErr(validatedName.message); setTab("create"); return; }
+                      onCreate(validatedName.name, role, deck);
                     }}
                   >
                     Create one-off room
@@ -5379,9 +5390,9 @@ function JoinScreen({
                     type="button"
                     className="workspace-action-btn gold"
                     onClick={() => {
-                      const n = resolveEnteredName();
-                      if (!n) { setErr("Please enter your name"); setTab("create"); return; }
-                      onCreate(n, role, deck);
+                      const validatedName = validateEnteredName();
+                      if (!validatedName.ok) { setErr(validatedName.message); setTab("create"); return; }
+                      onCreate(validatedName.name, role, deck);
                     }}
                   >
                     Create Room →
