@@ -927,6 +927,76 @@ body::before {
     width: 100%;
   }
 }
+.workspace-room-editor {
+  margin-top: 16px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(158,234,196,.10);
+  background: rgba(255,255,255,.022);
+}
+.workspace-room-editor-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.workspace-room-editor-title {
+  color: var(--cream);
+  font-size: .92rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.workspace-room-editor-note {
+  margin-top: 8px;
+}
+.workspace-room-editor-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(241,185,63,.22);
+  background: rgba(241,185,63,.10);
+  color: var(--gold2);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.workspace-room-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-top: 12px;
+}
+.workspace-room-editor-row input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(158,234,196,.14);
+  background: rgba(7,17,14,.52);
+  color: var(--cream);
+  font-family: 'Outfit', sans-serif;
+  font-size: .92rem;
+  outline: none;
+}
+.workspace-room-editor-row input:focus-visible {
+  border-color: rgba(241,185,63,.38);
+  box-shadow: 0 0 0 2px rgba(241,185,63,.16);
+}
+.workspace-room-editor-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  color: rgba(239,242,247,.66);
+  font-size: .78rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
 .workspace-inline-note {
   margin-top: 10px;
   color: rgba(239,242,247,.52);
@@ -1181,6 +1251,9 @@ body::before {
   .workspace-actions { flex-direction: column; align-items: stretch; }
   .workspace-action-btn { min-width: 0; width: 100%; }
   .workspace-pill { align-self: flex-start; }
+  .workspace-room-editor-top { flex-direction: column; }
+  .workspace-room-editor-row { grid-template-columns: 1fr; }
+  .workspace-room-editor-row button { width: 100%; }
 }
 
 /* ══════════════════════ ROOM HEADER (game view) ══════════════════════
@@ -6355,6 +6428,21 @@ function deriveTeamRoomName(displayName = "", email = "") {
   return /team$/i.test(base) ? base : `${base} Team`;
 }
 
+function deriveDedicatedRoomOwnerSuffix(profile = {}, user = null) {
+  const emailLocal = (profile.email || user?.email || "").split("@")[0]?.trim();
+  const displayFallback = profile.displayName || user?.displayName || "";
+  const nextValue = teamCode(emailLocal || displayFallback || "team");
+  return nextValue || "team";
+}
+
+function buildDedicatedRoomLabel(label = "", tail = "", fallback = "My Team") {
+  const cleaned = String(label || "").replace(/\s+/g, " ").trim();
+  const suffix = tail ? ` ${tail}` : "";
+  const baseMax = Math.max(1, 60 - suffix.length);
+  const base = (cleaned || fallback).slice(0, baseMax).trim();
+  return clampTeamRoomLabel(`${base}${suffix}`, fallback);
+}
+
 function clampTeamRoomLabel(name = "", fallback = "My Team") {
   const cleaned = String(name || "").replace(/\s+/g, " ").trim();
   const nextValue = cleaned || fallback;
@@ -6372,6 +6460,36 @@ function deriveSecondaryTeamRoomName(primaryName = "", displayName = "", email =
     ? base
     : base.slice(0, 60 - suffix.length).trim();
   return clampTeamRoomLabel(`${trimmedBase}${suffix}`, "My Team 2");
+}
+
+function buildDedicatedTeamRoomsFromLabel(label = "", profile = {}, user = null) {
+  const displayName = profile.displayName || user?.displayName || "";
+  const email = profile.email || user?.email || "";
+  const ownerSuffix = deriveDedicatedRoomOwnerSuffix(profile, user);
+  const primaryFallback = deriveTeamRoomName(displayName, email);
+  const secondaryFallback = deriveSecondaryTeamRoomName(primaryFallback, displayName, email);
+  const primary = buildDedicatedRoomLabel(label, ownerSuffix, primaryFallback);
+  let secondary = buildDedicatedRoomLabel(label, `2 ${ownerSuffix}`, secondaryFallback);
+  if (secondary === primary) {
+    secondary = deriveSecondaryTeamRoomName(primary, displayName, email);
+  }
+  return { primary, secondary };
+}
+
+function deriveDedicatedRoomLabelPrefix(profile = {}, user = null) {
+  const displayName = profile.displayName || user?.displayName || "";
+  const email = profile.email || user?.email || "";
+  const currentPrimary = resolveDedicatedTeamRooms(profile, user).primary;
+  const ownerSuffix = deriveDedicatedRoomOwnerSuffix(profile, user);
+  let nextValue = currentPrimary.trim();
+  const ownerTail = ` ${ownerSuffix}`.toLowerCase();
+  if (nextValue.toLowerCase().endsWith(ownerTail)) {
+    nextValue = nextValue.slice(0, -ownerTail.length).trim();
+  }
+  if (/\s+team$/i.test(nextValue)) {
+    nextValue = nextValue.replace(/\s+team$/i, "").trim();
+  }
+  return nextValue || deriveDisplayNameFallback(email || displayName);
 }
 
 function resolveDedicatedTeamRooms(profile = {}, user = null) {
@@ -7383,6 +7501,8 @@ function JoinScreen({
   const teamQuery = new URLSearchParams(window.location.search).get("team");
   const defaultName = currentUser?.displayName || deriveDisplayNameFallback(currentUser?.email || "");
   const accountDedicatedRooms = resolveDedicatedTeamRooms(accountProfile || {}, currentUser || {});
+  const dedicatedRoomOwnerSuffix = deriveDedicatedRoomOwnerSuffix(accountProfile || {}, currentUser || {});
+  const dedicatedRoomLabelSeed = deriveDedicatedRoomLabelPrefix(accountProfile || {}, currentUser || {});
   const dedicatedTeamRooms = [
     {
       key: "primary",
@@ -7421,16 +7541,32 @@ function JoinScreen({
   );
   const selectedDedicatedRoom = dedicatedTeamRooms.find((room) => room.key === selectedDedicatedRoomKey) || dedicatedTeamRooms[0];
   const [teamName, setTeamName] = useState(prefillTeam || (signedIn && isPro ? selectedDedicatedRoom?.name || "" : ""));
+  const [dedicatedRoomLabel, setDedicatedRoomLabel] = useState(dedicatedRoomLabelSeed);
+  const [dedicatedRoomLabelDirty, setDedicatedRoomLabelDirty] = useState(false);
+  const [savingDedicatedRoomLabel, setSavingDedicatedRoomLabel] = useState(false);
+  const [dedicatedRoomLabelStatus, setDedicatedRoomLabelStatus] = useState("");
   const [err, setErr] = useState("");
   const [copiedDedicatedRoomKey, setCopiedDedicatedRoomKey] = useState("");
   const teamEntryRef = useRef(null);
   const nameInputRef = useRef(null);
   const teamUrlCopiedRef = useRef(null);
+  const dedicatedRoomLabelStatusRef = useRef(null);
   const autoEnterOwnTeamRoomRef = useRef(false);
   const lastNameSeedKeyRef = useRef(nameSeedKey);
   const lastNameSeedValueRef = useRef(signedIn ? defaultName : "");
+  const dedicatedRoomLabelSeedKey = signedIn ? `${currentUser?.uid || ""}:${accountDedicatedRooms.primary}:${accountDedicatedRooms.secondary}` : "guest";
+  const lastDedicatedRoomLabelSeedRef = useRef(dedicatedRoomLabelSeedKey);
   const nameEditedRef = useRef(false);
   const nameValueRef = useRef(signedIn ? defaultName : "");
+  const dedicatedRoomPreview = buildDedicatedTeamRoomsFromLabel(
+    dedicatedRoomLabel,
+    accountProfile || {},
+    currentUser || {},
+  );
+  const dedicatedRoomPreviewUrls = {
+    primary: `${window.location.origin}${teamRoomPath(dedicatedRoomPreview.primary)}`,
+    secondary: `${window.location.origin}${teamRoomPath(dedicatedRoomPreview.secondary)}`,
+  };
 
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
@@ -7495,6 +7631,16 @@ function JoinScreen({
   }, [nameSeedKey, signedIn, defaultName]);
 
   useEffect(() => {
+    if (lastDedicatedRoomLabelSeedRef.current !== dedicatedRoomLabelSeedKey) {
+      lastDedicatedRoomLabelSeedRef.current = dedicatedRoomLabelSeedKey;
+      setDedicatedRoomLabel(dedicatedRoomLabelSeed);
+      setDedicatedRoomLabelDirty(false);
+      setDedicatedRoomLabelStatus("");
+      clearTimeout(dedicatedRoomLabelStatusRef.current);
+    }
+  }, [dedicatedRoomLabelSeed, dedicatedRoomLabelSeedKey]);
+
+  useEffect(() => {
     if (!signedIn) {
       if (!isSharedTeamRoomEntry) setTeamName("");
       return;
@@ -7540,6 +7686,38 @@ function JoinScreen({
     }
   };
 
+  const saveDedicatedRoomLabel = async () => {
+    if (!currentUser?.uid) return;
+    const nextLabel = dedicatedRoomLabel.replace(/\s+/g, " ").trim();
+    if (!nextLabel) {
+      setErr("Choose a name for your dedicated Team Rooms.");
+      setDedicatedRoomLabelStatus("error");
+      return;
+    }
+    const nextRooms = buildDedicatedTeamRoomsFromLabel(nextLabel, accountProfile || {}, currentUser || {});
+    setSavingDedicatedRoomLabel(true);
+    setDedicatedRoomLabelStatus("");
+    clearErr();
+    clearTimeout(dedicatedRoomLabelStatusRef.current);
+    try {
+      await update(ref(db, `users/${currentUser.uid}`), {
+        email: currentUser.email || accountProfile?.email || "",
+        displayName: currentUser.displayName || accountProfile?.displayName || "",
+        teamRoomName: nextRooms.primary,
+        teamRooms: nextRooms,
+        lastLoginAt: Date.now(),
+      });
+      setDedicatedRoomLabelDirty(false);
+      setDedicatedRoomLabelStatus("saved");
+    } catch {
+      setErr("Could not save your Team Room names right now. Try again.");
+      setDedicatedRoomLabelStatus("error");
+    } finally {
+      setSavingDedicatedRoomLabel(false);
+      dedicatedRoomLabelStatusRef.current = setTimeout(() => setDedicatedRoomLabelStatus(""), 2200);
+    }
+  };
+
   const ROLES = [
     { r: "voter",    icon: "🃏", l: "Participant", s: "Votes on each story" },
     { r: "observer", icon: "👁", l: "Facilitator", s: "Runs the session and does not vote" },
@@ -7559,6 +7737,7 @@ function JoinScreen({
   };
 
   useEffect(() => () => clearTimeout(teamUrlCopiedRef.current), []);
+  useEffect(() => () => clearTimeout(dedicatedRoomLabelStatusRef.current), []);
 
   useEffect(() => {
     if (autoEnterOwnTeamRoomRef.current) return;
@@ -7640,6 +7819,45 @@ function JoinScreen({
                 <p className="workspace-copy">
                   Every Pro account now includes two dedicated Team Rooms. Share the links once, bookmark them, and keep separate recurring spaces for different squads, products, or ceremonies.
                 </p>
+                <div className="workspace-room-editor">
+                  <div className="workspace-room-editor-top">
+                    <div>
+                      <div className="workspace-room-editor-title">Choose the Team Room name that appears before your username</div>
+                      <p className="workspace-inline-note workspace-room-editor-note">
+                        We automatically append your username <strong>{dedicatedRoomOwnerSuffix}</strong> so both fixed URLs stay unique to your Pro account.
+                      </p>
+                    </div>
+                    {dedicatedRoomLabelStatus === "saved" && <span className="workspace-room-editor-badge">Saved</span>}
+                  </div>
+                  <div className="workspace-room-editor-row">
+                    <input
+                      type="text"
+                      value={dedicatedRoomLabel}
+                      onChange={(e) => {
+                        setDedicatedRoomLabel(e.target.value);
+                        setDedicatedRoomLabelDirty(true);
+                        setDedicatedRoomLabelStatus("");
+                        clearErr();
+                      }}
+                      maxLength={60}
+                      placeholder="e.g. Product Planning"
+                      aria-label="Dedicated Team Room name"
+                    />
+                    <button
+                      type="button"
+                      className="workspace-action-btn"
+                      onClick={saveDedicatedRoomLabel}
+                      disabled={savingDedicatedRoomLabel || !dedicatedRoomLabelDirty}
+                    >
+                      {savingDedicatedRoomLabel ? "Saving…" : "Save room names"}
+                    </button>
+                  </div>
+                  <div className="workspace-room-editor-preview">
+                    <span><strong>Room 1 preview:</strong> {dedicatedRoomPreview.primary}</span>
+                    <span><strong>Room 2 preview:</strong> {dedicatedRoomPreview.secondary}</span>
+                    <span><strong>Preview URLs:</strong> {dedicatedRoomPreviewUrls.primary} · {dedicatedRoomPreviewUrls.secondary}</span>
+                  </div>
+                </div>
                 <div className="workspace-room-grid">
                   {dedicatedTeamRooms.map((room) => (
                     <div className="workspace-room-card" key={room.key}>

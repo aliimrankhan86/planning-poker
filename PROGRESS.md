@@ -60,6 +60,7 @@
   - Pro users now see dedicated Team Room cards with stable account-linked room URLs and one-click copy/open actions
   - User profiles now persist account state in Firebase `/users/{uid}` for both free and Pro users
   - Pro accounts now carry a primary `teamRoomName` plus `teamRooms.secondary`, enabling two fixed dedicated Team Room URLs without breaking the original room slug
+  - Pro users now get a clear workspace control to choose the dedicated Team Room name prefix; the app appends their username automatically so both saved room names and URLs remain account-unique
   - Free room capacity is now 8 total participants including the facilitator; Pro room capacity is 20 total participants including facilitators
   - Signed-in users now have their display name prefilled in room flows, and the footer becomes account-oriented rather than generic plan-marketing
   - Dedicated Team Room URL rows in the Pro workspace now use a more resilient grid layout and stack early on narrower widths so the copy-link control no longer clips out of the card
@@ -259,6 +260,7 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Fixed the signup success-state UI so account creation no longer flashes the signed-in password-reset controls or the misleading `Sending reset…` label before the verification prompt can be seen.
   - Fixed the just-created-account Pro activation race by preserving `createdAt` during `validateAndSavePro()`, which removes the strict-rules failure on the first activation attempt.
   - Tightened the Pro workspace Team Room card layout so the long dedicated-room URLs and copy button no longer overflow or clip at medium widths.
+  - Added a clear Pro-workspace rename flow for dedicated Team Rooms: the user chooses the shared room-name prefix and the app previews/saves the final room names as `<chosen name> <username>` and `<chosen name> 2 <username>`.
   - Tightened the owner Pro-notification subject template in `functions/index.js` to `Point Poker Pro activated for <user-email>`; this code change now needs a fresh Functions redeploy to become live.
   - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
 

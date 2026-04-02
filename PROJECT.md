@@ -58,6 +58,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Free users now see a simplified logged-in workspace with Create/Join/Team actions plus a focused Upgrade-to-Pro path
   - Account registration and sign-in now persist user state in Firebase `/users/{uid}` for both Free and Pro users, including plan/billing status, timestamps, and dedicated-room fields
   - Pro users now see two dedicated Team Room URLs tied to their account: the existing primary room remains stable, and a second fixed room is now provisioned alongside it
+  - Pro users now have a clear workspace control to choose the shared Team Room name prefix; the app appends their username automatically so both fixed room names and URLs stay account-unique
   - Free room capacity is now 8 total participants including the facilitator; Pro capacity is 20 total participants including facilitators
   - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
   - Dedicated Team Room URL rows in the Pro workspace now reflow cleanly at medium/narrow widths instead of clipping the invite/copy controls
@@ -661,6 +662,7 @@ Listed chronologically newest-first.
 ### 2026-04 — Pro activation reliability + Team Room workspace layout fix
 - `validateAndSavePro()` now preserves `createdAt` when upgrading a user profile, preventing the transient first-attempt activation failure that could happen on a just-created account under the stricter Realtime Database rules
 - Dedicated Team Room URL rows in the Pro workspace now use a more resilient grid layout and stack earlier on narrower screens, preventing the copy-link control from clipping or overflowing the card
+- Pro users can now set a dedicated Team Room name prefix directly in the workspace; the final room names are saved as `<chosen name> <username>` and `<chosen name> 2 <username>` so the URLs stay unique without hiding the naming logic
 - The owner Pro-notification subject template has been tightened to `Point Poker Pro activated for <user-email>` for clearer inbox filtering, but this specific change still needs a fresh Firebase Functions deploy to take effect in production
 
 ### 2026-03 — Vercel Speed Insights installed
