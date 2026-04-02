@@ -144,6 +144,7 @@
   - Notification architecture is now scaffolded in repo:
     - `functions/` contains backend email triggers for owner signup notifications and owner/user Pro activation emails
     - notification idempotency is tracked under `/ops/notifications/{uid}` so repeated profile writes do not resend the same message
+    - the functions now explicitly target the App Engine default service account because this project is not deploying successfully with the default Compute service account
     - Functions env configuration + deployment are still required before these notifications go live
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`

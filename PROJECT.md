@@ -162,6 +162,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Backend notification scaffolding now exists in the repo:
     - `functions/` contains SMTP-backed Firebase Functions for owner signup notifications and owner/user Pro activation emails
     - notification idempotency is tracked under `/ops/notifications/{uid}`
+    - the functions now explicitly use `planning-poker-b6ac1@appspot.gserviceaccount.com` because this project’s default Compute service account is unavailable for deploys
     - this is implemented in code but still needs Functions env configuration and deployment before it is live
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
@@ -260,6 +261,7 @@ ZOHO_SMTP_SECURE
 ZOHO_SMTP_USER
 ZOHO_SMTP_PASS
 MAIL_FROM_NAME
+FUNCTION_SERVICE_ACCOUNT
 ```
 
 ---

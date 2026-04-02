@@ -29,6 +29,7 @@ Required values:
 - `ZOHO_SMTP_USER`
 - `ZOHO_SMTP_PASS`
 - `MAIL_FROM_NAME`
+- `FUNCTION_SERVICE_ACCOUNT`
 
 ## Deploy
 
@@ -36,6 +37,10 @@ Required values:
    - `cd functions && npm install`
 2. Deploy Firebase Functions:
    - `firebase deploy --only functions`
+
+If your project is missing the default Compute service account, keep `FUNCTION_SERVICE_ACCOUNT` pointed at the App Engine default service account:
+
+- `planning-poker-b6ac1@appspot.gserviceaccount.com`
 
 ## Post-deploy checks
 

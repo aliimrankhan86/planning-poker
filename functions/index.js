@@ -60,6 +60,10 @@ const MAIL_FROM_NAME = firstNonEmpty(
   process.env.MAIL_FROM_NAME,
   "Point Poker",
 );
+const FUNCTION_SERVICE_ACCOUNT = firstNonEmpty(
+  process.env.FUNCTION_SERVICE_ACCOUNT,
+  "planning-poker-b6ac1@appspot.gserviceaccount.com",
+);
 
 let cachedTransporter = null;
 
@@ -308,7 +312,10 @@ function userProEmail(profile) {
   return { subject, text, html };
 }
 
-exports.notifyOwnerOnSignup = functions.database.ref("/users/{uid}").onCreate(async (snapshot, context) => {
+exports.notifyOwnerOnSignup = functions
+  .runWith({ serviceAccount: FUNCTION_SERVICE_ACCOUNT })
+  .database.ref("/users/{uid}")
+  .onCreate(async (snapshot, context) => {
   const uid = context.params.uid;
   const profile = snapshot.val() || {};
 
@@ -342,9 +349,12 @@ exports.notifyOwnerOnSignup = functions.database.ref("/users/{uid}").onCreate(as
     functions.logger.error("Failed to send signup owner notification.", { uid, error });
     throw error;
   }
-});
+  });
 
-exports.notifyOnProActivation = functions.database.ref("/users/{uid}").onWrite(async (change, context) => {
+exports.notifyOnProActivation = functions
+  .runWith({ serviceAccount: FUNCTION_SERVICE_ACCOUNT })
+  .database.ref("/users/{uid}")
+  .onWrite(async (change, context) => {
   if (!change.after.exists()) return null;
 
   const uid = context.params.uid;
@@ -401,4 +411,4 @@ exports.notifyOnProActivation = functions.database.ref("/users/{uid}").onWrite(a
 
   if (failures.length) throw failures[0];
   return null;
-});
+  });
