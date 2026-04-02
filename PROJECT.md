@@ -151,6 +151,11 @@ This section is the fastest, highest-priority handoff summary for any AI.
       - `/what-is-planning-poker`
       - `/fibonacci-story-points`
       - `/agile-estimation-tool`
+  - Zoho Mail domain authentication is now correctly configured for `pointpoker.app`:
+    - SPF passes
+    - DKIM passes
+    - DMARC passes
+    - outbound mail from `support@pointpoker.app` is now properly aligned for deliverability
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`

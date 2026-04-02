@@ -130,6 +130,11 @@
       - `/what-is-planning-poker`
       - `/fibonacci-story-points`
       - `/agile-estimation-tool`
+  - Zoho Mail authentication is now correctly aligned for the production domain:
+    - SPF passes
+    - DKIM passes
+    - DMARC passes
+    - Gmail now recognizes outbound mail from `support@pointpoker.app` as authenticated
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
