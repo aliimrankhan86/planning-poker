@@ -22,6 +22,7 @@
   "rewrites": [
     { "source": "/about",  "destination": "/" },
     { "source": "/support",  "destination": "/" },
+    { "source": "/trust",  "destination": "/" },
     { "source": "/what-is-planning-poker",  "destination": "/" },
     { "source": "/fibonacci-story-points",  "destination": "/" },
     { "source": "/agile-estimation-tool",  "destination": "/" },

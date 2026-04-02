@@ -5,7 +5,7 @@
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
-- Current phase focus: SEO Phase 3 trust/support content and Search Console monitoring, with account/capacity expansion now implemented in repo
+- Current phase focus: SEO Phase 3 trust/support/proof content and Search Console monitoring, with account/capacity expansion now implemented in repo
 - Product state:
   - Firebase Auth email/password implemented and enabled
   - Auth QA passed
@@ -115,6 +115,10 @@
     - `/about` explains why pointpoker exists, what it optimises for, and the trust signals already in place
     - `/support` gives a clearer support/contact surface tied to `support@pointpoker.app` and explains common room/account questions
     - signed-out footer now links into About and Support so they are discoverable to users and crawlers
+  - SEO trust/proof layer now includes a dedicated `/trust` route:
+    - `/trust` brings public support/legal routes, authenticated email, account-linked Pro access, and room/data safeguards into one explanatory page
+    - signed-out footer and home-page SEO copy now link into `/trust` so it is not orphaned from the discovery surface
+    - `vercel.json` rewrites and `public/sitemap.xml` now include `/trust`
   - SEO educational guide layer is now underway:
     - `/what-is-planning-poker` now explains the method itself, why teams use it, and how pointpoker fits the workflow
     - `/fibonacci-story-points` now explains why agile teams use Fibonacci-style cards and why final estimates should remain deck-valid
@@ -207,6 +211,7 @@
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
   - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
+  - Define and implement owner/operator notifications for new account registrations and Pro activations/conversions
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
 
@@ -215,27 +220,22 @@ Treat this section as the fastest current-status read. Historical session notes 
 ---
 
 ## 🗓 Last Session
-- **Date:** 1 April 2026
+- **Date:** 2 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** account persistence, capacity, dedicated Team Room expansion, and OG image polish
+- **Worked on:** SEO Phase 3 trust/proof expansion and operational backlog clarity
 - **Completed:**
-  - Confirmed the backend registration/update mechanism already exists through Firebase Auth plus `/users/{uid}`, then extended the profile model so both Free and Pro accounts persist richer account state cleanly.
-  - Added two dedicated fixed Team Room URLs for Pro accounts while preserving the existing primary Team Room slug as the stable first room.
-  - Updated checkout/activation/profile hydration so account writes preserve the two-room model instead of regenerating or clobbering existing dedicated room identities.
-  - Changed Free capacity from 6 voters to 8 total participants including the facilitator, and updated room-full logic accordingly.
-  - Rewrote product copy across workspace, pricing, SEO pages, room entry, upgrade prompts, and support messaging so it consistently reflects 2 dedicated Team Rooms and participant-based capacity.
-  - Updated `database.rules.json` and regenerated `database.rules.publish.json` so Firebase can accept the new optional `/users/{uid}/teamRooms` structure.
-  - The latest rules JSON has now also been pasted and published in Firebase Console, so production accepts the new optional `/users/{uid}/teamRooms` structure.
-  - Rebuilt `public/og-image.png` with a more premium link-preview layout that surfaces Point Poker branding, split-vote/facilitator workflow, dedicated Team Rooms, and updated participant limits more clearly.
-  - Updated Open Graph / Twitter image alt text in `public/index.html` to match the new visual.
+  - Added a dedicated `/trust` marketing route that explains pointpoker’s public trust signals, including support/legal surfaces, authenticated support email, account-linked Pro access, and room/data safeguards.
+  - Wired the new trust page into the existing additive SEO system: route metadata, SPA rendering, signed-out footer navigation, home-page SEO links, `vercel.json` rewrites, and `public/sitemap.xml`.
+  - Kept the change isolated from room/auth/gameplay logic so Phase 3 growth work does not risk product regressions.
+  - Recorded a new pending operational requirement: define how the product owner gets notified when someone registers or becomes a Pro user.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** continue Search Console monitoring and deeper Phase 3 trust/proof content while Stripe remains intentionally parked
-**Remaining:** trust/proof content, Search Console monitoring, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Active step:** continue Search Console monitoring and deeper Phase 3 trust/proof content, with owner-notification design now explicitly queued alongside the remaining monetisation work
+**Remaining:** trust/proof content, owner notifications for registrations and Pro activations, Search Console monitoring, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -297,6 +297,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 2.12 | Add trust/support routes and internal linking | ✅ Done | `/about` and `/support` now exist as indexable trust pages, with footer discovery and route-aware metadata. |
 | 2.13 | Add educational guide pages and home-surface internal links | ✅ Done | `/what-is-planning-poker` and `/fibonacci-story-points` now exist with route metadata, sitemap entries, rewrites, and home-page discovery links. |
 | 2.14 | Add agile-estimation landing page | ✅ Done | `/agile-estimation-tool` now exists with route metadata, rewrite, sitemap entry, and home-page internal linking. |
+| 2.15 | Add dedicated trust/reliability page | ✅ Done | `/trust` now exists with route metadata, rewrite, sitemap entry, footer discovery, and home-surface internal linking. |
 
 ---
 
@@ -308,6 +309,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 3.3 | Build Stripe Checkout flow | 🔄 In progress | Pricing modal is account-aware and records checkout intent; still needs real Stripe Payment Links or Checkout |
 | 3.4 | Firebase Function webhook (payment events) | ⏳ Not started | Updates plan field in Firebase |
 | 3.5 | Add upgrade prompt UI | ⏳ Not started | Shows when free tier limit hit |
+| 3.6 | Add owner notifications for signups and Pro conversions | ⏳ Not started | Decide notification channel and trigger points for new registrations and successful Pro upgrades |
 
 ---
 

@@ -100,6 +100,7 @@ const STATIC_SCREEN_BY_PATH = {
   "/privacy": "privacy",
   "/about": "about",
   "/support": "support",
+  "/trust": "trust",
   "/what-is-planning-poker": "whatIsPlanningPoker",
   "/fibonacci-story-points": "fibonacciStoryPoints",
   "/agile-estimation-tool": "agileEstimationTool",
@@ -125,6 +126,14 @@ const STATIC_ROUTE_META = {
       "Get support for pointpoker, understand how rooms and Team Rooms work, find help for account and Pro access questions, and contact the team directly.",
     canonical: `${SITE_URL}/support`,
     ogUrl: `${SITE_URL}/support`,
+    robots: "index, follow",
+  },
+  "/trust": {
+    title: "Trust and Reliability | pointpoker",
+    description:
+      "Review the trust signals behind pointpoker, including public support and legal routes, authenticated support email, account-linked Pro access, and room safeguards for real sprint planning.",
+    canonical: `${SITE_URL}/trust`,
+    ogUrl: `${SITE_URL}/trust`,
     robots: "index, follow",
   },
   "/what-is-planning-poker": {
@@ -3499,6 +3508,7 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
             <>
               <RouteLink href="/" className="footer-link" onNavigate={onNavigate}>Free Planning Poker</RouteLink>
               <RouteLink href="/about" className="footer-link" onNavigate={onNavigate}>About pointpoker</RouteLink>
+              <RouteLink href="/trust" className="footer-link" onNavigate={onNavigate}>Trust &amp; reliability</RouteLink>
               <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>Features</RouteLink>
               <RouteLink href="/pricing" className="footer-link" onNavigate={onNavigate}>Pricing &amp; plans</RouteLink>
               <RouteLink href="/planning-poker-online" className="footer-link" onNavigate={onNavigate}>Planning poker online</RouteLink>
@@ -4839,6 +4849,9 @@ export default function App() {
           {screen === "support" && (
             <SupportPage onNavigate={navTo} />
           )}
+          {screen === "trust" && (
+            <TrustPage onNavigate={navTo} />
+          )}
           {screen === "whatIsPlanningPoker" && (
             <WhatIsPlanningPokerPage onNavigate={navTo} />
           )}
@@ -5391,6 +5404,7 @@ function AboutPage({ onNavigate }) {
         intro="These pages explain the product from the pricing, feature, and remote-team angles so teams can evaluate pointpoker from the perspective that matters most to them."
         onNavigate={onNavigate}
         links={[
+          { href: "/trust", kicker: "Trust", title: "Trust and reliability", copy: "Review the support posture, mail authentication, and product safeguards behind the live workflow." },
           { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the live room flow, facilitator controls, Team Alignment analytics, and sprint-history layer." },
           { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "Understand when Free is enough and when Pro becomes operationally useful." },
           { href: "/remote-sprint-planning", kicker: "Remote", title: "Remote sprint planning", copy: "See how the browser-first workflow fits distributed teams and recurring ceremonies." },
@@ -5476,9 +5490,107 @@ function SupportPage({ onNavigate }) {
         intro="If the question is really about plan fit, workflow, or how the product is intended to be used, these pages cover that in more detail."
         onNavigate={onNavigate}
         links={[
+          { href: "/trust", kicker: "Trust", title: "Trust and reliability", copy: "Review the public trust signals, support posture, and product safeguards behind the workflow." },
           { href: "/about", kicker: "About", title: "Why pointpoker exists", copy: "Understand the product philosophy and why the workflow is intentionally lightweight." },
-          { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the full room workflow, facilitator controls, Team Alignment, Team Rooms, and history features." },
           { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "See when Free is enough and when Pro becomes the right operational step." },
+        ]}
+      />
+    </MarketingPageShell>
+  );
+}
+
+function TrustPage({ onNavigate }) {
+  const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
+
+  return (
+    <MarketingPageShell
+      eyebrow="Trust and reliability"
+      title="Trust signals for teams that want a lightweight planning poker tool without lightweight operating standards"
+      intro="pointpoker is intentionally simple on the surface, but teams still need to know the basics are handled properly. This page brings together the practical trust signals behind the product: clear support, public legal routes, authenticated email, account-linked Pro access, and room safeguards that keep live sessions understandable."
+      highlights={[
+        { value: "Direct", label: `Support at ${support}` },
+        { value: "Verified", label: "SPF, DKIM, and DMARC now pass" },
+        { value: "Account-bound", label: "Pro access stays attached to one identity" },
+      ]}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Open pointpoker"
+      secondaryHref="/support"
+      secondaryLabel="Get support"
+    >
+      <MarketingSection
+        title="What teams should expect before they rely on a lightweight SaaS tool"
+        intro="Trust is not about pretending a planning poker tool is an enterprise suite. It is about getting the operating basics right so teams understand what they are using and how it behaves."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Public support and legal routes</h3>
+            <p className="marketing-card-copy">
+              pointpoker publishes its support, privacy, and terms surfaces on the live domain so teams can see how the product is operated instead of hunting through a hidden help centre.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Authenticated support email</h3>
+            <p className="marketing-card-copy">
+              Outbound mail from <a href={`mailto:${support}`} className="seo-inline-link">{support}</a> now passes SPF, DKIM, and DMARC, which improves deliverability and makes support contact look less improvised.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Clear account boundaries</h3>
+            <p className="marketing-card-copy">
+              Free participation stays friction-light, but Pro access is tied to an authenticated account so dedicated Team Rooms and sprint history remain attached to the right owner.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Product safeguards that reduce avoidable confusion"
+        intro="The room flow is designed to stay understandable to the whole team, especially when people join quickly from shared links."
+      >
+        <ul className="marketing-list">
+          <li><strong>Real names are required:</strong> placeholder names are blocked before entry so rooms stay readable to everyone involved.</li>
+          <li><strong>Facilitator actions are explicit:</strong> reveal, re-vote, final-estimate capture, and moderation controls are structured so the next step is hard to miss.</li>
+          <li><strong>Deck values stay valid:</strong> final saved estimates must match the active deck, which prevents misleading derived values from polluting sprint history.</li>
+          <li><strong>Temporary and permanent rooms are described honestly:</strong> ad-hoc rooms now make their session-active nature clear, while Team Rooms keep the reusable wording they deserve.</li>
+          <li><strong>Pro entitlements are not cosmetic:</strong> the Firebase rules layer now enforces active-license-backed Pro profiles rather than trusting broad client-side state.</li>
+        </ul>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Operational signals already in place"
+        intro="These are the concrete signs that the product is moving beyond a throwaway demo toward something teams can actually use every sprint."
+      >
+        <div className="marketing-card-grid">
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Stable production domain and crawlable support surface</h3>
+            <p className="marketing-card-copy">
+              The live product, support routes, and educational pages all sit on the production domain with Search Console connected, sitemap submitted, and key routes requested for indexing.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Account-linked Pro workflow</h3>
+            <p className="marketing-card-copy">
+              Pro now follows the user across devices, preserves two fixed Team Room URLs, and keeps sprint history attached to one account instead of floating in anonymous browser state.
+            </p>
+          </article>
+          <article className="marketing-card">
+            <h3 className="marketing-card-title">Published data and rules posture</h3>
+            <p className="marketing-card-copy">
+              Firebase rules now validate room shape, deck-safe estimates, and Pro entitlement state, while the product exposes its legal, privacy, and support posture publicly rather than hiding it behind signup.
+            </p>
+          </article>
+        </div>
+      </MarketingSection>
+
+      <MarketingRelatedLinks
+        title="Related pages"
+        intro="These pages explain the product philosophy, support path, and commercial fit in more detail."
+        onNavigate={onNavigate}
+        links={[
+          { href: "/about", kicker: "About", title: "Why pointpoker exists", copy: "See the product philosophy behind the lightweight workflow and focused upgrade path." },
+          { href: "/support", kicker: "Support", title: "Support and product guidance", copy: "See where to get help, what questions come up most often, and how the workflow is explained." },
+          { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "Understand when Free is enough and when account-linked Pro becomes operationally useful." },
         ]}
       />
     </MarketingPageShell>
@@ -7852,8 +7964,10 @@ function JoinScreen({
             <RouteLink href="/what-is-planning-poker" onNavigate={onNavigate} className="seo-inline-link">what planning poker is</RouteLink>
             {", "}
             <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">Fibonacci story points</RouteLink>
-            {" and "}
+            {", "}
             <RouteLink href="/agile-estimation-tool" onNavigate={onNavigate} className="seo-inline-link">agile estimation tools</RouteLink>
+            {", and "}
+            <RouteLink href="/trust" onNavigate={onNavigate} className="seo-inline-link">trust and reliability</RouteLink>
             {" to learn how the workflow fits your team."}
           </p>
         </div>

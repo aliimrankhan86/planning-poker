@@ -132,10 +132,11 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - each route now has unique route-level title, description, canonical, robots, and social metadata
     - signed-out footer and home-page content now provide crawlable internal links into the new marketing routes
     - Vercel rewrites and `sitemap.xml` now include the new indexable marketing URLs
-  - SEO Phase 3 trust layer is now started:
-    - dedicated `/about` and `/support` routes now exist as additive trust/support pages
-    - footer navigation now links into those pages so they are discoverable to both users and crawlers
+  - SEO Phase 3 trust/proof layer is now underway:
+    - dedicated `/about`, `/support`, and `/trust` routes now exist as additive trust/support pages
+    - footer navigation and home-page SEO copy now link into those pages so they are discoverable to both users and crawlers
     - support messaging is now clearer and anchored to the published support email
+    - the new `/trust` route explains public support/legal surfaces, authenticated email, account-linked Pro access, and room/data safeguards in one place
   - SEO Phase 3 guide layer is now underway:
     - dedicated educational routes now exist for `/what-is-planning-poker` and `/fibonacci-story-points`
     - these pages explain the estimation method itself, not just the product, and link back into the live planning-poker workflow
@@ -174,7 +175,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - SEO implementation plan is now explicit for future work:
     - Phase 1: metadata/canonical/noindex control and crawl hygiene ✅
     - Phase 2: dedicated indexable marketing pages (`/pricing`, `/features`, keyword landing pages) ✅
-    - Phase 3: supporting educational content and trust/proof content 🔄 Started (`/about`, `/support`)
+    - Phase 3: supporting educational content and trust/proof content 🔄 Started (`/about`, `/support`, `/trust`)
     - Phase 4: Search Console monitoring and performance refinement 🔄 Started (ownership + sitemap + indexing requests complete)
   - Facilitator controls + Team Alignment redesigned (29 March 2026):
     - Team Alignment: "Needs work" renamed to "Low consensus"; label suppressed until 2+ stories done; low-score colour changed from red to amber; neutral CSS state added for early sessions; inline explanatory note added; "agreed first round" → "agreed first vote"
@@ -186,6 +187,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
+  - Define and implement owner/operator notifications for new account registrations and Pro activations/conversions
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 
@@ -796,7 +798,8 @@ Items are grouped by dependency. Do not mark complete until fully deployed/verif
 ### DOMAIN / LAUNCH CONFIG
 
 - [ ] Monitor Google Search Console indexing status and query performance for the homepage plus the new marketing routes
-- [ ] Continue Phase 3 trust/proof content beyond the initial `/about` and `/support` pages
+- [ ] Continue Phase 3 trust/proof content beyond the initial `/about`, `/support`, and `/trust` pages
+- [ ] Define how the product owner gets notified when a user registers or becomes a Pro user
 
 ### BLOCKED ON: Stripe account setup
 
