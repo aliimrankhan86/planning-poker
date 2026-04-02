@@ -166,6 +166,13 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - the functions now explicitly use `planning-poker-b6ac1@appspot.gserviceaccount.com` because this project’s default Compute service account is unavailable for deploys
     - the notification functions are now deployed live in Firebase with Zoho SMTP env configuration loaded from `functions/.env`
     - Artifact Registry cleanup is now configured to auto-delete function images older than 30 days
+    - Live Pro-activation email QA now passes end-to-end:
+      - owner Pro notification email arrives
+      - user Pro confirmation email arrives
+      - both dedicated Team Room URLs in email match the product UI
+    - two low-severity follow-ups remain:
+      - the owner Pro email subject was observed as `Point Poker Pro activated` rather than `Point Poker Pro activated: <user-email>`
+      - a newly created free account hit one transient first-attempt activation failure in the account modal before succeeding through the pricing-page activation input
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
@@ -197,7 +204,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Still pending:
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Retry Google Search Console manual indexing request for `/trust` after the daily quota resets
-  - Verify live owner/user email delivery for new signups and Pro activations end-to-end now that the notification functions are deployed
+  - Re-run fresh-account signup email QA with a brand-new real inbox now that the signup verification-state UI bug has been fixed
+  - Investigate the low-severity owner Pro-email subject mismatch and the transient first-attempt account-modal activation failure if they reproduce again
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 

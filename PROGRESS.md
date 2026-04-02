@@ -148,6 +148,13 @@
     - the functions now explicitly target the App Engine default service account because this project is not deploying successfully with the default Compute service account
     - Firebase Functions are now deployed live with Zoho SMTP env configuration loaded from local `.env`
     - Artifact Registry cleanup is now configured to auto-delete function images older than 30 days
+    - live Pro-activation email QA now passes:
+      - owner Pro notification email arrives
+      - user Pro confirmation email arrives
+      - both dedicated Team Room URLs in email match the product UI
+    - low-severity follow-ups remain:
+      - owner Pro email subject was observed without the expected `: <user-email>` suffix
+      - one transient first-attempt activation failure occurred in the account modal before succeeding through the pricing-page activation field
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
@@ -254,8 +261,8 @@ Treat this section as the fastest current-status read. Historical session notes 
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** verify live signup/Pro notification emails end-to-end, retry `/trust` indexing in Search Console, and continue additive trust/proof content while Stripe stays parked
-**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, verify live signup + Pro notification email delivery, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Active step:** re-run fresh-account signup email QA after the signup-state fix, retry `/trust` indexing in Search Console, and continue additive trust/proof content while Stripe stays parked
+**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, verify fresh-account signup verification email delivery, monitor the low-severity Pro-email subject / first-attempt activation issues if they recur, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -329,7 +336,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 3.3 | Build Stripe Checkout flow | 🔄 In progress | Pricing modal is account-aware and records checkout intent; still needs real Stripe Payment Links or Checkout |
 | 3.4 | Firebase Function webhook (payment events) | ⏳ Not started | Updates plan field in Firebase |
 | 3.5 | Add upgrade prompt UI | ⏳ Not started | Shows when free tier limit hit |
-| 3.6 | Add owner notifications for signups and Pro conversions | 🔄 In progress | Functions are now deployed live; remaining work is end-to-end delivery verification for signup and Pro emails |
+| 3.6 | Add owner notifications for signups and Pro conversions | 🔄 In progress | Pro-activation emails now pass live QA; remaining work is fresh-signup email verification QA plus monitoring two low-severity follow-ups if they reproduce |
 
 ---
 
