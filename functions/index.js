@@ -7,10 +7,6 @@ if (!admin.apps.length) {
 }
 
 const db = admin.database();
-const runtimeConfig = typeof functions.config === "function" ? functions.config() : {};
-const appConfig = runtimeConfig.app || {};
-const mailConfig = runtimeConfig.mail || {};
-const opsConfig = runtimeConfig.ops || {};
 
 function firstNonEmpty(...values) {
   for (const value of values) {
@@ -23,54 +19,45 @@ function firstNonEmpty(...values) {
 
 const APP_BASE_URL = firstNonEmpty(
   process.env.APP_BASE_URL,
-  appConfig.base_url,
   "https://www.pointpoker.app",
 );
 const SUPPORT_EMAIL = firstNonEmpty(
   process.env.SUPPORT_EMAIL,
   process.env.REACT_APP_SUPPORT_EMAIL,
-  appConfig.support_email,
   "support@pointpoker.app",
 );
 const OWNER_NOTIFICATION_EMAIL = firstNonEmpty(
   process.env.OWNER_NOTIFICATION_EMAIL,
-  opsConfig.owner_email,
   SUPPORT_EMAIL,
 );
 const SMTP_HOST = firstNonEmpty(
   process.env.ZOHO_SMTP_HOST,
   process.env.SMTP_HOST,
-  mailConfig.host,
   "smtp.zoho.eu",
 );
 const SMTP_PORT = Number(
   firstNonEmpty(
     process.env.ZOHO_SMTP_PORT,
     process.env.SMTP_PORT,
-    mailConfig.port,
     "465",
   ),
 );
 const SMTP_SECURE = firstNonEmpty(
   process.env.ZOHO_SMTP_SECURE,
   process.env.SMTP_SECURE,
-  mailConfig.secure,
   "true",
 ) !== "false";
 const SMTP_USER = firstNonEmpty(
   process.env.ZOHO_SMTP_USER,
   process.env.SMTP_USER,
-  mailConfig.user,
   SUPPORT_EMAIL,
 );
 const SMTP_PASS = firstNonEmpty(
   process.env.ZOHO_SMTP_PASS,
   process.env.SMTP_PASS,
-  mailConfig.pass,
 );
 const MAIL_FROM_NAME = firstNonEmpty(
   process.env.MAIL_FROM_NAME,
-  mailConfig.from_name,
   "Point Poker",
 );
 

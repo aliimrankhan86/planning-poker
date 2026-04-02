@@ -30,18 +30,6 @@ Required values:
 - `ZOHO_SMTP_PASS`
 - `MAIL_FROM_NAME`
 
-The code also supports equivalent Firebase runtime config keys if you prefer:
-
-- `app.base_url`
-- `app.support_email`
-- `ops.owner_email`
-- `mail.host`
-- `mail.port`
-- `mail.secure`
-- `mail.user`
-- `mail.pass`
-- `mail.from_name`
-
 ## Deploy
 
 1. Install function dependencies:
