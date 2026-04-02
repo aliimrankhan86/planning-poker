@@ -141,11 +141,12 @@
     - DKIM passes
     - DMARC passes
     - Gmail now recognizes outbound mail from `support@pointpoker.app` as authenticated
-  - Notification architecture is now scaffolded in repo:
+  - Notification architecture is now deployed live:
     - `functions/` contains backend email triggers for owner signup notifications and owner/user Pro activation emails
     - notification idempotency is tracked under `/ops/notifications/{uid}` so repeated profile writes do not resend the same message
     - the functions now explicitly target the App Engine default service account because this project is not deploying successfully with the default Compute service account
-    - Functions env configuration + deployment are still required before these notifications go live
+    - Firebase Functions are now deployed live with Zoho SMTP env configuration loaded from local `.env`
+    - Artifact Registry cleanup is now configured to auto-delete function images older than 30 days
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
@@ -230,7 +231,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 2 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** account lifecycle email flow and backend notification scaffolding
+- **Worked on:** account lifecycle email flow, notification deployment, and live delivery infrastructure
 - **Completed:**
   - Added Firebase Auth verification-email sending to the registration flow so new users get an immediate account-confirmation email after signup.
   - Updated auth-success messaging so sign-up completion explicitly tells the user to check their email for verification instead of looking identical to a normal sign-in.
@@ -239,15 +240,20 @@ Treat this section as the fastest current-status read. Historical session notes 
     - owner notification when a user becomes active Pro
     - user Pro-activation email including both dedicated Team Room URLs
   - Added `firebase.json`, `functions/.env.example`, and `functions/README.md` so the deployment/config path is explicit for the next session.
+  - Upgraded the Firebase project to Blaze billing so Cloud Functions can deploy.
+  - Configured Zoho SMTP runtime env and successfully deployed both live functions:
+    - `notifyOwnerOnSignup`
+    - `notifyOnProActivation`
+  - Locked the functions to `planning-poker-b6ac1@appspot.gserviceaccount.com` so deploys no longer fail on the missing default Compute service account.
+  - Configured Artifact Registry cleanup to automatically delete old function images after 30 days.
   - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
-  - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** deploy/configure the new notification functions, retry `/trust` indexing in Search Console, and continue additive trust/proof content while Stripe stays parked
-**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, configure/deploy signup + Pro notification emails, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Active step:** verify live signup/Pro notification emails end-to-end, retry `/trust` indexing in Search Console, and continue additive trust/proof content while Stripe stays parked
+**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, verify live signup + Pro notification email delivery, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -321,7 +327,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 3.3 | Build Stripe Checkout flow | 🔄 In progress | Pricing modal is account-aware and records checkout intent; still needs real Stripe Payment Links or Checkout |
 | 3.4 | Firebase Function webhook (payment events) | ⏳ Not started | Updates plan field in Firebase |
 | 3.5 | Add upgrade prompt UI | ⏳ Not started | Shows when free tier limit hit |
-| 3.6 | Add owner notifications for signups and Pro conversions | 🔄 In progress | Repo scaffold now exists in `functions/`; remaining work is SMTP env configuration, Functions deployment, and live verification |
+| 3.6 | Add owner notifications for signups and Pro conversions | 🔄 In progress | Functions are now deployed live; remaining work is end-to-end delivery verification for signup and Pro emails |
 
 ---
 

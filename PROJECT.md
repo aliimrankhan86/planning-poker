@@ -163,7 +163,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - `functions/` contains SMTP-backed Firebase Functions for owner signup notifications and owner/user Pro activation emails
     - notification idempotency is tracked under `/ops/notifications/{uid}`
     - the functions now explicitly use `planning-poker-b6ac1@appspot.gserviceaccount.com` because this project’s default Compute service account is unavailable for deploys
-    - this is implemented in code but still needs Functions env configuration and deployment before it is live
+    - the notification functions are now deployed live in Firebase with Zoho SMTP env configuration loaded from `functions/.env`
+    - Artifact Registry cleanup is now configured to auto-delete function images older than 30 days
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
@@ -195,7 +196,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Still pending:
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Retry Google Search Console manual indexing request for `/trust` after the daily quota resets
-  - Define and implement owner/operator notifications for new account registrations and Pro activations/conversions
+  - Verify live owner/user email delivery for new signups and Pro activations end-to-end now that the notification functions are deployed
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 
@@ -222,7 +223,7 @@ If older historical notes below conflict with this section, treat this snapshot 
 | Layer | Technology | Version | Notes |
 |---|---|---|---|
 | Framework | React | 19.2.4 | Create React App scaffold |
-| Database | Firebase Realtime Database | SDK 12.10.0 | Spark (free) plan, US region |
+| Database | Firebase Realtime Database | SDK 12.10.0 | Blaze billing enabled, US region |
 | Hosting | Vercel | — | Auto-deploys from `main` branch on GitHub |
 | Performance | Vercel Speed Insights | latest | Installed in `src/index.js` for production field-performance monitoring |
 | Build tool | react-scripts | 5.0.1 | CRA — no custom webpack config |
@@ -250,7 +251,7 @@ Additional:
 REACT_APP_SUPPORT_EMAIL   # support@pointpoker.app (already set in Vercel)
 ```
 
-Cloud Functions notification env (not yet deployed/live):
+Cloud Functions notification env:
 ```
 APP_BASE_URL
 SUPPORT_EMAIL
@@ -631,6 +632,15 @@ Listed chronologically newest-first.
 - Notification sends are guarded with `/ops/notifications/{uid}` idempotency state so repeated profile writes do not spam duplicate emails
 - Added `functions/README.md`, `.env.example`, and `firebase.json` so deployment/config is operationally clear for the next session
 
+### 2026-04 — Notification functions deployed live
+- Firebase project billing is now on Blaze, enabling Cloud Functions deployment for account-lifecycle emails
+- Zoho SMTP app-password configuration is now wired through local Functions env and the Firebase Functions deploy completed successfully
+- Live functions now exist for:
+  - `notifyOwnerOnSignup`
+  - `notifyOnProActivation`
+- Functions now run under the explicit App Engine default service account `planning-poker-b6ac1@appspot.gserviceaccount.com`, avoiding the missing default Compute service-account deploy failure
+- Artifact Registry cleanup is configured to automatically delete old function images after 30 days
+
 ### 2026-03 — Vercel Speed Insights installed
 - Added `@vercel/speed-insights` to the project dependencies
 - Mounted `<SpeedInsights />` in `src/index.js` so production deployments can start collecting field-performance metrics
@@ -837,7 +847,7 @@ Items are grouped by dependency. Do not mark complete until fully deployed/verif
 
 - [ ] Monitor Google Search Console indexing status and query performance for the homepage plus the new marketing routes
 - [ ] Continue Phase 3 trust/proof content beyond the initial `/about`, `/support`, and `/trust` pages
-- [ ] Configure and deploy the new Firebase Functions notification layer with Zoho SMTP + owner email env vars, then verify live signup and Pro emails
+- [ ] Verify live signup-owner notifications and Pro owner/user emails end-to-end now that the Firebase Functions notification layer is deployed
 
 ### BLOCKED ON: Stripe account setup
 
