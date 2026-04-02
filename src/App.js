@@ -3774,6 +3774,7 @@ function LoginModal({
   const [passInput, setPassInput] = useState("");
   const [authStatus, setAuthStatus] = useState(null);
   const [authError, setAuthError] = useState("");
+  const [registerSuccess, setRegisterSuccess] = useState(null);
   const [keyInput, setKeyInput] = useState("");
   const [keyStatus, setKeyStatus] = useState(null);
   const isPro = currentPlan === "pro";
@@ -3823,13 +3824,56 @@ function LoginModal({
         : "We’ll email you a reset link for this account.";
   const isRegisterTransition =
     mode === "register" &&
-    (authStatus === "loading" || authStatus === "verify" || authStatus === "ok");
+    (authStatus === "loading" ||
+      authStatus === "verify" ||
+      authStatus === "verify_resent" ||
+      authStatus === "verify_error" ||
+      authStatus === "verify_resending" ||
+      authStatus === "ok");
   const showAuthForm = !currentUser || isRegisterTransition;
   const showSignedInAccount = currentUser && !isRegisterTransition;
+  const registerComplete =
+    mode === "register" &&
+    ["verify", "verify_resent", "verify_error"].includes(authStatus);
 
   const resetMessages = () => {
     setAuthStatus(null);
     setAuthError("");
+    setRegisterSuccess(null);
+  };
+
+  const handleRegisterContinue = () => {
+    onAuthSuccess?.({
+      mode: "register",
+      verificationSent: !!registerSuccess?.verificationSent,
+    });
+  };
+
+  const handleResendVerification = async () => {
+    const targetUser = auth.currentUser || currentUser;
+    if (!targetUser?.email) {
+      setAuthError("This account does not have an email address available for verification.");
+      return;
+    }
+    setAuthStatus("verify_resending");
+    setAuthError("");
+    try {
+      await sendEmailVerification(targetUser, { url: SITE_URL });
+      setRegisterSuccess((prev) => ({
+        ...(prev || {}),
+        email: targetUser.email || prev?.email || "",
+        verificationSent: true,
+      }));
+      setAuthStatus("verify_resent");
+    } catch (error) {
+      setAuthStatus("verify_error");
+      setAuthError(getVerificationErrorMessage(error));
+      setRegisterSuccess((prev) => ({
+        ...(prev || {}),
+        email: targetUser.email || prev?.email || "",
+        verificationSent: false,
+      }));
+    }
   };
 
   const handleSignIn = async () => {
@@ -3860,6 +3904,7 @@ function LoginModal({
     }
     setAuthStatus("loading");
     setAuthError("");
+    setRegisterSuccess(null);
     try {
       const credential = await createUserWithEmailAndPassword(auth, emailInput.trim(), passInput);
       await updateProfile(credential.user, { displayName: nameInput.trim().slice(0, 40) });
@@ -3869,18 +3914,21 @@ function LoginModal({
         plan: "free",
       });
       let verificationSent = false;
+      let verificationError = null;
       try {
-        await sendEmailVerification(credential.user);
+        await sendEmailVerification(credential.user, { url: SITE_URL });
         verificationSent = true;
-      } catch {
-        // Account creation should still succeed even if the verification email
-        // cannot be sent immediately.
+      } catch (error) {
+        verificationError = error;
       }
-      setAuthStatus(verificationSent ? "verify" : "ok");
-      setTimeout(
-        () => onAuthSuccess?.({ mode: "register", verificationSent }),
-        verificationSent ? 1400 : 1000,
-      );
+      setRegisterSuccess({
+        email: credential.user.email || emailInput.trim(),
+        verificationSent,
+      });
+      setAuthStatus(verificationSent ? "verify" : "verify_error");
+      if (verificationError) {
+        setAuthError(getVerificationErrorMessage(verificationError));
+      }
     } catch (error) {
       setAuthStatus(null);
       setAuthError(getAuthErrorMessage(error));
@@ -3933,6 +3981,8 @@ function LoginModal({
       setTimeout(() => onProActivated?.(), 700);
     } else if (result === "claimed") {
       setKeyStatus("claimed");
+    } else if (result === "retry") {
+      setKeyStatus("retry");
     } else if (result === "invalid") {
       setKeyStatus("invalid");
     } else {
@@ -4043,14 +4093,24 @@ function LoginModal({
             )}
 
             {authError && <div className="auth-status error">{authError}</div>}
-            {authStatus === "ok" && (
+            {authStatus === "ok" && mode !== "register" && (
               <div className="auth-status success">
                 {mode === "register" ? "✓ Account created." : "✓ Signed in."}
               </div>
             )}
             {authStatus === "verify" && (
               <div className="auth-status success">
-                ✓ Account created. Check your email to verify your address{upgradeIntent ? ", then continue to Pro activation." : "."}
+                ✓ Account created. Check {registerSuccess?.email || "your email"} to verify your address{upgradeIntent ? ", then continue to Pro activation." : "."}
+              </div>
+            )}
+            {authStatus === "verify_resent" && (
+              <div className="auth-status success">
+                ✓ Verification email resent to {registerSuccess?.email || "your inbox"}.
+              </div>
+            )}
+            {authStatus === "verify_error" && (
+              <div className="auth-status error">
+                ✓ Account created, but we could not send the verification email yet. Use resend below.
               </div>
             )}
             {authStatus === "reset" && (
@@ -4062,10 +4122,26 @@ function LoginModal({
                 {authStatus === "loading" ? "Signing in…" : "Sign in"}
               </button>
             )}
-            {mode === "register" && (
+            {mode === "register" && !registerComplete && (
               <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleRegister} disabled={authStatus === "loading"}>
                 {authStatus === "loading" ? "Creating account…" : upgradeIntent ? "Create account to activate Pro" : "Create account"}
               </button>
+            )}
+            {mode === "register" && registerComplete && (
+              <>
+                <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleRegisterContinue}>
+                  {upgradeIntent ? "Continue to Pro setup" : "Continue to workspace"}
+                </button>
+                <button
+                  type="button"
+                  className="login-secondary-btn"
+                  style={{ marginTop: 12 }}
+                  onClick={handleResendVerification}
+                  disabled={authStatus === "verify_resending"}
+                >
+                  {authStatus === "verify_resending" ? "Sending verification…" : "Resend verification email"}
+                </button>
+              </>
             )}
             {mode === "reset" && (
               <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleReset} disabled={authStatus === "loading"}>
@@ -4087,6 +4163,22 @@ function LoginModal({
         )}
         {showSignedInAccount && authError && (
           <div className="auth-status error">{authError}</div>
+        )}
+
+        {showSignedInAccount && !currentUser?.emailVerified && (
+          <>
+            <div className="auth-status error">
+              Your email address is not verified yet. Resend the verification email if you still need it.
+            </div>
+            <button
+              type="button"
+              className="login-secondary-btn"
+              onClick={handleResendVerification}
+              disabled={authStatus === "verify_resending"}
+            >
+              {authStatus === "verify_resending" ? "Sending verification…" : "Resend verification email"}
+            </button>
+          </>
         )}
 
         {showSignedInAccount && (
@@ -4163,6 +4255,9 @@ function LoginModal({
                     )}
                     {keyStatus === "error" && (
                       <div className="pro-key-status error">Could not verify your code right now. Check your connection and confirm activation access is configured.</div>
+                    )}
+                    {keyStatus === "retry" && (
+                      <div className="pro-key-status error">This key is attached to this account, but Pro setup did not finish. Try once more or contact support.</div>
                     )}
                     <button
                       className="btn-primary"
@@ -6603,6 +6698,19 @@ function getAuthErrorMessage(error) {
   }
 }
 
+function getVerificationErrorMessage(error) {
+  switch (error?.code) {
+    case "auth/too-many-requests":
+      return "Too many verification attempts. Wait a moment and try again.";
+    case "auth/unauthorized-continue-uri":
+    case "auth/invalid-continue-uri":
+    case "auth/missing-continue-uri":
+      return "We could not send the verification email from this domain right now. Try again shortly or contact support.";
+    default:
+      return "We could not send the verification email right now. Try again.";
+  }
+}
+
 function deriveDisplayNameFallback(email = "") {
   const local = (email || "").split("@")[0]?.trim();
   if (!local) return "Alex Johnson";
@@ -6720,6 +6828,46 @@ async function saveUserProfile(user, profile = {}) {
   await update(ref(db, `users/${user.uid}`), nextProfile);
 }
 
+async function writeProUserProfile(user, formattedKey, currentProfile = {}) {
+  const teamRooms = resolveDedicatedTeamRooms(currentProfile, user);
+  await update(ref(db, `users/${user.uid}`), {
+    email: user.email || currentProfile.email || "",
+    displayName: user.displayName || currentProfile.displayName || "",
+    teamRoomName: teamRooms.primary,
+    teamRooms,
+    plan: "pro",
+    billingStatus: "active",
+    createdAt: currentProfile.createdAt || Date.now(),
+    proKey: formattedKey,
+    proActivatedAt: Date.now(),
+    lastLoginAt: Date.now(),
+  });
+}
+
+async function reconcileProActivationState(user, formattedKey) {
+  if (!user?.uid) return "error";
+  try {
+    const [licenseSnap, profileSnap] = await Promise.all([
+      get(ref(db, `licenses/${formattedKey}`)).catch(() => null),
+      get(ref(db, `users/${user.uid}`)).catch(() => null),
+    ]);
+    const license = licenseSnap?.exists?.() ? (licenseSnap.val() || {}) : null;
+    const profile = profileSnap?.exists?.() ? (profileSnap.val() || {}) : {};
+    if (!license || license.active !== true) return "invalid";
+    if (license.claimedBy && license.claimedBy !== user.uid) return "claimed";
+    if (profile?.plan === "pro" && String(profile?.proKey || "").trim().toUpperCase() === formattedKey) {
+      return "ok";
+    }
+    if (license.claimedBy === user.uid) {
+      await writeProUserProfile(user, formattedKey, profile || {});
+      return "ok";
+    }
+  } catch {
+    // Fall through to generic retry guidance below.
+  }
+  return "retry";
+}
+
 async function markCheckoutIntent(user, billing, currency) {
   if (!user?.uid) return;
   const snap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
@@ -6790,24 +6938,17 @@ async function validateAndSavePro(key, user = null) {
       }
       const profileSnap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
       const currentProfile = profileSnap?.exists?.() ? profileSnap.val() || {} : {};
-      const teamRooms = resolveDedicatedTeamRooms(currentProfile, user);
-      await update(ref(db, `users/${user.uid}`), {
-        email: user.email || "",
-        displayName: user.displayName || "",
-        teamRoomName: teamRooms.primary,
-        teamRooms,
-        plan: "pro",
-        billingStatus: "active",
-        createdAt: currentProfile.createdAt || Date.now(),
-        proKey: formatted,
-        proActivatedAt: Date.now(),
-        lastLoginAt: Date.now(),
-      });
+      try {
+        await writeProUserProfile(user, formatted, currentProfile);
+      } catch {
+        const retrySnap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
+        const retryProfile = retrySnap?.exists?.() ? retrySnap.val() || {} : currentProfile;
+        await writeProUserProfile(user, formatted, retryProfile);
+      }
     }
     return "ok";
   } catch {
-    // Firebase unreachable — fail closed (require real validation)
-    return "error";
+    return user?.uid ? reconcileProActivationState(user, formatted) : "error";
   }
 }
 
@@ -7804,6 +7945,12 @@ function PricingModal({
                     <p className="pro-key-status error">
                       This activation key is already attached to another account.{" "}
                       <a href={`mailto:${support}`}>Contact support</a> if you need it moved.
+                    </p>
+                  )}
+                  {keyStatus === "retry" && (
+                    <p className="pro-key-status error">
+                      This key is attached to this account, but Pro setup did not finish. Try once more or{" "}
+                      <a href={`mailto:${support}`}>contact support</a>.
                     </p>
                   )}
                   {keyStatus === "error" && (

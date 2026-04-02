@@ -19,11 +19,11 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
-- Auth:
+  - Auth:
   - Firebase Email/Password auth is implemented and enabled
   - `/users/{uid}` persistence is live
   - New account registration now sends a Firebase Auth verification email
-  - Registration success state now stays in the auth modal long enough to show the verification prompt instead of being replaced by the signed-in reset-password UI
+  - Registration success now holds in an explicit verification step inside the auth modal, with a visible continue action and a resend-verification action instead of auto-closing immediately
 - Roles:
   - Backend values are `voter` and `observer`
   - User-facing label for `observer` is `Facilitator`
@@ -67,6 +67,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
   - Dedicated Team Room URL rows in the Pro workspace now reflow cleanly at medium/narrow widths instead of clipping the invite/copy controls
   - Pro activation now preserves `createdAt` when upgrading a just-created account, preventing the transient first-attempt activation failure caused by strict user-profile rules
+  - Pro activation now retries the final profile-upgrade write and attempts a recovery reconciliation if the activation key claim succeeded but the profile did not flip to Pro cleanly
   - Pro activation logic in the repo now claims each activation key to a single Firebase UID and surfaces a specific “already attached to another account” error if a second user tries the same key
   - Updated Firebase rules in the repo now require a Pro profile’s `proKey` to be claimed by that same UID; this still needs a fresh Firebase rules publish before same-key reuse is blocked in production
   - Live verification now confirms deployment parity, signed-out landing nav, free auth, signed-out upgrade flow, account-bound Pro activation, Pro navbar state, Pro workspace layout, dedicated Team Room URL/share flow, and anonymous join-via-link behaviour on production
@@ -667,6 +668,9 @@ Listed chronologically newest-first.
 
 ### 2026-04 — Pro activation reliability + Team Room workspace layout fix
 - `validateAndSavePro()` now preserves `createdAt` when upgrading a user profile, preventing the transient first-attempt activation failure that could happen on a just-created account under the stricter Realtime Database rules
+- Signup now stays in an explicit post-registration verification state instead of auto-closing: the auth modal shows a clear verification prompt, adds a dedicated Continue button, and exposes a resend-verification action both immediately after registration and later from the signed-in account state.
+- Verification-email sends now use an explicit continue URL and surface failures to the user instead of swallowing them silently, making Firebase/Auth delivery issues visible during setup and QA.
+- Pro activation now retries the profile write and runs a recovery reconciliation when a key claim succeeds but the user profile does not finish upgrading cleanly, so transient activation races are less likely to strand an account on Free.
 - Dedicated Team Room URL rows in the Pro workspace now use a more resilient grid layout and stack earlier on narrower screens, preventing the copy-link control from clipping or overflowing the card
 - Pro users can now set a dedicated Team Room name prefix directly in the workspace; the final room names are saved as `<chosen name> <username>` and `<chosen name> 2 <username>` so the URLs stay unique without hiding the naming logic
 - Signed-in free users now get a clearer upgrade journey: account-level Upgrade actions default to “activate this account,” while the pricing modal explicitly lays out the three-step Pro path (create/sign in, activate, then name Team Rooms)

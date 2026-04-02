@@ -9,8 +9,9 @@
 - Product state:
   - Firebase Auth email/password implemented and enabled
   - New account registration now sends a Firebase Auth verification email
-  - Registration success now stays visible in the auth modal long enough to show the verification prompt instead of flashing the signed-in reset-password UI
+  - Registration now stays in an explicit verification step inside the auth modal, with a visible continue action and a resend-verification action instead of auto-closing immediately
   - Fresh-account Pro activation now preserves `createdAt` on the profile update, preventing the transient first-attempt activation failure Comet saw under the strict `/users/{uid}` rules
+  - Pro activation now retries the final profile-upgrade write and runs a recovery reconciliation if the activation key claim succeeded but the profile did not finish flipping to Pro cleanly
   - Auth QA passed
   - Core room-flow QA passed
   - Facilitator wording clarified
@@ -265,6 +266,9 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Configured Artifact Registry cleanup to automatically delete old function images after 30 days.
   - Fixed the signup success-state UI so account creation no longer flashes the signed-in password-reset controls or the misleading `Sending reset…` label before the verification prompt can be seen.
   - Fixed the just-created-account Pro activation race by preserving `createdAt` during `validateAndSavePro()`, which removes the strict-rules failure on the first activation attempt.
+  - Reworked the signup-complete state so registration no longer auto-closes out from under the user: the auth modal now pauses on a clear verification step, exposes an explicit Continue action, and adds resend-verification actions for both just-created and later signed-in-but-unverified accounts.
+  - Verification-email sends now use an explicit continue URL and surface failures instead of swallowing them silently, making Auth configuration issues visible during QA.
+  - Hardened Pro activation recovery: if a key claim succeeds but the user profile does not finish upgrading, the app now retries the profile write and attempts a reconciliation on the next activation attempt before surfacing a more specific retry message.
   - Tightened the Pro workspace Team Room card layout so the long dedicated-room URLs and copy button no longer overflow or clip at medium widths.
   - Added a clear Pro-workspace rename flow for dedicated Team Rooms: the user chooses the shared room-name prefix and the app previews/saves the final room names as `<chosen name> <username>` and `<chosen name> 2 <username>`.
   - Smoothed the free-to-Pro UX: signed-in free users now land in the account-linked activation path by default, the pricing modal explains the create/sign in → activate → name Team Rooms journey explicitly, and upgrade-intent signup resumes directly into the activation state.
