@@ -59,6 +59,9 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Account registration and sign-in now persist user state in Firebase `/users/{uid}` for both Free and Pro users, including plan/billing status, timestamps, and dedicated-room fields
   - Pro users now see two dedicated Team Room URLs tied to their account: the existing primary room remains stable, and a second fixed room is now provisioned alongside it
   - Pro users now have a clear workspace control to choose the shared Team Room name prefix; the app appends their username automatically so both fixed room names and URLs stay account-unique
+  - Signed-in free users now default into a faster Pro-activation path: upgrade actions open the account-linked activation flow directly instead of generic upsell-first messaging
+  - Direct-to-Pro signup is now a cleaner single journey: after account creation from an upgrade intent, the app returns straight into Pro activation instead of dropping the user back into a generic pricing state
+  - Newly activated Pro users are now guided into Team Room setup in the workspace, with the naming control highlighted and focused so choosing both fixed room names feels like the next obvious step
   - Signed-in Pro users no longer see upgrade/plan upsell inside the auth modal or pricing modal; those surfaces now switch to neutral Pro-account messaging and support actions instead
   - Free room capacity is now 8 total participants including the facilitator; Pro capacity is 20 total participants including facilitators
   - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
@@ -666,6 +669,8 @@ Listed chronologically newest-first.
 - `validateAndSavePro()` now preserves `createdAt` when upgrading a user profile, preventing the transient first-attempt activation failure that could happen on a just-created account under the stricter Realtime Database rules
 - Dedicated Team Room URL rows in the Pro workspace now use a more resilient grid layout and stack earlier on narrower screens, preventing the copy-link control from clipping or overflowing the card
 - Pro users can now set a dedicated Team Room name prefix directly in the workspace; the final room names are saved as `<chosen name> <username>` and `<chosen name> 2 <username>` so the URLs stay unique without hiding the naming logic
+- Signed-in free users now get a clearer upgrade journey: account-level Upgrade actions default to “activate this account,” while the pricing modal explicitly lays out the three-step Pro path (create/sign in, activate, then name Team Rooms)
+- Direct-to-Pro signup now hands off cleanly: creating an account from an upgrade intent reopens the pricing modal with Pro activation already expanded, and newly activated Pro users are scrolled directly into Team Room naming setup in the workspace
 - Signed-in Pro users no longer see upgrade/plan upsell inside the auth modal footer or the pricing modal itself; those views now switch to neutral Pro-account status and support messaging instead of checkout or plan-comparison prompts
 - Activation keys are now single-account in repo logic: `validateAndSavePro()` claims `/licenses/{key}` to one UID, existing Pro users auto-claim their current key on sign-in, and the UI now shows a dedicated “already attached to another account” error when a reused key is attempted
 - `database.rules.json` and `database.rules.publish.json` now require `licenses/{key}/claimedBy === $uid` for Pro profiles, but this stricter same-key-reuse guard still needs a fresh Firebase rules publish to become live in production

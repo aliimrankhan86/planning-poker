@@ -934,6 +934,12 @@ body::before {
   border-radius: 14px;
   border: 1px solid rgba(158,234,196,.10);
   background: rgba(255,255,255,.022);
+  transition: border-color .22s ease, box-shadow .22s ease, background .22s ease;
+}
+.workspace-room-editor.highlight {
+  border-color: rgba(241,185,63,.34);
+  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(255,255,255,.025));
+  box-shadow: 0 18px 42px rgba(241,185,63,.10);
 }
 .workspace-room-editor-top {
   display: flex;
@@ -1002,6 +1008,19 @@ body::before {
   color: rgba(239,242,247,.52);
   font-size: .76rem;
   line-height: 1.5;
+}
+.workspace-setup-callout {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(241,185,63,.24);
+  background: linear-gradient(180deg, rgba(241,185,63,.12), rgba(255,255,255,.03));
+  color: rgba(255,242,205,.92);
+  font-size: .8rem;
+  line-height: 1.55;
+}
+.workspace-setup-callout strong {
+  color: var(--gold3);
 }
 .lbl {
   display: block; font-size: .72rem; font-weight: 600;
@@ -2079,6 +2098,74 @@ body::before {
   gap: 10px;
   align-items: center;
 }
+.pricing-journey-box {
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(241,185,63,.18);
+  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(255,255,255,.03));
+}
+.pricing-journey-k {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 9px;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(255,217,120,.82);
+}
+.pricing-journey-title {
+  color: var(--cream);
+  font-size: .96rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+.pricing-journey-copy {
+  margin: 7px 0 0;
+  color: rgba(239,242,247,.72);
+  font-size: .8rem;
+  line-height: 1.55;
+}
+.pricing-journey-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.pricing-journey-step {
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(158,234,196,.12);
+  background: rgba(255,255,255,.03);
+}
+.pricing-journey-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: rgba(241,185,63,.18);
+  color: var(--gold2);
+  font-size: .72rem;
+  font-weight: 700;
+}
+.pricing-journey-step strong {
+  display: block;
+  color: var(--cream);
+  font-size: .8rem;
+  line-height: 1.4;
+}
+.pricing-journey-step span {
+  display: block;
+  margin-top: 5px;
+  color: rgba(239,242,247,.58);
+  font-size: .74rem;
+  line-height: 1.45;
+}
 .pricing-support-link {
   display: inline-flex;
   align-items: center;
@@ -2168,6 +2255,7 @@ body::before {
   .pricing-modal { padding: 32px 20px 28px; }
   .pricing-summary-actions { flex-direction: column; }
   .pricing-summary-actions > * { width: 100%; }
+  .pricing-journey-steps { grid-template-columns: 1fr; }
 }
 
 /* ══════════════════════ RESPONSIVE ══════════════════════ */
@@ -3700,30 +3788,34 @@ function LoginModal({
       ? "Your Pro account"
       : "Your free account"
     : mode === "register"
-      ? "Create your account"
+      ? upgradeIntent
+        ? "Create your Pro-ready account"
+        : "Create your account"
       : mode === "reset"
         ? "Reset your password"
         : upgradeIntent
-          ? "Create your account first"
+          ? "Sign in to continue to Pro"
           : "Sign in to your account";
 
   const subtitle = currentUser
     ? isPro
       ? "This account already has Pro access, sprint history, and two dedicated Team Rooms."
-      : "This account is on the free plan. Upgrade when you want two dedicated Team Rooms, 20 participants, and sprint history."
+      : "This account is on the free plan. Upgrade this same account when you want two dedicated Team Rooms, 20 participants, and sprint history."
     : mode === "register"
-      ? "Accounts keep plan status, dedicated Team Rooms, billing, and sprint history tied to one place across devices."
+      ? upgradeIntent
+        ? "Create the account that will own your Pro plan, dedicated Team Rooms, and sprint history across devices."
+        : "Accounts keep plan status, dedicated Team Rooms, billing, and sprint history tied to one place across devices."
       : mode === "reset"
         ? "Enter your account email and we’ll send a password reset link."
         : upgradeIntent
-          ? "Billing and Pro access are attached to your account, so create one before upgrading."
+          ? "Use the account that should own your Pro plan, dedicated Team Rooms, and sprint history."
           : "Free rooms work without an account. Sign in only if you already have one or want account-linked Pro access.";
   const modeHint = currentUser
     ? isPro
       ? "You can use both dedicated Team Rooms and Sprint History immediately on this account."
-      : "Short-term Pro access is activated with a code while checkout is being finalised."
+      : "Fastest path: activate Pro on this account, then name your two dedicated Team Rooms."
     : upgradeIntent
-      ? "Short-term Pro setup: create your account, then activate Pro with your code."
+      ? "Create your account now. We’ll take you straight back to Pro activation next."
       : mode === "register"
         ? "New here? Create one account and keep your future Pro access tied to it."
         : mode === "signin"
@@ -3958,7 +4050,7 @@ function LoginModal({
             )}
             {authStatus === "verify" && (
               <div className="auth-status success">
-                ✓ Account created. Check your email to verify your address.
+                ✓ Account created. Check your email to verify your address{upgradeIntent ? ", then continue to Pro activation." : "."}
               </div>
             )}
             {authStatus === "reset" && (
@@ -4012,9 +4104,13 @@ function LoginModal({
           <div className="login-upgrade-card">
             <div className="login-upgrade-head">
               <div>
-                <div className="login-upgrade-title">Need Pro for your team?</div>
+                <div className="login-upgrade-title">
+                  {currentUser ? "Upgrade this account to Pro" : "Need Pro for your team?"}
+                </div>
                 <p className="login-upgrade-sub">
-                  2 dedicated Team Rooms, Sprint History, and up to 20 participants.
+                  {currentUser
+                    ? "Activate Pro once on this account, then choose the names for both dedicated Team Rooms."
+                    : "2 dedicated Team Rooms, Sprint History, and up to 20 participants."}
                 </p>
               </div>
               {onShowPricing && (
@@ -4023,7 +4119,7 @@ function LoginModal({
                   className="login-upgrade-link"
                   onClick={onShowPricing}
                 >
-                  View plans
+                  {currentUser ? "See Pro setup" : "View plans"}
                 </button>
               )}
             </div>
@@ -4041,7 +4137,7 @@ function LoginModal({
                 {showActivation && (
                   <>
                     <p className="login-pro-copy">
-                      Best for early customers and internal team access before Stripe checkout is live. Activate once and this account switches to Pro immediately.
+                      Best for early customers and internal team access before Stripe checkout is live. Activate this account once and you can name both dedicated Team Rooms immediately afterwards.
                     </p>
                     <label className="lbl">Pro Activation Key</label>
                     <input
@@ -4164,6 +4260,12 @@ export default function App() {
     initialMode: "signin",
     entryIntent: "general",
   });
+  const [pricingModalConfig, setPricingModalConfig] = useState({
+    initialShowKey: false,
+    entryIntent: "general",
+    justRegistered: false,
+  });
+  const [proSetupFocusToken, setProSetupFocusToken] = useState(0);
 
   // ── SPA NAVIGATION ────────────────────────────────────────────────
   // Navigate within the SPA without a full-page reload.
@@ -4177,10 +4279,23 @@ export default function App() {
     setLoginModalConfig({ initialMode, entryIntent });
     setShowLoginModal(true);
   }, []);
-  const openPricingModal = useCallback(() => {
+  const openPricingModal = useCallback((config = {}) => {
+    setPricingModalConfig({
+      initialShowKey: false,
+      entryIntent: "general",
+      justRegistered: false,
+      ...config,
+    });
     setShowPricingModal(true);
     track("pricing_opened");
   }, []);
+  const openRelevantPricingModal = useCallback((config = {}) => {
+    openPricingModal(
+      authUser
+        ? { initialShowKey: true, entryIntent: "activate", ...config }
+        : { entryIntent: "upgrade", ...config },
+    );
+  }, [authUser, openPricingModal]);
   const jumpToMarketingSection = useCallback((sectionId) => {
     if (!sectionId) return;
     const focusSection = () => {
@@ -4989,7 +5104,7 @@ export default function App() {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           onLogin={()    => { openLoginModal("signin", "general"); track("login_modal_opened"); }}
-          onRegister={openPricingModal}
+          onRegister={() => openRelevantPricingModal()}
           onPlans={() => navTo("/pricing")}
           onFaq={() => jumpToMarketingSection("faq")}
           currentUser={authUser}
@@ -5049,10 +5164,11 @@ export default function App() {
               onTeamRoom={handleTeamRoom}
               prefillCode={code}
               prefillTeam={prefillTeam}
-              onShowPricing={openPricingModal}
+              onShowPricing={openRelevantPricingModal}
               currentUser={authUser}
               currentPlan={currentPlan}
               accountProfile={accountProfile}
+              proSetupFocusToken={proSetupFocusToken}
               onNavigate={navTo}
             />
           )}
@@ -5086,7 +5202,7 @@ export default function App() {
               sessionWarning={sessionWarning}
               toast={showToast}
               currentPlan={currentPlan}
-              onShowPricing={openPricingModal}
+              onShowPricing={openRelevantPricingModal}
             />
           )}
           <div className={`toast${toastOn ? " show" : ""}`}>{toast}</div>
@@ -5094,7 +5210,7 @@ export default function App() {
 
         <SiteFooter
           onCookieSettings={resetCookieBanner}
-          onShowPricing={openPricingModal}
+          onShowPricing={openRelevantPricingModal}
           currentPlan={currentPlan}
           currentUser={authUser}
           onNavTerms={() => navTo("/terms")}
@@ -5111,7 +5227,13 @@ export default function App() {
           onAuthSuccess={(event) => {
             const shouldResumePricing = loginModalConfig.entryIntent === "upgrade";
             setShowLoginModal(false);
-            if (event?.mode === "register") {
+            if (event?.mode === "register" && shouldResumePricing) {
+              showToast(
+                event?.verificationSent
+                  ? "Account created. Check your email to verify your address, then activate Pro below."
+                  : "Account created. Continue below to activate Pro.",
+              );
+            } else if (event?.mode === "register") {
               showToast(
                 event?.verificationSent
                   ? "Account created. Check your email to verify your address."
@@ -5120,25 +5242,42 @@ export default function App() {
             } else {
               showToast("Account ready.");
             }
-            if (shouldResumePricing) setShowPricingModal(true);
+            if (shouldResumePricing) {
+              openPricingModal({
+                initialShowKey: true,
+                entryIntent: "activate",
+                justRegistered: event?.mode === "register",
+              });
+            }
           }}
-          onProActivated={() => { setShowLoginModal(false); showToast("Pro activated."); }}
+          onProActivated={() => {
+            setShowLoginModal(false);
+            setProSetupFocusToken((v) => v + 1);
+            showToast("Pro activated. Name your two Team Rooms in the workspace.");
+          }}
           currentUser={authUser}
           currentPlan={currentPlan}
           initialMode={loginModalConfig.initialMode}
           entryIntent={loginModalConfig.entryIntent}
           onShowPricing={() => {
             setShowLoginModal(false);
-            openPricingModal();
+            openRelevantPricingModal();
           }}
         />
       )}
       {showPricingModal && (
         <PricingModal
           onClose={() => setShowPricingModal(false)}
-          onProActivated={() => { setShowPricingModal(false); showToast("Pro activated."); }}
+          onProActivated={() => {
+            setShowPricingModal(false);
+            setProSetupFocusToken((v) => v + 1);
+            showToast("Pro activated. Name your two Team Rooms in the workspace.");
+          }}
           currentUser={authUser}
           currentPlan={currentPlan}
+          initialShowKey={pricingModalConfig.initialShowKey}
+          entryIntent={pricingModalConfig.entryIntent}
+          justRegistered={pricingModalConfig.justRegistered}
           onRequireLogin={() => {
             setShowPricingModal(false);
             openLoginModal("register", "upgrade");
@@ -7273,12 +7412,23 @@ function HistoryModal({ onClose, history }) {
   );
 }
 
-function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onRequireLogin }) {
+function PricingModal({
+  onClose,
+  onProActivated,
+  currentUser,
+  currentPlan,
+  onRequireLogin,
+  initialShowKey = false,
+  entryIntent = "general",
+  justRegistered = false,
+}) {
   const [currency, setCurrency]   = useState("GBP");
   const [billing,  setBilling]    = useState("annual");  // "monthly" | "annual"
   const [keyInput, setKeyInput]   = useState("");
   const [keyStatus, setKeyStatus] = useState(null);      // null | "checking" | "ok" | "invalid" | "error"
-  const [showKey,  setShowKey]    = useState(false);
+  const [showKey,  setShowKey]    = useState(
+    () => initialShowKey || (!!currentUser && currentPlan !== "pro" && entryIntent === "activate")
+  );
   const [billingStatus, setBillingStatus] = useState(null);
   const activationTimerRef = useRef(null);
 
@@ -7292,6 +7442,27 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
   const checkoutLive = stripeUrl !== "#upgrade";
   const isPro = currentPlan === "pro";
   const activationPrimary = !checkoutLive && !!currentUser && !isPro;
+  const quickStartTitle = justRegistered
+    ? "Account ready for Pro"
+    : currentUser
+      ? "Upgrade this account to Pro"
+      : "Best way to start on Pro";
+  const quickStartCopy = justRegistered
+    ? "Your account is ready. Activate Pro below, then choose the names for your two dedicated Team Rooms in the workspace."
+    : currentUser
+      ? "This account is ready for Pro. Activate your code below, then name the two dedicated Team Rooms you want this account to own."
+      : "Create one account first, then activate Pro on that same account so billing, Team Rooms, and sprint history all stay attached to one identity.";
+  const quickStartSteps = currentUser
+    ? [
+        { title: "Activate this account", copy: "Enter your Pro code once on this signed-in account." },
+        { title: "Name your Team Rooms", copy: "Choose the shared room names you want before your username." },
+        { title: "Reuse both links", copy: "Bookmark and share the two fixed URLs with your teams." },
+      ]
+    : [
+        { title: "Create your account", copy: "Start with the account that will own your Pro plan." },
+        { title: "Activate Pro", copy: "Use your code after registration to unlock both fixed rooms." },
+        { title: "Choose room names", copy: "Name the two Team Rooms you want and keep reusing them." },
+      ];
 
   const FREE_FEATURES = [
     { yes: true,  text: `Up to ${FREE_MAX_PARTICIPANTS} participants per session` },
@@ -7419,6 +7590,21 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
           Free forever for small teams. Pro gives you two dedicated Team Rooms, more participant capacity, and sprint history.
         </p>
 
+        <div className="pricing-journey-box">
+          <div className="pricing-journey-k">Pro setup</div>
+          <div className="pricing-journey-title">{quickStartTitle}</div>
+          <p className="pricing-journey-copy">{quickStartCopy}</p>
+          <div className="pricing-journey-steps">
+            {quickStartSteps.map((step, index) => (
+              <div className="pricing-journey-step" key={step.title}>
+                <span className="pricing-journey-step-num">{index + 1}</span>
+                <strong>{step.title}</strong>
+                <span>{step.copy}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* ── Billing toggle ── */}
         <div className="billing-toggle-row">
           <button
@@ -7494,16 +7680,20 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
               : <p className="pricing-billing-note">Switch to annual and save {p.symbol}{p.pro - p.proAnnual}/mo</p>}
 
             <p className="pricing-desc">
-              Two dedicated Team Rooms your team can reuse every sprint — no need to recreate them before every session.
+              Two dedicated Team Rooms you can name yourself and reuse every sprint — no need to recreate them before every session.
             </p>
             <div className="pricing-account-note">
               {currentUser
-                ? `Billing will be linked to ${currentUser.email}.`
-                : "Create an account first so your plan follows you across devices."}
+                ? `Signed in as ${currentUser.email}. This account will own both Team Rooms and future billing.`
+                : "Create one account first so your plan, Team Rooms, and sprint history follow you across devices."}
             </div>
             <div className="pricing-state-box">
               {isPro ? (
                 <span className="pricing-state-ok">✓ This account already has Pro access.</span>
+              ) : justRegistered ? (
+                <span className="pricing-state-ok">✓ Account created. Activate Pro below to finish setup on this same account.</span>
+              ) : currentUser && !checkoutLive ? (
+                <span className="pricing-state-ok">Fastest route: activate Pro below on this account, then name your two Team Rooms in the workspace.</span>
               ) : currentUser ? (
                 checkoutLive
                   ? <span className="pricing-state-neutral">Signed in and ready for checkout.</span>
@@ -7525,12 +7715,12 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
               {isPro
                 ? "Your Pro plan is active"
                 : activationPrimary
-                  ? "Activate Pro with code ↓"
+                  ? "Activate this account ↓"
                 : currentUser
                   ? "Continue to secure checkout →"
                   : checkoutLive
                     ? "Create account to continue →"
-                    : "Create account to activate Pro →"}
+                    : "Create account for Pro →"}
             </button>
             <p className="pricing-trial-note">
               {!checkoutLive
@@ -7556,7 +7746,7 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
             onClick={() => setShowKey(v => !v)}
             aria-expanded={showKey}
           >
-            {showKey ? "▾" : "▸"} {currentUser ? "Activate Pro with a code" : "Sign in to activate Pro with a code"}
+            {showKey ? "▾" : "▸"} {currentUser ? "Activate this account with a code" : "Sign in to activate Pro with a code"}
           </button>
           {showKey && (
             <div className="pro-key-body">
@@ -7575,7 +7765,7 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
               ) : (
                 <>
                   <p className="pro-key-copy">
-                    This is the simplest short-term Pro path while Stripe checkout is still being finalised. Sign in once, then activate your code here.
+                    This is the simplest short-term Pro path while Stripe checkout is still being finalised. Activate this account here, then name your two dedicated Team Rooms in the workspace.
                   </p>
                   <div className="pro-key-row">
                     <input
@@ -7651,6 +7841,7 @@ function JoinScreen({
   currentUser,
   currentPlan = "free",
   accountProfile,
+  proSetupFocusToken = 0,
   onNavigate,
 }) {
   const signedIn = !!currentUser;
@@ -7703,13 +7894,17 @@ function JoinScreen({
   const [dedicatedRoomLabelDirty, setDedicatedRoomLabelDirty] = useState(false);
   const [savingDedicatedRoomLabel, setSavingDedicatedRoomLabel] = useState(false);
   const [dedicatedRoomLabelStatus, setDedicatedRoomLabelStatus] = useState("");
+  const [highlightWorkspaceSetup, setHighlightWorkspaceSetup] = useState(false);
   const [err, setErr] = useState("");
   const [copiedDedicatedRoomKey, setCopiedDedicatedRoomKey] = useState("");
   const teamEntryRef = useRef(null);
+  const workspaceRoomEditorRef = useRef(null);
+  const workspaceRoomEditorInputRef = useRef(null);
   const nameInputRef = useRef(null);
   const teamUrlCopiedRef = useRef(null);
   const dedicatedRoomLabelStatusRef = useRef(null);
   const autoEnterOwnTeamRoomRef = useRef(false);
+  const lastProSetupFocusTokenRef = useRef(0);
   const lastNameSeedKeyRef = useRef(nameSeedKey);
   const lastNameSeedValueRef = useRef(signedIn ? defaultName : "");
   const dedicatedRoomLabelSeedKey = signedIn ? `${currentUser?.uid || ""}:${accountDedicatedRooms.primary}:${accountDedicatedRooms.secondary}` : "guest";
@@ -7896,6 +8091,18 @@ function JoinScreen({
 
   useEffect(() => () => clearTimeout(teamUrlCopiedRef.current), []);
   useEffect(() => () => clearTimeout(dedicatedRoomLabelStatusRef.current), []);
+  useEffect(() => {
+    if (!signedIn || !isPro || !proSetupFocusToken) return;
+    if (lastProSetupFocusTokenRef.current === proSetupFocusToken) return;
+    lastProSetupFocusTokenRef.current = proSetupFocusToken;
+    setHighlightWorkspaceSetup(true);
+    setTimeout(() => {
+      workspaceRoomEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      workspaceRoomEditorInputRef.current?.focus();
+    }, 80);
+    const timeout = setTimeout(() => setHighlightWorkspaceSetup(false), 2600);
+    return () => clearTimeout(timeout);
+  }, [signedIn, isPro, proSetupFocusToken]);
 
   useEffect(() => {
     if (autoEnterOwnTeamRoomRef.current) return;
@@ -7948,7 +8155,7 @@ function JoinScreen({
                   <p className="workspace-copy">
                     {isPro
                       ? "Use either dedicated Team Room for recurring sprint planning, or create ad-hoc rooms when you need a one-off session."
-                      : "Use Create Room or Join Room for normal sessions. Upgrade only when you want two dedicated Team Rooms, sprint history, and higher participant capacity."}
+                      : "Use Create Room or Join Room for normal sessions. When you want Pro, activate this same account so your Team Rooms and sprint history stay attached to it."}
                   </p>
                 </div>
                 <span className={`workspace-pill${isPro ? " pro" : ""}`}>
@@ -7963,9 +8170,9 @@ function JoinScreen({
                 <span className="workspace-stat-v">{defaultName}</span>
               </div>
               <div className="workspace-stat">
-                <span className="workspace-stat-k">{isPro ? "Dedicated Team Rooms" : "Upgrade when ready"}</span>
+                <span className="workspace-stat-k">{isPro ? "Dedicated Team Rooms" : "Pro on this account"}</span>
                 <span className="workspace-stat-v">
-                  {isPro ? "2 fixed room URLs ready" : `Unlock 2 fixed Team Rooms and up to ${PRO_MAX_PARTICIPANTS} participants`}
+                  {isPro ? "2 fixed room URLs ready" : `Activate this account for 2 fixed Team Rooms, sprint history, and up to ${PRO_MAX_PARTICIPANTS} participants`}
                 </span>
               </div>
             </div>
@@ -7977,18 +8184,27 @@ function JoinScreen({
                 <p className="workspace-copy">
                   Every Pro account now includes two dedicated Team Rooms. Share the links once, bookmark them, and keep separate recurring spaces for different squads, products, or ceremonies.
                 </p>
-                <div className="workspace-room-editor">
+                <div
+                  ref={workspaceRoomEditorRef}
+                  className={`workspace-room-editor${highlightWorkspaceSetup ? " highlight" : ""}`}
+                >
                   <div className="workspace-room-editor-top">
                     <div>
-                      <div className="workspace-room-editor-title">Choose the Team Room name that appears before your username</div>
+                      <div className="workspace-room-editor-title">Choose the shared Team Room name. We add your username automatically.</div>
                       <p className="workspace-inline-note workspace-room-editor-note">
-                        We automatically append your username <strong>{dedicatedRoomOwnerSuffix}</strong> so both fixed URLs stay unique to your Pro account.
+                        Pick the room name your teams will recognise first. We then append your username <strong>{dedicatedRoomOwnerSuffix}</strong> so both fixed URLs stay unique to your Pro account.
                       </p>
                     </div>
                     {dedicatedRoomLabelStatus === "saved" && <span className="workspace-room-editor-badge">Saved</span>}
                   </div>
+                  {highlightWorkspaceSetup && (
+                    <div className="workspace-setup-callout">
+                      <strong>Next step:</strong> choose the two Team Room names you want, save them, then share the fixed URLs below with your squads.
+                    </div>
+                  )}
                   <div className="workspace-room-editor-row">
                     <input
+                      ref={workspaceRoomEditorInputRef}
                       type="text"
                       value={dedicatedRoomLabel}
                       onChange={(e) => {
@@ -8011,9 +8227,9 @@ function JoinScreen({
                     </button>
                   </div>
                   <div className="workspace-room-editor-preview">
-                    <span><strong>Room 1 preview:</strong> {dedicatedRoomPreview.primary}</span>
-                    <span><strong>Room 2 preview:</strong> {dedicatedRoomPreview.secondary}</span>
-                    <span><strong>Preview URLs:</strong> {dedicatedRoomPreviewUrls.primary} · {dedicatedRoomPreviewUrls.secondary}</span>
+                    <span><strong>Final Room 1:</strong> {dedicatedRoomPreview.primary}</span>
+                    <span><strong>Final Room 2:</strong> {dedicatedRoomPreview.secondary}</span>
+                    <span><strong>Final URLs:</strong> {dedicatedRoomPreviewUrls.primary} · {dedicatedRoomPreviewUrls.secondary}</span>
                   </div>
                 </div>
                 <div className="workspace-room-grid">
@@ -8069,25 +8285,21 @@ function JoinScreen({
               </div>
             ) : (
               <div className="workspace-card">
-                <div className="workspace-label">Upgrade path</div>
-                <div className="workspace-title">Get two fixed Team Rooms when your team is ready</div>
+                <div className="workspace-label">Pro setup path</div>
+                <div className="workspace-title">Upgrade this same account when you want fixed Team Rooms</div>
                 <p className="workspace-copy">
-                  Free users can still create and join sessions instantly. Upgrade when you want two fixed URLs, sprint history, and more participant capacity.
+                  You can keep using free rooms instantly. When you are ready, activate Pro on this account and then choose the two dedicated Team Room names you want your teams to reuse.
                 </p>
                 <div className="workspace-actions">
                   <button
                     type="button"
                     className="workspace-action-btn gold"
-                    onClick={() => {
-                      const validatedName = validateEnteredName();
-                      if (!validatedName.ok) { setErr(validatedName.message); setTab("create"); return; }
-                      onCreate(validatedName.name, role, deck);
-                    }}
+                    onClick={() => onShowPricing?.({ initialShowKey: true, entryIntent: "activate" })}
                   >
-                    Create Room →
+                    Activate Pro on this account
                   </button>
-                  <button type="button" className="workspace-action-btn" onClick={onShowPricing}>
-                    Upgrade to Pro
+                  <button type="button" className="workspace-action-btn" onClick={() => onShowPricing?.({ entryIntent: "upgrade" })}>
+                    Compare plans
                   </button>
                 </div>
               </div>
