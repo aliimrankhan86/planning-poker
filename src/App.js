@@ -2066,6 +2066,38 @@ body::before {
 .pricing-billing-note { font-size: .72rem; color: rgba(239,242,247,.45); margin-bottom: 14px; line-height: 1.4; }
 /* Trial note below CTA */
 .pricing-trial-note { font-size: .66rem; color: rgba(239,242,247,.38); text-align: center; margin-top: 7px; }
+.pricing-summary-card {
+  max-width: 520px;
+  margin: 0 auto 8px;
+}
+.pricing-summary-card .pricing-amount {
+  font-size: 2.5rem;
+}
+.pricing-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.pricing-support-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(158,234,196,.14);
+  background: rgba(255,255,255,.03);
+  color: rgba(239,242,247,.84);
+  font-size: .86rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all .2s;
+}
+.pricing-support-link:hover {
+  background: rgba(255,255,255,.06);
+  color: var(--cream);
+  border-color: rgba(158,234,196,.24);
+}
 /* Pro key activation */
 .pro-key-section {
   border-top: 1px solid rgba(255,255,255,.07); margin-top: 20px; padding-top: 16px;
@@ -2134,6 +2166,8 @@ body::before {
 @media (max-width: 600px) {
   .pricing-cards { grid-template-columns: 1fr; }
   .pricing-modal { padding: 32px 20px 28px; }
+  .pricing-summary-actions { flex-direction: column; }
+  .pricing-summary-actions > * { width: 100%; }
 }
 
 /* ══════════════════════ RESPONSIVE ══════════════════════ */
@@ -3656,6 +3690,7 @@ function LoginModal({
   const [keyStatus, setKeyStatus] = useState(null);
   const isPro = currentPlan === "pro";
   const upgradeIntent = entryIntent === "upgrade";
+  const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
   const [showActivation, setShowActivation] = useState(
     () => upgradeIntent || (!!currentUser && !isPro)
   );
@@ -4048,14 +4083,28 @@ function LoginModal({
         )}
 
         <div className="login-modal-upgrade">
-          Need help with access or billing?{" "}
-          <button
-            type="button"
-            onClick={onShowPricing}
-            style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600, border: "none", background: "none", padding: 0, cursor: "pointer" }}
-          >
-            Review plans ↗
-          </button>
+          {isPro ? (
+            <>
+              Need help with your Pro workspace?{" "}
+              <a
+                href={`mailto:${support}`}
+                style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600 }}
+              >
+                Contact support ↗
+              </a>
+            </>
+          ) : (
+            <>
+              Need help with access or billing?{" "}
+              <button
+                type="button"
+                onClick={onShowPricing}
+                style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600, border: "none", background: "none", padding: 0, cursor: "pointer" }}
+              >
+                Review plans ↗
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -7256,6 +7305,60 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
     });
     window.location.assign(stripeUrl);
   };
+
+  if (isPro) {
+    return (
+      <div className="pricing-overlay" onClick={onClose}>
+        <div className="pricing-modal" onClick={e => e.stopPropagation()}>
+          <button className="pricing-close" onClick={onClose} aria-label="Close pricing">✕</button>
+
+          <h2 className="pricing-title">Your Pro plan is active</h2>
+          <p className="pricing-sub">
+            This account already has everything unlocked. There is nothing to upgrade or buy here.
+          </p>
+
+          <div className="pricing-card pro pricing-summary-card">
+            <div className="pricing-tier">Pro active</div>
+            <div className="pricing-price">
+              <span className="pricing-amount">✓</span>
+              <span className="pricing-period">already unlocked on this account</span>
+            </div>
+            <p className="pricing-desc">
+              Signed in as {currentUser?.email || "your current account"}. Use your dedicated Team Rooms, run larger sessions, and keep sprint history attached to this identity across devices.
+            </p>
+            <div className="pricing-state-box">
+              <span className="pricing-state-ok">✓ No upsell is shown while this account remains on Pro.</span>
+            </div>
+            <div className="pricing-features">
+              {PRO_FEATURES.map((f, i) => (
+                <div className="pricing-feature" key={i}>
+                  <span className="pf-icon yes">✓</span>
+                  <span>{f.text}</span>
+                </div>
+              ))}
+            </div>
+            <div className="pricing-summary-actions">
+              <button className="pricing-cta pro-cta" onClick={onClose}>
+                Back to workspace
+              </button>
+              <a className="pricing-support-link" href={`mailto:${support}`}>
+                Contact support
+              </a>
+            </div>
+          </div>
+
+          <p className="pricing-footer">
+            Need help with Team Rooms or billing?{" "}
+            <a href={`mailto:${support}`}>Contact support</a>
+            {" · "}
+            <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+            {" · "}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pricing-overlay" onClick={onClose}>
