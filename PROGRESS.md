@@ -65,6 +65,8 @@
   - Free room capacity is now 8 total participants including the facilitator; Pro room capacity is 20 total participants including facilitators
   - Signed-in users now have their display name prefilled in room flows, and the footer becomes account-oriented rather than generic plan-marketing
   - Dedicated Team Room URL rows in the Pro workspace now use a more resilient grid layout and stack early on narrower widths so the copy-link control no longer clips out of the card
+  - Pro activation keys are now single-account in repo logic: the app claims `/licenses/{key}` to one UID, shows a specific “already attached to another account” error on reuse, and auto-claims legacy Pro keys for existing users on sign-in
+  - The stricter same-key-reuse guard also now exists in `database.rules.json` / `database.rules.publish.json`, but a fresh Firebase rules publish is still required before production enforces it
   - Final polish pass after Atlas/Comet QA now fixes the remaining low-friction issues:
     - workspace copy-link button now shows `Copied!`
     - in-room copy buttons now show a visible copied state as well as the toast
@@ -263,6 +265,7 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Tightened the Pro workspace Team Room card layout so the long dedicated-room URLs and copy button no longer overflow or clip at medium widths.
   - Added a clear Pro-workspace rename flow for dedicated Team Rooms: the user chooses the shared room-name prefix and the app previews/saves the final room names as `<chosen name> <username>` and `<chosen name> 2 <username>`.
   - Removed the remaining signed-in Pro upsell surfaces from the auth modal and pricing modal so existing Pro users see neutral account/support messaging instead of plan-comparison or checkout prompts.
+  - Added single-account activation-key binding in repo code and rules: `validateAndSavePro()` now claims `/licenses/{key}` to the activating UID, existing Pro users auto-claim legacy keys on sign-in, and reused keys now show a specific “already attached to another account” error.
   - Tightened the owner Pro-notification subject template in `functions/index.js` to `Point Poker Pro activated for <user-email>`; this code change now needs a fresh Functions redeploy to become live.
   - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
 
@@ -270,8 +273,8 @@ Treat this section as the fastest current-status read. Historical session notes 
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** re-run fresh-account signup email QA after the signup-state fix, retry `/trust` indexing in Search Console, redeploy Functions for the owner-subject refinement, and continue additive trust/proof content while Stripe stays parked
-**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, verify fresh-account signup verification email delivery, redeploy Functions so the owner Pro-notification subject improvement goes live, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Active step:** re-run fresh-account signup email QA after the signup-state fix, retry `/trust` indexing in Search Console, publish the updated Firebase rules for single-account activation-key binding, redeploy Functions for the owner-subject refinement, and continue additive trust/proof content while Stripe stays parked
+**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, verify fresh-account signup verification email delivery, publish the updated Firebase rules so activation keys cannot be reused across multiple users, redeploy Functions so the owner Pro-notification subject improvement goes live, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

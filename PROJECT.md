@@ -64,6 +64,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
   - Dedicated Team Room URL rows in the Pro workspace now reflow cleanly at medium/narrow widths instead of clipping the invite/copy controls
   - Pro activation now preserves `createdAt` when upgrading a just-created account, preventing the transient first-attempt activation failure caused by strict user-profile rules
+  - Pro activation logic in the repo now claims each activation key to a single Firebase UID and surfaces a specific “already attached to another account” error if a second user tries the same key
+  - Updated Firebase rules in the repo now require a Pro profile’s `proKey` to be claimed by that same UID; this still needs a fresh Firebase rules publish before same-key reuse is blocked in production
   - Live verification now confirms deployment parity, signed-out landing nav, free auth, signed-out upgrade flow, account-bound Pro activation, Pro navbar state, Pro workspace layout, dedicated Team Room URL/share flow, and anonymous join-via-link behaviour on production
   - Final focused production QA now passes for the real product flows:
     - Free flow passes, including Team Room gating, copy feedback, scrollbar polish, and edited session-name persistence into the room
@@ -665,6 +667,8 @@ Listed chronologically newest-first.
 - Dedicated Team Room URL rows in the Pro workspace now use a more resilient grid layout and stack earlier on narrower screens, preventing the copy-link control from clipping or overflowing the card
 - Pro users can now set a dedicated Team Room name prefix directly in the workspace; the final room names are saved as `<chosen name> <username>` and `<chosen name> 2 <username>` so the URLs stay unique without hiding the naming logic
 - Signed-in Pro users no longer see upgrade/plan upsell inside the auth modal footer or the pricing modal itself; those views now switch to neutral Pro-account status and support messaging instead of checkout or plan-comparison prompts
+- Activation keys are now single-account in repo logic: `validateAndSavePro()` claims `/licenses/{key}` to one UID, existing Pro users auto-claim their current key on sign-in, and the UI now shows a dedicated “already attached to another account” error when a reused key is attempted
+- `database.rules.json` and `database.rules.publish.json` now require `licenses/{key}/claimedBy === $uid` for Pro profiles, but this stricter same-key-reuse guard still needs a fresh Firebase rules publish to become live in production
 - The owner Pro-notification subject template has been tightened to `Point Poker Pro activated for <user-email>` for clearer inbox filtering, but this specific change still needs a fresh Firebase Functions deploy to take effect in production
 
 ### 2026-03 — Vercel Speed Insights installed

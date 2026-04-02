@@ -3839,6 +3839,8 @@ function LoginModal({
       track("pro_activated");
       setKeyStatus("ok");
       setTimeout(() => onProActivated?.(), 700);
+    } else if (result === "claimed") {
+      setKeyStatus("claimed");
     } else if (result === "invalid") {
       setKeyStatus("invalid");
     } else {
@@ -4059,6 +4061,9 @@ function LoginModal({
                     )}
                     {keyStatus === "invalid" && (
                       <div className="pro-key-status error">Key not recognised. Check the format: PPRO-XXXX-XXXX-XXXX</div>
+                    )}
+                    {keyStatus === "claimed" && (
+                      <div className="pro-key-status error">This activation key is already attached to another account.</div>
                     )}
                     {keyStatus === "error" && (
                       <div className="pro-key-status error">Could not verify your code right now. Check your connection and confirm activation access is configured.</div>
@@ -4307,6 +4312,7 @@ export default function App() {
           });
         } else {
           const current = snap.val() || {};
+          await ensureClaimedProLicense(user, current);
           const teamRooms = resolveDedicatedTeamRooms(current, user);
           await update(ref(db, `users/${user.uid}`), {
             email: user.email || current.email || "",
@@ -6592,14 +6598,57 @@ async function markCheckoutIntent(user, billing, currency) {
   });
 }
 
+async function ensureClaimedProLicense(user, profile = {}) {
+  const formatted = String(profile?.proKey || "").trim().toUpperCase();
+  if (!user?.uid || profile?.plan !== "pro" || !PRO_KEY_REGEX.test(formatted)) return;
+  const licenseRef = ref(db, `licenses/${formatted}`);
+  const snap = await get(licenseRef).catch(() => null);
+  if (!snap?.exists?.() || snap.val()?.active !== true) return;
+  const license = snap.val() || {};
+  if (license.claimedBy === user.uid) return;
+  if (license.claimedBy && license.claimedBy !== user.uid) return;
+  await runTransaction(
+    licenseRef,
+    (current) => {
+      if (!current || current.active !== true) return current;
+      if (current.claimedBy && current.claimedBy !== user.uid) return;
+      if (current.claimedBy === user.uid) return current;
+      return {
+        ...current,
+        claimedBy: user.uid,
+        claimedAt: current.claimedAt || profile.proActivatedAt || Date.now(),
+      };
+    },
+    { applyLocally: false },
+  ).catch(() => null);
+}
+
 async function validateAndSavePro(key, user = null) {
   const formatted = key.trim().toUpperCase();
   if (!PRO_KEY_REGEX.test(formatted)) return "invalid";
   try {
-    // Check Firebase license store: /licenses/{key}
-    const snap = await get(ref(db, `licenses/${formatted}`));
+    const licenseRef = ref(db, `licenses/${formatted}`);
+    const snap = await get(licenseRef);
     if (!snap.exists() || snap.val().active !== true) return "invalid";
     if (user?.uid) {
+      const license = snap.val() || {};
+      if (license.claimedBy && license.claimedBy !== user.uid) return "claimed";
+      if (!license.claimedBy) {
+        const claimResult = await runTransaction(
+          licenseRef,
+          (current) => {
+            if (!current || current.active !== true) return current;
+            if (current.claimedBy) return;
+            return {
+              ...current,
+              claimedBy: user.uid,
+              claimedAt: Date.now(),
+            };
+          },
+          { applyLocally: false },
+        );
+        if (!claimResult.committed) return "claimed";
+      }
       const profileSnap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
       const currentProfile = profileSnap?.exists?.() ? profileSnap.val() || {} : {};
       const teamRooms = resolveDedicatedTeamRooms(currentProfile, user);
@@ -7559,6 +7608,12 @@ function PricingModal({ onClose, onProActivated, currentUser, currentPlan, onReq
                     <p className="pro-key-status error">
                       Key not recognised. Check your confirmation email or{" "}
                       <a href={`mailto:${support}`}>contact support</a>.
+                    </p>
+                  )}
+                  {keyStatus === "claimed" && (
+                    <p className="pro-key-status error">
+                      This activation key is already attached to another account.{" "}
+                      <a href={`mailto:${support}`}>Contact support</a> if you need it moved.
                     </p>
                   )}
                   {keyStatus === "error" && (

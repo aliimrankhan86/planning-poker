@@ -152,7 +152,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
-        ".validate": "newData.hasChildren(['email', 'displayName', 'teamRoomName', 'plan', 'billingStatus', 'createdAt', 'lastLoginAt']) && (!newData.child('teamRooms').exists() || (newData.child('teamRooms').child('primary').val() === newData.child('teamRoomName').val() && newData.child('teamRooms').child('secondary').val() !== newData.child('teamRooms').child('primary').val())) && ((newData.child('plan').val() === 'free' && (newData.child('billingStatus').val() === 'inactive' || newData.child('billingStatus').val() === 'checkout_started') && !newData.child('proKey').exists() && !newData.child('proActivatedAt').exists()) || (newData.child('plan').val() === 'pro' && newData.child('billingStatus').val() === 'active' && newData.child('proKey').isString() && newData.child('proActivatedAt').isNumber() && root.child('licenses/' + newData.child('proKey').val() + '/active').val() === true))",
+        ".validate": "newData.hasChildren(['email', 'displayName', 'teamRoomName', 'plan', 'billingStatus', 'createdAt', 'lastLoginAt']) && (!newData.child('teamRooms').exists() || (newData.child('teamRooms').child('primary').val() === newData.child('teamRoomName').val() && newData.child('teamRooms').child('secondary').val() !== newData.child('teamRooms').child('primary').val())) && ((newData.child('plan').val() === 'free' && (newData.child('billingStatus').val() === 'inactive' || newData.child('billingStatus').val() === 'checkout_started') && !newData.child('proKey').exists() && !newData.child('proActivatedAt').exists()) || (newData.child('plan').val() === 'pro' && newData.child('billingStatus').val() === 'active' && newData.child('proKey').isString() && newData.child('proActivatedAt').isNumber() && root.child('licenses/' + newData.child('proKey').val() + '/active').val() === true && root.child('licenses/' + newData.child('proKey').val() + '/claimedBy').val() === $uid))",
 
         "email": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
@@ -214,11 +214,20 @@
     // write license data from the app.
     "licenses": {
       "$licenseKey": {
-        ".read": true,
-        ".write": false,
+        ".read": "auth != null",
+        ".write": "auth != null && data.exists() && data.child('active').val() === true && (!data.child('claimedBy').exists() || data.child('claimedBy').val() === auth.uid)",
 
         "active": {
-          ".validate": "newData.isBoolean()"
+          ".validate": "newData.isBoolean() && (!data.exists() || newData.val() === data.val())"
+        },
+        "claimedBy": {
+          ".validate": "(!data.exists() && !newData.exists()) || (newData.isString() && newData.val() === auth.uid && (!data.exists() || data.val() === auth.uid))"
+        },
+        "claimedAt": {
+          ".validate": "(!data.exists() && !newData.exists()) || (newData.isNumber() && newData.parent().child('claimedBy').val() === auth.uid && (!data.exists() || data.val() === newData.val()))"
+        },
+        "$other": {
+          ".validate": false
         }
       }
     },
