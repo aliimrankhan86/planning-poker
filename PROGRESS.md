@@ -10,6 +10,7 @@
   - Firebase Auth email/password implemented and enabled
   - New account registration now sends a Firebase Auth verification email
   - Registration success now stays visible in the auth modal long enough to show the verification prompt instead of flashing the signed-in reset-password UI
+  - Fresh-account Pro activation now preserves `createdAt` on the profile update, preventing the transient first-attempt activation failure Comet saw under the strict `/users/{uid}` rules
   - Auth QA passed
   - Core room-flow QA passed
   - Facilitator wording clarified
@@ -61,6 +62,7 @@
   - Pro accounts now carry a primary `teamRoomName` plus `teamRooms.secondary`, enabling two fixed dedicated Team Room URLs without breaking the original room slug
   - Free room capacity is now 8 total participants including the facilitator; Pro room capacity is 20 total participants including facilitators
   - Signed-in users now have their display name prefilled in room flows, and the footer becomes account-oriented rather than generic plan-marketing
+  - Dedicated Team Room URL rows in the Pro workspace now use a more resilient grid layout and stack early on narrower widths so the copy-link control no longer clips out of the card
   - Final polish pass after Atlas/Comet QA now fixes the remaining low-friction issues:
     - workspace copy-link button now shows `Copied!`
     - in-room copy buttons now show a visible copied state as well as the toast
@@ -255,14 +257,17 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Locked the functions to `planning-poker-b6ac1@appspot.gserviceaccount.com` so deploys no longer fail on the missing default Compute service account.
   - Configured Artifact Registry cleanup to automatically delete old function images after 30 days.
   - Fixed the signup success-state UI so account creation no longer flashes the signed-in password-reset controls or the misleading `Sending reset…` label before the verification prompt can be seen.
+  - Fixed the just-created-account Pro activation race by preserving `createdAt` during `validateAndSavePro()`, which removes the strict-rules failure on the first activation attempt.
+  - Tightened the Pro workspace Team Room card layout so the long dedicated-room URLs and copy button no longer overflow or clip at medium widths.
+  - Tightened the owner Pro-notification subject template in `functions/index.js` to `Point Poker Pro activated for <user-email>`; this code change now needs a fresh Functions redeploy to become live.
   - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** re-run fresh-account signup email QA after the signup-state fix, retry `/trust` indexing in Search Console, and continue additive trust/proof content while Stripe stays parked
-**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, verify fresh-account signup verification email delivery, monitor the low-severity Pro-email subject / first-attempt activation issues if they recur, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Active step:** re-run fresh-account signup email QA after the signup-state fix, retry `/trust` indexing in Search Console, redeploy Functions for the owner-subject refinement, and continue additive trust/proof content while Stripe stays parked
+**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, verify fresh-account signup verification email delivery, redeploy Functions so the owner Pro-notification subject improvement goes live, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -336,7 +341,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 3.3 | Build Stripe Checkout flow | 🔄 In progress | Pricing modal is account-aware and records checkout intent; still needs real Stripe Payment Links or Checkout |
 | 3.4 | Firebase Function webhook (payment events) | ⏳ Not started | Updates plan field in Firebase |
 | 3.5 | Add upgrade prompt UI | ⏳ Not started | Shows when free tier limit hit |
-| 3.6 | Add owner notifications for signups and Pro conversions | 🔄 In progress | Pro-activation emails now pass live QA; remaining work is fresh-signup email verification QA plus monitoring two low-severity follow-ups if they reproduce |
+| 3.6 | Add owner notifications for signups and Pro conversions | 🔄 In progress | Pro-activation emails now pass live QA; remaining work is fresh-signup email verification QA plus a fresh Functions deploy so the improved owner Pro-email subject goes live |
 
 ---
 

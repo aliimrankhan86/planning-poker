@@ -60,6 +60,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Pro users now see two dedicated Team Room URLs tied to their account: the existing primary room remains stable, and a second fixed room is now provisioned alongside it
   - Free room capacity is now 8 total participants including the facilitator; Pro capacity is 20 total participants including facilitators
   - Signed-in users now get their display name prefilled on room flows, and the footer drops generic free-vs-pro plan marketing in favour of account-oriented support actions
+  - Dedicated Team Room URL rows in the Pro workspace now reflow cleanly at medium/narrow widths instead of clipping the invite/copy controls
+  - Pro activation now preserves `createdAt` when upgrading a just-created account, preventing the transient first-attempt activation failure caused by strict user-profile rules
   - Live verification now confirms deployment parity, signed-out landing nav, free auth, signed-out upgrade flow, account-bound Pro activation, Pro navbar state, Pro workspace layout, dedicated Team Room URL/share flow, and anonymous join-via-link behaviour on production
   - Final focused production QA now passes for the real product flows:
     - Free flow passes, including Team Room gating, copy feedback, scrollbar polish, and edited session-name persistence into the room
@@ -171,8 +173,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
       - user Pro confirmation email arrives
       - both dedicated Team Room URLs in email match the product UI
     - two low-severity follow-ups remain:
-      - the owner Pro email subject was observed as `Point Poker Pro activated` rather than `Point Poker Pro activated: <user-email>`
-      - a newly created free account hit one transient first-attempt activation failure in the account modal before succeeding through the pricing-page activation input
+      - the owner Pro email subject was observed as `Point Poker Pro activated` rather than the more explicit owner-notification subject expected for easy inbox scanning
+      - that subject has now been changed in `functions/index.js` to `Point Poker Pro activated for <user-email>`, but it still needs a fresh Functions deploy to become live
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
@@ -205,7 +207,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Retry Google Search Console manual indexing request for `/trust` after the daily quota resets
   - Re-run fresh-account signup email QA with a brand-new real inbox now that the signup verification-state UI bug has been fixed
-  - Investigate the low-severity owner Pro-email subject mismatch and the transient first-attempt account-modal activation failure if they reproduce again
+  - Redeploy Firebase Functions so the owner Pro-notification subject-line improvement goes live, then re-check that email in the owner inbox
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist
 
@@ -655,6 +657,11 @@ Listed chronologically newest-first.
 - `src/App.js` now treats registration as an explicit transition state so the auth form and verification-success copy remain visible through account creation
 - The register success callback is intentionally delayed slightly longer so the user can actually see the verification prompt before the modal closes
 - Signed-in reset UI is now suppressed during the register transition, so signup no longer flashes misleading password-reset copy
+
+### 2026-04 — Pro activation reliability + Team Room workspace layout fix
+- `validateAndSavePro()` now preserves `createdAt` when upgrading a user profile, preventing the transient first-attempt activation failure that could happen on a just-created account under the stricter Realtime Database rules
+- Dedicated Team Room URL rows in the Pro workspace now use a more resilient grid layout and stack earlier on narrower screens, preventing the copy-link control from clipping or overflowing the card
+- The owner Pro-notification subject template has been tightened to `Point Poker Pro activated for <user-email>` for clearer inbox filtering, but this specific change still needs a fresh Firebase Functions deploy to take effect in production
 
 ### 2026-03 — Vercel Speed Insights installed
 - Added `@vercel/speed-insights` to the project dependencies

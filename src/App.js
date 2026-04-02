@@ -802,6 +802,7 @@ body::before {
   margin-top: 16px;
 }
 .workspace-room-card {
+  min-width: 0;
   padding: 14px;
   border-radius: 14px;
   border: 1px solid rgba(158,234,196,.10);
@@ -872,11 +873,15 @@ body::before {
   color: var(--gold2);
 }
 .workspace-team-url {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   margin-top: 14px;
   padding: 12px 14px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border-radius: 14px;
   border: 1px solid rgba(126,230,255,.16);
   background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06));
@@ -912,6 +917,15 @@ body::before {
   color: var(--gold2);
   border-color: rgba(241,185,63,.28);
   background: rgba(241,185,63,.10);
+}
+@media (max-width: 900px) {
+  .workspace-team-url {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .workspace-team-url button {
+    width: 100%;
+  }
 }
 .workspace-inline-note {
   margin-top: 10px;
@@ -1164,7 +1178,6 @@ body::before {
   .seo-section { margin-top: 40px; }
   .workspace-grid { grid-template-columns: 1fr; }
   .workspace-top,
-  .workspace-team-url,
   .workspace-actions { flex-direction: column; align-items: stretch; }
   .workspace-action-btn { min-width: 0; width: 100%; }
   .workspace-pill { align-self: flex-start; }
@@ -6430,6 +6443,7 @@ async function validateAndSavePro(key, user = null) {
         teamRooms,
         plan: "pro",
         billingStatus: "active",
+        createdAt: currentProfile.createdAt || Date.now(),
         proKey: formatted,
         proActivatedAt: Date.now(),
         lastLoginAt: Date.now(),

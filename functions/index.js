@@ -243,7 +243,7 @@ function ownerSignupEmail(profile, uid) {
 
 function ownerProEmail(profile, uid) {
   const teamRooms = resolveDedicatedTeamRooms(profile);
-  const subject = `Point Poker Pro activated: ${profile.email || uid}`;
+  const subject = `Point Poker Pro activated for ${profile.email || uid}`;
   const text = [
     "A Point Poker account is now active on Pro.",
     "",
