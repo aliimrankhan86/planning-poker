@@ -3,6 +3,7 @@ import { auth, db } from "./firebase";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
@@ -3623,7 +3624,7 @@ function LoginModal({
     try {
       await signInWithEmailAndPassword(auth, emailInput.trim(), passInput);
       setAuthStatus("ok");
-      setTimeout(() => onAuthSuccess?.("signin"), 500);
+      setTimeout(() => onAuthSuccess?.({ mode: "signin" }), 500);
     } catch (error) {
       setAuthStatus(null);
       setAuthError(getAuthErrorMessage(error));
@@ -3649,8 +3650,16 @@ function LoginModal({
         email: credential.user.email || emailInput.trim(),
         plan: "free",
       });
-      setAuthStatus("ok");
-      setTimeout(() => onAuthSuccess?.("register"), 500);
+      let verificationSent = false;
+      try {
+        await sendEmailVerification(credential.user);
+        verificationSent = true;
+      } catch {
+        // Account creation should still succeed even if the verification email
+        // cannot be sent immediately.
+      }
+      setAuthStatus(verificationSent ? "verify" : "ok");
+      setTimeout(() => onAuthSuccess?.({ mode: "register", verificationSent }), 700);
     } catch (error) {
       setAuthStatus(null);
       setAuthError(getAuthErrorMessage(error));
@@ -3814,6 +3823,11 @@ function LoginModal({
             {authStatus === "ok" && (
               <div className="auth-status success">
                 {mode === "register" ? "✓ Account created." : "✓ Signed in."}
+              </div>
+            )}
+            {authStatus === "verify" && (
+              <div className="auth-status success">
+                ✓ Account created. Check your email to verify your address.
               </div>
             )}
             {authStatus === "reset" && (
@@ -4945,10 +4959,18 @@ export default function App() {
       {showLoginModal && (
         <LoginModal
           onClose={() => setShowLoginModal(false)}
-          onAuthSuccess={() => {
+          onAuthSuccess={(event) => {
             const shouldResumePricing = loginModalConfig.entryIntent === "upgrade";
             setShowLoginModal(false);
-            showToast("Account ready.");
+            if (event?.mode === "register") {
+              showToast(
+                event?.verificationSent
+                  ? "Account created. Check your email to verify your address."
+                  : "Account created. Verification email could not be sent yet.",
+              );
+            } else {
+              showToast("Account ready.");
+            }
             if (shouldResumePricing) setShowPricingModal(true);
           }}
           onProActivated={() => { setShowLoginModal(false); showToast("Pro activated."); }}

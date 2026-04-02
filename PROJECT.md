@@ -22,6 +22,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Auth:
   - Firebase Email/Password auth is implemented and enabled
   - `/users/{uid}` persistence is live
+  - New account registration now sends a Firebase Auth verification email
 - Roles:
   - Backend values are `voter` and `observer`
   - User-facing label for `observer` is `Facilitator`
@@ -158,6 +159,10 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - DKIM passes
     - DMARC passes
     - outbound mail from `support@pointpoker.app` is now properly aligned for deliverability
+  - Backend notification scaffolding now exists in the repo:
+    - `functions/` contains SMTP-backed Firebase Functions for owner signup notifications and owner/user Pro activation emails
+    - notification idempotency is tracked under `/ops/notifications/{uid}`
+    - this is implemented in code but still needs Functions env configuration and deployment before it is live
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
@@ -244,6 +249,19 @@ Additional:
 REACT_APP_SUPPORT_EMAIL   # support@pointpoker.app (already set in Vercel)
 ```
 
+Cloud Functions notification env (not yet deployed/live):
+```
+APP_BASE_URL
+SUPPORT_EMAIL
+OWNER_NOTIFICATION_EMAIL
+ZOHO_SMTP_HOST
+ZOHO_SMTP_PORT
+ZOHO_SMTP_SECURE
+ZOHO_SMTP_USER
+ZOHO_SMTP_PASS
+MAIL_FROM_NAME
+```
+
 ---
 
 ## § Repository Structure
@@ -269,6 +287,12 @@ planning-poker/
 │   ├── index.css           # Minimal reset (most styles are CSS-in-JS in App.js)
 │   └── App.css             # Unused — do not add styles here
 ├── database.rules.json     # Firebase security rules — deploy manually in Console
+├── firebase.json           # Firebase Functions source mapping
+├── functions/
+│   ├── index.js            # Signup / Pro-notification backend triggers
+│   ├── package.json        # Firebase Functions runtime deps
+│   ├── .env.example        # Required notification env vars (example only)
+│   └── README.md           # Deployment + verification notes for notifications
 ├── PROJECT.md              # THIS FILE — single source of truth
 └── package.json
 ```
@@ -595,6 +619,16 @@ T-shirt deck: story points are non-numeric — `avgSP`, `totalSP`, and estimate 
 
 Listed chronologically newest-first.
 
+### 2026-04 — Signup verification + notification backend scaffold
+- New account registration in `src/App.js` now sends a Firebase Auth verification email immediately after account creation without blocking the account/profile write if delivery fails
+- Login success messaging now distinguishes between a normal sign-in and a newly created account that should check email for verification
+- Added a Firebase Functions scaffold in `functions/` for:
+  - owner notification on `/users/{uid}` profile creation
+  - owner notification on transition to active Pro
+  - user Pro-confirmation email containing both dedicated Team Room URLs
+- Notification sends are guarded with `/ops/notifications/{uid}` idempotency state so repeated profile writes do not spam duplicate emails
+- Added `functions/README.md`, `.env.example`, and `firebase.json` so deployment/config is operationally clear for the next session
+
 ### 2026-03 — Vercel Speed Insights installed
 - Added `@vercel/speed-insights` to the project dependencies
 - Mounted `<SpeedInsights />` in `src/index.js` so production deployments can start collecting field-performance metrics
@@ -801,7 +835,7 @@ Items are grouped by dependency. Do not mark complete until fully deployed/verif
 
 - [ ] Monitor Google Search Console indexing status and query performance for the homepage plus the new marketing routes
 - [ ] Continue Phase 3 trust/proof content beyond the initial `/about`, `/support`, and `/trust` pages
-- [ ] Define how the product owner gets notified when a user registers or becomes a Pro user
+- [ ] Configure and deploy the new Firebase Functions notification layer with Zoho SMTP + owner email env vars, then verify live signup and Pro emails
 
 ### BLOCKED ON: Stripe account setup
 

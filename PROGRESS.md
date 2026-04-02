@@ -5,9 +5,10 @@
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
-- Current phase focus: SEO Phase 3 trust/support/proof content and Search Console monitoring, with account/capacity expansion now implemented in repo
+- Current phase focus: SEO Phase 3 trust/support/proof content, Search Console monitoring, and notification/deployment hardening for account lifecycle emails
 - Product state:
   - Firebase Auth email/password implemented and enabled
+  - New account registration now sends a Firebase Auth verification email
   - Auth QA passed
   - Core room-flow QA passed
   - Facilitator wording clarified
@@ -140,6 +141,10 @@
     - DKIM passes
     - DMARC passes
     - Gmail now recognizes outbound mail from `support@pointpoker.app` as authenticated
+  - Notification architecture is now scaffolded in repo:
+    - `functions/` contains backend email triggers for owner signup notifications and owner/user Pro activation emails
+    - notification idempotency is tracked under `/ops/notifications/{uid}` so repeated profile writes do not resend the same message
+    - Functions env configuration + deployment are still required before these notifications go live
   - Firebase user-profile cleanup is now resolved:
     - the real active auth-linked Pro profile for `misteraliimran@gmail.com` is `MDCUAeZguYRjVUNMzZVmNSnUAp23`
     - the old orphaned Realtime Database profile `Di4gMRnSJ3XDALew1H1tH3ILZqs2` has been removed from `/users`
@@ -213,7 +218,7 @@
 - Remaining priorities:
   - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
   - Retry Search Console indexing request for `/trust` after the daily quota resets
-  - Define and implement owner/operator notifications for new account registrations and Pro activations/conversions
+  - Configure and deploy the new notification functions so owner/operator signup + Pro emails become live
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
 
@@ -224,21 +229,24 @@ Treat this section as the fastest current-status read. Historical session notes 
 ## 🗓 Last Session
 - **Date:** 2 April 2026
 - **Chat name:** planning-poker
-- **Worked on:** SEO Phase 3 trust/proof expansion and operational backlog clarity
+- **Worked on:** account lifecycle email flow and backend notification scaffolding
 - **Completed:**
-  - Added a dedicated `/trust` marketing route that explains pointpoker’s public trust signals, including support/legal surfaces, authenticated support email, account-linked Pro access, and room/data safeguards.
-  - Wired the new trust page into the existing additive SEO system: route metadata, SPA rendering, signed-out footer navigation, home-page SEO links, `vercel.json` rewrites, and `public/sitemap.xml`.
-  - Kept the change isolated from room/auth/gameplay logic so Phase 3 growth work does not risk product regressions.
-  - Recorded a new pending operational requirement: define how the product owner gets notified when someone registers or becomes a Pro user.
-  - Attempted to request `/trust` for indexing in Google Search Console, but Google returned the daily quota message, so that request still needs to be retried tomorrow.
+  - Added Firebase Auth verification-email sending to the registration flow so new users get an immediate account-confirmation email after signup.
+  - Updated auth-success messaging so sign-up completion explicitly tells the user to check their email for verification instead of looking identical to a normal sign-in.
+  - Added a `functions/` backend scaffold for SMTP-backed Firebase Functions notifications:
+    - owner notification when a new `/users/{uid}` profile is created
+    - owner notification when a user becomes active Pro
+    - user Pro-activation email including both dedicated Team Room URLs
+  - Added `firebase.json`, `functions/.env.example`, and `functions/README.md` so the deployment/config path is explicit for the next session.
+  - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** continue Search Console monitoring and deeper Phase 3 trust/proof content, with `/trust` indexing retry and owner-notification design now explicitly queued alongside the remaining monetisation work
-**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, owner notifications for registrations and Pro activations, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Active step:** deploy/configure the new notification functions, retry `/trust` indexing in Search Console, and continue additive trust/proof content while Stripe stays parked
+**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, configure/deploy signup + Pro notification emails, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -312,7 +320,7 @@ Treat this section as the fastest current-status read. Historical session notes 
 | 3.3 | Build Stripe Checkout flow | 🔄 In progress | Pricing modal is account-aware and records checkout intent; still needs real Stripe Payment Links or Checkout |
 | 3.4 | Firebase Function webhook (payment events) | ⏳ Not started | Updates plan field in Firebase |
 | 3.5 | Add upgrade prompt UI | ⏳ Not started | Shows when free tier limit hit |
-| 3.6 | Add owner notifications for signups and Pro conversions | ⏳ Not started | Decide notification channel and trigger points for new registrations and successful Pro upgrades |
+| 3.6 | Add owner notifications for signups and Pro conversions | 🔄 In progress | Repo scaffold now exists in `functions/`; remaining work is SMTP env configuration, Functions deployment, and live verification |
 
 ---
 
