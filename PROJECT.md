@@ -152,6 +152,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
       - `/what-is-planning-poker`
       - `/fibonacci-story-points`
       - `/agile-estimation-tool`
+    - `/trust` has not yet been manually requested for indexing because Google Search Console hit the daily request quota on 2 April 2026; retry tomorrow
   - Zoho Mail domain authentication is now correctly configured for `pointpoker.app`:
     - SPF passes
     - DKIM passes
@@ -187,6 +188,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
+  - Retry Google Search Console manual indexing request for `/trust` after the daily quota resets
   - Define and implement owner/operator notifications for new account registrations and Pro activations/conversions
   - Replace Stripe placeholder links and complete paid activation wiring
   - Verify real paid/pro account state end-to-end once live Stripe links exist

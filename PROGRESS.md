@@ -134,6 +134,7 @@
       - `/what-is-planning-poker`
       - `/fibonacci-story-points`
       - `/agile-estimation-tool`
+    - `/trust` still needs a manual indexing request; Google Search Console returned a daily quota error on 2 April 2026, so retry tomorrow
   - Zoho Mail authentication is now correctly aligned for the production domain:
     - SPF passes
     - DKIM passes
@@ -211,6 +212,7 @@
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
   - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
+  - Retry Search Console indexing request for `/trust` after the daily quota resets
   - Define and implement owner/operator notifications for new account registrations and Pro activations/conversions
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
@@ -228,14 +230,15 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Wired the new trust page into the existing additive SEO system: route metadata, SPA rendering, signed-out footer navigation, home-page SEO links, `vercel.json` rewrites, and `public/sitemap.xml`.
   - Kept the change isolated from room/auth/gameplay logic so Phase 3 growth work does not risk product regressions.
   - Recorded a new pending operational requirement: define how the product owner gets notified when someone registers or becomes a Pro user.
+  - Attempted to request `/trust` for indexing in Google Search Console, but Google returned the daily quota message, so that request still needs to be retried tomorrow.
   - `npm run build` passed.
 
 ---
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** continue Search Console monitoring and deeper Phase 3 trust/proof content, with owner-notification design now explicitly queued alongside the remaining monetisation work
-**Remaining:** trust/proof content, owner notifications for registrations and Pro activations, Search Console monitoring, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Active step:** continue Search Console monitoring and deeper Phase 3 trust/proof content, with `/trust` indexing retry and owner-notification design now explicitly queued alongside the remaining monetisation work
+**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, owner notifications for registrations and Pro activations, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
