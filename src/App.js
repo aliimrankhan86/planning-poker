@@ -3607,7 +3607,12 @@ function LoginModal({
         ? "New here? Create one account and keep your future Pro access tied to it."
         : mode === "signin"
           ? "Already registered? Sign in to restore your plan and sprint history."
-          : "We’ll email you a reset link for this account.";
+        : "We’ll email you a reset link for this account.";
+  const isRegisterTransition =
+    mode === "register" &&
+    (authStatus === "loading" || authStatus === "verify" || authStatus === "ok");
+  const showAuthForm = !currentUser || isRegisterTransition;
+  const showSignedInAccount = currentUser && !isRegisterTransition;
 
   const resetMessages = () => {
     setAuthStatus(null);
@@ -3659,7 +3664,10 @@ function LoginModal({
         // cannot be sent immediately.
       }
       setAuthStatus(verificationSent ? "verify" : "ok");
-      setTimeout(() => onAuthSuccess?.({ mode: "register", verificationSent }), 700);
+      setTimeout(
+        () => onAuthSuccess?.({ mode: "register", verificationSent }),
+        verificationSent ? 1400 : 1000,
+      );
     } catch (error) {
       setAuthStatus(null);
       setAuthError(getAuthErrorMessage(error));
@@ -3752,7 +3760,7 @@ function LoginModal({
         </div>
         <p className="login-mode-hint">{modeHint}</p>
 
-        {!currentUser && (
+        {showAuthForm && (
           <>
             <div className="auth-mode-row">
               <button
@@ -3852,21 +3860,21 @@ function LoginModal({
           </>
         )}
 
-        {currentUser && (
+        {showSignedInAccount && (
           <div className="login-modal-coming">
             <strong>{currentUser.displayName || "Signed in"}</strong><br />
             {currentUser.email}
           </div>
         )}
 
-        {currentUser && authStatus === "reset" && (
+        {showSignedInAccount && authStatus === "reset" && (
           <div className="auth-status success">✓ Password reset email sent.</div>
         )}
-        {currentUser && authError && (
+        {showSignedInAccount && authError && (
           <div className="auth-status error">{authError}</div>
         )}
 
-        {currentUser && (
+        {showSignedInAccount && (
           <button
             type="button"
             className="login-secondary-btn"

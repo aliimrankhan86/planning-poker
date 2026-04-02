@@ -9,6 +9,7 @@
 - Product state:
   - Firebase Auth email/password implemented and enabled
   - New account registration now sends a Firebase Auth verification email
+  - Registration success now stays visible in the auth modal long enough to show the verification prompt instead of flashing the signed-in reset-password UI
   - Auth QA passed
   - Core room-flow QA passed
   - Facilitator wording clarified
@@ -246,6 +247,7 @@ Treat this section as the fastest current-status read. Historical session notes 
     - `notifyOnProActivation`
   - Locked the functions to `planning-poker-b6ac1@appspot.gserviceaccount.com` so deploys no longer fail on the missing default Compute service account.
   - Configured Artifact Registry cleanup to automatically delete old function images after 30 days.
+  - Fixed the signup success-state UI so account creation no longer flashes the signed-in password-reset controls or the misleading `Sending reset…` label before the verification prompt can be seen.
   - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
 
 ---

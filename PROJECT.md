@@ -23,6 +23,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Firebase Email/Password auth is implemented and enabled
   - `/users/{uid}` persistence is live
   - New account registration now sends a Firebase Auth verification email
+  - Registration success state now stays in the auth modal long enough to show the verification prompt instead of being replaced by the signed-in reset-password UI
 - Roles:
   - Backend values are `voter` and `observer`
   - User-facing label for `observer` is `Facilitator`
@@ -640,6 +641,12 @@ Listed chronologically newest-first.
   - `notifyOnProActivation`
 - Functions now run under the explicit App Engine default service account `planning-poker-b6ac1@appspot.gserviceaccount.com`, avoiding the missing default Compute service-account deploy failure
 - Artifact Registry cleanup is configured to automatically delete old function images after 30 days
+
+### 2026-04 — Signup success-state UX fix
+- Atlas QA surfaced a real regression in the post-registration modal flow: the newly signed-in account state was replacing the register-success UI too early, which exposed the signed-in password-reset button and its `Sending reset…` loading label during signup
+- `src/App.js` now treats registration as an explicit transition state so the auth form and verification-success copy remain visible through account creation
+- The register success callback is intentionally delayed slightly longer so the user can actually see the verification prompt before the modal closes
+- Signed-in reset UI is now suppressed during the register transition, so signup no longer flashes misleading password-reset copy
 
 ### 2026-03 — Vercel Speed Insights installed
 - Added `@vercel/speed-insights` to the project dependencies
