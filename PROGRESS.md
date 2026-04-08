@@ -5,8 +5,9 @@
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
-- Current phase focus: SEO Phase 3 trust/support/proof content, Search Console monitoring, and notification/deployment hardening for account lifecycle emails
+- Current phase focus: SEO Phase 3 trust/support/proof content, Search Console monitoring, notification/deployment hardening, and Estimation Mode feature
 - Product state:
+  - **Estimation Mode feature now live in code (2026-04-08):** facilitators choose "User Stories" or "Tasks" at room creation; selection stored in Firebase as `estimationMode`; all in-room copy (queue title, banners, progress, toasts, button labels, analytics KPIs, export) adapts dynamically to the chosen mode; mode picker shown on Create and Team Room tabs (2-button toggle styled consistently with the deck picker); `database.rules.json` and `database.rules.publish.json` updated with write-once validated `estimationMode` field; marketing copy updated across features page, JoinScreen SEO section, PricingModal feature list, and FAQ; build passes clean — **pending Firebase rules publish to production**
   - Firebase Auth email/password implemented and enabled
   - New account registration now sends a Firebase Auth verification email
   - Registration now stays in an explicit verification step inside the auth modal, with a visible continue action and a resend-verification action instead of auto-closing immediately

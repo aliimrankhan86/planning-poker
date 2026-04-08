@@ -317,6 +317,47 @@ const DECK_KEYS = Object.keys(DECK_DEFINITIONS);
 // Derive cards for a given deck key, falling back to Fibonacci.
 const getCards = (deckKey) =>
   (DECK_DEFINITIONS[deckKey] || DECK_DEFINITIONS.fibonacci).cards;
+
+// ── ESTIMATION MODE ───────────────────────────────────────────────────────────
+// Controls whether the team is estimating User Stories or Tasks within stories.
+// Stored in Firebase as room.estimationMode. All in-room copy adapts to this setting.
+const ESTIMATION_MODES = {
+  stories: {
+    key: "stories",
+    label: "User Stories",
+    desc: "Estimate each story as a whole",
+    singular: "story",
+    plural: "stories",
+    queueTitle: "Story Queue",
+    progressLabel: "Story",
+    bannerLabel: "Estimating",
+    allDoneText: "stories estimated",
+    backlogLabel: "Sprint backlog",
+    toastDone: "✅ Story estimated! Vote on the next story.",
+    toastNext: "✅ Estimate recorded. Voting on next story.",
+    placeholder: "e.g. User login flow, PROJ-42…",
+    hintText: "Add stories to track estimates by name — or just start voting without them. Both work.",
+    recordNext: "& Next Story",
+  },
+  tasks: {
+    key: "tasks",
+    label: "Tasks",
+    desc: "Estimate tasks within stories",
+    singular: "task",
+    plural: "tasks",
+    queueTitle: "Task Queue",
+    progressLabel: "Task",
+    bannerLabel: "Estimating task",
+    allDoneText: "tasks estimated",
+    backlogLabel: "Task list",
+    toastDone: "✅ Task estimated! Vote on the next task.",
+    toastNext: "✅ Estimate recorded. Voting on next task.",
+    placeholder: "e.g. Build login API, Write unit tests, PROJ-42-1…",
+    hintText: "Add tasks to track estimates by name — or just start voting without them. Both work.",
+    recordNext: "& Next Task",
+  },
+};
+const getEstMode = (mode) => ESTIMATION_MODES[mode] || ESTIMATION_MODES.stories;
 const INVALID_PLACEHOLDER_NAMES = new Set(["alex johnson", "e.g. alex johnson"]);
 const CIRC = 201.1;
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -382,7 +423,7 @@ const CSS = `
   --shadow-soft: 0 20px 60px rgba(0,0,0,0.34);
 }
 
-html { font-size: 16px; scroll-behavior: smooth; }
+html { font-size: 16px; scroll-behavior: smooth; background-color: var(--bg); }
 html, body, * {
   scrollbar-width: thin;
   scrollbar-color: var(--gold) var(--scroll-track);
@@ -1129,6 +1170,15 @@ body::before {
 .deck-btn.active { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.34); color: var(--gold2); }
 .deck-btn.active .dk-desc { color: rgba(255,217,120,.70); }
 .deck-btn:hover:not(.active) { background: rgba(255,255,255,.06); color: rgba(245,251,247,.92); border-color: rgba(158,234,196,.20); }
+
+/* Estimation mode picker on Create / Team tabs */
+.estmode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 24px; }
+.estmode-btn { padding: 10px 8px; border-radius: var(--radius-sm); border: 1px solid rgba(158,234,196,.10); background: rgba(255,255,255,.025); color: rgba(245,251,247,.80); font-family: 'Outfit', sans-serif; cursor: pointer; transition: all .2s; text-align: center; }
+.estmode-btn .em-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 3px; }
+.estmode-btn .em-desc  { display: block; font-size: .72rem; color: rgba(239,242,247,.55); line-height: 1.35; }
+.estmode-btn.active { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.34); color: var(--gold2); }
+.estmode-btn.active .em-desc { color: rgba(255,217,120,.65); }
+.estmode-btn:hover:not(.active) { background: rgba(255,255,255,.06); color: rgba(245,251,247,.92); border-color: rgba(158,234,196,.20); }
 
 /* ══════════════════════ SEO CONTENT SECTION ══════════════════════ */
 .seo-section {
@@ -4850,7 +4900,7 @@ export default function App() {
     return () => window.removeEventListener("beforeunload", cleanup);
   }, [code, myId]);
 
-  const handleCreate = async (name, role, deck = "fibonacci") => {
+  const handleCreate = async (name, role, deck = "fibonacci", estimationMode = "stories") => {
     pendingSessionNameRef.current = name;
     const c = mkCode();
     setMyRole(role);
@@ -4864,6 +4914,7 @@ export default function App() {
       streak: 0,
       consensusCount: 0,
       deck,
+      estimationMode,
       plan: currentPlan === "pro" ? "pro" : "free",
       timer: { running: false, duration: 30, remaining: 30 },
       players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
@@ -4921,7 +4972,7 @@ export default function App() {
   // Team rooms use a stable code derived from the team name so the same
   // team always lands in the same room without needing to share a link.
   // The room is created fresh if nobody is there, or joined if active.
-  const handleTeamRoom = async (name, role, teamName, deck = "fibonacci") => {
+  const handleTeamRoom = async (name, role, teamName, deck = "fibonacci", estimationMode = "stories") => {
     pendingSessionNameRef.current = name;
     const c = teamCode(teamName);
     const founderRoom = isFounderRoom(c);
@@ -4962,6 +5013,7 @@ export default function App() {
         streak: 0,
         consensusCount: 0,
         deck,
+        estimationMode,
         plan,
         teamName,
         founderRoom,
@@ -5035,7 +5087,7 @@ export default function App() {
     await update(ref(db), upd);
     if (estimate !== null) {
       track("stories_estimated");
-      showToast("✅ Story done! Vote on the next user story.");
+      showToast(getEstMode(roomData?.estimationMode).toastDone);
     }
   }, [code, roomData, showToast]);
 
@@ -5077,7 +5129,7 @@ export default function App() {
     upd[`rooms/${code}/timer/startedBy`] = null;
     await update(ref(db), upd);
     track("stories_estimated");
-    showToast("✅ Estimate recorded. Voting on next story.");
+    showToast(getEstMode(roomData?.estimationMode).toastNext);
   }, [code, roomData, showToast]);
 
   const resetSession = useCallback(async () => {
@@ -6303,7 +6355,7 @@ function FeaturesPage({ onNavigate }) {
     >
       <MarketingSection
         title="Core estimation workflow"
-        intro="The product is designed around what teams actually do in planning poker: create a room, add stories, vote simultaneously, discuss differences, and move on without resetting the whole session."
+        intro="The product is designed around what teams actually do in planning poker: create a room, add items to estimate — stories or tasks — vote simultaneously, discuss differences, and move on without resetting the whole session."
       >
         <div className="marketing-card-grid">
           <article className="marketing-card">
@@ -6313,9 +6365,9 @@ function FeaturesPage({ onNavigate }) {
             </p>
           </article>
           <article className="marketing-card">
-            <h3 className="marketing-card-title">Story queue and session flow</h3>
+            <h3 className="marketing-card-title">Estimate stories or tasks — your choice</h3>
             <p className="marketing-card-copy">
-              Add stories as you go or preload the queue, record the agreed estimate, and move straight into the next story without rebuilding the room.
+              Choose whether you are sizing user stories as a whole or individual tasks within them. Add items as you go or preload the queue, record the agreed estimate, and move straight to the next item without rebuilding the room.
             </p>
           </article>
           <article className="marketing-card">
@@ -6341,7 +6393,7 @@ function FeaturesPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">Team Alignment analytics</h3>
             <p className="marketing-card-copy">
-              Facilitators can see consensus rate, total points, story throughput, and how often the team agrees on the first vote, helping uncover backlog clarity problems early.
+              Facilitators can see consensus rate, total points, item throughput, and how often the team agrees on the first vote, helping uncover backlog clarity problems early.
             </p>
           </article>
           <article className="marketing-card">
@@ -7609,7 +7661,7 @@ function PricingModal({
     { yes: true,  text: `Up to ${FREE_MAX_PARTICIPANTS} participants per session` },
     { yes: true,  text: "All card decks — Fibonacci, T-Shirt, Powers of 2"      },
     { yes: true,  text: "Simultaneous reveal with live vote breakdown"           },
-    { yes: true,  text: "Story queue and session summary export"                 },
+    { yes: true,  text: "Story or task queue, session summary export"            },
     { yes: true,  text: "Facilitator mode and sprint analytics"                  },
     { yes: false, text: "2 dedicated Team Rooms with fixed URLs"                 },
     { yes: false, text: `Up to ${PRO_MAX_PARTICIPANTS} participants per session` },
@@ -8031,6 +8083,7 @@ function JoinScreen({
   const [nameEdited, setNameEdited] = useState(false);
   const [role, setRole] = useState("voter");
   const [deck, setDeck] = useState("fibonacci");
+  const [estMode, setEstMode] = useState("stories");
   const [rc, setRc] = useState(prefillCode || "");
   const [selectedDedicatedRoomKey, setSelectedDedicatedRoomKey] = useState(
     matchedDedicatedRoomFromRoute?.key || "primary",
@@ -8171,7 +8224,7 @@ function JoinScreen({
     if (!validatedName.ok) { setErr(validatedName.message); return; }
     const enteredName = validatedName.name;
     if (tab === "create") {
-      onCreate(enteredName, role, deck);
+      onCreate(enteredName, role, deck, estMode);
     } else if (tab === "join") {
       if (!rc.trim()) { setErr("Please enter a room code"); return; }
       onJoin(enteredName, role, rc.trim().toUpperCase());
@@ -8182,7 +8235,7 @@ function JoinScreen({
         return;
       }
       if (!teamName.trim()) { setErr("Please enter your team name"); return; }
-      onTeamRoom(enteredName, role, teamName.trim(), deck);
+      onTeamRoom(enteredName, role, teamName.trim(), deck, estMode);
     }
   };
 
@@ -8407,7 +8460,7 @@ function JoinScreen({
                             const validatedName = validateEnteredName();
                             if (!validatedName.ok) { setErr(validatedName.message); setTab("team"); focusTeamEntry(); return; }
                             setSelectedDedicatedRoomKey(room.key);
-                            onTeamRoom(validatedName.name, role, room.name, deck);
+                            onTeamRoom(validatedName.name, role, room.name, deck, estMode);
                           }}
                         >
                           Open {room.shortLabel} →
@@ -8423,7 +8476,7 @@ function JoinScreen({
                     onClick={() => {
                       const validatedName = validateEnteredName();
                       if (!validatedName.ok) { setErr(validatedName.message); setTab("create"); return; }
-                      onCreate(validatedName.name, role, deck);
+                      onCreate(validatedName.name, role, deck, estMode);
                     }}
                   >
                     Create one-off room
@@ -8632,6 +8685,23 @@ function JoinScreen({
                 );
               })}
             </div>
+
+            {/* Estimation mode picker — what is the team estimating? */}
+            <label className="lbl">What Are You Estimating?</label>
+            <div className="estmode-grid">
+              {Object.values(ESTIMATION_MODES).map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  className={`estmode-btn${estMode === m.key ? " active" : ""}`}
+                  aria-pressed={estMode === m.key}
+                  onClick={() => setEstMode(m.key)}
+                >
+                  <span className="em-label">{m.label}</span>
+                  <span className="em-desc">{m.desc}</span>
+                </button>
+              ))}
+            </div>
           </>
         )}
 
@@ -8675,11 +8745,11 @@ function JoinScreen({
             <h3 className="seo-h3">How It Works</h3>
             <ol className="seo-ol">
               <li>Create a room or join one from a shared link</li>
-              <li>Add the story you are estimating, or work from the queue</li>
+              <li>Add the item you are estimating — a user story or a specific task within one</li>
               <li>Vote with Fibonacci, T-Shirt sizing, or Powers of 2</li>
               <li>Reveal cards together and discuss only when estimates differ</li>
               <li>Let the facilitator record the final agreed estimate or run another vote</li>
-              <li>Move straight to the next story without resetting the room</li>
+              <li>Move straight to the next item without resetting the room</li>
             </ol>
           </div>
         </div>
@@ -8695,7 +8765,7 @@ function JoinScreen({
               <div className="seo-plan-price">£0</div>
               <ul className="seo-plan-list">
                 <li>Up to {FREE_MAX_PARTICIPANTS} participants including the facilitator</li>
-                <li>All card decks and story queue</li>
+                <li>All card decks, story or task queue</li>
                 <li>Facilitator mode and live analytics</li>
               </ul>
             </article>
@@ -8722,7 +8792,8 @@ function JoinScreen({
             <li><strong>Zero setup, every time</strong> — create a room and share the link in under 10 seconds, no account needed</li>
             <li><strong>Simultaneous vote reveal</strong> — prevents anchoring bias so every estimate is honest and independent</li>
             <li><strong>Three card decks</strong> — Fibonacci (1–34), T-Shirt sizing (XS–XXL), or Powers of 2, matched to how your team thinks</li>
-            <li><strong>Story queue</strong> — load your full sprint backlog and work through it in order, one story at a time</li>
+            <li><strong>Story or task estimation</strong> — choose whether you are sizing user stories as a whole or individual tasks within them; the queue, banners, and analytics all adapt to your choice</li>
+            <li><strong>Item queue</strong> — load your full sprint backlog or task list and work through it in order, one item at a time</li>
             <li><strong>Team Alignment analytics</strong> — facilitators see live consensus rate, total story points, estimate distribution, and re-vote patterns</li>
             <li><strong>Estimation Spree</strong> — a live streak counter celebrates when the team aligns consistently, reinforcing good backlog clarity</li>
             <li><strong>Built-in countdown timer</strong> — keep each estimation round time-boxed and the whole session on track</li>
@@ -8760,7 +8831,7 @@ function JoinScreen({
               <h4 className="seo-h4">Is this planning poker tool actually free?</h4>
               <p className="seo-p">
                 Yes, and it stays free. The free tier gives you up to {FREE_MAX_PARTICIPANTS} participants,
-                all three card decks, a full story queue, session analytics, and clipboard export —
+                all three card decks, a full queue (story or task mode), session analytics, and clipboard export —
                 no credit card, no account, no time limit. Pro adds two dedicated Team Rooms and up to {PRO_MAX_PARTICIPANTS} participants.
               </p>
             </div>
@@ -8838,6 +8909,7 @@ function GameScreen({
   onShowPricing,
 }) {
   const cards = getCards(deck);
+  const estMode = getEstMode(rd.estimationMode);
   const [tsel, setTsel] = useState(30);
   const [storyInput, setStoryInput] = useState("");
   const [optimisticVote, setOptimisticVote] = useState(null);
@@ -9100,8 +9172,8 @@ function GameScreen({
                 >
                   {chosenFinalEstimate
                     ? hasStories && !allStoriesDone
-                      ? `✅ Save ${finalEstimateLabel} & Next Story`
-                      : `✅ Save ${finalEstimateLabel} — Start Next Story`
+                      ? `✅ Save ${finalEstimateLabel} ${estMode.recordNext}`
+                      : `✅ Save ${finalEstimateLabel} — Next ${estMode.progressLabel}`
                     : "Select the agreed estimate to continue"}
                 </button>
                 <button className="facilitator-overlay-revote" type="button" onClick={handleRevoteStory}>
@@ -9126,7 +9198,7 @@ function GameScreen({
           <div className="hdr-c">
             <div className="badge">Round {round}</div>
             <div className="badge badge-gold">
-              🎲 {storiesDone} {storiesDone === 1 ? "story" : "stories"} estimated
+              🎲 {storiesDone} {storiesDone === 1 ? estMode.singular : estMode.plural} estimated
             </div>
             {code && (
               <div className="badge" style={{ fontFamily: "monospace", letterSpacing: ".12em", fontSize: ".66rem" }}>
@@ -9196,19 +9268,19 @@ function GameScreen({
           </div>
         )}
 
-        {/* Current story banner — visible to all players */}
+        {/* Current item banner — visible to all players */}
         {activeStory && !allStoriesDone && (
           <div className="story-name-banner">
             <span className="story-name-label">
-              Now estimating · Story {activeStoryIdx + 1} of {stories.length}
+              Now estimating · {estMode.progressLabel} {activeStoryIdx + 1} of {stories.length}
             </span>
             <div className="story-name-text">{activeStory.name}</div>
           </div>
         )}
         {allStoriesDone && (
           <div className="story-name-banner" style={{ borderColor: "rgba(39,174,96,.3)", background: "rgba(39,174,96,.06)" }}>
-            <span className="story-name-label" style={{ color: "rgba(39,174,96,.5)" }}>Sprint backlog</span>
-            <div className="story-name-text" style={{ color: "#2ecc71" }}>All {stories.length} stories estimated ✓</div>
+            <span className="story-name-label" style={{ color: "rgba(39,174,96,.5)" }}>{estMode.backlogLabel}</span>
+            <div className="story-name-text" style={{ color: "#2ecc71" }}>All {stories.length} {estMode.plural} estimated ✓</div>
           </div>
         )}
 
@@ -9298,7 +9370,7 @@ function GameScreen({
                     <div className="waiting-hint">
                       {requiresManualFinalEstimate
                         ? "Votes are split — discuss briefly, then confirm the agreed estimate."
-                        : "Round complete — record the estimate and start the next story below."}
+                        : `Round complete — record the estimate and move to the next ${estMode.singular} below.`}
                     </div>
                   )}
                 </>
@@ -9569,16 +9641,16 @@ function GameScreen({
                   </div>
                 )}
 
-                {/* Story queue manager */}
+                {/* Item queue manager */}
                 <div className="story-panel">
-                  <div className="story-panel-title">📋 Story Queue <span className="story-panel-optional">optional</span></div>
+                  <div className="story-panel-title">📋 {estMode.queueTitle} <span className="story-panel-optional">optional</span></div>
                   <p className="story-panel-hint">
-                    Add stories to track estimates by name — or just start voting without them. Both work.
+                    {estMode.hintText}
                   </p>
                   <div className="story-add-row">
                     <input
                       className="story-inp"
-                      placeholder="e.g. User login flow, PROJ-42…"
+                      placeholder={estMode.placeholder}
                       value={storyInput}
                       maxLength={200}
                       onChange={(e) => setStoryInput(e.target.value)}
@@ -9605,8 +9677,8 @@ function GameScreen({
                   {hasStories && (
                     <>
                       <div className="story-progress">
-                        Story {Math.min(activeStoryIdx + 1, stories.length)} of {stories.length}
-                        {allStoriesDone ? " — all stories estimated!" : ""}
+                        {estMode.progressLabel} {Math.min(activeStoryIdx + 1, stories.length)} of {stories.length}
+                        {allStoriesDone ? ` — all ${estMode.plural} estimated!` : ""}
                       </div>
                       <div className="story-list">
                         {stories.map((s, i) => {
@@ -9652,9 +9724,9 @@ function GameScreen({
                         onClick={() => onRecordStory(chosenFinalEstimate, allSame)}
                       >
                         {allSame
-                          ? `✅ Record ${finalEstimateLabel} & Next Story`
+                          ? `✅ Record ${finalEstimateLabel} ${estMode.recordNext}`
                           : chosenFinalEstimate
-                            ? `✅ Save ${finalEstimateLabel} & Next Story`
+                            ? `✅ Save ${finalEstimateLabel} ${estMode.recordNext}`
                             : "Choose final estimate to continue"}
                       </button>
                     )}
@@ -9665,9 +9737,9 @@ function GameScreen({
                         onClick={() => onNewRound(chosenFinalEstimate, allSame)}
                       >
                         {allSame
-                          ? `✅ Agreed — ${finalEstimateLabel} — Start Next Story`
+                          ? `✅ Agreed — ${finalEstimateLabel} — Next ${estMode.progressLabel}`
                           : chosenFinalEstimate
-                            ? `✅ Save ${finalEstimateLabel} — Start Next Story`
+                            ? `✅ Save ${finalEstimateLabel} — Next ${estMode.progressLabel}`
                             : "Choose final estimate to continue"}
                       </button>
                     )}
@@ -9894,9 +9966,9 @@ function GameScreen({
                 : "Powers of 2";
               const unitLabel = isTshirt ? "" : " sp";
 
-              // Per-story list — queue names when available, "Story N" otherwise
+              // Per-item list — queue names when available, fallback to mode label + index
               const listedStories = sizedStories.map((s, i) => ({
-                name: s.name && s.name.trim() ? s.name.trim() : `Story ${i + 1}`,
+                name: s.name && s.name.trim() ? s.name.trim() : `${estMode.progressLabel} ${i + 1}`,
                 estimate: s.estimate,
               }));
 
@@ -9916,7 +9988,7 @@ function GameScreen({
                   <div className="a-kpis">
                     <div className="a-kpi">
                       <span className="a-kpi-v">{storiesDone}</span>
-                      <span className="a-kpi-l">Stories sized</span>
+                      <span className="a-kpi-l">{estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized</span>
                     </div>
                     <div className="a-kpi">
                       <span className="a-kpi-v">{scopeDisp}</span>
@@ -9924,7 +9996,7 @@ function GameScreen({
                     </div>
                     <div className="a-kpi">
                       <span className="a-kpi-v">{avgDisp2}</span>
-                      <span className="a-kpi-l">Avg / story</span>
+                      <span className="a-kpi-l">Avg / {estMode.singular}</span>
                     </div>
                   </div>
 
@@ -9945,13 +10017,13 @@ function GameScreen({
                       ></div>
                     </div>
                     <div className="a-align-sub">{alignSub}</div>
-                    <div className="a-align-note">% of stories where all voters agreed on the first vote</div>
+                    <div className="a-align-note">% of {estMode.plural} where all voters agreed on the first vote</div>
                   </div>
 
                   {/* ── Section 3: Sized this sprint ── */}
                   <div className="a-stories">
                     <div className="a-section-title">
-                      Sized this sprint{listedStories.length > 0 ? ` (${listedStories.length})` : ""}
+                      {estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized{listedStories.length > 0 ? ` (${listedStories.length})` : ""}
                     </div>
                     {listedStories.length > 0 ? (
                       <div className="a-story-list">
@@ -9966,8 +10038,8 @@ function GameScreen({
                     ) : (
                       <div className="a-empty">
                         {storiesDone > 0
-                          ? "Add story names to your queue to track estimates here."
-                          : "No stories sized yet — estimates will appear here after the first round."}
+                          ? `Add ${estMode.singular} names to the queue to track estimates here.`
+                          : `No ${estMode.plural} sized yet — estimates will appear here after the first round.`}
                       </div>
                     )}
                   </div>
@@ -10053,7 +10125,7 @@ function GameScreen({
                       lines.push(`${i + 1}. ${s.name}  →  ${s.estimate != null ? s.estimate + " pts" : "not estimated"}`);
                     });
                     lines.push("");
-                    lines.push(`Total stories: ${stories.length}`);
+                    lines.push(`Total ${estMode.plural}: ${stories.length}`);
                     lines.push(`Estimated: ${stories.filter((s) => s.estimate != null).length}`);
                     navigator.clipboard.writeText(lines.join("\n"));
                     toast("📋 Summary copied to clipboard!");
