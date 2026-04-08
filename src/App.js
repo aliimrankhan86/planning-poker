@@ -5021,9 +5021,15 @@ export default function App() {
         players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
       });
     } else {
-      await update(ref(db, `rooms/${c}/players/${myId}`), {
-        id: myId, name, role, voted: false, vote: null,
-      });
+      // Join existing room. If estimationMode was never set (legacy room or
+      // first session after the feature shipped), write the facilitator's
+      // chosen mode now. The Firebase rule allows this because !data.exists().
+      const upd = {};
+      upd[`rooms/${c}/players/${myId}`] = { id: myId, name, role, voted: false, vote: null };
+      if (!existingRoom.estimationMode) {
+        upd[`rooms/${c}/estimationMode`] = estimationMode;
+      }
+      await update(ref(db), upd);
     }
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
     // Keep the clean stable team-room URL so invites and browser refreshes stay consistent.
