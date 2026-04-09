@@ -1,4 +1,14 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        { "type": "host", "value": "pointpoker.app" }
+      ],
+      "destination": "https://www.pointpoker.app/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/t/:slug",

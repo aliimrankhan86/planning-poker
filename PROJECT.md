@@ -157,6 +157,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - Search Console operational setup is now complete at the initial level:
     - domain ownership for `pointpoker.app` has been verified in Google Search Console
     - `sitemap.xml` has been submitted successfully
+    - canonical-host hardening is now explicit in `vercel.json`: apex `pointpoker.app` redirects permanently to `https://www.pointpoker.app/:path*`, so Search Console `Page with redirect` examples for bare-domain/http variants are treated as alternate URLs, not intended indexable pages
     - homepage and key marketing routes have been manually requested for indexing
     - trust/support/guide routes have also now been manually requested for indexing:
       - `/about`
@@ -213,6 +214,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - **Solo room invite banner:** GameScreen now shows a prominent dismissible gold banner when only 1 player is in the room — "Your room is ready. Share the link to bring your team in." with an inline copy button. Dismissed on copy or manual close.
 - Still pending:
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
+  - Re-check Search Console after recrawl so the current redirect validation settles around the intended `https://www.pointpoker.app/` canonical host
   - Retry Google Search Console manual indexing request for `/trust` after the daily quota resets
   - Re-run fresh-account signup email QA with a brand-new real inbox now that the signup verification-state UI bug has been fixed
   - Redeploy Firebase Functions so the owner Pro-notification subject-line improvement goes live, then re-check that email in the owner inbox

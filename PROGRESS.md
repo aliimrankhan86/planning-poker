@@ -140,6 +140,7 @@
   - Google Search Console initial setup is now completed:
     - domain ownership for `pointpoker.app` verified
     - `sitemap.xml` submitted successfully
+    - `vercel.json` now explicitly redirects apex `pointpoker.app` traffic to `https://www.pointpoker.app/:path*`, so Search Console `Page with redirect` examples for bare-domain/http variants map to the intended canonical host instead of behaving like accidental duplicate URLs
     - homepage and key marketing routes requested for indexing
     - additional trust/support/guide routes also requested for indexing:
       - `/about`
@@ -238,6 +239,7 @@
   - Code committed and pushed — Vercel auto-deploy triggered ✅
 - Remaining priorities:
   - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
+  - Re-check Search Console after the next crawl so the current redirect validation settles around the intended `https://www.pointpoker.app/` canonical host
   - Retry Search Console indexing request for `/trust` after the daily quota resets
   - Configure and deploy the new notification functions so owner/operator signup + Pro emails become live
   - Replace Stripe placeholder links and finish paid activation wiring
