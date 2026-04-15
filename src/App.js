@@ -551,7 +551,17 @@ body::before {
     linear-gradient(180deg, rgba(15,32,27,.98), rgba(8,18,15,.98));
   box-shadow: 0 36px 100px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.05);
   padding: 28px 28px 24px;
+  position: relative;
 }
+.facilitator-overlay-close {
+  position: absolute; top: 16px; right: 18px;
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(239,242,247,.18);
+  background: rgba(239,242,247,.07); color: rgba(239,242,247,.65);
+  font-size: 1.1rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.facilitator-overlay-close:hover { background: rgba(239,242,247,.14); color: #eef2ec; border-color: rgba(239,242,247,.35); }
 .facilitator-overlay-kicker {
   display: inline-flex;
   align-items: center;
@@ -1668,6 +1678,9 @@ body::before {
 .btn-record-next { width: 100%; padding: 11px; border-radius: var(--radius-sm); border: none; background: linear-gradient(135deg, rgba(75,216,137,.80), rgba(44,176,112,.62)); color: #04100b; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: all .2s; margin-top: 4px; box-shadow: 0 12px 28px rgba(75,216,137,.18); }
 .btn-record-next:hover { background: linear-gradient(135deg, rgba(95,230,154,.88), rgba(52,194,123,.72)); }
 .btn-record-next:disabled { opacity: .3; cursor: not-allowed; }
+@keyframes recordGlow { 0%, 100% { box-shadow: 0 12px 28px rgba(75,216,137,.25); } 50% { box-shadow: 0 14px 40px rgba(75,216,137,.60), 0 0 0 5px rgba(75,216,137,.18); } }
+.btn-record-next.consensus { padding: 15px 11px; font-size: .94rem; letter-spacing: .01em; background: linear-gradient(135deg, rgba(75,216,137,.95), rgba(44,176,112,.85)); animation: recordGlow 2s ease-in-out infinite; margin-top: 8px; }
+.btn-record-next.consensus:hover { background: linear-gradient(135deg, #5fe69a, #34c27b); animation: none; box-shadow: 0 14px 40px rgba(75,216,137,.55); }
 .final-estimate-panel {
   margin: 4px 0 2px;
   padding: 18px 18px 16px;
@@ -8977,7 +8990,7 @@ function GameScreen({
   const avgDisp =
     avg !== null ? (Number.isInteger(avg) ? avg : avg.toFixed(1)) : "—";
   const allSame =
-    new Set(voted.map((p) => p.vote)).size === 1 && voted.length > 1;
+    new Set(voted.map((p) => p.vote)).size === 1 && voted.length >= 1;
   const minV = nums.length ? Math.min(...nums) : null;
   const maxV = nums.length ? Math.max(...nums) : null;
   const medianV = nums.length
@@ -9125,8 +9138,9 @@ function GameScreen({
         </div>
       )}
       {showFinalEstimateOverlay && requiresManualFinalEstimate && (
-        <div className="facilitator-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="final-estimate-title">
+        <div className="facilitator-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="final-estimate-title" onClick={(e) => { if (e.target === e.currentTarget) setShowFinalEstimateOverlay(false); }}>
           <div className="facilitator-overlay" ref={finalEstimateRef} tabIndex="-1">
+            <button className="facilitator-overlay-close" aria-label="Close" onClick={() => setShowFinalEstimateOverlay(false)}>✕</button>
             <div className="facilitator-overlay-kicker">Facilitator action required</div>
             <h2 className="facilitator-overlay-title" id="final-estimate-title">
               The team is split. Choose the estimate you agreed to record.
@@ -9725,12 +9739,12 @@ function GameScreen({
                   <>
                     {!requiresManualFinalEstimate && hasStories && !allStoriesDone && (
                       <button
-                        className="btn-record-next"
+                        className={`btn-record-next${allSame ? " consensus" : ""}`}
                         disabled={!chosenFinalEstimate}
                         onClick={() => onRecordStory(chosenFinalEstimate, allSame)}
                       >
                         {allSame
-                          ? `✅ Record ${finalEstimateLabel} ${estMode.recordNext}`
+                          ? `✅ Record ${finalEstimateLabel} & Next ${estMode.progressLabel}`
                           : chosenFinalEstimate
                             ? `✅ Save ${finalEstimateLabel} ${estMode.recordNext}`
                             : "Choose final estimate to continue"}
@@ -9738,12 +9752,12 @@ function GameScreen({
                     )}
                     {!requiresManualFinalEstimate && (!hasStories || allStoriesDone) && (
                       <button
-                        className="btn-record-next"
+                        className={`btn-record-next${allSame ? " consensus" : ""}`}
                         disabled={!chosenFinalEstimate}
                         onClick={() => onNewRound(chosenFinalEstimate, allSame)}
                       >
                         {allSame
-                          ? `✅ Agreed — ${finalEstimateLabel} — Next ${estMode.progressLabel}`
+                          ? `✅ Record ${finalEstimateLabel} & Next Round`
                           : chosenFinalEstimate
                             ? `✅ Save ${finalEstimateLabel} — Next ${estMode.progressLabel}`
                             : "Choose final estimate to continue"}

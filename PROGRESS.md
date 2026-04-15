@@ -624,3 +624,14 @@ Treat this section as the fastest current-status read. Historical session notes 
 1. At the start of every new session with Claude, say: "Here is my PROGRESS.md" and paste or share this file
 2. Claude will read the current status, pick up from the active step, and update this file when the session ends
 3. Commit this file to git after each session so it's always up to date
+
+### Session — 15 April 2026
+**Bug: consensus recording blocked when votes agree**
+
+- **Root cause:** `allSame` condition was `voted.length > 1` — single voter could never record (button rendered disabled with "Choose final estimate to continue" forever). Fixed to `voted.length >= 1`.
+- **Consensus record button (UX):** Added `.btn-record-next.consensus` CSS class — larger padding, bigger font, pulsing green glow animation (`recordGlow`). Applied to both the story-queue path (`onRecordStory`) and no-queue path (`onNewRound`) when `allSame` is true.
+- **Button label clarified:** Consensus path now reads `✅ Record [X] & Next Story/Round` instead of the previous split-vote label, making the action explicit.
+- **Facilitator split-vote overlay — close button added:** Modal (`showFinalEstimateOverlay`) had no dismiss mechanism. Added:
+  - ✕ button top-right of the card (`.facilitator-overlay-close`, absolute-positioned circle)
+  - Backdrop click-to-close (`e.target === e.currentTarget` guard prevents inner clicks closing it)
+  - Both call `setShowFinalEstimateOverlay(false)`
