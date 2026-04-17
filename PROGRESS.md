@@ -141,6 +141,7 @@
     - domain ownership for `pointpoker.app` verified
     - `sitemap.xml` submitted successfully
     - `vercel.json` now explicitly redirects apex `pointpoker.app` traffic to `https://www.pointpoker.app/:path*`, so Search Console `Page with redirect` examples for bare-domain/http variants map to the intended canonical host instead of behaving like accidental duplicate URLs
+    - crawlable homepage JSON-LD / FAQ copy in `public/index.html` now matches the live pricing truth (`8` free participants including facilitator, `20` Pro participants including facilitators, `2` dedicated Team Rooms, sprint history) instead of the older `6`-participant copy
     - homepage and key marketing routes requested for indexing
     - additional trust/support/guide routes also requested for indexing:
       - `/about`

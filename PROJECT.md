@@ -158,6 +158,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - domain ownership for `pointpoker.app` has been verified in Google Search Console
     - `sitemap.xml` has been submitted successfully
     - canonical-host hardening is now explicit in `vercel.json`: apex `pointpoker.app` redirects permanently to `https://www.pointpoker.app/:path*`, so Search Console `Page with redirect` examples for bare-domain/http variants are treated as alternate URLs, not intended indexable pages
+    - crawlable homepage structured data in `public/index.html` now matches the live product limits and Pro offer wording (`8` free participants including facilitator, `20` Pro participants including facilitators, `2` dedicated Team Rooms, sprint history)
     - homepage and key marketing routes have been manually requested for indexing
     - trust/support/guide routes have also now been manually requested for indexing:
       - `/about`
