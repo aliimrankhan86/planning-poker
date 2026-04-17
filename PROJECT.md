@@ -163,11 +163,13 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - homepage and key marketing routes have been manually requested for indexing
     - trust/support/guide routes have also now been manually requested for indexing:
       - `/about`
+      - `/pricing` (re-requested on 17 April 2026 after Search Console still showed the URL as unknown to Google)
       - `/support`
+      - `/trust` (re-requested on 17 April 2026 after Search Console still showed the URL as unknown to Google)
       - `/what-is-planning-poker`
       - `/fibonacci-story-points`
       - `/agile-estimation-tool`
-    - `/trust` has not yet been manually requested for indexing because Google Search Console hit the daily request quota on 2 April 2026; retry tomorrow
+    - Atlas Search Console inspection on 17 April 2026 confirmed the canonical `www` host is correct and most marketing pages are indexed; the remaining discovery lag is limited to `/pricing`, `/support`, and `/trust`, which have now been re-requested for indexing
   - Zoho Mail domain authentication is now correctly configured for `pointpoker.app`:
     - SPF passes
     - DKIM passes
@@ -217,7 +219,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Still pending:
   - SEO Phase 3/4: continue adding supporting guide/trust/proof content, then monitor indexing/query performance in Search Console
   - Re-check Search Console after recrawl so the current redirect validation settles around the intended `https://www.pointpoker.app/` canonical host
-  - Retry Google Search Console manual indexing request for `/trust` after the daily quota resets
+  - Re-check Search Console URL Inspection for `/pricing`, `/support`, and `/trust` after Google recrawls them
   - Re-run fresh-account signup email QA with a brand-new real inbox now that the signup verification-state UI bug has been fixed
   - Redeploy Firebase Functions so the owner Pro-notification subject-line improvement goes live, then re-check that email in the owner inbox
   - Replace Stripe placeholder links and complete paid activation wiring

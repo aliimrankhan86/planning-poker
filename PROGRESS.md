@@ -145,11 +145,13 @@
     - homepage and key marketing routes requested for indexing
     - additional trust/support/guide routes also requested for indexing:
       - `/about`
+      - `/pricing` (re-requested on 17 April 2026 after Atlas found it still unknown to Google in Search Console)
       - `/support`
+      - `/trust` (re-requested on 17 April 2026 after Atlas found it still unknown to Google in Search Console)
       - `/what-is-planning-poker`
       - `/fibonacci-story-points`
       - `/agile-estimation-tool`
-    - `/trust` still needs a manual indexing request; Google Search Console returned a daily quota error on 2 April 2026, so retry tomorrow
+    - Atlas Search Console inspection on 17 April 2026 confirmed the canonical `www` setup is correct; the remaining lag is limited to `/pricing`, `/support`, and `/trust`, which have now been manually re-requested for indexing
   - Zoho Mail authentication is now correctly aligned for the production domain:
     - SPF passes
     - DKIM passes
@@ -241,7 +243,7 @@
 - Remaining priorities:
   - Run the broader manual E2E checklist on production if desired (see `QA_TEST_PLAN.md`) — focused product-critical QA is already passing
   - Re-check Search Console after the next crawl so the current redirect validation settles around the intended `https://www.pointpoker.app/` canonical host
-  - Retry Search Console indexing request for `/trust` after the daily quota resets
+  - Re-check Search Console URL Inspection for `/pricing`, `/support`, and `/trust` after Google recrawls them
   - Configure and deploy the new notification functions so owner/operator signup + Pro emails become live
   - Replace Stripe placeholder links and finish paid activation wiring
   - Verify a real Pro account end-to-end once live Stripe links exist
@@ -286,8 +288,8 @@ Treat this section as the fastest current-status read. Historical session notes 
 
 ## 📍 Current Status
 **Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** re-run fresh-account signup email QA after the signup-state fix, retry `/trust` indexing in Search Console, publish the updated Firebase rules for single-account activation-key binding, redeploy Functions for the owner-subject refinement, and continue additive trust/proof content while Stripe stays parked
-**Remaining:** trust/proof content, retry `/trust` indexing request in Search Console, verify fresh-account signup verification email delivery, publish the updated Firebase rules so activation keys cannot be reused across multiple users, redeploy Functions so the owner Pro-notification subject improvement goes live, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Active step:** re-run fresh-account signup email QA after the signup-state fix, monitor the re-requested `/pricing`, `/support`, and `/trust` indexing in Search Console, publish the updated Firebase rules for single-account activation-key binding, redeploy Functions for the owner-subject refinement, and continue additive trust/proof content while Stripe stays parked
+**Remaining:** trust/proof content, verify Search Console recrawl/indexing for `/pricing`, `/support`, and `/trust`, verify fresh-account signup verification email delivery, publish the updated Firebase rules so activation keys cannot be reused across multiple users, redeploy Functions so the owner Pro-notification subject improvement goes live, broader production E2E sweep if desired, then Stripe/payment work when resumed
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
