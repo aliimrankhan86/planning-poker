@@ -45,6 +45,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
   - App chrome wordmark now renders as `Point Poker` with white `Point`, gold `Poker`, and explicit spacing/capitalization
   - The same approved brand mark is now used for favicon and app-icon assets across browser and PWA contexts
   - Landing-page discoverability improved: signed-out NavBar now exposes `Plans` and `FAQ` shortcuts, with `Plans` routing to the dedicated pricing page and `FAQ` jumping to the home-page FAQ section
+  - Signed-out primary navigation now also exposes `Support` and `Trust`, making those canonical trust/help pages easier for both users and crawlers to discover directly from the header
   - Landing page now contains a compact plans overview section in addition to the pricing modal
   - Auth flow is clearer: login/register/reset messaging now distinguishes free use from account-linked Pro access
   - Upgrade flow is smoother: starting checkout while signed out now routes through account creation/sign-in and then returns the user to pricing

@@ -3616,6 +3616,8 @@ function NavBar({
   onLogin,
   onRegister,
   onPlans,
+  onSupport,
+  onTrust,
   onFaq,
   currentUser,
   currentPlan,
@@ -3646,6 +3648,12 @@ function NavBar({
             <div className="navbar-links" aria-label="Marketing sections">
               <NavLinkButton onClick={onPlans} ariaLabel="Go to plans">
                 Plans
+              </NavLinkButton>
+              <NavLinkButton onClick={onSupport} ariaLabel="Go to support">
+                Support
+              </NavLinkButton>
+              <NavLinkButton onClick={onTrust} ariaLabel="Go to trust and reliability">
+                Trust
               </NavLinkButton>
               <NavLinkButton onClick={onFaq} ariaLabel="Go to frequently asked questions">
                 FAQ
@@ -5272,6 +5280,8 @@ export default function App() {
           onLogin={()    => { openLoginModal("signin", "general"); track("login_modal_opened"); }}
           onRegister={() => openRelevantPricingModal()}
           onPlans={() => navTo("/pricing")}
+          onSupport={() => navTo("/support")}
+          onTrust={() => navTo("/trust")}
           onFaq={() => jumpToMarketingSection("faq")}
           currentUser={authUser}
           currentPlan={currentPlan}

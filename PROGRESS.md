@@ -35,7 +35,7 @@
   - The approved transparent brand mark is now used across the app’s logo sections
   - The app wordmark now displays as `Point Poker` with white `Point`, gold `Poker`, and stronger spacing/capitalization
   - The approved brand mark now also drives favicon and app-icon assets across browser and PWA contexts
-  - NavBar now includes direct `Plans` and `FAQ` shortcuts to improve landing-page discoverability; `Plans` routes to the dedicated pricing page and `FAQ` jumps to the home FAQ section
+  - NavBar now includes direct `Plans`, `Support`, `Trust`, and `FAQ` shortcuts to improve landing-page discoverability; `Plans` routes to the dedicated pricing page, `Support` and `Trust` route to their canonical marketing pages, and `FAQ` jumps to the home FAQ section
   - JoinScreen now includes a compact plans overview section in addition to the pricing modal
   - Login/register/reset copy now more clearly separates free use from account-linked Pro access
   - Upgrade flow now returns signed-out users to pricing after account creation/sign-in instead of leaving them stranded
