@@ -190,6 +190,8 @@
     - reveal analytics remain visible for discussion, but the final recorded estimate must now be an explicit valid deck choice whenever votes differ
     - the split-vote chooser is now promoted into the main facilitator action block and auto-scrolls into view so it is difficult to miss after reveal
     - post-reveal facilitator flow now places a large `Next item to Estimate` CTA directly under `Who Picked What`, replacing the older lower-page `Next Round` style forward action and making the next step hard to miss in T-shirt sizing sessions
+    - no-queue estimate recording now validates against the actual room deck again, fixing the facilitator next-item action in T-shirt rooms under the hardened Firebase rules
+    - failed estimate saves now show an explicit toast instead of silently doing nothing
   - Room-entry validation tightened:
     - both Participant and Facilitator must provide a real name before entering a room
     - placeholder-like values such as `Alex Johnson` are now blocked instead of being accepted as live participant names
@@ -284,6 +286,7 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Added single-account activation-key binding in repo code and rules: `validateAndSavePro()` now claims `/licenses/{key}` to the activating UID, existing Pro users auto-claim legacy keys on sign-in, and reused keys now show a specific “already attached to another account” error.
   - Tightened the owner Pro-notification subject template in `functions/index.js` to `Point Poker Pro activated for <user-email>`; this code change now needs a fresh Functions redeploy to become live.
   - Repositioned and simplified the facilitator post-estimation CTA in `src/App.js`: reveals now show a large `Next item to Estimate` button immediately under `Who Picked What`, the old lower forward CTA was removed, and the revealed-state helper copy now points directly at the new button.
+  - Fixed the actual save path behind that CTA: `database.rules.json` / `database.rules.publish.json` now validate `rounds/{index}/estimate` against the room deck instead of the `rounds` collection node, and `src/App.js` now shows a toast if queue or no-queue estimate saves fail.
   - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
 
 ---

@@ -128,6 +128,8 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - the split-vote resolution step now escalates into a delayed facilitator-only overlay after reveal, making the next action explicit after a brief discussion pause
     - split-vote wording was rewritten so teams understand that averages are for discussion only, while the facilitator must either record the agreed deck value or run another vote
     - post-reveal facilitator flow now places a large `Next item to Estimate` CTA directly under `Who Picked What`, so T-shirt sizing sessions have an obvious forward action instead of ambiguous `Next Round` wording lower in the controls
+    - no-queue round recording now validates saved estimates against the actual room deck again, fixing the facilitator `Next item to Estimate` action for T-shirt sizing rooms under the hardened Firebase rules
+    - estimate-save failures in both queue and no-queue paths now surface a toast instead of failing silently
   - Room entry now requires a real participant/facilitator name:
     - joining/creating a room no longer falls back to placeholder-like names
     - placeholder values such as `Alex Johnson` are rejected instead of being accepted as the live participant name
@@ -653,6 +655,10 @@ Listed chronologically newest-first.
 - Facilitator post-reveal flow in `src/App.js` now places a large, hard-to-miss `Next item to Estimate` button directly under `Who Picked What`
 - The old lower-page forward CTA was removed from the facilitator controls so there is a single obvious next step after reveal
 - The split-vote overlay save action now uses the same next-item wording, and the revealed-state helper copy points directly at the new button
+
+### 2026-05 — No-queue estimate save path fixed under hardened rules
+- `database.rules.json` and `database.rules.publish.json` now validate `rooms/{roomId}/rounds/{index}/estimate` against the actual room deck instead of the intermediate `rounds` node, fixing T-shirt/no-queue facilitator saves that were being rejected silently
+- `src/App.js` now surfaces an explicit toast when saving a final estimate fails, covering both the no-queue `newRound()` path and the queue-backed `recordAndNextStory()` path
 
 ### 2026-04 — Signup verification + notification backend scaffold
 - New account registration in `src/App.js` now sends a Firebase Auth verification email immediately after account creation without blocking the account/profile write if delivery fails

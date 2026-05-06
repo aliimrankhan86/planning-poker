@@ -5123,10 +5123,16 @@ export default function App() {
       upd[`rooms/${code}/streak`] = 0;
     }
 
-    await update(ref(db), upd);
-    if (estimate !== null) {
-      track("stories_estimated");
-      showToast(getEstMode(roomData?.estimationMode).toastDone);
+    try {
+      await update(ref(db), upd);
+      if (estimate !== null) {
+        track("stories_estimated");
+        showToast(getEstMode(roomData?.estimationMode).toastDone);
+      }
+      return true;
+    } catch {
+      showToast("Could not save that estimate. Please try again.");
+      return false;
     }
   }, [code, roomData, showToast]);
 
@@ -5166,9 +5172,15 @@ export default function App() {
     upd[`rooms/${code}/timer/running`] = false;
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     upd[`rooms/${code}/timer/startedBy`] = null;
-    await update(ref(db), upd);
-    track("stories_estimated");
-    showToast(getEstMode(roomData?.estimationMode).toastNext);
+    try {
+      await update(ref(db), upd);
+      track("stories_estimated");
+      showToast(getEstMode(roomData?.estimationMode).toastNext);
+      return true;
+    } catch {
+      showToast("Could not save that estimate. Please try again.");
+      return false;
+    }
   }, [code, roomData, showToast]);
 
   const resetSession = useCallback(async () => {
