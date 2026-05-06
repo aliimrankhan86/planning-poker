@@ -9979,9 +9979,14 @@ function GameScreen({
               // Stories from the named queue that have been recorded
               const sizedQueueStories = stories.filter((s) => s.estimate != null && s.estimate !== "?");
 
-              // Rounds recorded via newRound (no-queue path) — numeric estimates only
-              const spRounds = rounds.filter(
-                (r) => r.estimate != null && r.estimate !== "?" && !isNaN(Number(r.estimate))
+              // Rounds recorded via newRound (no-queue path).
+              // T-shirt sessions still save valid deck values here, so keep both the
+              // full set for breakdown/counting and the numeric subset for point KPIs.
+              const recordedRounds = rounds.filter(
+                (r) => r.estimate != null && r.estimate !== "?"
+              );
+              const numericRounds = recordedRounds.filter(
+                (r) => !isNaN(Number(r.estimate))
               );
 
               // Prefer queue estimates; fall back to rounds (the two paths are mutually exclusive
@@ -9989,8 +9994,8 @@ function GameScreen({
               const hasQueueData = sizedQueueStories.length > 0;
               const spStories = hasQueueData
                 ? sizedQueueStories.filter((s) => !isNaN(Number(s.estimate)))
-                : spRounds;
-              const sizedStories = hasQueueData ? sizedQueueStories : spRounds;
+                : numericRounds;
+              const sizedStories = hasQueueData ? sizedQueueStories : recordedRounds;
 
               // Total and average story points (numeric decks only)
               const totalSP = spStories.reduce((sum, s) => sum + Number(s.estimate), 0);
