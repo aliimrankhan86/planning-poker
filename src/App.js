@@ -1929,6 +1929,41 @@ body::before {
   font-size: .65rem; font-weight: 500; letter-spacing: .08em;
   text-transform: uppercase; color: rgba(239,242,247,.40); margin-bottom: 7px;
 }
+.analytics-size-breakdown { margin-top: 14px; }
+.analytics-size-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.analytics-size-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(241,185,63,.14);
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+}
+.analytics-size-label {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: rgba(239,242,247,.62);
+}
+.analytics-size-count {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -.04em;
+  color: var(--gold2);
+  line-height: 1;
+}
+.analytics-size-copy {
+  font-size: .66rem;
+  color: rgba(239,242,247,.52);
+}
 .analytics-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .analytics-chip {
   display: flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px;
@@ -9996,6 +10031,9 @@ function GameScreen({
                   ? tshirtOrder.indexOf(a[0]) - tshirtOrder.indexOf(b[0])
                   : Number(a[0]) - Number(b[0])
               );
+              const tshirtBreakdown = isTshirt
+                ? tshirtOrder.map((size) => ({ size, count: freqMap[size] || 0 }))
+                : [];
               const deckLabel = deck === "fibonacci" ? "Fibonacci"
                 : deck === "tshirt" ? "T-Shirt sizes"
                 : "Powers of 2";
@@ -10006,6 +10044,13 @@ function GameScreen({
                 name: s.name && s.name.trim() ? s.name.trim() : `${estMode.progressLabel} ${i + 1}`,
                 estimate: s.estimate,
               }));
+
+              const topTshirtEntry = tshirtBreakdown.reduce(
+                (best, entry) => (entry.count > best.count ? entry : best),
+                { size: "—", count: 0 },
+              );
+              const tshirtMostCommon = topTshirtEntry.count > 0 ? topTshirtEntry.size : "—";
+              const tshirtSizeMix = breakdown.length > 0 ? `${breakdown.length} used` : "—";
 
               // Sprint scope display
               const scopeDisp = totalSP > 0
@@ -10026,12 +10071,12 @@ function GameScreen({
                       <span className="a-kpi-l">{estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized</span>
                     </div>
                     <div className="a-kpi">
-                      <span className="a-kpi-v">{scopeDisp}</span>
-                      <span className="a-kpi-l">Sprint scope</span>
+                      <span className="a-kpi-v">{isTshirt ? tshirtMostCommon : scopeDisp}</span>
+                      <span className="a-kpi-l">{isTshirt ? "Most used size" : "Sprint scope"}</span>
                     </div>
                     <div className="a-kpi">
-                      <span className="a-kpi-v">{avgDisp2}</span>
-                      <span className="a-kpi-l">Avg / {estMode.singular}</span>
+                      <span className="a-kpi-v">{isTshirt ? tshirtSizeMix : avgDisp2}</span>
+                      <span className="a-kpi-l">{isTshirt ? "Size mix" : `Avg / ${estMode.singular}`}</span>
                     </div>
                   </div>
 
@@ -10055,7 +10100,27 @@ function GameScreen({
                     <div className="a-align-note">% of {estMode.plural} where all voters agreed on the first vote</div>
                   </div>
 
-                  {/* ── Section 3: Sized this sprint ── */}
+                  {/* ── Section 3: T-shirt size breakdown ── */}
+                  {isTshirt && tshirtBreakdown.length > 0 && (
+                    <div className="analytics-size-breakdown">
+                      <div className="analytics-breakdown-title">
+                        T-Shirt size breakdown
+                      </div>
+                      <div className="analytics-size-grid">
+                        {tshirtBreakdown.map(({ size, count }) => (
+                          <div className="analytics-size-card" key={size}>
+                            <span className="analytics-size-label">{size}</span>
+                            <span className="analytics-size-count">{count}</span>
+                            <span className="analytics-size-copy">
+                              {count === 1 ? estMode.singular : estMode.plural}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Section 4: Sized this sprint ── */}
                   <div className="a-stories">
                     <div className="a-section-title">
                       {estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized{listedStories.length > 0 ? ` (${listedStories.length})` : ""}
@@ -10079,8 +10144,8 @@ function GameScreen({
                     )}
                   </div>
 
-                  {/* ── Section 4: Estimate distribution ── */}
-                  {breakdown.length > 0 && (
+                  {/* ── Section 5: Estimate distribution ── */}
+                  {!isTshirt && breakdown.length > 0 && (
                     <div className="analytics-breakdown">
                       <div className="analytics-breakdown-title">
                         {deckLabel} — point distribution

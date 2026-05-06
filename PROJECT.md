@@ -130,6 +130,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - post-reveal facilitator flow now places a large `Next item to Estimate` CTA directly under `Who Picked What`, so T-shirt sizing sessions have an obvious forward action instead of ambiguous `Next Round` wording lower in the controls
     - no-queue round recording now validates saved estimates against the actual room deck again, fixing the facilitator `Next item to Estimate` action for T-shirt sizing rooms under the hardened Firebase rules
     - estimate-save failures in both queue and no-queue paths now surface a toast instead of failing silently
+    - Sprint Analytics now treats T-shirt sizing as a first-class deck: facilitators see a dedicated `T-Shirt size breakdown` section with XS/S/M/L/XL/XXL counts plus more useful summary cards (`Most used size`, `Size mix`) instead of numeric point placeholders
   - Room entry now requires a real participant/facilitator name:
     - joining/creating a room no longer falls back to placeholder-like names
     - placeholder values such as `Alex Johnson` are rejected instead of being accepted as the live participant name
@@ -659,6 +660,10 @@ Listed chronologically newest-first.
 ### 2026-05 — No-queue estimate save path fixed under hardened rules
 - `database.rules.json` and `database.rules.publish.json` now validate `rooms/{roomId}/rounds/{index}/estimate` against the actual room deck instead of the intermediate `rounds` node, fixing T-shirt/no-queue facilitator saves that were being rejected silently
 - `src/App.js` now surfaces an explicit toast when saving a final estimate fails, covering both the no-queue `newRound()` path and the queue-backed `recordAndNextStory()` path
+
+### 2026-05 — T-shirt analytics breakdown surfaced
+- `src/App.js` Sprint Analytics now shows a dedicated `T-Shirt size breakdown` grid with explicit XS / S / M / L / XL / XXL counts whenever the active deck is T-shirt sizing
+- T-shirt analytics KPIs now surface `Most used size` and `Size mix` instead of point-oriented `Sprint scope` / `Avg per story` placeholders that were not meaningful for that deck
 
 ### 2026-04 — Signup verification + notification backend scaffold
 - New account registration in `src/App.js` now sends a Firebase Auth verification email immediately after account creation without blocking the account/profile write if delivery fails
