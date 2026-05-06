@@ -132,6 +132,7 @@ This section is the fastest, highest-priority handoff summary for any AI.
     - estimate-save failures in both queue and no-queue paths now surface a toast instead of failing silently
     - Sprint Analytics now treats T-shirt sizing as a first-class deck: facilitators see a dedicated `T-Shirt size breakdown` section with XS/S/M/L/XL/XXL counts plus more useful summary cards (`Most used size`, `Size mix`) instead of numeric point placeholders
     - T-shirt analytics now also count no-queue consensus rounds correctly, so agreed `XS/S/M/L/XL/XXL` estimates are reflected in the current session breakdown instead of showing zeros
+    - mixed estimates now keep the facilitator in the reveal flow itself: the facilitator chooses the agreed final deck value inline under `Who Picked What`, saves it, and moves directly to the next item without waiting for a delayed popup
   - Room entry now requires a real participant/facilitator name:
     - joining/creating a room no longer falls back to placeholder-like names
     - placeholder values such as `Alex Johnson` are rejected instead of being accepted as the live participant name
@@ -666,6 +667,10 @@ Listed chronologically newest-first.
 - `src/App.js` Sprint Analytics now shows a dedicated `T-Shirt size breakdown` grid with explicit XS / S / M / L / XL / XXL counts whenever the active deck is T-shirt sizing
 - T-shirt analytics KPIs now surface `Most used size` and `Size mix` instead of point-oriented `Sprint scope` / `Avg per story` placeholders that were not meaningful for that deck
 - No-queue rounds saved through `newRound()` are now included in the T-shirt analytics dataset, so consensus-only T-shirt sessions still populate the per-size counts and summary cards
+
+### 2026-05 — Mixed-estimate facilitator decision moved inline
+- `src/App.js` no longer hides the split-vote save flow behind a delayed facilitator popup
+- When votes differ, the facilitator now gets an inline decision block directly under `Who Picked What`, can choose the agreed final deck value there, and move immediately to the next item or re-vote
 
 ### 2026-04 — Signup verification + notification backend scaffold
 - New account registration in `src/App.js` now sends a Firebase Auth verification email immediately after account creation without blocking the account/profile write if delivery fails

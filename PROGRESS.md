@@ -194,6 +194,7 @@
     - failed estimate saves now show an explicit toast instead of silently doing nothing
     - Sprint Analytics now exposes a dedicated T-shirt size breakdown with explicit XS/S/M/L/XL/XXL counts and swaps the top summary cards to `Most used size` and `Size mix` for T-shirt rooms
     - no-queue consensus rounds are now counted in that T-shirt breakdown too, so agreed T-shirt estimates no longer show as zero in the current session analytics
+    - mixed-estimate sessions now keep the facilitator in the reveal flow: the agreed final size is chosen inline under `Who Picked What`, then saved and advanced without waiting for a delayed popup
   - Room-entry validation tightened:
     - both Participant and Facilitator must provide a real name before entering a room
     - placeholder-like values such as `Alex Johnson` are now blocked instead of being accepted as live participant names
@@ -291,6 +292,7 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Fixed the actual save path behind that CTA: `database.rules.json` / `database.rules.publish.json` now validate `rounds/{index}/estimate` against the room deck instead of the `rounds` collection node, and `src/App.js` now shows a toast if queue or no-queue estimate saves fail.
   - Added explicit T-shirt sizing analytics in `src/App.js`: facilitators now get a visible per-size count grid plus more meaningful top-level KPIs for T-shirt sessions instead of point-based placeholders.
   - Fixed the T-shirt analytics data source for no-queue sessions: non-numeric consensus rounds saved via `newRound()` are now included in the current-session breakdown and summary cards instead of being filtered out.
+  - Moved the mixed-estimate facilitator save flow inline in `src/App.js`: when votes differ, the facilitator now chooses the agreed deck value directly in the reveal area and can save + move to the next item immediately instead of waiting for a delayed modal.
   - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
 
 ---

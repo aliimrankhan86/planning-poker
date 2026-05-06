@@ -1711,6 +1711,38 @@ body::before {
   font-size: .82rem; line-height: 1.65; color: rgba(239,242,247,.78); margin-bottom: 14px;
 }
 .final-estimate-copy strong { color: rgba(239,242,247,.92); font-weight: 600; }
+.inline-final-decision {
+  margin-top: 18px;
+  padding: 18px 18px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(241,185,63,.24);
+  background:
+    radial-gradient(circle at top, rgba(241,185,63,.10), rgba(241,185,63,0) 58%),
+    linear-gradient(180deg, rgba(241,185,63,.10), rgba(255,255,255,.025));
+  box-shadow: 0 18px 38px rgba(241,185,63,.10), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.inline-final-decision-kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: .62rem; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase;
+  color: var(--gold2);
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(241,185,63,.10);
+  border: 1px solid rgba(241,185,63,.18);
+  margin-bottom: 10px;
+}
+.inline-final-decision-title {
+  font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em;
+  color: var(--cream); margin-bottom: 8px;
+}
+.inline-final-decision-copy {
+  font-size: .82rem; line-height: 1.65; color: rgba(239,242,247,.78); margin-bottom: 14px;
+}
+.inline-final-summary {
+  margin-bottom: 14px;
+}
+.inline-final-actions {
+  margin-top: 4px;
+}
 .final-estimate-grid {
   display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
 }
@@ -9004,14 +9036,11 @@ function GameScreen({
   const [finalEstimate, setFinalEstimate] = useState("");
   const [headerLinkCopied, setHeaderLinkCopied] = useState(false);
   const [solobannerDismissed, setSoloBannerDismissed] = useState(false);
-  const [showFinalEstimateOverlay, setShowFinalEstimateOverlay] = useState(false);
   // Confetti fires once per consensus reveal, keyed by round number
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConsensus, setShowConsensus] = useState(false);
   const confettiFiredForRoundRef = useRef(null);
   const copyFeedbackRef = useRef(null);
-  const finalEstimateOverlayTimerRef = useRef(null);
-  const finalEstimateRef = useRef(null);
 
   const players = Object.values(rd.players || {});
   const voters = players.filter((p) => p.role === "voter");
@@ -9086,7 +9115,6 @@ function GameScreen({
 
   const saveFinalEstimateAndContinue = useCallback(() => {
     if (!chosenFinalEstimate) return;
-    setShowFinalEstimateOverlay(false);
     if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, false);
     else onNewRound(chosenFinalEstimate, false);
   }, [chosenFinalEstimate, hasStories, allStoriesDone, onRecordStory, onNewRound]);
@@ -9098,7 +9126,6 @@ function GameScreen({
   }, [chosenFinalEstimate, hasStories, allStoriesDone, onRecordStory, onNewRound, allSame]);
 
   const handleRevoteStory = useCallback(() => {
-    setShowFinalEstimateOverlay(false);
     onNewRound(null, false);
   }, [onNewRound]);
 
@@ -9113,27 +9140,6 @@ function GameScreen({
     }
     setFinalEstimate("");
   }, [revealed, allSame, consensusEstimate, round]);
-
-  useEffect(() => {
-    clearTimeout(finalEstimateOverlayTimerRef.current);
-    if (!requiresManualFinalEstimate) {
-      setShowFinalEstimateOverlay(false);
-      return;
-    }
-    setShowFinalEstimateOverlay(false);
-    finalEstimateOverlayTimerRef.current = setTimeout(() => {
-      setShowFinalEstimateOverlay(true);
-    }, 2600);
-    return () => clearTimeout(finalEstimateOverlayTimerRef.current);
-  }, [requiresManualFinalEstimate, round]);
-
-  useEffect(() => {
-    if (!showFinalEstimateOverlay) return;
-    const t = setTimeout(() => {
-      finalEstimateRef.current?.focus();
-    }, 40);
-    return () => clearTimeout(t);
-  }, [showFinalEstimateOverlay]);
 
   // Fire confetti + consensus banner exactly once per consensus reveal
   useEffect(() => {
@@ -9172,7 +9178,6 @@ function GameScreen({
 
   useEffect(() => () => {
     clearTimeout(copyFeedbackRef.current);
-    clearTimeout(finalEstimateOverlayTimerRef.current);
   }, []);
 
   const handleCopyLink = useCallback(() => {
@@ -9204,74 +9209,6 @@ function GameScreen({
             <div className="consensus-burst-text">Perfect Consensus!</div>
             <div className="consensus-burst-sub">
               Everyone picked {voted[0].vote} — the team agrees
-            </div>
-          </div>
-        </div>
-      )}
-      {showFinalEstimateOverlay && requiresManualFinalEstimate && (
-        <div className="facilitator-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="final-estimate-title" onClick={(e) => { if (e.target === e.currentTarget) setShowFinalEstimateOverlay(false); }}>
-          <div className="facilitator-overlay" ref={finalEstimateRef} tabIndex="-1">
-            <button className="facilitator-overlay-close" aria-label="Close" onClick={() => setShowFinalEstimateOverlay(false)}>✕</button>
-            <div className="facilitator-overlay-kicker">Facilitator action required</div>
-            <h2 className="facilitator-overlay-title" id="final-estimate-title">
-              The team is split. Choose the estimate you agreed to record.
-            </h2>
-            <div className="facilitator-overlay-copy">
-              The cards are revealed and the votes differ. <strong>Take a quick discussion</strong>, then either
-              choose the final estimate your team agreed on or start another vote for this story.
-              The summary numbers are here to guide the conversation only and <strong>are not saved automatically</strong>.
-            </div>
-            <div className="facilitator-overlay-summary">
-              <div className="facilitator-overlay-summary-card">
-                <span className="facilitator-overlay-summary-k">Votes shown</span>
-                <span className="facilitator-overlay-summary-v">{revealedVotesSummary || "—"}</span>
-              </div>
-              <div className="facilitator-overlay-summary-card">
-                <span className="facilitator-overlay-summary-k">Average</span>
-                <span className="facilitator-overlay-summary-v gold">{avgDisp}</span>
-              </div>
-              <div className="facilitator-overlay-summary-card">
-                <span className="facilitator-overlay-summary-k">Spread</span>
-                <span className="facilitator-overlay-summary-v">
-                  {spread !== null ? `${spread} point${spread !== 1 ? "s" : ""}` : "Different votes"}
-                </span>
-              </div>
-            </div>
-            <div className="facilitator-overlay-decision">
-              <div className="facilitator-overlay-decision-title">What should be recorded for this story?</div>
-              <div className="facilitator-overlay-decision-copy">
-                Choose one value from the active deck. This is the estimate that will be saved into the sprint analytics and history.
-              </div>
-              <div className="facilitator-overlay-grid" role="group" aria-label="Choose final estimate">
-                {finalEstimateOptions.map((val) => (
-                  <button
-                    key={val}
-                    type="button"
-                    className={`facilitator-overlay-chip${finalEstimate === val ? " active" : ""}`}
-                    aria-pressed={finalEstimate === val}
-                    onClick={() => setFinalEstimate(val)}
-                  >
-                    {val}
-                  </button>
-                ))}
-              </div>
-              <div className="facilitator-overlay-actions">
-                <button
-                  className="btn-record-next facilitator-overlay-save"
-                  disabled={!chosenFinalEstimate}
-                  onClick={saveFinalEstimateAndContinue}
-                >
-                  {chosenFinalEstimate
-                    ? `✅ Save estimate & ${nextItemButtonLabel}`
-                    : "Select the agreed estimate to continue"}
-                </button>
-                <button className="facilitator-overlay-revote" type="button" onClick={handleRevoteStory}>
-                  ↺ Run another vote
-                </button>
-              </div>
-              <div className="facilitator-overlay-footnote">
-                Best practice: let the summary guide the conversation, but record only the single value the team explicitly agrees to commit.
-              </div>
             </div>
           </div>
         </div>
@@ -9706,6 +9643,58 @@ function GameScreen({
                         );
                       })}
                     </div>
+                    {isObs && requiresManualFinalEstimate && (
+                      <div className="inline-final-decision" role="group" aria-label="Facilitator choose final estimate">
+                        <div className="inline-final-decision-kicker">Facilitator decision</div>
+                        <div className="inline-final-decision-title">Choose the agreed estimate for this item</div>
+                        <div className="inline-final-decision-copy">
+                          The votes are mixed. Select the estimate your team agrees to record, then move straight to the next item. The summary above is only for discussion.
+                        </div>
+                        <div className="facilitator-overlay-summary inline-final-summary">
+                          <div className="facilitator-overlay-summary-card">
+                            <span className="facilitator-overlay-summary-k">Votes shown</span>
+                            <span className="facilitator-overlay-summary-v">{revealedVotesSummary || "—"}</span>
+                          </div>
+                          <div className="facilitator-overlay-summary-card">
+                            <span className="facilitator-overlay-summary-k">Average</span>
+                            <span className="facilitator-overlay-summary-v gold">{avgDisp}</span>
+                          </div>
+                          <div className="facilitator-overlay-summary-card">
+                            <span className="facilitator-overlay-summary-k">Spread</span>
+                            <span className="facilitator-overlay-summary-v">
+                              {spread !== null ? `${spread} point${spread !== 1 ? "s" : ""}` : "Different votes"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="facilitator-overlay-grid" role="group" aria-label="Choose final estimate">
+                          {finalEstimateOptions.map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              className={`facilitator-overlay-chip${finalEstimate === val ? " active" : ""}`}
+                              aria-pressed={finalEstimate === val}
+                              onClick={() => setFinalEstimate(val)}
+                            >
+                              {val}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="facilitator-overlay-actions inline-final-actions">
+                          <button
+                            className="btn-record-next btn-next-item-cta"
+                            disabled={!chosenFinalEstimate}
+                            onClick={saveFinalEstimateAndContinue}
+                          >
+                            {chosenFinalEstimate
+                              ? `Save selected estimate & ${nextItemButtonLabel}`
+                              : "Select the agreed estimate to continue"}
+                          </button>
+                          <button className="facilitator-overlay-revote" type="button" onClick={handleRevoteStory}>
+                            ↺ Re-vote this item
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {isObs && !requiresManualFinalEstimate && (
                       <button
                         className={`btn-record-next btn-next-item-cta${allSame ? " consensus" : ""}`}
@@ -9729,12 +9718,12 @@ function GameScreen({
             {/* Facilitator Controls */}
             {isObs && (
               <div className="obs-controls">
-                {revealed && requiresManualFinalEstimate && !showFinalEstimateOverlay && (
+                {revealed && requiresManualFinalEstimate && (
                   <div className="final-estimate-panel">
-                    <div className="final-estimate-kicker">Discussion time</div>
-                    <div className="final-estimate-title">Votes are split. Talk it through for a moment.</div>
+                    <div className="final-estimate-kicker">Decision required</div>
+                    <div className="final-estimate-title">Pick the agreed estimate in the reveal panel, then move to the next item.</div>
                     <div className="final-estimate-copy">
-                      A facilitator prompt will appear shortly so you can record the agreed estimate or start another vote.
+                      The facilitator controls now sit directly under <strong>Who Picked What</strong> so you can record the team decision without waiting for a popup.
                     </div>
                   </div>
                 )}
