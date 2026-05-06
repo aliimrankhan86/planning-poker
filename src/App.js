@@ -3504,7 +3504,7 @@ async function sweepStaleRooms() {
         storiesDone: 0,
         streak: 0,
         consensusCount: 0,
-        deck: room?.deck || "fibonacci",
+        deck: room?.deck || getFounderDefaultDeck(roomId),
         plan: room?.plan || "pro",
         teamName: room?.teamName || roomId,
         founderRoom: !!room?.founderRoom,
@@ -3543,14 +3543,23 @@ async function sweepStaleRooms() {
 }
 
 // ── FOUNDER DETECTION ────────────────────────────────────────
-// Stored encoded so the team code isn't readable as plain text
+// Stored encoded so the team codes are not readable as plain text
 // in the compiled bundle. Not a guarantee, but raises the bar.
-// Encoded value is: btoa("<teamCode>") — never commit the raw name.
-const _FC = ["cnBhLWJ1aWxkLXRlYW0="]; // rpa-build-team
-const isFounderRoom = (code) => {
-  try { return _FC.some(h => atob(h) === code.toLowerCase()); }
-  catch { return false; }
+// Encoded values are: btoa("<teamCode>") — never commit the raw names.
+const FOUNDER_ROOM_CONFIG = [
+  { hash: "cnBhLWJ1aWxkLXRlYW0=", defaultDeck: "fibonacci" },
+  { hash: "cnBhLWRpc2NvdmVyeS10ZWFt", defaultDeck: "tshirt" },
+];
+const getFounderRoomConfig = (code = "") => {
+  try {
+    const normalized = code.toLowerCase();
+    return FOUNDER_ROOM_CONFIG.find(({ hash }) => atob(hash) === normalized) || null;
+  } catch {
+    return null;
+  }
 };
+const isFounderRoom = (code) => !!getFounderRoomConfig(code);
+const getFounderDefaultDeck = (code) => getFounderRoomConfig(code)?.defaultDeck || "fibonacci";
 
 /* ═══════════════════════ CASINO CHIP LOGO ═══════════════════════
    SVG casino chip — 8-segment outer ring, gold inner border, "PP" text.
@@ -8111,7 +8120,7 @@ function JoinScreen({
   const [nameDraft, setNameDraft] = useState(signedIn ? defaultName : "");
   const [nameEdited, setNameEdited] = useState(false);
   const [role, setRole] = useState("voter");
-  const [deck, setDeck] = useState("fibonacci");
+  const [deck, setDeck] = useState(() => getFounderDefaultDeck(prefillTeam));
   const [estMode, setEstMode] = useState("stories");
   const [rc, setRc] = useState(prefillCode || "");
   const [selectedDedicatedRoomKey, setSelectedDedicatedRoomKey] = useState(

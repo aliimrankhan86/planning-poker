@@ -27,8 +27,9 @@ This section is the fastest, highest-priority handoff summary for any AI.
 - Roles:
   - Backend values are `voter` and `observer`
   - User-facing label for `observer` is `Facilitator`
-- Founder team room:
+- Founder team rooms:
   - Stable founder-enabled URL is `https://www.pointpoker.app/t/rpa-build-team`
+  - Additional founder-enabled URL is `https://www.pointpoker.app/t/rpa-discovery-team`, which defaults to the T-shirt deck on first creation/entry
 - Verified product state:
   - Auth QA passed
   - Core room-flow QA passed

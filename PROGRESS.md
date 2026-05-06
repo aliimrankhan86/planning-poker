@@ -7,7 +7,7 @@
 - Support email: `support@pointpoker.app`
 - Current phase focus: SEO Phase 3 trust/support/proof content, Search Console monitoring, notification/deployment hardening, and Estimation Mode feature
 - Product state:
-  - **Estimation Mode feature now live in code (2026-04-08):** facilitators choose "User Stories" or "Tasks" at room creation; selection stored in Firebase as `estimationMode`; all in-room copy (queue title, banners, progress, toasts, button labels, analytics KPIs, export) adapts dynamically to the chosen mode; mode picker shown on Create and Team Room tabs (2-button toggle styled consistently with the deck picker); `database.rules.json` and `database.rules.publish.json` updated with write-once validated `estimationMode` field; marketing copy updated across features page, JoinScreen SEO section, PricingModal feature list, and FAQ; build passes clean — **pending Firebase rules publish to production**
+  - **Estimation Mode feature now live in code (2026-04-08):** facilitators choose "User Stories" or "Tasks" at room creation; selection stored in Firebase as `estimationMode`; all in-room copy (queue title, banners, progress, toasts, button labels, analytics KPIs, export) adapts dynamically to the chosen mode; mode picker shown on Create and Team Room tabs (2-button toggle styled consistently with the deck picker); `database.rules.json` and `database.rules.publish.json` updated with write-once validated `estimationMode` field; marketing copy updated across features page, JoinScreen SEO section, PricingModal feature list, and FAQ; build passes clean — **pending Firebase rules publish to production, including the new founder-room slug allowance for `/t/rpa-discovery-team`**
   - Firebase Auth email/password implemented and enabled
   - New account registration now sends a Firebase Auth verification email
   - Registration now stays in an explicit verification step inside the auth modal, with a visible continue action and a resend-verification action instead of auto-closing immediately
@@ -20,7 +20,7 @@
   - Domain placeholders replaced with `www.pointpoker.app`
   - Copy, legal accuracy, accessibility semantics, and structured SEO hardened
   - Mobile vote-selection bug hardened so repeat taps no longer clear the selected card
-  - Founder-enabled team room confirmed as `/t/rpa-build-team`
+  - Founder-enabled team rooms now include `/t/rpa-build-team` and `/t/rpa-discovery-team`; the discovery room defaults to the T-shirt deck on first creation/entry
   - Founder-room slug regression fixed so `/t/rpa-build-team` no longer falls into pricing
   - Team-room URLs now stay clean and voter limits now count only voters
   - Re-vote flow no longer leaves facilitator stuck without `Start Voting`

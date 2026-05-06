@@ -22,7 +22,7 @@
         // ── FIELD VALIDATION ──────────────────────────────────────────────
 
         "plan": {
-          ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro') && (!data.exists() || newData.val() === data.val()) && (newData.val() === 'free' || data.val() === 'pro' || $roomId === 'rpa-build-team' || (auth != null && root.child('users/' + auth.uid + '/plan').val() === 'pro' && root.child('users/' + auth.uid + '/billingStatus').val() === 'active'))"
+          ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro') && (!data.exists() || newData.val() === data.val()) && (newData.val() === 'free' || data.val() === 'pro' || $roomId === 'rpa-build-team' || $roomId === 'rpa-discovery-team' || (auth != null && root.child('users/' + auth.uid + '/plan').val() === 'pro' && root.child('users/' + auth.uid + '/billingStatus').val() === 'active'))"
         },
 
         "deck": {
@@ -64,7 +64,7 @@
         },
 
         "founderRoom": {
-          ".validate": "!newData.exists() || (newData.isBoolean() && (!data.exists() ? newData.val() === ($roomId === 'rpa-build-team') : newData.val() === data.val()))"
+          ".validate": "!newData.exists() || (newData.isBoolean() && (!data.exists() ? newData.val() === ($roomId === 'rpa-build-team' || $roomId === 'rpa-discovery-team') : newData.val() === data.val()))"
         },
 
         // Write-once: set at room creation, cannot be changed mid-session.
