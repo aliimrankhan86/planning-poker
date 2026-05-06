@@ -337,7 +337,7 @@ const ESTIMATION_MODES = {
     toastNext: "✅ Estimate recorded. Voting on next story.",
     placeholder: "e.g. User login flow, PROJ-42…",
     hintText: "Add stories to track estimates by name — or just start voting without them. Both work.",
-    recordNext: "& Next Story",
+    recordNext: "& Estimate Next Story",
   },
   tasks: {
     key: "tasks",
@@ -354,7 +354,7 @@ const ESTIMATION_MODES = {
     toastNext: "✅ Estimate recorded. Voting on next task.",
     placeholder: "e.g. Build login API, Write unit tests, PROJ-42-1…",
     hintText: "Add tasks to track estimates by name — or just start voting without them. Both work.",
-    recordNext: "& Next Task",
+    recordNext: "& Estimate Next Task",
   },
 };
 const getEstMode = (mode) => ESTIMATION_MODES[mode] || ESTIMATION_MODES.stories;
@@ -1681,6 +1681,9 @@ body::before {
 @keyframes recordGlow { 0%, 100% { box-shadow: 0 12px 28px rgba(75,216,137,.25); } 50% { box-shadow: 0 14px 40px rgba(75,216,137,.60), 0 0 0 5px rgba(75,216,137,.18); } }
 .btn-record-next.consensus { padding: 15px 11px; font-size: .94rem; letter-spacing: .01em; background: linear-gradient(135deg, rgba(75,216,137,.95), rgba(44,176,112,.85)); animation: recordGlow 2s ease-in-out infinite; margin-top: 8px; }
 .btn-record-next.consensus:hover { background: linear-gradient(135deg, #5fe69a, #34c27b); animation: none; box-shadow: 0 14px 40px rgba(75,216,137,.55); }
+.btn-record-next.btn-next-item-cta { margin-top: 18px; padding: 18px 20px; border-radius: 18px; font-size: 1.08rem; font-weight: 800; letter-spacing: -.01em; box-shadow: 0 18px 42px rgba(75,216,137,.28); }
+.btn-record-next.btn-next-item-cta:hover { transform: translateY(-1px); box-shadow: 0 20px 46px rgba(95,230,154,.34); }
+.btn-record-next.btn-next-item-cta.consensus { padding: 20px 20px; font-size: 1.14rem; margin-top: 18px; }
 .final-estimate-panel {
   margin: 4px 0 2px;
   padding: 18px 18px 16px;
@@ -9027,11 +9030,7 @@ function GameScreen({
   const consensusEstimate = allSame ? voted[0]?.vote || "" : "";
   const chosenFinalEstimate = allSame ? consensusEstimate : finalEstimate;
   const requiresManualFinalEstimate = revealed && isObs && voted.length > 0 && !allSame;
-  const finalEstimateLabel = chosenFinalEstimate
-    ? (deck === "tshirt" || chosenFinalEstimate === "?"
-        ? chosenFinalEstimate
-        : `${chosenFinalEstimate} pts`)
-    : "estimate";
+  const nextItemButtonLabel = "Next item to Estimate";
   const revealedVotesSummary = voted.map((p) => p.vote).join(" • ");
   const revealHeroLabel = allSame ? "Agreed estimate" : "Average vote";
   const revealHeroHelper = allSame
@@ -9044,6 +9043,12 @@ function GameScreen({
     if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, false);
     else onNewRound(chosenFinalEstimate, false);
   }, [chosenFinalEstimate, hasStories, allStoriesDone, onRecordStory, onNewRound]);
+
+  const handleAdvanceToNextItem = useCallback(() => {
+    if (!chosenFinalEstimate) return;
+    if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, allSame);
+    else onNewRound(chosenFinalEstimate, allSame);
+  }, [chosenFinalEstimate, hasStories, allStoriesDone, onRecordStory, onNewRound, allSame]);
 
   const handleRevoteStory = useCallback(() => {
     setShowFinalEstimateOverlay(false);
@@ -9210,9 +9215,7 @@ function GameScreen({
                   onClick={saveFinalEstimateAndContinue}
                 >
                   {chosenFinalEstimate
-                    ? hasStories && !allStoriesDone
-                      ? `✅ Save ${finalEstimateLabel} ${estMode.recordNext}`
-                      : `✅ Save ${finalEstimateLabel} — Next ${estMode.progressLabel}`
+                    ? `✅ Save estimate & ${nextItemButtonLabel}`
                     : "Select the agreed estimate to continue"}
                 </button>
                 <button className="facilitator-overlay-revote" type="button" onClick={handleRevoteStory}>
@@ -9409,7 +9412,7 @@ function GameScreen({
                     <div className="waiting-hint">
                       {requiresManualFinalEstimate
                         ? "Votes are split — discuss briefly, then confirm the agreed estimate."
-                        : `Round complete — record the estimate and move to the next ${estMode.singular} below.`}
+                        : "Round complete — use the Next item to Estimate button below when you are ready to continue."}
                     </div>
                   )}
                 </>
@@ -9656,6 +9659,15 @@ function GameScreen({
                         );
                       })}
                     </div>
+                    {isObs && !requiresManualFinalEstimate && (
+                      <button
+                        className={`btn-record-next btn-next-item-cta${allSame ? " consensus" : ""}`}
+                        disabled={!chosenFinalEstimate}
+                        onClick={handleAdvanceToNextItem}
+                      >
+                        {nextItemButtonLabel}
+                      </button>
+                    )}
 
                     {notVoted.length > 0 && (
                       <div className="no-vote">
@@ -9752,36 +9764,8 @@ function GameScreen({
                       : "Waiting for team to finish voting…"}
                   </div>
                 )}
-
-                {/* Primary forward action — shown after reveal only */}
                 {revealed && (
                   <>
-                    {!requiresManualFinalEstimate && hasStories && !allStoriesDone && (
-                      <button
-                        className={`btn-record-next${allSame ? " consensus" : ""}`}
-                        disabled={!chosenFinalEstimate}
-                        onClick={() => onRecordStory(chosenFinalEstimate, allSame)}
-                      >
-                        {allSame
-                          ? `✅ Record ${finalEstimateLabel} & Next ${estMode.progressLabel}`
-                          : chosenFinalEstimate
-                            ? `✅ Save ${finalEstimateLabel} ${estMode.recordNext}`
-                            : "Choose final estimate to continue"}
-                      </button>
-                    )}
-                    {!requiresManualFinalEstimate && (!hasStories || allStoriesDone) && (
-                      <button
-                        className={`btn-record-next${allSame ? " consensus" : ""}`}
-                        disabled={!chosenFinalEstimate}
-                        onClick={() => onNewRound(chosenFinalEstimate, allSame)}
-                      >
-                        {allSame
-                          ? `✅ Record ${finalEstimateLabel} & Next Round`
-                          : chosenFinalEstimate
-                            ? `✅ Save ${finalEstimateLabel} — Next ${estMode.progressLabel}`
-                            : "Choose final estimate to continue"}
-                      </button>
-                    )}
                     {requiresManualFinalEstimate ? (
                       <div className="obs-secondary-row">
                         <button

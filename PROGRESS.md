@@ -189,6 +189,7 @@
     - the facilitator can no longer save a derived average like Fibonacci `4` when the active deck does not contain that value
     - reveal analytics remain visible for discussion, but the final recorded estimate must now be an explicit valid deck choice whenever votes differ
     - the split-vote chooser is now promoted into the main facilitator action block and auto-scrolls into view so it is difficult to miss after reveal
+    - post-reveal facilitator flow now places a large `Next item to Estimate` CTA directly under `Who Picked What`, replacing the older lower-page `Next Round` style forward action and making the next step hard to miss in T-shirt sizing sessions
   - Room-entry validation tightened:
     - both Participant and Facilitator must provide a real name before entering a room
     - placeholder-like values such as `Alex Johnson` are now blocked instead of being accepted as live participant names
@@ -282,6 +283,7 @@ Treat this section as the fastest current-status read. Historical session notes 
   - Removed the remaining signed-in Pro upsell surfaces from the auth modal and pricing modal so existing Pro users see neutral account/support messaging instead of plan-comparison or checkout prompts.
   - Added single-account activation-key binding in repo code and rules: `validateAndSavePro()` now claims `/licenses/{key}` to the activating UID, existing Pro users auto-claim legacy keys on sign-in, and reused keys now show a specific “already attached to another account” error.
   - Tightened the owner Pro-notification subject template in `functions/index.js` to `Point Poker Pro activated for <user-email>`; this code change now needs a fresh Functions redeploy to become live.
+  - Repositioned and simplified the facilitator post-estimation CTA in `src/App.js`: reveals now show a large `Next item to Estimate` button immediately under `Who Picked What`, the old lower forward CTA was removed, and the revealed-state helper copy now points directly at the new button.
   - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
 
 ---
