@@ -3536,6 +3536,7 @@ const FREE_MAX_PARTICIPANTS = 8;  // Free tier: total people in room, including 
 const PRO_MAX_PARTICIPANTS  = 20; // Pro tier: total people in room, including facilitators
 const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours — auto-end + save history
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
+const PLAYER_AWAY_TIMEOUT_MS = 60 * 60 * 1000;       // 1 hour — grace period before sweeping disconnected players
 const ROOM_SWEEP_INTERVAL_MS = 15 * 60 * 1000;       // Best-effort stale-room cleanup cadence per browser
 const ROOM_SWEEP_STORAGE_KEY = "pp_last_room_sweep";
 const DEFAULT_TIMER_DURATION = 30;
@@ -3590,6 +3591,15 @@ async function sweepStaleRooms() {
 
     Object.entries(rooms).forEach(([roomId, room]) => {
       const createdAt = Number(room?.createdAt || 0);
+
+      // Sweep players who have been disconnected for more than 1 hour
+      Object.entries(room?.players || {}).forEach(([playerId, player]) => {
+        const disconnectedAt = Number(player?.disconnectedAt || 0);
+        if (disconnectedAt && now - disconnectedAt > PLAYER_AWAY_TIMEOUT_MS) {
+          updates[`rooms/${roomId}/players/${playerId}`] = null;
+        }
+      });
+
       if (!createdAt || now - createdAt < SESSION_MAX_MS) return;
 
       const isPersistentTeamRoom = !!room?.teamName || !!room?.founderRoom;
@@ -5000,6 +5010,23 @@ export default function App() {
     return () => window.removeEventListener("beforeunload", cleanup);
   }, [code, myId]);
 
+  // ── MOBILE RECONNECT PRESENCE ────────────────────────────────────
+  // Firebase WebSocket drops when a phone screen goes off or the app
+  // backgrounds. onDisconnect marks the player offline (not removed).
+  // When Firebase reconnects (screen back on), re-register the handler
+  // and mark the player online so they seamlessly re-enter the room.
+  useEffect(() => {
+    if (screen !== "game" || !code) return;
+    const playerRef = ref(db, `rooms/${code}/players/${myId}`);
+    const connRef = ref(db, ".info/connected");
+    const unsub = onValue(connRef, (snap) => {
+      if (snap.val() !== true) return;
+      onDisconnect(playerRef).update({ online: false, disconnectedAt: serverTimestamp() });
+      update(playerRef, { online: true, disconnectedAt: null });
+    });
+    return () => unsub();
+  }, [screen, code, myId]); // eslint-disable-line
+
   const handleCreate = async (name, role, deck = "fibonacci", estimationMode = "stories") => {
     pendingSessionNameRef.current = name;
     const c = mkCode();
@@ -5017,11 +5044,12 @@ export default function App() {
       estimationMode,
       plan: currentPlan === "pro" ? "pro" : "free",
       timer: { running: false, duration: 30, remaining: 30 },
-      players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
+      players: { [myId]: { id: myId, name, role, voted: false, vote: null, online: true } },
     });
 
-    // Server-side cleanup if browser crashes (power loss, mobile tab kill).
-    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
+    // Server-side soft-disconnect: marks offline rather than removing immediately.
+    // Stale players (offline > 1hr) are swept by sweepStaleRooms.
+    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).update({ online: false, disconnectedAt: serverTimestamp() });
 
     // Update URL so the creator can copy/share the link immediately.
     window.history.replaceState({}, "", roomPath(c));
@@ -5060,8 +5088,9 @@ export default function App() {
       role,
       voted: false,
       vote: null,
+      online: true,
     });
-    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
+    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).update({ online: false, disconnectedAt: serverTimestamp() });
     window.history.replaceState({}, "", roomPath(c));
     setScreen("game");
     track(role === "observer" ? "observer_joined" : "player_joined");
@@ -5118,20 +5147,20 @@ export default function App() {
         teamName,
         founderRoom,
         timer: { running: false, duration: 30, remaining: 30 },
-        players: { [myId]: { id: myId, name, role, voted: false, vote: null } },
+        players: { [myId]: { id: myId, name, role, voted: false, vote: null, online: true } },
       });
     } else {
       // Join existing room. If estimationMode was never set (legacy room or
       // first session after the feature shipped), write the facilitator's
       // chosen mode now. The Firebase rule allows this because !data.exists().
       const upd = {};
-      upd[`rooms/${c}/players/${myId}`] = { id: myId, name, role, voted: false, vote: null };
+      upd[`rooms/${c}/players/${myId}`] = { id: myId, name, role, voted: false, vote: null, online: true };
       if (!existingRoom.estimationMode) {
         upd[`rooms/${c}/estimationMode`] = estimationMode;
       }
       await update(ref(db), upd);
     }
-    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).remove();
+    onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).update({ online: false, disconnectedAt: serverTimestamp() });
     // Keep the clean stable team-room URL so invites and browser refreshes stay consistent.
     window.history.replaceState({}, "", teamRoomPath(c));
     setScreen("game");
@@ -8696,6 +8725,11 @@ function JoinScreen({
               onChange={(e) => { setRc(e.target.value.toUpperCase()); clearErr(); }}
               onKeyDown={(e) => e.key === "Enter" && go()}
               maxLength={12}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              inputMode="text"
               style={{ letterSpacing: "0.12em", fontWeight: 600 }}
             />
           </>
