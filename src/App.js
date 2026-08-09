@@ -1311,38 +1311,65 @@ body::before {
 .inp:focus { border-color: rgba(126,230,255,.55); background: rgba(255,255,255,.07); box-shadow: 0 0 0 4px rgba(126,230,255,.10), 0 14px 32px rgba(0,0,0,.22); }
 .inp:hover:not(:focus) { background: rgba(255,255,255,.06); border-color: rgba(158,234,196,.22); }
 .inp::placeholder { color: rgba(239,242,247,.66); }
-.role-row { display: flex; gap: 10px; margin-bottom: 28px; }
-.role-btn {
-  flex: 1; padding: 14px 8px; border-radius: var(--radius-sm);
-  border: 1px solid rgba(158,234,196,.12); background: rgba(255,255,255,.035);
-  font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 500;
-  cursor: pointer; color: rgba(245,251,247,.82); transition: all .22s ease;
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
-}
-.role-btn .ri { font-size: 1.25rem; }
-.role-btn .rl { font-weight: 600; font-size: .88rem; }
-.role-btn .rs { font-size: .78rem; color: rgba(245,251,247,.62); font-weight: 300; }
-.role-btn:hover:not(.rv):not(.ro) { background: rgba(255,255,255,.07); color: var(--cream); border-color: rgba(158,234,196,.26); transform: translateY(-1px); }
-.role-btn.rv { border-color: rgba(241,185,63,.55); background: linear-gradient(180deg, rgba(241,185,63,.18), rgba(241,185,63,.08)); color: var(--gold2); box-shadow: 0 18px 34px rgba(241,185,63,.10); }
-.role-btn.ro { border-color: rgba(126,230,255,.45); background: linear-gradient(180deg, rgba(126,230,255,.16), rgba(126,230,255,.06)); color: var(--aqua); box-shadow: 0 18px 34px rgba(126,230,255,.08); }
-.err { color: #e74c3c; font-size: .78rem; margin-bottom: 12px; text-align: center; }
-.btn-primary {
-  width: 100%; padding: 15px; border: none; border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
-  color: var(--ink); font-family: 'Outfit', sans-serif;
-  font-size: .98rem; font-weight: 700; cursor: pointer;
-  letter-spacing: .3px; transition: all .22s ease;
-  box-shadow: 0 12px 30px rgba(241,185,63,.30), inset 0 1px 0 rgba(255,255,255,.45);
-}
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(241,185,63,.38), inset 0 1px 0 rgba(255,255,255,.55); }
-.btn-primary:active { transform: none; }
+/* ═══════════════════════════════════════════════
+   CHOICE — a selectable option in an exclusive group
+   ───────────────────────────────────────────────
+   The second primitive, after .btn. A .btn performs an action; a .choice
+   holds state. Role, deck, estimation mode and the join tabs are all the
+   same shape — label, optional description, selected-or-not — and each had
+   grown its own class with its own padding, type and hover treatment.
 
-/* Tab row on Join screen */
-.tab-row { display: flex; gap: 6px; margin-bottom: 22px; }
-.tab-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid rgba(158,234,196,.10); background: rgba(255,255,255,.025); color: rgba(245,251,247,.72); font-family: 'Outfit', sans-serif; font-size: .875rem; font-weight: 500; cursor: pointer; transition: all .2s; }
-.tab-btn.active { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.34); color: var(--gold2); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
-.tab-btn:hover:not(.active) { background: rgba(255,255,255,.06); color: rgba(245,251,247,.92); border-color: rgba(158,234,196,.20); }
+   Selection is styled off [aria-pressed="true"] rather than an .active class
+   so the accessible state and the visual state cannot disagree. One accent
+   marks selection: the role picker previously used gold for Participant and
+   aqua for Facilitator, which made "selected" look like two different things
+   on one screen.
+   ═══════════════════════════════════════════════ */
+.choice {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap-min);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-2);
+  font-family: 'Outfit', system-ui, sans-serif;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.choice:hover:not([aria-pressed="true"]) {
+  background: var(--surface2);
+  border-color: var(--border2);
+  color: var(--text-1);
+}
+.choice[aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08));
+  border-color: rgba(241,185,63,.34);
+  color: var(--gold2);
+}
+.choice-label { font-size: var(--fs-3); font-weight: var(--fw-semi); line-height: var(--lh-snug); }
+.choice-desc  { font-size: var(--fs-2); font-weight: var(--fw-regular); line-height: var(--lh-snug); color: var(--text-3); }
+.choice[aria-pressed="true"] .choice-desc { color: rgba(255,217,120,.78); }
+.choice > svg { flex: none; }
+
+/* Label-only options (the join tabs) sit on one line and drop the stacking. */
+.choice--compact { flex-direction: row; padding: var(--sp-2) var(--sp-3); }
+.choice--compact .choice-label { font-size: var(--fs-2); }
+
+.choice-row  { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-5); }
+.choice-grid { display: grid; grid-template-columns: repeat(var(--choice-cols, 2), 1fr); gap: var(--sp-2); margin-bottom: var(--sp-5); }
+
+.err { color: #e74c3c; font-size: .78rem; margin-bottom: 12px; text-align: center; }
 
 /* Team Room preview chip */
 .team-room-choice-row {
@@ -1393,23 +1420,40 @@ body::before {
 .tcp-label { font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.65); white-space: nowrap; }
 .tcp-code { font-family: monospace; font-size: .9rem; font-weight: 700; color: var(--mint2); letter-spacing: .1em; flex: 1; }
 
-/* Deck picker on Create tab */
-.deck-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
-.deck-btn { padding: 10px 6px; border-radius: var(--radius-sm); border: 1px solid rgba(158,234,196,.10); background: rgba(255,255,255,.025); color: rgba(245,251,247,.80); font-family: 'Outfit', sans-serif; cursor: pointer; transition: all .2s; text-align: center; }
-.deck-btn .dk-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 3px; }
-.deck-btn .dk-desc  { display: block; font-size: .75rem; color: rgba(239,242,247,.62); }
-.deck-btn.active { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.34); color: var(--gold2); }
-.deck-btn.active .dk-desc { color: rgba(255,217,120,.70); }
-.deck-btn:hover:not(.active) { background: rgba(255,255,255,.06); color: rgba(245,251,247,.92); border-color: rgba(158,234,196,.20); }
+/* Deck and estimation-mode pickers use .choice-grid; see the CHOICE block. */
 
-/* Estimation mode picker on Create / Team tabs */
-.estmode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 24px; }
-.estmode-btn { padding: 10px 8px; border-radius: var(--radius-sm); border: 1px solid rgba(158,234,196,.10); background: rgba(255,255,255,.025); color: rgba(245,251,247,.80); font-family: 'Outfit', sans-serif; cursor: pointer; transition: all .2s; text-align: center; }
-.estmode-btn .em-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 3px; }
-.estmode-btn .em-desc  { display: block; font-size: .72rem; color: rgba(239,242,247,.7); line-height: 1.35; }
-.estmode-btn.active { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.34); color: var(--gold2); }
-.estmode-btn.active .em-desc { color: rgba(255,217,120,.65); }
-.estmode-btn:hover:not(.active) { background: rgba(255,255,255,.06); color: rgba(245,251,247,.92); border-color: rgba(158,234,196,.20); }
+/* Both are write-once for the life of the room — database.rules.json validates
+   them with "newData.val() === data.val()" because every vote is checked
+   against the room's deck. Say so where the choice is made. */
+.choice-permanence {
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--text-3);
+  margin: calc(var(--sp-5) * -1) 0 var(--sp-5);
+  padding-top: var(--sp-2);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+.choice-permanence > svg { flex: none; margin-top: 1px; }
+
+/* ── Session options, side by side (variation B) ───────────────────────
+   Two irreversible choices kept visible by halving the space they take,
+   rather than by hiding one of them. Stacks below 520px, where two columns
+   of three options each would put every label on two lines. */
+/* Matches the bottom margin .choice-permanence pulls back against, so the
+   note sits flush under the group it describes. */
+.session-grid { display: grid; grid-template-columns: 3fr 2fr; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+.session-field { min-width: 0; }
+.session-field .choice-grid { margin-bottom: var(--sp-3); }
+.session-summary-cards { color: var(--text-2); font-weight: var(--fw-semi); }
+@media (max-width: 520px) {
+  .session-grid { grid-template-columns: 1fr; gap: var(--sp-2); }
+}
+
+/* Label-only option, one line, no description underneath. */
+.choice--tight { flex-direction: row; padding: var(--sp-2) var(--sp-2); }
+.choice--tight .choice-label { font-size: var(--fs-2); }
 
 /* ══════════════════════ SEO CONTENT SECTION ══════════════════════ */
 .seo-section {
@@ -1825,16 +1869,17 @@ body::before {
 
 /* ══════════════════════ OBSERVER CONTROLS ══════════════════════ */
 .obs-controls { display: flex; flex-direction: column; gap: 10px; }
-/* Danger zone separator — visual break between session management and End Session */
-.obs-danger-divider {
-  display: flex; align-items: center; gap: 8px; margin: 4px 0 2px;
-}
-.obs-danger-divider::before, .obs-danger-divider::after {
-  content: ''; flex: 1; height: 1px; background: rgba(224,72,72,.12);
-}
-.obs-danger-divider span {
-  font-size: .52rem; letter-spacing: 1.8px; text-transform: uppercase;
-  color: rgba(231,76,60,.30); white-space: nowrap;
+/* End session sits apart from the session controls but does not announce
+   itself with a divider and a caption. Right-aligned and sized down, it reads
+   as the exit it is: findable when wanted, not in the way while running a
+   meeting. The separator's caption was .52rem — 8.3px, well under the 12px
+   floor of the type scale and effectively unreadable. */
+.obs-danger-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
 }
 .btn-reveal-primary {
   width: 100%; padding: 16px 20px; border: none; border-radius: var(--radius-sm);
@@ -1875,7 +1920,6 @@ body::before {
   display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px;
 }
 .btn-end-session:hover { background: rgba(192,57,43,.1); border-color: rgba(192,57,43,.35); color: #e74c3c; }
-.end-session-hint { font-size: .58rem; color: rgba(239,242,247,.64); text-align: center; margin-top: 3px; font-style: italic; }
 
 /* Story queue panel */
 .story-panel { background: rgba(255,255,255,.03); border: 1px solid rgba(158,234,196,.10); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; }
@@ -4273,18 +4317,18 @@ function LoginModal({
             )}
 
             {mode === "signin" && (
-              <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleSignIn} disabled={authStatus === "loading"}>
+              <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={handleSignIn} disabled={authStatus === "loading"}>
                 {authStatus === "loading" ? "Signing in…" : "Sign in"}
               </button>
             )}
             {mode === "register" && !registerComplete && (
-              <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleRegister} disabled={authStatus === "loading"}>
+              <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={handleRegister} disabled={authStatus === "loading"}>
                 {authStatus === "loading" ? "Creating account…" : teamRoomIntent ? "Create account & claim my Team Rooms" : "Create free account"}
               </button>
             )}
             {mode === "register" && registerComplete && (
               <>
-                <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleRegisterContinue}>
+                <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={handleRegisterContinue}>
                   {teamRoomIntent ? "Continue to my Team Rooms" : "Continue to workspace"}
                 </button>
                 <button
@@ -4299,7 +4343,7 @@ function LoginModal({
               </>
             )}
             {mode === "reset" && (
-              <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleReset} disabled={authStatus === "loading"}>
+              <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={handleReset} disabled={authStatus === "loading"}>
                 {authStatus === "loading" ? "Sending reset…" : "Send reset link"}
               </button>
             )}
@@ -8051,31 +8095,22 @@ function JoinScreen({
         ) : null}
 
         {/* Three-tab navigation */}
-        <div className="tab-row">
-          <button
-            type="button"
-            className={`tab-btn${tab === "create" ? " active" : ""}`}
-            aria-pressed={tab === "create"}
-            onClick={() => { setTab("create"); clearErr(); }}
-          >
-            Create Room
-          </button>
-          <button
-            type="button"
-            className={`tab-btn${tab === "join" ? " active" : ""}`}
-            aria-pressed={tab === "join"}
-            onClick={() => { setTab("join"); clearErr(); }}
-          >
-            Join Room
-          </button>
-          <button
-            type="button"
-            className={`tab-btn${tab === "team" ? " active" : ""}`}
-            aria-pressed={tab === "team"}
-            onClick={() => { setTab("team"); clearErr(); }}
-          >
-            Team Room
-          </button>
+        <div className="choice-row">
+          {[
+            { key: "create", label: "Create Room" },
+            { key: "join", label: "Join Room" },
+            { key: "team", label: "Team Room" },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              className="choice choice--compact"
+              aria-pressed={tab === key}
+              onClick={() => { setTab(key); clearErr(); }}
+            >
+              <span className="choice-label">{label}</span>
+            </button>
+          ))}
         </div>
 
         {/* Your Name, always shown */}
@@ -8191,21 +8226,21 @@ function JoinScreen({
 
         {/* Role picker, always shown */}
         <label className="lbl">Your Role</label>
-        <div className="role-row">
+        <div className="choice-row">
           {ROLES.map(({ r, icon, l, s }) => (
             <button
               key={r}
               type="button"
-              className={`role-btn${role === r ? (r === "voter" ? " rv" : " ro") : ""}`}
+              className="choice"
               aria-pressed={role === r}
               aria-label={`${l} role: ${s}`}
               // Clear the prompt too: once a role is picked it is telling the
               // user to do something they have just done.
               onClick={() => { setRole(r); clearErr(); }}
             >
-              <span className="ri"><Icon name={icon} size={22} /></span>
-              <span className="rl">{l}</span>
-              <span className="rs">{s}</span>
+              <Icon name={icon} size={22} />
+              <span className="choice-label">{l}</span>
+              <span className="choice-desc">{s}</span>
             </button>
           ))}
         </div>
@@ -8213,48 +8248,68 @@ function JoinScreen({
         {/* Deck picker, shown on Create and Team tabs */}
         {(tab === "create" || tab === "team") && (
           <>
-            <label className="lbl">Card Deck</label>
-            <div className="deck-grid">
-              {DECK_KEYS.map((k) => {
-                const d = DECK_DEFINITIONS[k];
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    className={`deck-btn${deck === k ? " active" : ""}`}
-                    aria-pressed={deck === k}
-                    aria-label={`${d.label} deck: ${d.desc}`}
-                    onClick={() => setDeck(k)}
-                  >
-                    <span className="dk-label">{d.label}</span>
-                    <span className="dk-desc">{d.desc}</span>
-                  </button>
-                );
-              })}
+            {/* Variation B — density rather than disclosure. Both choices are
+                irreversible for the life of the room, so neither is hidden.
+                They sit side by side as label-only options, and the per-option
+                descriptions collapse into one line that shows the selected
+                deck's actual cards — more useful than "1, 2, 3, 5, 8…" printed
+                three times, once under every deck the user did not pick. */}
+            <div className="session-grid">
+              <div className="session-field">
+                <label className="lbl">Card Deck</label>
+                <div className="choice-grid" style={{ "--choice-cols": 3 }}>
+                  {DECK_KEYS.map((k) => {
+                    const d = DECK_DEFINITIONS[k];
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        className="choice choice--tight"
+                        aria-pressed={deck === k}
+                        aria-label={`${d.label} deck: ${d.desc}`}
+                        onClick={() => setDeck(k)}
+                      >
+                        <span className="choice-label">{d.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="session-field">
+                <label className="lbl">Estimating</label>
+                <div className="choice-grid">
+                  {Object.values(ESTIMATION_MODES).map((m) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      className="choice choice--tight"
+                      aria-pressed={estMode === m.key}
+                      aria-label={`${m.label}: ${m.desc}`}
+                      onClick={() => setEstMode(m.key)}
+                    >
+                      <span className="choice-label">{m.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Estimation mode picker, what is the team estimating? */}
-            <label className="lbl">What Are You Estimating?</label>
-            <div className="estmode-grid">
-              {Object.values(ESTIMATION_MODES).map((m) => (
-                <button
-                  key={m.key}
-                  type="button"
-                  className={`estmode-btn${estMode === m.key ? " active" : ""}`}
-                  aria-pressed={estMode === m.key}
-                  aria-label={`${m.label}: ${m.desc}`}
-                  onClick={() => setEstMode(m.key)}
-                >
-                  <span className="em-label">{m.label}</span>
-                  <span className="em-desc">{m.desc}</span>
-                </button>
-              ))}
-            </div>
+            {/* One line carrying what the two selections actually mean, plus
+                the fact that neither can be changed once the room exists. */}
+            <p className="choice-permanence">
+              <Icon name="alert" size={15} />
+              <span>
+                <span className="session-summary-cards">{DECK_DEFINITIONS[deck].desc}</span>
+                {" — "}
+                {ESTIMATION_MODES[estMode].desc.toLowerCase()}. Both are fixed for this room once created.
+              </span>
+            </p>
           </>
         )}
 
         {err && <div className="err" id="join-error" role="alert">{err}</div>}
-        <button className="btn-primary" onClick={go}>
+        <button className="btn btn--primary btn--lg btn--block" onClick={go}>
           {tab === "create" ? "Create Room →"
             : tab === "join" ? "Join Room →"
             : teamPrimaryLabel}
@@ -9643,18 +9698,21 @@ function GameScreen({
                     </button>
                   </div>
                 )}
-                <div className="obs-danger-divider"><span>End session</span></div>
-                <button
-                  type="button"
-                  className="btn btn--danger btn--block"
-                  onClick={() => {
-                    if (window.confirm("End the session? This disconnects everyone and permanently deletes all session data.")) onEndSession();
-                  }}
-                >
-                  <Icon name="close" size={16} /> End session
-                </button>
-                <div className="end-session-hint">
-                  Disconnects everyone and deletes all session data
+                {/* Used once, at the end. It carried a divider, a full-width
+                    danger block and a hint — three labels and 34,848px² for an
+                    irreversible action, second only to the control that runs
+                    the session. The confirm dialog states the consequence, so
+                    the button does not need to. */}
+                <div className="obs-danger-row">
+                  <button
+                    type="button"
+                    className="btn btn--danger btn--sm"
+                    onClick={() => {
+                      if (window.confirm("End the session? This disconnects everyone and permanently deletes all session data.")) onEndSession();
+                    }}
+                  >
+                    <Icon name="close" size={16} /> End session
+                  </button>
                 </div>
               </div>
             )}

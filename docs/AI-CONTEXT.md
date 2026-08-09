@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 440 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 441 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 18 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 8 KB |
@@ -111,7 +111,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 57 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 65 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -133,9 +133,9 @@ one primary action per screen; icons from `ICON_PATHS`, never emoji.
 |---|---|---|
 | Design tokens in `:root` | 70 | Type, spacing, elevation, motion, semantic colour |
 | Icons in `ICON_PATHS` | 18 | One stroke family, `currentColor` |
-| Distinct font sizes in CSS | 65 | Target is the 8-step scale; the rest is unmigrated legacy |
-| Distinct padding pairs | 86 | Target is the 4px grid |
-| Legacy button classes | 18 | Migrate onto `.btn` when you touch one |
+| Distinct font sizes in CSS | 64 | Target is the 8-step scale; the rest is unmigrated legacy |
+| Distinct padding pairs | 83 | Target is the 4px grid |
+| Legacy button classes | 14 | Migrate onto `.btn` when you touch one |
 
 The last three are deliberately unflattering. They are the size of the remaining
 migration, and they should fall over time, never rise. `src/designsystem.test.js`
@@ -287,6 +287,39 @@ writing `plan: "pro"` to their own profile is expected and grants nothing, and
 the only privileged read on the site is gated on `/admins/$uid` instead. Treat
 those fields as dead data. The trap is reading a profile, seeing `plan: "pro"`,
 and rebuilding entitlement logic around a field the product deliberately ignores.
+
+**The room has no settings screen, and that is deliberate.** `deck` and
+`estimationMode` are write-once in `database.rules.json`
+(`newData.val() === data.val()`), because every vote is validated against the
+room's deck — a deck that changed mid-round would invalidate votes already
+cast. The client agrees: `setDeck` exists only in `JoinScreen`. So the obvious
+"let the facilitator change the deck in the room" feature is not a missing
+feature, it is a rejected one. Building it means relaxing a security invariant
+and clearing every vote atomically with the change. Do not add it casually.
+
+**Why the create form does not hide the deck behind a disclosure.** Two
+variations were built and measured against each other (`ui/variation-a`,
+`ui/variation-b`). A collapsed deck and estimation mode into a `<details>`; B
+put them side by side, always visible. A won the default path — the primary
+action sat at y=910 on a 1280×720 viewport against B's 985, and 975 against
+1155 on a 375px phone. B won everything else, and B shipped.
+
+The reason is that progressive disclosure suits settings that are optional,
+reversible and rarely touched, and these are none of those. They cannot be
+changed after creation, and deck choice is not rare: `FOUNDER_ROOM_CONFIG`
+carries two of Ali's own team rooms, one defaulting to `fibonacci` and one to
+`tshirt`, and two recent commits (`fc8d941`, `39f9e0d`) built T-shirt-specific
+analytics. Roughly half of real usage picks a non-default deck. A also made the
+*changer's* path worse than doing nothing: expanded, its primary action fell to
+y=1260 desktop and y=1364 mobile, both below the y=1119 it started from. Hiding
+a 50/50 irreversible choice to save 75px on the other path is the wrong trade.
+
+**Neither variation touched the real constraint.** The hero above the form —
+title, subtitle and four trust pills — is about 600px on its own, which is why
+the primary action still needs a 320px scroll on a laptop. That is the largest
+remaining lever on this screen and it is untouched, deliberately, so the A/B
+comparison isolated one variable. Anyone picking this up next should start
+there rather than shaving the form further.
 
 ## Deployment record
 

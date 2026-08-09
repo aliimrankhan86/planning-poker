@@ -121,6 +121,58 @@ Fading a gold gradient over dark green produces a muddy olive that still reads a
 clickable, which is exactly how the old Reveal control looked active while doing
 nothing.
 
+## Choices
+
+The second primitive. A `.btn` performs an action; a `.choice` holds state.
+
+```html
+<div class="choice-row">
+  <button class="choice" aria-pressed="true">
+    <span class="choice-label">Participant</span>
+    <span class="choice-desc">Votes on each story</span>
+  </button>
+</div>
+```
+
+Role, deck, estimation mode and the join tabs were four classes for one shape —
+an option in an exclusive group with a label, an optional description and a
+selected state. Four copies had drifted into four paddings, four font sizes and
+**two different selection colours**: the role picker used gold for Participant
+and aqua for Facilitator, so "selected" looked like two different things on one
+screen. One accent marks selection, and it is gold.
+
+Selection is styled off `[aria-pressed="true"]`, never an `.active` class. The
+accessible state and the visual state then cannot disagree, which is the bug
+class that produces a control screen readers call unselected while it looks
+selected.
+
+Layout comes from `.choice-row` (flex, equal widths) or `.choice-grid`
+(set `--choice-cols`). `.choice--compact` is the label-only, single-line form.
+
+## Destructive actions
+
+Rank by consequence, not by prominence. `End session` was a divider captioned
+"End session", a full-width danger block saying "End session", and a hint
+restating its effect — three labels and **34,848px²** for an irreversible
+action, second only to the control that runs the session. It is now
+`.btn--danger.btn--sm`, right-aligned above a hairline rule, at 5,646px².
+
+A destructive control is findable, not loud. The confirmation dialog states the
+consequence, so the button does not have to.
+
+## Choices that cannot be undone
+
+`deck` and `estimationMode` are **write-once**. `database.rules.json` validates
+both with `newData.val() === data.val()`, because every vote is validated
+against the room's deck — a mutable deck would break that invariant mid-round.
+The client agrees: `setDeck` exists only in `JoinScreen`.
+
+So the room has no settings screen, and cannot have one without relaxing that
+rule. Anything irreversible must say so at the point of choice — nothing did,
+so the only way to discover it was to want a different deck mid-session and
+fail. This is also why the create form does not hide the deck behind a
+disclosure: see the note in `docs/AI-CONTEXT.hand.md` on the two variations.
+
 ## Icons, and why there are no emoji
 
 One stroke family: 24px grid, 1.75 stroke, round caps, `currentColor`, defined in
@@ -197,11 +249,22 @@ Covered in `docs/AI-CONTEXT.hand.md`, and it is part of the design:
 
 ## Migration status
 
-The tokens, button system, icon set and room layout are done. The remaining
-legacy button classes (`.deck-btn`, `.role-btn`, `.tab-btn`, `.nav-btn-*` and the
-rest) still carry their own values and have **not** been migrated. They work and
-they look consistent, but they do not yet consume the tokens.
+Done: tokens, button system, icon set, room layout, and the option controls —
+`.role-btn`, `.deck-btn`, `.estmode-btn` and `.tab-btn` are now `.choice`, and
+`.btn-primary`'s five call sites are now `.btn--primary`.
 
-Migrate opportunistically: when you touch a component, move it onto `.btn` and the
-token scale. Do not do it as one sweeping change, because there is no visual
-regression test to catch what it breaks.
+Not done:
+
+- `.nav-btn-history`, `.nav-btn-login`, `.nav-btn-register`, `.btn-new-session`,
+  `.btn-reveal-primary` and the marketing page buttons still carry their own
+  values.
+- **107 `font-size` declarations sit below `--fs-1` (12px)**, the smallest step
+  on the scale — down to `.52rem`, which is 8.3px. Two of the worst were removed
+  with the End session block. The rest are real, and they are the largest single
+  piece of remaining debt.
+- `--radius-sm` still has 17 uses; `--r-sm` is its replacement.
+
+Migrate opportunistically: when you touch a component, move it onto the tokens.
+Do not do it as one sweeping change, because there is no visual regression test
+to catch what it breaks. The 107 font sizes in particular are a sweep that
+wants a screenshot baseline first.

@@ -135,6 +135,71 @@ describe("room layout", () => {
   });
 });
 
+describe("selectable options are one primitive", () => {
+  /* .role-btn, .deck-btn, .estmode-btn and .tab-btn were four classes for one
+     shape: an option in an exclusive group, carrying a label, an optional
+     description and a selected state. Four copies meant four sets of padding,
+     four font sizes and four hover treatments that had already drifted apart.
+     They are not .btn — a .btn performs an action, a .choice holds state — so
+     the system needs the second primitive, not a fifth copy of the first. */
+  test("the .choice primitive exists", () => {
+    for (const cls of [".choice {", ".choice-row", ".choice-grid"]) {
+      expect(css).toContain(cls);
+    }
+  });
+
+  test("selection is expressed through aria-pressed, not a class", () => {
+    // Styling the selected state off [aria-pressed="true"] makes the accessible
+    // name and the visual state impossible to disagree with each other.
+    expect(css).toMatch(/\.choice\[aria-pressed="true"\]/);
+  });
+
+  test("the four legacy option classes are gone", () => {
+    for (const cls of [".role-btn", ".deck-btn", ".estmode-btn", ".tab-btn"]) {
+      expect(css).not.toContain(cls);
+    }
+  });
+
+  test("options clear the 44px touch target floor", () => {
+    expect(css).toMatch(/\.choice\s*\{[^}]*min-height:\s*var\(--tap-min\)/s);
+  });
+
+  test("the join screen's own call to action uses the button system", () => {
+    // .btn-primary was a parallel button implementation carrying its own
+    // padding, gradient and shadow — the single loudest control in the product
+    // was the one control not on the system.
+    expect(css).not.toMatch(/^\.btn-primary\s*\{/m);
+  });
+});
+
+describe("destructive actions do not shout", () => {
+  test("End session is not a full-width danger block", () => {
+    /* Measured on the live room screen, `btn btn--danger btn--block` rendered
+       at 34,848px² — the second-heaviest element on the page, behind only the
+       primary action at 41,459px². An irreversible control that deletes the
+       session for everyone should not compete with the control that runs it. */
+    expect(app).not.toMatch(/btn--danger btn--block/);
+  });
+
+  test("it is labelled once, not three times over", () => {
+    // A divider saying "End session", the button saying "End session", and a
+    // hint restating its effect: three labels for one control.
+    expect(css).not.toContain(".obs-danger-divider");
+    expect(css).not.toContain(".end-session-hint");
+  });
+});
+
+describe("irreversible choices say so", () => {
+  test("the join screen states that the deck is fixed for the room", () => {
+    /* database.rules.json validates deck and estimationMode with
+       "!data.exists() || newData.val() === data.val()" — write-once, because
+       every vote is validated against the room's deck. The client agrees:
+       setDeck exists only in JoinScreen. Nothing told the user, so the only way
+       to discover it was to want a different deck mid-session and fail. */
+    expect(app).toMatch(/fixed for this room|cannot be changed after|can't be changed after/i);
+  });
+});
+
 describe("revealed round", () => {
   test("vote cards are marked inoperable to assistive tech once revealed", () => {
     /* The click and keydown handlers already return early when revealed, and
