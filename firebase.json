@@ -1,5 +1,14 @@
 {
   "functions": {
     "source": "functions"
+  },
+  "database": {
+    "rules": "database.rules.publish.json"
+  },
+  "emulators": {
+    "database": {
+      "port": 9000
+    },
+    "singleProjectMode": true
   }
 }

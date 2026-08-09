@@ -28,3 +28,9 @@ yarn-error.log*
 CLAUDE.md
 STRATEGY.md
 AGENTS.md
+
+# Firebase emulator artefacts (npm run test:rules)
+database-debug.log
+firebase-debug.log
+ui-debug.log
+.firebase/

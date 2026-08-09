@@ -2,80 +2,92 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://www.pointpoker.app/</loc>
-    <lastmod>2026-04-01</lastmod>
+    <lastmod>2026-08-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.pointpoker.app/pricing</loc>
-    <lastmod>2026-04-01</lastmod>
-    <changefreq>weekly</changefreq>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://www.pointpoker.app/about</loc>
-    <lastmod>2026-04-01</lastmod>
+    <loc>https://www.pointpoker.app/features</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.pointpoker.app/planning-poker-online</loc>
+    <lastmod>2026-08-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.pointpoker.app/support</loc>
-    <lastmod>2026-04-01</lastmod>
+    <loc>https://www.pointpoker.app/scrum-poker</loc>
+    <lastmod>2026-08-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.pointpoker.app/trust</loc>
-    <lastmod>2026-04-02</lastmod>
+    <loc>https://www.pointpoker.app/story-point-estimation</loc>
+    <lastmod>2026-08-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.pointpoker.app/what-is-planning-poker</loc>
-    <lastmod>2026-04-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.pointpoker.app/fibonacci-story-points</loc>
-    <lastmod>2026-04-01</lastmod>
+    <loc>https://www.pointpoker.app/remote-sprint-planning</loc>
+    <lastmod>2026-08-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.pointpoker.app/agile-estimation-tool</loc>
-    <lastmod>2026-04-01</lastmod>
+    <lastmod>2026-08-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.pointpoker.app/features</loc>
-    <lastmod>2026-04-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.pointpoker.app/planning-poker-online</loc>
-    <lastmod>2026-04-01</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.pointpoker.app/what-is-planning-poker</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.pointpoker.app/scrum-poker</loc>
-    <lastmod>2026-04-01</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.pointpoker.app/fibonacci-story-points</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.pointpoker.app/story-point-estimation</loc>
-    <lastmod>2026-04-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.pointpoker.app/about</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.pointpoker.app/remote-sprint-planning</loc>
-    <lastmod>2026-04-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.pointpoker.app/trust</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.pointpoker.app/support</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.pointpoker.app/terms</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://www.pointpoker.app/privacy</loc>
+    <lastmod>2026-08-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
   </url>
 </urlset>

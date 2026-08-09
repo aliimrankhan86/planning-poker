@@ -1,0 +1,13 @@
+#!/bin/sh
+# Keeps generated artefacts honest. Anything derived from the code is rebuilt and
+# re-staged here, so a commit can never ship documentation or Firebase rules that
+# disagree with the source.
+#
+# Enabled by: git config core.hooksPath .githooks   (run once per clone)
+
+set -e
+
+node scripts/gen-ai-context.mjs
+node scripts/build-rules.mjs
+
+git add docs/AI-CONTEXT.md database.rules.publish.json

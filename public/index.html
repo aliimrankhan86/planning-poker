@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
     <!-- ── Primary SEO ──────────────────────────────────────────── -->
-    <title>pointpoker — Free Online Planning Poker for Agile &amp; Scrum Teams</title>
-    <meta name="description" content="pointpoker is a free online planning poker tool for agile and scrum teams. Run sprint planning with real-time voting, story point estimation, story queues, and team alignment analytics." />
-    <meta name="keywords" content="pointpoker, point poker, planning poker, online planning poker, free planning poker, scrum poker, agile estimation, sprint planning, story points, fibonacci estimation, story point estimation, remote sprint planning, scrum estimation tool, team alignment" />
+    <title>Free Planning Poker Online — No Sign-Up, No Limits | pointpoker</title>
+    <meta name="description" content="Free online planning poker for agile and scrum teams. Everything is free for everyone: up to 20 participants, unlimited rounds and stories, Fibonacci and T-shirt decks, timer, analytics, and CSV export. No account, no ads." />
     <meta name="author" content="pointpoker" />
     <meta name="application-name" content="pointpoker" />
     <meta name="robots" content="index, follow" />
@@ -16,8 +15,8 @@
     <!-- ── Open Graph (LinkedIn, Facebook, WhatsApp, Slack) ────── -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.pointpoker.app/" />
-    <meta property="og:title" content="pointpoker — Free Online Planning Poker for Agile Teams" />
-    <meta property="og:description" content="Run sprint planning with real-time planning poker, simultaneous reveal, story queues, and team alignment analytics." />
+    <meta property="og:title" content="Free Planning Poker Online — No Sign-Up, No Limits | pointpoker" />
+    <meta property="og:description" content="Every feature free for every team: 20 participants, unlimited rounds and stories, all card decks, timer, analytics, CSV export. No account, no ads." />
     <meta property="og:image" content="https://www.pointpoker.app/og-image.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
@@ -29,8 +28,8 @@
     <!-- ── Twitter / X Card ─────────────────────────────────────── -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://www.pointpoker.app/" />
-    <meta name="twitter:title" content="pointpoker — Free Online Planning Poker for Agile Teams" />
-    <meta name="twitter:description" content="Run sprint planning with real-time planning poker, simultaneous reveal, story queues, and team alignment analytics." />
+    <meta name="twitter:title" content="Free Planning Poker Online — No Sign-Up, No Limits | pointpoker" />
+    <meta name="twitter:description" content="Every feature free for every team: 20 participants, unlimited rounds and stories, all card decks, timer, analytics, CSV export. No account, no ads." />
     <meta name="twitter:image" content="https://www.pointpoker.app/og-image.png" />
     <meta name="twitter:image:alt" content="Point Poker social preview showing a premium planning poker workspace, facilitator split-vote resolution, and dedicated Team Rooms." />
 
@@ -73,109 +72,40 @@
         border: 2px solid rgba(8,14,9,0.55);
       }
       #root { min-height: 100vh; }
+      /* Static shell shown to non-JS crawlers and for the instant before React
+         mounts. Themed so there is no white flash on a slow connection. */
+      .prerender-shell {
+        max-width: 760px; margin: 0 auto; padding: 48px 24px 64px;
+        color: #eff2f7; line-height: 1.65;
+      }
+      .prerender-shell h1 { font-size: 2rem; line-height: 1.15; margin-bottom: 14px; letter-spacing: -.02em; }
+      .prerender-shell h2 { font-size: 1.25rem; margin: 28px 0 10px; color: #f5d07a; }
+      .prerender-shell h3 { font-size: 1rem; margin: 18px 0 6px; color: #e8b84b; }
+      .prerender-shell p  { margin-bottom: 14px; color: rgba(239,242,247,.78); }
+      .prerender-shell ul, .prerender-shell ol { margin: 0 0 14px 20px; color: rgba(239,242,247,.78); }
+      .prerender-shell li { margin-bottom: 6px; }
+      .prerender-shell a  { color: #e8b84b; }
     </style>
 
-    <!-- ── JSON-LD Structured Data ───────────────────────────────── -->
+    <!-- ── JSON-LD Structured Data ─────────────────────────────────
+         Written per route by scripts/prerender.mjs at build time. This
+         fallback covers the dev server and any un-prerendered document. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       "name": "pointpoker",
       "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
-      "description": "pointpoker is a free online planning poker tool with real-time voting, story queue management, team alignment analytics, and estimation spree tracking for agile teams.",
-      "offers": [
-        {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "GBP",
-          "name": "Free",
-          "description": "Up to 8 participants including the facilitator, all card decks, story queue, and session summary — no account required."
-        },
-        {
-          "@type": "Offer",
-          "price": "6",
-          "priceCurrency": "GBP",
-          "name": "Pro",
-          "billingIncrement": "P1M",
-          "description": "Two dedicated Team Rooms, up to 20 participants including facilitators, sprint history, and priority support."
-        }
-      ],
+      "operatingSystem": "Web browser",
       "url": "https://www.pointpoker.app/",
-      "featureList": [
-        "Real-time simultaneous vote reveal — eliminates anchoring bias",
-        "Fibonacci, T-Shirt sizing, and Powers of 2 card decks",
-        "Story queue — work through your full backlog in order",
-        "Team alignment analytics — consensus rate, total story points, re-vote tracking",
-        "Estimation Spree — live streak counter for consecutive consensus rounds",
-        "Built-in countdown timer to keep sessions focused",
-        "Session summary — copy all estimates to clipboard",
-        "Facilitator mode for non-voting hosts with analytics dashboard",
-        "Team Room — persistent URL reused every sprint (Pro)",
-        "No account or sign-up required",
-        "Works for remote and distributed teams"
-      ]
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Is this planning poker tool actually free?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Free rooms support up to 8 participants including the facilitator, all three card decks, story queues, analytics, and clipboard export with no credit card or account required."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Do I need to create an account?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No account is required for free rooms. Accounts are only used for account-linked Pro billing and plan restoration across devices."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Why use Fibonacci numbers for story points?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Fibonacci story points reflect how uncertainty grows with complexity and help teams avoid false precision during estimation."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Does this work for remote and distributed teams?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Share one room link in Slack, Teams, Zoom, or email and everyone can join from any modern browser on desktop or mobile."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What is the Team Alignment score?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "The Team Alignment score shows how often the team reached first-round consensus, helping facilitators spot stories that need clearer acceptance criteria."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How many people can join a planning poker session?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Free rooms support up to 8 total participants including the facilitator. Pro rooms support up to 20 total participants including facilitators."
-          }
-        }
-      ]
+      "isAccessibleForFree": true,
+      "description": "Free online planning poker for agile and scrum teams. Every feature free for every team.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" }
     }
     </script>
   </head>
   <body>
-    <noscript>pointpoker requires JavaScript to run. Please enable JavaScript in your browser.</noscript>
+    <noscript>pointpoker needs JavaScript for live estimation rooms. The guides below still read fine without it.</noscript>
     <div id="root"></div>
   </body>
 </html>
