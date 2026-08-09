@@ -263,6 +263,31 @@ now fires from the dialog's own `mode`, which covers both opening straight into
 register and switching to it, and is ref-guarded against StrictMode's second
 effect pass. Historical counts stay polluted: compare from 2026-08-09 onwards.
 
+**An empty `/rooms` does not mean the team rooms are gone.** A Team Room is not a
+stored object. Its identity lives on the account, at
+`/users/$uid/teamRooms/{primary,secondary}`, as a *name*; `teamCode()` turns that
+name into a slug deterministically, and `/rooms/<slug>` is only materialised when
+somebody enters. `handleTeamRoom` reads the node first and reuses it if it
+exists, so the same URL keeps working whether or not the node is currently there.
+Checking `/rooms` therefore tells you who is in session right now, not which
+teams exist. The list of teams is `/users`, and the estimates they recorded are
+`/history/$uid`, which is independent of the room lifecycle entirely.
+
+This is also why the reaper distinguishes the two cases: a room carrying
+`teamName` or `founderRoom` is overwritten with `freshTeamRoomState` rather than
+deleted, so a permanent address survives with a clean round-one state. Before any
+of this existed, a `beforeunload` handler deleted the room outright when the last
+player left, which is why no team room node survives from before 2026-08.
+
+**Stale Pro fields are still sitting on live user profiles.** The licence system
+was deleted, but the rows it wrote were not: at least one account still carries
+`plan: "pro"`, `billingStatus: "active"` and `proKey`. Nothing reads them and
+nothing can — the rules accept any string for `users/$uid/plan`, so a user
+writing `plan: "pro"` to their own profile is expected and grants nothing, and
+the only privileged read on the site is gated on `/admins/$uid` instead. Treat
+those fields as dead data. The trap is reading a profile, seeing `plan: "pro"`,
+and rebuilding entitlement logic around a field the product deliberately ignores.
+
 ## Deployment record
 
 **Rules published to production on 2026-08-09** and verified against the live
@@ -315,10 +340,9 @@ rules tests alone could not settle — they run against the emulator, and the
 `.parent()` bug was a production-only failure. Facilitator joins, reveals,
 presses Record, and the round advances with Sprint Analytics populating. If that
 ever needs re-checking, one browser cannot do it: the room needs a Participant
-to cast a card and a Facilitator to record it, so it takes two tabs. Note the
-role picker defaults to Participant, so a solo tester who creates a room and
-never changes it reaches a revealed round with no way to record — the record
-controls are all `isObs`-gated and a voter cannot promote themselves.
+to cast a card and a Facilitator to record it, so it takes two tabs, and the
+second tab has to pick Facilitator explicitly — the record controls are all
+`isObs`-gated and a voter cannot promote themselves.
 
 **`notifyOnProActivation` was deleted on 2026-08-09.** It fired on every write to
 `/users/{uid}`, which means every sign-in invoked it, and it existed only to email
