@@ -409,3 +409,89 @@ describe("revealed round", () => {
     expect(app).toMatch(/aria-disabled=\{revealed\}/);
   });
 });
+
+/* ── The signed-in screen is the same product as the signed-out one ────
+   It shipped as a second layout: the marketing shell (hero left, 480px
+   form right) with an account dashboard stacked inside the form column.
+   At 1440x900 that made the page 2,846px tall, put "Create Room" 1,350px
+   below the fold, and left the entire left column empty — 552x900 of
+   background, because the hero was centred against a 2,233px sibling.
+
+   Everything in it was already stated somewhere else on the same screen:
+   an "Account workspace / Your workspace is ready" card under the headline
+   that says it, a "Display name" tile above the field that holds it, a
+   "2 fixed room URLs ready" tile on top of the panel that lists them,
+   three "Final Room / Final URLs" lines above the two cards that show
+   them, and a "Create one-off room" button beside the Create tab.
+──────────────────────────────────────────────────────────────────────── */
+describe("the signed-in workspace", () => {
+  const join = () => app.slice(app.indexOf("function JoinScreen"), app.indexOf("function WtpPoll"));
+
+  test("the dashboard-inside-the-form classes stay deleted", () => {
+    for (const cls of [
+      ".workspace-shell", ".workspace-card", ".workspace-grid", ".workspace-stat",
+      ".workspace-room-editor", ".workspace-action-btn", ".workspace-pill",
+      ".team-room-choice-row", ".team-room-choice-btn",
+    ]) {
+      expect(css).not.toContain(cls);
+    }
+  });
+
+  test("a Team Room is reachable one way, not four", () => {
+    /* The form's team tab could only ever target the same two rooms the
+       panel lists — its name field is readOnly for exactly that reason —
+       so it carried a room picker, a readOnly name and a code preview for
+       a choice already made beside it. The tab returns for a shared link,
+       which is the one room the panel cannot list. */
+    expect(join()).toMatch(/signedIn && !isSharedTeamRoomEntry \? \[\] :/);
+    expect(join()).not.toContain("Choose Team Room");
+  });
+
+  test("asking for a room you cannot have yet is not a dead end", () => {
+    // Open needs a role, and the role picker has no default by design. The
+    // ask is held until the role is picked, then completed — otherwise
+    // opening a room on a phone is Open, scroll, pick, scroll back, Open.
+    expect(join()).toContain("pendingRoomKey");
+    expect(join()).toMatch(/clearErr = \(\) => \{[^}]*setPendingRoomKey\(""\)/);
+  });
+});
+
+describe("a label points at a field", () => {
+  /* Every .lbl was a bare <label> with no htmlFor and no id on the input,
+     so the accessible name of "Your Name", "Room Code" and "Team Name" was
+     the placeholder — which disappears the moment you type. The ones that
+     head a group of buttons are not labels at all: a <label> for a button
+     group names nothing, so those are a <span> plus role="group". */
+  test("no label element is left dangling", () => {
+    const dangling = [...app.matchAll(/<label className="lbl"(?![^>]*htmlFor)/g)];
+    expect(dangling).toHaveLength(0);
+  });
+
+  test("a heading for a group of buttons is a group, not a label", () => {
+    expect(app).toMatch(/<span className="lbl" id="join-role-label">/);
+    expect(app).toMatch(/role="group" aria-labelledby="join-role-label"/);
+  });
+});
+
+describe("reduced motion reaches the scrolling too", () => {
+  /* scrollIntoView({behavior:"smooth"}) is an explicit argument and beats
+     the scroll-behavior:auto that the prefers-reduced-motion block sets in
+     CSS, so six call sites animated for people who asked them not to. The
+     preference has to be read in JS; scrollBehavior() does it. */
+  test("no call site hard-codes smooth scrolling", () => {
+    expect(app).not.toContain('behavior: "smooth"');
+    expect(app).toMatch(/matchMedia\?\.\("\(prefers-reduced-motion: reduce\)"\)/);
+  });
+});
+
+describe("a control that promises something does it", () => {
+  test("the navbar CTA's focus token is actually consumed", () => {
+    /* NavBar's "Start a free room" bumped startFocusToken, JoinScreen
+       destructured it and never read it. On the join screen — the one
+       screen where that button is not a link somewhere else — pressing it
+       did nothing at all, while the design system documented it as
+       scrolling to the form and focusing its first field. */
+    const join = app.slice(app.indexOf("function JoinScreen"), app.indexOf("function WtpPoll"));
+    expect(join).toMatch(/\}, \[startFocusToken\]\);/);
+  });
+});

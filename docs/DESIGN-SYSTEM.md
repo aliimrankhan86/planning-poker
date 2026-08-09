@@ -308,6 +308,54 @@ the iOS home indicator.
 **Do not render state that has not happened.** Empty analytics show one line
 explaining what will appear, not three zeroes. Zeroes read as data.
 
+**A signed-in state is the same screen with different content, not a second
+layout.** The join screen keeps one shell at every auth state: hero column left,
+form card right, two columns from 1024px. Signed out the left column carries the
+headline and the trust strip; signed in it carries the Team Rooms panel. What
+must never happen again is what did: the account view kept the marketing shell
+*and* stacked a dashboard inside the 480px form column, which made the page
+2,846px tall, put the primary action 1,350px below the fold, and left 552x900 of
+the viewport empty because the grid centred a four-line hero against a 2,233px
+sibling.
+
+**Whitespace has to be doing one of five jobs** — hierarchy, readability,
+grouping, focus, or separating interactions. A column that is empty because the
+content model is a phone's is not restraint, it is a phone's layout on a desktop.
+
+**Say it once.** Before adding a card, check whether the fact is already on the
+screen. The account view had five cards carrying one fact each, and every one of
+them was a restatement: the workspace card repeated the headline above it, the
+"Display name" tile repeated the field below it, the "2 fixed room URLs ready"
+tile repeated the panel it sat on, the "Final URLs" lines repeated the two cards
+under them, and "Create one-off room" repeated the Create tab. Card proliferation
+is usually duplicated content wearing a border.
+
+**One path to a thing.** If a choice is presented in a panel, the form beside it
+does not present it again. A second copy has to be kept in sync, and the two will
+eventually disagree.
+
+**Errors print next to the field they name.** One slot above the call to action
+is fine while the form is one column; it stops working the moment a control in
+another column can fail. Moving focus does not cover it — a programmatic
+`focus()` does not match `:focus-visible`, so a mouse user sees nothing at all.
+`errField` names the field and the message renders beside it.
+
+**Progressive disclosure is for frequency, not for length.** Opening a Team Room
+happens every sprint and stays visible; renaming both rooms happens once per
+account and sits in a `<details>`. Never fold away a primary action, live state,
+or a validation error.
+
+**Reduced motion has to be read in JS as well as CSS.**
+`scrollIntoView({behavior:"smooth"})` is an explicit argument and beats the
+`scroll-behavior: auto` that the `prefers-reduced-motion` block sets. Use
+`revealElement()` / `scrollBehavior()`, never the literal.
+
+**A `<label>` points at a field.** Every text input carries an `id` and its label
+carries `htmlFor`; without it the accessible name falls back to the placeholder,
+which disappears the moment someone types. A heading for a group of *buttons* is
+not a label — it names nothing — so it is a `<span className="lbl">` plus
+`role="group"` and `aria-labelledby` on the row.
+
 ## Copy
 
 Covered in `docs/AI-CONTEXT.hand.md`, and it is part of the design:
@@ -343,6 +391,20 @@ looks. Every nav control measures 44px at every width.
 `.btn-reveal-primary` is deleted. It had no call site left — the room's Reveal
 moved into `RoomActionBar` and onto `.btn--primary` — and was carrying a fifth
 gold gradient nothing rendered.
+
+The signed-in workspace is done. `.workspace-action-btn` was a tenth button
+implementation — its own padding, a 12px radius off the 10/14/20 scale, `.82rem`
+type within 0.3px of `--fs-1`, and a 33px height against the 44px floor — and the
+copy-link control inside `.workspace-team-url` was an eleventh at 33px. Both are
+`.btn` variants now, so every control in the panel measures 44px. Deleted with
+them: `.workspace-shell`, `-card`, `-top`, `-label`, `-title`, `-copy`, `-grid`,
+`-stat*`, `-room-editor*`, `-setup-callout`, `-actions`, `-pill`,
+`.workspace-inline-note`, and `.team-room-choice-*`. The section header reuses
+`.ptitle`, which the room view already uses for "At the table" and "Sprint
+Analytics", rather than introducing a second heading style. Four paragraphs of
+inline `style={{fontSize, color, lineHeight}}` in `JoinScreen` collapsed into
+`.join-note`. Net effect on the counters in `docs/AI-CONTEXT.md`: distinct
+padding pairs 79 → 77, legacy button classes 10 → 8.
 
 Not done:
 

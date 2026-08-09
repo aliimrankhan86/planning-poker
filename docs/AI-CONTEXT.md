@@ -111,7 +111,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 75 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 82 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -134,8 +134,8 @@ one primary action per screen; icons from `ICON_PATHS`, never emoji.
 | Design tokens in `:root` | 71 | Type, spacing, elevation, motion, semantic colour |
 | Icons in `ICON_PATHS` | 18 | One stroke family, `currentColor` |
 | Distinct font sizes in CSS | 45 | Target is the 8-step scale; the rest is unmigrated legacy |
-| Distinct padding pairs | 79 | Target is the 4px grid |
-| Legacy button classes | 10 | Migrate onto `.btn` when you touch one |
+| Distinct padding pairs | 77 | Target is the 4px grid |
+| Legacy button classes | 8 | Migrate onto `.btn` when you touch one |
 
 The last three are deliberately unflattering. They are the size of the remaining
 migration, and they should fall over time, never rise. `src/designsystem.test.js`
@@ -569,6 +569,68 @@ the mark beside it, both centre at y=32, offset 0: the overflow is symmetric, no
 clips it, and it is a two-word lockup rather than prose. Left alone. A sweep produces
 candidates, not verdicts.
 
+## The signed-in screen was a second product
+
+Signing in did not change the layout, it added to it. The screen kept the marketing
+shell — hero left, 480px form card right — and stacked an account dashboard inside the
+form column. Measured at 1440x900:
+
+| | before | after |
+|---|---|---|
+| page height | 2,846px | 1,342px |
+| `Create Room →` | y 2,250 | y 746 |
+| left column at first paint | 552x900 of empty background | the two Team Rooms |
+| account chrome above the form | 1,141px | 0 |
+
+The hero sat at y=1,123 because the grid centred a 197px column against a 2,233px one,
+so the headline was below the fold with nothing around it and the top-left quadrant of
+the viewport was empty. Every room URL rendered as `htt…` — a link box 200px wide
+showing three characters.
+
+**The cause is a content model, not a spacing value.** A single column is right on a
+phone and wrong on a desktop where 552px sits unused beside it. The fix is the same
+two-column shell the signed-out screen already used, with the empty column carrying the
+thing a returning user came for. Nothing was invented: the panel is the room list that
+was already there, given room to be legible.
+
+**Everything in it was already on the same screen.** An "Account workspace / Your
+workspace is ready" card under the headline that says it. A "Display name" tile above
+the field that holds it. A "2 fixed room URLs ready" tile on top of the panel that lists
+them. Three "Final Room / Final URLs" lines above the two cards that show them. A
+"Create one-off room" button beside the Create tab. Five cards, one fact each. When a
+screen restates itself this much the question is not which card to shrink — it is which
+one is the real one.
+
+**Four controls for one choice.** The form's team tab could only ever target the two
+rooms the panel lists; its name field is `readOnly` for exactly that reason. It carried
+a room picker, that readOnly name, and a live code preview for a choice already made
+beside it. Signed in, the tab is gone and the panel is the path. It returns for a shared
+`/t/…` link, which is the one room the panel cannot list.
+
+**A no-default has a cost somewhere, and it lands where the two halves meet.** The role
+picker deliberately has no default (a silent "voter" once stranded solo facilitators with
+no way to record — see the comment on `setRole`). The panel's Open buttons need it, so on
+a phone opening a Team Room was Open, scroll, pick, scroll back, Open. The ask is now
+held in `pendingRoomKey` and completed when the role is picked, and `clearErr` drops it
+so nothing opens by surprise later. Persisting the last role — as `recallName` already
+does for the name — would remove the step entirely, but that is a product decision and
+the no-default is deliberate, so it was left alone.
+
+**Moving focus is not a substitute for putting the message where the eye is.** A refusal
+fired from the panel printed in the single error slot above the call to action, 350px
+away in the other column. Focus moved to the offending control, which does nothing
+visible: a programmatic `focus()` does not match `:focus-visible`, so after a mouse click
+there is no ring. Errors now name their field (`errField`) and print beside it.
+
+**Three smaller things found while measuring.** `startFocusToken` was passed to
+JoinScreen and never read, so the navbar's "Start a free room" — the one screen where it
+is not a link somewhere else — did nothing at all, while `designsystem.test.js` carried a
+comment describing what it was supposed to do. Every `.lbl` was a bare `<label>` with no
+`htmlFor`, so the accessible name of the name, code, team, email and password fields was
+the placeholder, which disappears when you type. And `scrollIntoView({behavior:"smooth"})`
+is an explicit argument that beats the `scroll-behavior: auto` the reduced-motion block
+sets in CSS — six call sites animated for people who asked them not to.
+
 ## What the tests now pin
 
 - `no min-width override is cancelled by a later base rule` — walks every top-level rule
@@ -578,6 +640,16 @@ candidates, not verdicts.
   for fixed boxes holding one glyph, each with its reason.
 - `the navbar CTA steps down where the form already is` — the one-primary-per-screen rule
   is per screen, so a shared component sometimes has to change rank by route.
+- `the dashboard-inside-the-form classes stay deleted` — nine class names that only ever
+  existed to restate what the screen already said.
+- `a Team Room is reachable one way, not four`.
+- `asking for a room you cannot have yet is not a dead end`.
+- `no label element is left dangling` — a `<label className="lbl">` must carry `htmlFor`.
+  It found three more in the auth dialog on its first run than the sweep that prompted it.
+- `a heading for a group of buttons is a group, not a label`.
+- `no call site hard-codes smooth scrolling`.
+- `the navbar CTA's focus token is actually consumed` — the cheapest possible guard
+  against a control that promises something and does nothing.
 
 ## Two traps specific to this file
 

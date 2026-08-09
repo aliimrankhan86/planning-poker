@@ -291,6 +291,12 @@ const countParticipants = (players = {}, excludeId = null) =>
   Object.entries(players)
     .filter(([playerId, player]) => !!player && playerId !== excludeId)
     .length;
+/* scrollIntoView({behavior:"smooth"}) beats the CSS scroll-behavior:auto that
+   the reduced-motion block sets, so the preference has to be read here. */
+const scrollBehavior = () =>
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+const revealElement = (el, block = "center") =>
+  el?.scrollIntoView({ behavior: scrollBehavior(), block });
 // Modal plumbing every dialog needs and none of them had: Escape to close,
 // focus moved in on open, focus returned to the trigger on close, and Tab kept
 // inside the dialog (WCAG 2.1.2 — no keyboard trap means you can also get *out*
@@ -1045,317 +1051,223 @@ body::before {
   .trust-strip { justify-content: flex-start; }
 }
 
-.workspace-shell {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 22px;
+/* ══════════════════ SIGNED-IN WORKSPACE ══════════════════
+   The signed-in screen is the same two-column shell as the signed-out one, so
+   it does not need a second visual language: the column that carried nothing
+   but a four-line hero now carries the two Team Rooms, and the form card on
+   the right is the same card a signed-out visitor sees.
+
+   What went, and why: an "Account workspace / Your workspace is ready" card
+   restating the headline above it, a "Display name" tile restating the Your
+   Name field below it, a "2 fixed room URLs ready" tile restating the panel it
+   sat on top of, three "Final Room / Final URLs" preview lines restating the
+   two room cards under them, and a "Create one-off room" button restating the
+   Create tab. Five cards, one fact each, 1,141px of column.
+   ═════════════════════════════════════════════════════════ */
+/* Stacked, the panel and the form card are two separate regions and need a gap
+   between them; side by side they are two columns and do not. */
+.join-side + .join-box { margin-top: var(--sp-6); }
+.workspace-panel {
+  margin-top: var(--sp-6);
+  padding: var(--sp-5);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
 }
-.workspace-card {
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: 1px solid rgba(158,234,196,.14);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    rgba(255,255,255,.02);
+.workspace-panel .ptitle { margin-bottom: var(--sp-2); }
+.workspace-panel-sub {
+  margin: 0 0 var(--sp-4);
+  color: var(--text-3);
+  font-size: var(--fs-2);
+  letter-spacing: var(--fs-2-tracking);
+  line-height: var(--lh-body);
 }
-.workspace-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-.workspace-label {
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-  margin-bottom: 8px;
-}
-.workspace-title {
-  color: var(--cream);
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: -.02em;
-}
-.workspace-copy {
-  margin: 6px 0 0;
-  color: rgba(239,242,247,.62);
-  font-size: var(--fs-1);
-  line-height: 1.55;
-}
-.workspace-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.04);
-  color: rgba(239,242,247,.70);
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.workspace-pill.pro {
-  color: var(--gold2);
-  background: rgba(241,185,63,.10);
-  border-color: rgba(241,185,63,.26);
-}
-.workspace-grid {
+.workspace-room-list {
+  list-style: none;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.workspace-stat {
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(158,234,196,.10);
-  background: rgba(255,255,255,.025);
-}
-.workspace-stat-k {
-  display: block;
-  margin-bottom: 6px;
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-}
-.workspace-stat-v {
-  display: block;
-  color: var(--cream);
-  font-size: .86rem;
-  line-height: 1.45;
-}
-.workspace-room-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
 }
 .workspace-room-card {
   min-width: 0;
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(158,234,196,.10);
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
   background: rgba(255,255,255,.025);
 }
 .workspace-room-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--sp-3);
 }
-.workspace-room-k {
-  display: block;
-  margin-bottom: 6px;
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-}
-.workspace-room-v {
-  display: block;
-  color: var(--cream);
-  font-size: .9rem;
-  font-weight: 600;
-  line-height: 1.45;
+.workspace-room-name {
+  min-width: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--fs-3);
+  font-weight: var(--fw-semi);
+  line-height: var(--lh-snug);
+  letter-spacing: -.01em;
+  color: var(--text-1);
+  overflow-wrap: anywhere;
 }
 .workspace-room-chip {
   display: inline-flex;
   align-items: center;
-  padding: 5px 9px;
-  border-radius: 999px;
+  flex: none;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-full);
   border: 1px solid rgba(241,185,63,.18);
   background: rgba(241,185,63,.08);
   color: var(--gold2);
   font-size: var(--fs-1);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: .1em;
+  line-height: var(--lh-tight);
   text-transform: uppercase;
   white-space: nowrap;
-}
-.workspace-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.workspace-action-btn {
-  flex: 1;
-  min-width: 160px;
-  padding: 11px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.14);
-  background: rgba(255,255,255,.03);
-  color: var(--cream);
-  font-family: 'Outfit', sans-serif;
-  font-size: .82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .18s ease;
-}
-.workspace-action-btn:hover {
-  background: rgba(255,255,255,.06);
-  border-color: rgba(158,234,196,.24);
-}
-.workspace-action-btn.gold {
-  border-color: rgba(241,185,63,.24);
-  background: rgba(241,185,63,.08);
-  color: var(--gold2);
 }
 .workspace-team-url {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 12px 14px;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
   width: 100%;
   min-width: 0;
-  box-sizing: border-box;
-  border-radius: 14px;
+  border-radius: var(--r-md);
   border: 1px solid rgba(126,230,255,.16);
   background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06));
 }
 .workspace-team-url code {
-  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: var(--fs-1);
-  line-height: 1.45;
+  letter-spacing: var(--fs-1-tracking);
+  line-height: var(--lh-snug);
   color: var(--mint2);
 }
-.workspace-team-url button {
-  flex-shrink: 0;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(158,234,196,.16);
-  background: rgba(7,17,14,.42);
-  color: var(--cream);
-  font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-1);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .18s ease;
+/* Wide enough for both labels, so confirming the copy does not shove the URL
+   beside it sideways. */
+.workspace-team-url .btn { min-width: 112px; }
+/* Confirmation is a colour change on the control that was pressed, so the
+   label and the state cannot end up disagreeing. */
+.workspace-team-url .btn.copied {
+  --btn-fg: var(--gold2);
+  --btn-bd: rgba(241,185,63,.28);
+  --btn-bg: rgba(241,185,63,.10);
 }
-.workspace-team-url button:hover {
-  background: rgba(255,255,255,.08);
+.workspace-room-open { margin-top: var(--sp-3); }
+
+/* Renaming both rooms happens once per account; opening one happens every
+   sprint. A native <details> keeps the rare job on the page, keyboard
+   reachable, and out of the way of the frequent one. */
+.workspace-rename {
+  margin-top: var(--sp-4);
+  border-top: 1px solid var(--border);
 }
-.workspace-team-url button.copied {
-  color: var(--gold2);
-  border-color: rgba(241,185,63,.28);
-  background: rgba(241,185,63,.10);
-}
-@media (max-width: 900px) {
-  .workspace-team-url {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-  }
-  .workspace-team-url button {
-    width: 100%;
-  }
-}
-.workspace-room-editor {
-  margin-top: 16px;
-  margin-bottom: 16px;
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(158,234,196,.10);
-  background: rgba(255,255,255,.022);
-  transition: border-color .22s ease, box-shadow .22s ease, background .22s ease;
-}
-.workspace-room-editor.highlight {
-  border-color: rgba(241,185,63,.34);
-  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(255,255,255,.025));
-  box-shadow: 0 18px 42px rgba(241,185,63,.10);
-}
-.workspace-room-editor-top {
+.workspace-rename-summary {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-.workspace-room-editor-title {
-  color: var(--cream);
-  font-size: .92rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-.workspace-room-editor-note {
-  margin-top: 8px;
-}
-.workspace-room-editor-badge {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(241,185,63,.22);
-  background: rgba(241,185,63,.10);
-  color: var(--gold2);
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  gap: var(--sp-2);
+  min-height: var(--tap-min);
+  list-style: none;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--fs-2-tracking);
+  line-height: var(--lh-snug);
 }
-.workspace-room-editor-row {
+.workspace-rename-summary::-webkit-details-marker { display: none; }
+.workspace-rename-summary::before {
+  content: '';
+  flex: none;
+  width: 7px; height: 7px;
+  border-right: 1.75px solid currentColor;
+  border-bottom: 1.75px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.workspace-rename[open] .workspace-rename-summary::before { transform: rotate(45deg); }
+.workspace-rename-summary:hover { color: var(--text-1); }
+.workspace-rename-body { padding-bottom: var(--sp-2); }
+.workspace-rename-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  margin-top: 12px;
+  gap: var(--sp-2);
 }
-.workspace-room-editor-row input {
+.workspace-rename-row input {
   width: 100%;
   min-width: 0;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.14);
+  min-height: var(--tap-min);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
   background: rgba(7,17,14,.52);
-  color: var(--cream);
+  color: var(--text-1);
   font-family: 'Outfit', sans-serif;
-  font-size: .92rem;
+  font-size: var(--fs-3);
   outline: none;
 }
-.workspace-room-editor-row input:focus-visible {
-  border-color: rgba(241,185,63,.38);
-  box-shadow: 0 0 0 2px rgba(241,185,63,.16);
-}
-.workspace-room-editor-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-  color: rgba(239,242,247,.66);
+.workspace-rename-hint {
+  margin-top: var(--sp-2);
+  color: var(--text-3);
   font-size: var(--fs-1);
-  line-height: 1.45;
-  word-break: break-word;
+  letter-spacing: var(--fs-1-tracking);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
 }
-.workspace-inline-note {
-  margin-top: 10px;
-  color: rgba(239,242,247,.68);
+.workspace-rename-hint strong { color: var(--text-2); font-weight: var(--fw-semi); }
+/* Reserved whether or not it has anything to say: the confirmation must not
+   push the panel down as it arrives and pull it back up as it goes. */
+.workspace-rename-status {
+  min-height: 1.4em;
+  margin-top: var(--sp-1);
+  color: var(--mint);
   font-size: var(--fs-1);
-  line-height: 1.5;
+  letter-spacing: var(--fs-1-tracking);
+  line-height: var(--lh-snug);
 }
-.workspace-setup-callout {
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(241,185,63,.24);
-  background: linear-gradient(180deg, rgba(241,185,63,.12), rgba(255,255,255,.03));
-  color: rgba(255,242,205,.92);
-  font-size: var(--fs-1);
-  line-height: 1.55;
+.workspace-rename.highlight {
+  border-radius: var(--r-md);
+  border: 1px solid rgba(241,185,63,.34);
+  padding: 0 var(--sp-3);
+  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(255,255,255,.025));
 }
-.workspace-setup-callout strong {
-  color: var(--gold3);
+/* Secondary lines inside the form card: one class instead of the same four
+   inline declarations written out four times. */
+.join-note {
+  margin-bottom: var(--sp-5);
+  color: var(--text-3);
+  font-size: var(--fs-2);
+  letter-spacing: var(--fs-2-tracking);
+  line-height: var(--lh-body);
+}
+/* Helper text belongs to the field above it, so the field gives up its own
+   bottom margin and the pair carries one gap instead of two. Browsers without
+   :has() just leave the looser spacing, which is not a defect. */
+.inp:has(+ .join-note) { margin-bottom: var(--sp-2); }
+.join-note--centred { text-align: center; margin: var(--sp-3) 0 0; }
+
+@media (max-width: 560px) {
+  .workspace-team-url {
+    grid-template-columns: 1fr;
+    padding: var(--sp-3);
+  }
+  .workspace-rename-row { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 1024px) {
+  /* Signed in, the left column has real content in it, so the two columns
+     start on the same line instead of being centred against each other. */
+  .join-layout--workspace { align-items: start; }
+  .join-side + .join-box { margin-top: 0; }
 }
 .lbl {
   display: block; font-size: var(--fs-1); font-weight: 600;
@@ -1432,52 +1344,16 @@ body::before {
 .choice-grid { display: grid; grid-template-columns: repeat(var(--choice-cols, 2), 1fr); gap: var(--sp-2); margin-bottom: var(--sp-5); }
 
 .err { color: #e74c3c; font-size: var(--fs-1); margin-bottom: 12px; text-align: center; }
+/* A message about one field sits under that field and reads left, like the
+   label above it. The field gives up its own bottom margin so the two read as
+   one unit rather than two loose lines. */
+.err--field { text-align: left; line-height: var(--lh-snug); margin-bottom: var(--sp-5); }
+.inp:has(+ .err--field),
+.join-note:has(+ .err--field),
+.choice-row:has(+ .err--field),
+.workspace-room-list:has(+ .err--field) { margin-bottom: var(--sp-2); }
 
 /* Team Room preview chip */
-.team-room-choice-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.team-room-choice-btn {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(158,234,196,.12);
-  background: rgba(255,255,255,.03);
-  color: rgba(239,242,247,.78);
-  font-family: 'Outfit', sans-serif;
-  text-align: left;
-  cursor: pointer;
-  transition: all .18s ease;
-}
-.team-room-choice-btn:hover {
-  background: rgba(255,255,255,.06);
-  border-color: rgba(158,234,196,.22);
-}
-.team-room-choice-btn.active {
-  border-color: rgba(241,185,63,.30);
-  background: linear-gradient(180deg, rgba(241,185,63,.14), rgba(241,185,63,.06));
-  color: var(--gold2);
-}
-.team-room-choice-label {
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-}
-.team-room-choice-btn.active .team-room-choice-label {
-  color: rgba(255,217,120,.82);
-}
-.team-room-choice-name {
-  font-size: .84rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
 .team-code-preview { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(180deg, rgba(126,230,255,.10), rgba(241,185,63,.08)); border: 1px solid rgba(126,230,255,.18); border-radius: 12px; padding: 10px 12px; margin-bottom: 18px; width: 100%; }
 .tcp-label { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.65); white-space: nowrap; }
 .tcp-code { font-family: monospace; font-size: .9rem; font-weight: 700; color: var(--mint2); letter-spacing: .1em; flex: 1; }
@@ -1653,17 +1529,9 @@ body::before {
   margin: 44px auto;
 }
 @media (max-width: 680px) {
-  .seo-grid, .seo-faq-grid, .seo-plan-grid, .workspace-room-grid, .team-room-choice-row { grid-template-columns: 1fr; }
+  .seo-grid, .seo-faq-grid, .seo-plan-grid { grid-template-columns: 1fr; }
   .seo-section h2.seo-h2 { font-size: 1.5rem; }
   .seo-section { margin-top: 40px; }
-  .workspace-grid { grid-template-columns: 1fr; }
-  .workspace-top,
-  .workspace-actions { flex-direction: column; align-items: stretch; }
-  .workspace-action-btn { min-width: 0; width: 100%; }
-  .workspace-pill { align-self: flex-start; }
-  .workspace-room-editor-top { flex-direction: column; }
-  .workspace-room-editor-row { grid-template-columns: 1fr; }
-  .workspace-room-editor-row button { width: 100%; }
 }
 
 /* ══════════════════════ ROOM HEADER (game view) ══════════════════════
@@ -4310,8 +4178,9 @@ function LoginModal({
 
             {mode === "register" && (
               <>
-                <label className="lbl">Full Name</label>
+                <label className="lbl" htmlFor="auth-name">Full Name</label>
                 <input
+                  id="auth-name"
                   className="inp"
                   placeholder="Alex Johnson"
                   value={nameInput}
@@ -4322,8 +4191,9 @@ function LoginModal({
               </>
             )}
 
-            <label className="lbl">{mode === "reset" ? "Account Email" : "Email"}</label>
+            <label className="lbl" htmlFor="auth-email">{mode === "reset" ? "Account Email" : "Email"}</label>
             <input
+              id="auth-email"
               className="inp"
               type="email"
               placeholder="you@company.com"
@@ -4334,8 +4204,9 @@ function LoginModal({
 
             {mode !== "reset" && (
               <>
-                <label className="lbl">Password</label>
+                <label className="lbl" htmlFor="auth-password">Password</label>
                 <input
+                  id="auth-password"
                   className="inp"
                   type="password"
                   placeholder={mode === "register" ? "Minimum 6 characters" : "Your password"}
@@ -4579,7 +4450,7 @@ export default function App() {
       const el = document.getElementById(sectionId);
       if (!el) return;
       el.focus?.({ preventScroll: true });
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      revealElement(el, "start");
     };
     if (screen === "join") {
       window.history.replaceState({}, "", `/#${sectionId}`);
@@ -4762,7 +4633,7 @@ export default function App() {
       const el = document.getElementById(hash);
       if (!el) return;
       el.focus?.({ preventScroll: true });
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      revealElement(el, "start");
     }, 40);
     return () => clearTimeout(timeout);
   }, [screen]);
@@ -5476,7 +5347,7 @@ export default function App() {
           onLogoClick={() => {
             if (screen === "game") { goBack(); return; }
             if (screen !== "join") { navTo("/"); return; }
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            window.scrollTo({ top: 0, behavior: scrollBehavior() });
           }}
           onLogin={()    => openLoginModal("signin", "general")}
           onStartFree={() => {
@@ -7713,7 +7584,21 @@ function JoinScreen({
   const canEnterTeamRoom = canHostPermanentTeamRoom || isSharedTeamRoomEntry;
   const nameSeedKey = signedIn ? `${currentUser?.uid || currentUser?.email || ""}:${defaultName}` : "guest";
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
-  const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : (signedIn ? "team" : "create"));
+  const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : "create");
+  /* Signed in, your own two Team Rooms are opened from the panel beside this
+     form, and the tab could only ever target those same two rooms — its name
+     field is readOnly for exactly that reason. Three tabs, a room picker, a
+     readOnly name and a code preview were four controls for one choice the
+     panel already presents. The tab returns for a shared link, which is the one
+     case where the form has a room to enter that the panel does not list. */
+  const TABS = [
+    { key: "create", label: "Create" },
+    { key: "join", label: "Join" },
+    ...(signedIn && !isSharedTeamRoomEntry ? [] : [{ key: "team", label: "Team" }]),
+  ];
+  // Signing in while the team tab is open would otherwise strand the form on a
+  // branch with no tab left to switch away from.
+  const activeTab = TABS.some((t) => t.key === tab) ? tab : "create";
   const [nameDraft, setNameDraft] = useState(signedIn ? defaultName : recallName());
   const [nameEdited, setNameEdited] = useState(false);
   // No default. Defaulting to voter meant the person creating the room was
@@ -7734,9 +7619,25 @@ function JoinScreen({
   const [savingDedicatedRoomLabel, setSavingDedicatedRoomLabel] = useState(false);
   const [dedicatedRoomLabelStatus, setDedicatedRoomLabelStatus] = useState("");
   const [highlightWorkspaceSetup, setHighlightWorkspaceSetup] = useState(false);
+  // Renaming both rooms is a once-per-account job. It stays on the page but
+  // folded away, so the two things done every sprint — open a room, copy its
+  // link — are what the panel actually shows.
+  const [renameOpen, setRenameOpen] = useState(false);
   const [err, setErr] = useState("");
+  /* Which field the message is about, so it can be printed beside that field
+     rather than in one slot above the call to action. A refusal fired from the
+     Team Rooms panel used to print 350px away in the other column, and moving
+     focus does not help a mouse user: a programmatic focus() does not match
+     :focus-visible, so nothing was highlighted either. */
+  const [errField, setErrField] = useState("");
+  /* A room the user asked for and could not have yet, because the role picker
+     has no default by design. Without this, opening a Team Room on a phone is
+     a round trip: tap Open, get sent down to the role picker, pick one, scroll
+     back up, tap Open again. The intent is held only until the next unrelated
+     interaction — clearErr drops it — so nothing opens by surprise later. */
+  const [pendingRoomKey, setPendingRoomKey] = useState("");
   const [copiedDedicatedRoomKey, setCopiedDedicatedRoomKey] = useState("");
-  const teamEntryRef = useRef(null);
+  const roleGroupRef = useRef(null);
   const workspaceRoomEditorRef = useRef(null);
   const workspaceRoomEditorInputRef = useRef(null);
   // No autoFocus here on purpose. It re-fired on every remount and yanked focus
@@ -7760,12 +7661,15 @@ function JoinScreen({
     accountProfile || {},
     currentUser || {},
   );
-  const dedicatedRoomPreviewUrls = {
-    primary: `${window.location.origin}${teamRoomPath(dedicatedRoomPreview.primary)}`,
-    secondary: `${window.location.origin}${teamRoomPath(dedicatedRoomPreview.secondary)}`,
-  };
 
-  const clearErr = () => setErr("");
+  const clearErr = () => { setErr(""); setErrField(""); setPendingRoomKey(""); };
+  const fail = (message, field = "") => { setErr(message); setErrField(field); };
+  // Rendered next to the field it names; falls back to the slot above the call
+  // to action for anything that is not about one specific field.
+  const fieldError = (field) =>
+    err && errField === field
+      ? <div className="err err--field" id="join-error" role="alert">{err}</div>
+      : null;
 
   /* Six call sites reach the room handlers and only three of them go through
      go() — the dedicated Team Room shortcuts and the auto-enter effect call in
@@ -7774,16 +7678,14 @@ function JoinScreen({
   const requireRole = useCallback(() => {
     if (role) return true;
     setErr("Pick your role first. Participants vote, facilitators run the session.");
+    setErrField("role");
     return false;
   }, [role]);
   // Live preview of the room code a team name would produce
   const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
-  const isOwnDedicatedTeamRoom = signedIn && !!previewCode && dedicatedTeamRooms.some((room) => room.code === previewCode);
-  const teamPrimaryLabel = !canEnterTeamRoom
-    ? "Create a free account for 2 Team Rooms →"
-    : isSharedTeamRoomEntry
-      ? "Join Team Room →"
-      : "Open selected Team Room →";
+  const teamPrimaryLabel = canEnterTeamRoom
+    ? "Join Team Room →"
+    : "Create a free account for 2 Team Rooms →";
   const resolveEnteredName = useCallback(
     () => (nameInputRef.current?.value || nameValueRef.current || "").trim(),
     [],
@@ -7869,21 +7771,50 @@ function JoinScreen({
     }
   }, [matchedDedicatedRoomFromRoute?.key, selectedDedicatedRoomKey]);
 
-  const focusTeamEntry = useCallback(() => {
-    setTimeout(() => {
-      teamEntryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 40);
-  }, []);
+  /* The two Open buttons live in the Team Rooms panel and the two fields they
+     need — name and role — live in the form beside it. Side by side on a
+     desktop that is obvious; stacked on a phone the form is below the fold, so
+     a refusal that only printed a message would read as a dead button. Send
+     focus to whichever field is actually missing. */
+  const focusMissingField = (el) => {
+    revealElement(el);
+    el?.focus({ preventScroll: true });
+  };
+
+  const openDedicatedRoom = (room, chosenRole = role) => {
+    const validatedName = validateEnteredName();
+    if (!validatedName.ok) {
+      fail(validatedName.message, "name");
+      focusMissingField(nameInputRef.current);
+      return;
+    }
+    if (!chosenRole) {
+      fail(`Pick your role and ${room.shortLabel} opens.`, "role");
+      setPendingRoomKey(room.key);
+      focusMissingField(roleGroupRef.current?.querySelector("button"));
+      return;
+    }
+    setSelectedDedicatedRoomKey(room.key);
+    onTeamRoom(validatedName.name, chosenRole, room.name, deck, estMode);
+  };
+
+  // Picking the role the panel was waiting for finishes the job it started.
+  const chooseRole = (nextRole) => {
+    const resumed = dedicatedTeamRooms.find((r) => r.key === pendingRoomKey);
+    setRole(nextRole);
+    clearErr();
+    if (resumed) openDedicatedRoom(resumed, nextRole);
+  };
 
   const go = () => {
     const validatedName = validateEnteredName();
-    if (!validatedName.ok) { setErr(validatedName.message); return; }
-    if (!requireRole()) return;
+    if (!validatedName.ok) { fail(validatedName.message, "name"); nameInputRef.current?.focus(); return; }
+    if (!requireRole()) { roleGroupRef.current?.querySelector("button")?.focus(); return; }
     const enteredName = validatedName.name;
-    if (tab === "create") {
+    if (activeTab === "create") {
       onCreate(enteredName, role, deck, estMode);
-    } else if (tab === "join") {
-      if (!rc.trim()) { setErr("Please enter a room code"); return; }
+    } else if (activeTab === "join") {
+      if (!rc.trim()) { fail("Please enter a room code", "code"); return; }
       onJoin(enteredName, role, rc.trim().toUpperCase());
     } else {
       // team room — hosting one needs a free account for a unique URL
@@ -7891,7 +7822,7 @@ function JoinScreen({
         onRequireAccount?.();
         return;
       }
-      if (!teamName.trim()) { setErr("Please enter your team name"); return; }
+      if (!teamName.trim()) { fail("Please enter your team name", "team"); return; }
       onTeamRoom(enteredName, role, teamName.trim(), deck, estMode);
     }
   };
@@ -7900,7 +7831,7 @@ function JoinScreen({
     if (!currentUser?.uid) return;
     const nextLabel = dedicatedRoomLabel.replace(/\s+/g, " ").trim();
     if (!nextLabel) {
-      setErr("Choose a name for your dedicated Team Rooms.");
+      fail("Choose a name for your Team Rooms.", "rename");
       setDedicatedRoomLabelStatus("error");
       return;
     }
@@ -7920,7 +7851,7 @@ function JoinScreen({
       setDedicatedRoomLabelDirty(false);
       setDedicatedRoomLabelStatus("saved");
     } catch {
-      setErr("Could not save your Team Room names right now. Try again.");
+      fail("Could not save your Team Room names right now. Try again.", "rename");
       setDedicatedRoomLabelStatus("error");
     } finally {
       setSavingDedicatedRoomLabel(false);
@@ -7937,7 +7868,7 @@ function JoinScreen({
     if (!room?.url) return;
     const ok = await copyText(room.url);
     if (!ok) {
-      setErr("Your browser blocked the copy. Select the link above and copy it manually.");
+      fail("Your browser blocked the copy. Select the link and copy it manually.", "copy");
       return;
     }
     setCopiedDedicatedRoomKey(room.key);
@@ -7953,13 +7884,24 @@ function JoinScreen({
     if (lastProSetupFocusTokenRef.current === proSetupFocusToken) return;
     lastProSetupFocusTokenRef.current = proSetupFocusToken;
     setHighlightWorkspaceSetup(true);
+    setRenameOpen(true);
     setTimeout(() => {
-      workspaceRoomEditorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      workspaceRoomEditorInputRef.current?.focus();
+      revealElement(workspaceRoomEditorRef.current);
+      workspaceRoomEditorInputRef.current?.focus({ preventScroll: true });
     }, 80);
     const timeout = setTimeout(() => setHighlightWorkspaceSetup(false), 2600);
     return () => clearTimeout(timeout);
   }, [signedIn, proSetupFocusToken]);
+
+  /* The navbar's "Start a free room" bumps this counter and nothing listened,
+     so on the join screen — the one screen where that control is not a link to
+     somewhere else — pressing it did nothing at all. It is a shortcut to the
+     form, so it puts the cursor in the form's first field. */
+  useEffect(() => {
+    if (!startFocusToken) return;
+    revealElement(nameInputRef.current);
+    nameInputRef.current?.focus({ preventScroll: true });
+  }, [startFocusToken]);
 
   useEffect(() => {
     if (autoEnterOwnTeamRoomRef.current) return;
@@ -7990,11 +7932,14 @@ function JoinScreen({
           put 397px of marketing above the control people came to use and left
           829px of empty width either side. From 1024px up the two sit side by
           side instead: nothing is removed, the space was already there. */}
-      <div className="join-layout">
+      <div className={`join-layout${signedIn ? " join-layout--workspace" : ""}`}>
+        <div className="join-side">
         <header className="join-hero">
-          <div className="join-mark">
-            <BrandMark size={56} label="pointpoker"/>
-          </div>
+          {!signedIn && (
+            <div className="join-mark">
+              <BrandMark size={56} label="pointpoker"/>
+            </div>
+          )}
 
           <h1 className="join-title">
             {signedIn
@@ -8003,7 +7948,7 @@ function JoinScreen({
           </h1>
           <p className={`join-sub${signedIn ? " workspace" : ""}`}>
             {signedIn
-              ? "Your workspace is ready. Start a room, open one of your two fixed Team Rooms, or join a shared session."
+              ? "Open a fixed Team Room for recurring planning, or set up a one-off session."
               : "Deal a room, share the link, everyone reveals at once. Every feature is free, and you do not need an account to play."}
           </p>
           {!signedIn && (
@@ -8016,163 +7961,114 @@ function JoinScreen({
           )}
         </header>
 
-      <div className="join-box">
+        {/* The column beside the form was 552px of empty background: the hero
+            it held is four lines long and the form is 2,000px tall, so on a
+            desktop the headline sat below the fold with nothing around it. The
+            two Team Rooms are what a returning user came for, so they take the
+            space, and the form keeps the column it already had. */}
+        {signedIn && (
+          <section className="workspace-panel" aria-labelledby="team-rooms-heading">
+            {/* .ptitle is the section header the room view already uses for
+                "At the table" and "Sprint Analytics" — the same kind of thing
+                deserves the same treatment, not a second heading style. */}
+            <h2 className="ptitle" id="team-rooms-heading">Your Team Rooms</h2>
+            <p className="workspace-panel-sub">
+              Two fixed URLs tied to your account. Share them once and reuse them every sprint.
+            </p>
 
-        {signedIn ? (
-          <div className="workspace-shell">
-            <div className="workspace-card">
-              <div className="workspace-top">
-                <div>
-                  <div className="workspace-label">Account workspace</div>
-                  <div className="workspace-title">Your workspace is ready</div>
-                  <p className="workspace-copy">
-                    Use either Team Room for recurring sprint planning, or spin up a one-off room when you just need a quick session.
-                  </p>
-                </div>
-                <span className="workspace-pill">Free · everything on</span>
-              </div>
-            </div>
-
-            <div className="workspace-grid">
-              <div className="workspace-stat">
-                <span className="workspace-stat-k">Display name</span>
-                <span className="workspace-stat-v">{defaultName}</span>
-              </div>
-              <div className="workspace-stat">
-                <span className="workspace-stat-k">Your Team Rooms</span>
-                <span className="workspace-stat-v">2 fixed room URLs ready</span>
-              </div>
-            </div>
-
-            {signedIn ? (
-              <div className="workspace-card">
-                <div className="workspace-label">Your Team Rooms</div>
-                <div className="workspace-title">Two fixed room URLs tied to your account</div>
-                <p className="workspace-copy">
-                  Every account includes two Team Rooms, free. Share the links once, bookmark them, and keep separate recurring spaces for different squads, products, or ceremonies.
-                </p>
-                <div
-                  ref={workspaceRoomEditorRef}
-                  className={`workspace-room-editor${highlightWorkspaceSetup ? " highlight" : ""}`}
-                >
-                  <div className="workspace-room-editor-top">
-                    <div>
-                      <div className="workspace-room-editor-title">Choose the shared Team Room name. We add your username automatically.</div>
-                      <p className="workspace-inline-note workspace-room-editor-note">
-                        Pick the room name your teams will recognise first. We then append your username <strong>{dedicatedRoomOwnerSuffix}</strong> so both fixed URLs stay unique to your account.
-                      </p>
-                    </div>
-                    {dedicatedRoomLabelStatus === "saved" && <span className="workspace-room-editor-badge">Saved</span>}
+            <ul className="workspace-room-list">
+              {dedicatedTeamRooms.map((room) => (
+                <li className="workspace-room-card" key={room.key}>
+                  <div className="workspace-room-top">
+                    <h3 className="workspace-room-name">{room.name}</h3>
+                    <span className="workspace-room-chip">{room.shortLabel}</span>
                   </div>
-                  {highlightWorkspaceSetup && (
-                    <div className="workspace-setup-callout">
-                      <strong>Next step:</strong> choose the two Team Room names you want, save them, then share the fixed URLs below with your squads.
-                    </div>
-                  )}
-                  <div className="workspace-room-editor-row">
-                    <input
-                      ref={workspaceRoomEditorInputRef}
-                      type="text"
-                      value={dedicatedRoomLabel}
-                      onChange={(e) => {
-                        setDedicatedRoomLabel(e.target.value);
-                        setDedicatedRoomLabelDirty(true);
-                        setDedicatedRoomLabelStatus("");
-                        clearErr();
-                      }}
-                      maxLength={60}
-                      placeholder="e.g. Product Planning"
-                      aria-label="Dedicated Team Room name"
-                    />
+                  <div className="workspace-team-url">
+                    <code title={room.url}>{room.url}</code>
                     <button
                       type="button"
-                      className="workspace-action-btn"
-                      onClick={saveDedicatedRoomLabel}
-                      disabled={savingDedicatedRoomLabel || !dedicatedRoomLabelDirty}
+                      className={`btn btn--secondary btn--sm${copiedDedicatedRoomKey === room.key ? " copied" : ""}`}
+                      onClick={() => copyTeamUrl(room)}
                     >
-                      {savingDedicatedRoomLabel ? "Saving…" : "Save room names"}
+                      {copiedDedicatedRoomKey === room.key ? "Link copied" : "Copy link"}
                     </button>
                   </div>
-                  <div className="workspace-room-editor-preview">
-                    <span><strong>Final Room 1:</strong> {dedicatedRoomPreview.primary}</span>
-                    <span><strong>Final Room 2:</strong> {dedicatedRoomPreview.secondary}</span>
-                    <span><strong>Final URLs:</strong> {dedicatedRoomPreviewUrls.primary} · {dedicatedRoomPreviewUrls.secondary}</span>
-                  </div>
-                </div>
-                <div className="workspace-room-grid">
-                  {dedicatedTeamRooms.map((room) => (
-                    <div className="workspace-room-card" key={room.key}>
-                      <div className="workspace-room-top">
-                        <div>
-                          <div className="workspace-room-k">{room.label}</div>
-                          <div className="workspace-room-v">{room.name}</div>
-                        </div>
-                        <span className="workspace-room-chip">{room.shortLabel}</span>
-                      </div>
-                      <div className="workspace-team-url">
-                        <code>{room.url}</code>
-                        <button
-                          type="button"
-                          className={copiedDedicatedRoomKey === room.key ? "copied" : ""}
-                          onClick={() => copyTeamUrl(room)}
-                        >
-                          {copiedDedicatedRoomKey === room.key ? "Invite link copied" : "Copy link"}
-                        </button>
-                      </div>
-                      <div className="workspace-actions" style={{ marginTop: 12 }}>
-                        <button
-                          type="button"
-                          className="workspace-action-btn gold"
-                          onClick={() => {
-                            const validatedName = validateEnteredName();
-                            if (!validatedName.ok) { setErr(validatedName.message); setTab("team"); focusTeamEntry(); return; }
-                            if (!requireRole()) { setTab("team"); focusTeamEntry(); return; }
-                            setSelectedDedicatedRoomKey(room.key);
-                            onTeamRoom(validatedName.name, role, room.name, deck, estMode);
-                          }}
-                        >
-                          Open {room.shortLabel} →
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="workspace-actions" style={{ marginTop: 12 }}>
                   <button
                     type="button"
-                    className="workspace-action-btn"
-                    onClick={() => {
-                      const validatedName = validateEnteredName();
-                      if (!validatedName.ok) { setErr(validatedName.message); setTab("create"); return; }
-                      if (!requireRole()) { setTab("create"); return; }
-                      onCreate(validatedName.name, role, deck, estMode);
-                    }}
+                    className="btn btn--secondary btn--block workspace-room-open"
+                    onClick={() => openDedicatedRoom(room)}
                   >
-                    Create one-off room
+                    Open {room.shortLabel} →
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {fieldError("copy")}
+
+            <details
+              ref={workspaceRoomEditorRef}
+              className={`workspace-rename${highlightWorkspaceSetup ? " highlight" : ""}`}
+              open={renameOpen}
+              onToggle={(e) => setRenameOpen(e.currentTarget.open)}
+            >
+              <summary className="workspace-rename-summary">Rename both rooms</summary>
+              <div className="workspace-rename-body">
+                <label className="lbl" htmlFor="workspace-rename-input">Shared room name</label>
+                <div className="workspace-rename-row">
+                  <input
+                    id="workspace-rename-input"
+                    ref={workspaceRoomEditorInputRef}
+                    type="text"
+                    value={dedicatedRoomLabel}
+                    onChange={(e) => {
+                      setDedicatedRoomLabel(e.target.value);
+                      setDedicatedRoomLabelDirty(true);
+                      setDedicatedRoomLabelStatus("");
+                      clearErr();
+                    }}
+                    maxLength={60}
+                    placeholder="e.g. Product Planning"
+                    aria-describedby="workspace-rename-hint"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn--secondary"
+                    onClick={saveDedicatedRoomLabel}
+                    disabled={savingDedicatedRoomLabel || !dedicatedRoomLabelDirty}
+                  >
+                    {savingDedicatedRoomLabel ? "Saving…" : "Save"}
                   </button>
                 </div>
+                <p className="workspace-rename-hint" id="workspace-rename-hint">
+                  We add <strong>{dedicatedRoomOwnerSuffix}</strong> so both URLs stay unique to you.
+                  Saving renames them to <strong>{dedicatedRoomPreview.primary}</strong> and{" "}
+                  <strong>{dedicatedRoomPreview.secondary}</strong>.
+                </p>
+                {fieldError("rename")}
+                <p className="workspace-rename-status" role="status">
+                  {dedicatedRoomLabelStatus === "saved" ? "Saved. Share the new links with your team." : ""}
+                </p>
               </div>
-            ) : null}
-          </div>
-        ) : null}
+            </details>
+          </section>
+        )}
+        </div>
 
-        {/* Three-tab navigation */}
-        <div className="choice-row">
+      <div className="join-box">
+
+        {/* Mode tabs */}
+        <div className="choice-row" role="group" aria-label="What you want to do">
           {/* "Create Room / Join Room / Team Room" put "Room" in all three
               tabs and could not fit one line on a phone: 87px of label in 64px
               of column, at any size down to the 13px floor. The tab picks the
               mode and the primary action names the outcome — it already reads
               "Create Room →" — so the noun does not need saying twice. */}
-          {[
-            { key: "create", label: "Create" },
-            { key: "join", label: "Join" },
-            { key: "team", label: "Team" },
-          ].map(({ key, label }) => (
+          {TABS.map(({ key, label }) => (
             <button
               key={key}
               type="button"
               className="choice choice--compact"
-              aria-pressed={tab === key}
+              aria-pressed={activeTab === key}
               onClick={() => { setTab(key); clearErr(); }}
             >
               <span className="choice-label">{label}</span>
@@ -8181,8 +8077,12 @@ function JoinScreen({
         </div>
 
         {/* Your Name, always shown */}
-        <label className="lbl">Your Name</label>
+        {/* These labels were bare <label> elements with no htmlFor and no id on
+            the field, so the only accessible name any of them had was the
+            placeholder — which disappears the moment you type. */}
+        <label className="lbl" htmlFor="join-name">Your Name</label>
         <input
+          id="join-name"
           key={`name-${nameSeedKey}`}
           ref={nameInputRef}
           className="inp"
@@ -8195,22 +8095,22 @@ function JoinScreen({
             if (liveValue !== nameValueRef.current) syncEnteredName(liveValue);
           }}
           onKeyDown={(e) => e.key === "Enter" && go()}
-          aria-invalid={err ? "true" : undefined}
-          aria-describedby={err ? "join-error" : undefined}
+          aria-invalid={errField === "name" ? "true" : undefined}
+          aria-describedby={errField === "name" ? "join-error" : undefined}
         />
         {signedIn && (
-          <div className="workspace-inline-note">
-            {nameEdited
-              ? "Using your custom session name for this room. Clear it if you want to go back to your account name."
-              : "Prefilled from your account. Change it only if you want to join this session under a different visible name."}
-          </div>
+          <p className="join-note">
+            The name the rest of the table sees. Changing it here does not change your account.
+          </p>
         )}
+        {fieldError("name")}
 
         {/* Join Room: room code input */}
-        {tab === "join" && (
+        {activeTab === "join" && (
           <>
-            <label className="lbl">Room Code</label>
+            <label className="lbl" htmlFor="join-room-code">Room Code</label>
             <input
+              id="join-room-code"
               className="inp"
               placeholder="e.g. A1B2C"
               value={rc}
@@ -8222,46 +8122,30 @@ function JoinScreen({
               autoCapitalize="characters"
               spellCheck={false}
               inputMode="text"
+              aria-invalid={errField === "code" ? "true" : undefined}
+              aria-describedby={errField === "code" ? "join-error" : undefined}
               style={{ letterSpacing: "0.12em", fontWeight: 600 }}
             />
+            {fieldError("code")}
           </>
         )}
 
         {/* Team Room: team name input + live code preview */}
-        {tab === "team" && (
-          <div ref={teamEntryRef}>
-            {signedIn && !isSharedTeamRoomEntry && (
-              <>
-                <label className="lbl">Choose Team Room</label>
-                <div className="team-room-choice-row">
-                  {dedicatedTeamRooms.map((room) => (
-                    <button
-                      key={room.key}
-                      type="button"
-                      className={`team-room-choice-btn${selectedDedicatedRoomKey === room.key ? " active" : ""}`}
-                      aria-pressed={selectedDedicatedRoomKey === room.key}
-                      onClick={() => {
-                        setSelectedDedicatedRoomKey(room.key);
-                        setTeamName(room.name);
-                        clearErr();
-                      }}
-                    >
-                      <span className="team-room-choice-label">{room.label}</span>
-                      <span className="team-room-choice-name">{room.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-            <label className="lbl">Team Name</label>
+        {activeTab === "team" && (
+          <div>
+            <label className="lbl" htmlFor="join-team-name">Team Name</label>
             <input
+              id="join-team-name"
               className="inp"
               placeholder="e.g. Product Team"
               value={teamName}
               onChange={(e) => { setTeamName(e.target.value); clearErr(); }}
               onKeyDown={(e) => e.key === "Enter" && go()}
               readOnly={isSharedTeamRoomEntry || (signedIn)}
+              aria-invalid={errField === "team" ? "true" : undefined}
+              aria-describedby={errField === "team" ? "join-error" : undefined}
             />
+            {fieldError("team")}
             {previewCode && (
               <div className="team-code-preview">
                 <span className="tcp-label">Room code</span>
@@ -8277,23 +8161,20 @@ function JoinScreen({
                   Create a free account →
                 </button>
               </div>
-            ) : isSharedTeamRoomEntry ? (
-              <p style={{ fontSize: "var(--fs-1)", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
-                This team's room is ready. Add your name, choose your role, and join the live session, no account needed.
-              </p>
             ) : (
-              <p style={{ fontSize: "var(--fs-1)", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
-                {isOwnDedicatedTeamRoom
-                  ? "This Team Room is fixed to your account. Keep the link bookmarked and reuse it whenever this team estimates."
-                  : "Your account includes two fixed Team Rooms. Pick the one you want, then keep both links bookmarked for recurring sprint planning."}
+              <p className="join-note">
+                This team's room is ready. Add your name, choose your role, and join the live session
+                {signedIn ? "." : ", no account needed."}
               </p>
             )}
           </div>
         )}
 
-        {/* Role picker, always shown */}
-        <label className="lbl">Your Role</label>
-        <div className="choice-row">
+        {/* Role picker, always shown. A group of buttons is not a form control,
+            so its heading is a span with role="group" on the row, not a <label>
+            pointing at nothing. */}
+        <span className="lbl" id="join-role-label">Your Role</span>
+        <div className="choice-row" ref={roleGroupRef} role="group" aria-labelledby="join-role-label">
           {ROLES.map(({ r, icon, l, s }) => (
             <button
               key={r}
@@ -8303,7 +8184,7 @@ function JoinScreen({
               aria-label={`${l} role: ${s}`}
               // Clear the prompt too: once a role is picked it is telling the
               // user to do something they have just done.
-              onClick={() => { setRole(r); clearErr(); }}
+              onClick={() => chooseRole(r)}
             >
               <Icon name={icon} size={22} />
               <span className="choice-label">{l}</span>
@@ -8311,9 +8192,10 @@ function JoinScreen({
             </button>
           ))}
         </div>
+        {fieldError("role")}
 
         {/* Deck picker, shown on Create and Team tabs */}
-        {(tab === "create" || tab === "team") && (
+        {(activeTab === "create" || activeTab === "team") && (
           <>
             {/* Variation B — density rather than disclosure. Both choices are
                 irreversible for the life of the room, so neither is hidden.
@@ -8323,8 +8205,8 @@ function JoinScreen({
                 three times, once under every deck the user did not pick. */}
             <div className="session-grid">
               <div className="session-field">
-                <label className="lbl">Card Deck</label>
-                <div className="choice-grid" style={{ "--choice-cols": 3 }}>
+                <span className="lbl" id="join-deck-label">Card Deck</span>
+                <div className="choice-grid" style={{ "--choice-cols": 3 }} role="group" aria-labelledby="join-deck-label">
                   {DECK_KEYS.map((k) => {
                     const d = DECK_DEFINITIONS[k];
                     return (
@@ -8344,8 +8226,8 @@ function JoinScreen({
               </div>
 
               <div className="session-field">
-                <label className="lbl">Estimating</label>
-                <div className="choice-grid">
+                <span className="lbl" id="join-estmode-label">Estimating</span>
+                <div className="choice-grid" role="group" aria-labelledby="join-estmode-label">
                   {Object.values(ESTIMATION_MODES).map((m) => (
                     <button
                       key={m.key}
@@ -8375,24 +8257,24 @@ function JoinScreen({
           </>
         )}
 
-        {err && <div className="err" id="join-error" role="alert">{err}</div>}
+        {err && !errField && <div className="err" id="join-error" role="alert">{err}</div>}
         <button className="btn btn--primary btn--lg btn--block" onClick={go}>
-          {tab === "create" ? "Create Room →"
-            : tab === "join" ? "Join Room →"
+          {activeTab === "create" ? "Create Room →"
+            : activeTab === "join" ? "Join Room →"
             : teamPrimaryLabel}
         </button>
-        {!signedIn && tab === "create" && (
-          <p style={{ fontSize: "var(--fs-1)", color: "rgba(239,242,247,.7)", textAlign: "center", marginTop: "10px" }}>
+        {!signedIn && activeTab === "create" && (
+          <p className="join-note join-note--centred">
             Free · Up to {MAX_PARTICIPANTS} at the table · Live in ten seconds
           </p>
         )}
-        {!signedIn && tab === "join" && (
-          <p style={{ fontSize: "var(--fs-1)", color: "rgba(239,242,247,.7)", textAlign: "center", marginTop: "10px" }}>
+        {!signedIn && activeTab === "join" && (
+          <p className="join-note join-note--centred">
             Got a link instead? Open it and you'll join straight away.
           </p>
         )}
-        {!signedIn && tab === "team" && (
-          <p style={{ fontSize: "var(--fs-1)", color: "rgba(239,242,247,.7)", textAlign: "center", marginTop: "10px" }}>
+        {!signedIn && activeTab === "team" && (
+          <p className="join-note join-note--centred">
             Two fixed Team Rooms per account. Same links, every sprint, free.
           </p>
         )}
