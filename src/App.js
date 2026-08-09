@@ -255,8 +255,8 @@ const ESTIMATION_MODES = {
     bannerLabel: "Estimating",
     allDoneText: "stories estimated",
     backlogLabel: "Sprint backlog",
-    toastDone: "✅ Story estimated! Vote on the next story.",
-    toastNext: "✅ Estimate recorded. Voting on next story.",
+    toastDone: "Story estimated. Vote on the next story.",
+    toastNext: "Estimate recorded. Voting on the next story.",
     placeholder: "e.g. User login flow, PROJ-42…",
     hintText: "Add stories to track estimates by name, or just start voting without them. Both work.",
     recordNext: "& Estimate Next Story",
@@ -272,8 +272,8 @@ const ESTIMATION_MODES = {
     bannerLabel: "Estimating task",
     allDoneText: "tasks estimated",
     backlogLabel: "Task list",
-    toastDone: "✅ Task estimated! Vote on the next task.",
-    toastNext: "✅ Estimate recorded. Voting on next task.",
+    toastDone: "Task estimated. Vote on the next task.",
+    toastNext: "Estimate recorded. Voting on the next task.",
     placeholder: "e.g. Build login API, Write unit tests, PROJ-42-1…",
     hintText: "Add tasks to track estimates by name, or just start voting without them. Both work.",
     recordNext: "& Estimate Next Task",
@@ -426,6 +426,282 @@ const CSS = `
   --radius-sm:14px;
   --shadow:   0 28px 90px rgba(0,0,0,0.58);
   --shadow-soft: 0 20px 60px rgba(0,0,0,0.34);
+
+  /* ════════════════ DESIGN TOKENS ════════════════
+     The full rationale lives in docs/DESIGN-SYSTEM.md. The short version:
+     everything above this line is the brand palette and does not change.
+     Everything below is the system. New work uses these tokens, never a
+     raw px or hex value, because that is how a file ends up with 65
+     distinct font sizes and 86 distinct padding pairs, which is what this
+     one had before the tokens existed.
+     ═══════════════════════════════════════════════ */
+
+  /* Type scale — 16px base, ~1.25 major third. Eight steps, no more.
+     16px is the floor for anything a user types into: iOS silently zooms
+     the viewport when a focused input is below it. */
+  --fs-1: 0.75rem;    /* 12px  micro labels, uppercase eyebrows */
+  --fs-2: 0.875rem;   /* 14px  helper and secondary text */
+  --fs-3: 1rem;       /* 16px  body and all interactive labels */
+  --fs-4: 1.125rem;   /* 18px  card titles, emphasised body */
+  --fs-5: 1.375rem;   /* 22px  section headings */
+  --fs-6: 1.75rem;    /* 28px  page headings */
+  --fs-7: 2.25rem;    /* 36px  hero */
+  --fs-8: 3rem;       /* 48px  display numerals (the agreed estimate) */
+
+  /* Line height travels with size: tight for display, loose for prose. */
+  --lh-tight: 1.15;
+  --lh-snug:  1.35;
+  --lh-body:  1.6;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semi:    600;
+  --fw-bold:    700;
+
+  /* Spacing — 4px base grid. Use these for padding, margin and gap. */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;
+  --sp-12: 48px; --sp-16: 64px;
+
+  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-full: 999px;
+
+  /* Elevation — four steps. Anything not on this scale is a bug. */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(0,0,0,0.34);
+  --elev-2: 0 8px 24px rgba(0,0,0,0.40);
+  --elev-3: 0 24px 64px rgba(0,0,0,0.55);
+
+  /* Motion — exits run at ~65% of entrances so dismissals feel immediate. */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --ease-in:  cubic-bezier(0.4, 0.0, 1, 1);
+
+  /* Semantic text roles, mapped onto the brand palette. Opacities are
+     measured against --bg, not guessed: every one clears WCAG AA 4.5:1. */
+  --text-1: var(--cream);                 /* 15.8:1 primary */
+  --text-2: rgba(245,251,247,0.78);       /*  9.9:1 secondary */
+  --text-3: rgba(245,251,247,0.62);       /*  6.7:1 muted, the floor */
+  --text-on-gold: var(--ink);             /*  9.4:1 on --gold */
+
+  --action:  var(--gold);
+  --focus:   var(--gold2);
+  --danger:  var(--red);
+  --success: var(--green);
+  --info:    var(--blue);
+
+  /* Touch target floor. WCAG 2.2 AA (2.5.8) requires 24px; 44px is the
+     Apple HIG figure and the one that actually stops mis-taps on a phone. */
+  --tap-min: 44px;
+
+  /* Layering — a named scale so nothing gets a z-index of 99999 again. */
+  --z-base: 0; --z-sticky: 20; --z-overlay: 40; --z-modal: 100; --z-toast: 1000;
+}
+
+/* ════════════════ BUTTON SYSTEM ════════════════
+   One base class, four intents, three sizes. Intent is set through local
+   custom properties so a variant is three declarations rather than a new
+   class with its own padding, font and radius. This replaces the pattern
+   that produced 18 separate button classes.
+
+   Exactly one --primary per screen. If a screen needs two, the second one
+   is a --secondary; if that feels wrong, the screen is doing too much.
+   ═══════════════════════════════════════════════ */
+.btn {
+  --btn-bg: transparent;
+  --btn-fg: var(--text-1);
+  --btn-bd: var(--border2);
+  --btn-bg-hover: rgba(158,234,196,0.08);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: var(--tap-min);
+  padding: var(--sp-2) var(--sp-5);
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: var(--fs-3);
+  font-weight: var(--fw-semi);
+  line-height: var(--lh-tight);
+  letter-spacing: 0.01em;
+  text-align: center;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-bd);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  /* Only transform and colour animate: never width, height or box-shadow
+     spread, which force layout on every frame. */
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.btn:hover:not(:disabled) { background-color: var(--btn-bg-hover); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled,
+.btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+
+/* A disabled primary must not read as a dimmer version of an enabled one.
+   Fading a gold gradient over dark green produces a muddy olive that looks
+   like a real, clickable button, which is precisely how the old Reveal
+   control ended up looking active while doing nothing. Disabled drops the
+   gradient entirely and becomes a flat, obviously inert surface. */
+.btn--primary:disabled,
+.btn--primary[aria-disabled="true"] {
+  background: var(--surface2);
+  color: var(--text-3);
+  border-color: var(--border);
+  box-shadow: none;
+  opacity: 1;
+}
+
+/* Icons inside buttons inherit colour and never shrink below their box. */
+.btn > svg { flex: none; width: 20px; height: 20px; }
+
+.btn--primary {
+  --btn-bg: linear-gradient(135deg, var(--gold2) 0%, var(--gold) 62%, #d99b1f 100%);
+  --btn-fg: var(--text-on-gold);
+  --btn-bd: transparent;
+  --btn-bg-hover: linear-gradient(135deg, var(--gold3) 0%, var(--gold2) 62%, var(--gold) 100%);
+  font-weight: var(--fw-bold);
+  box-shadow: var(--elev-2);
+}
+/* Gradients are not animatable, so the primary swaps its whole background. */
+.btn--primary:hover:not(:disabled) { background: var(--btn-bg-hover); }
+
+.btn--secondary {
+  --btn-bg: var(--surface2);
+  --btn-fg: var(--text-1);
+  --btn-bd: var(--border2);
+  --btn-bg-hover: rgba(34,64,54,0.96);
+}
+
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--text-2);
+  --btn-bd: transparent;
+}
+.btn--ghost:hover:not(:disabled) { --btn-fg: var(--text-1); }
+
+.btn--danger {
+  --btn-bg: transparent;
+  --btn-fg: #ff8a8a;
+  --btn-bd: rgba(224,72,72,0.42);
+  --btn-bg-hover: rgba(224,72,72,0.14);
+}
+
+/* Sizes change padding and type, never the 44px tap floor. */
+.btn--sm { padding: var(--sp-1) var(--sp-3); font-size: var(--fs-2); }
+.btn--lg { padding: var(--sp-4) var(--sp-6); font-size: var(--fs-4); border-radius: var(--r-lg); }
+.btn--block { width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+  .btn:active:not(:disabled) { transform: none; }
+}
+
+/* Icons sit on the text baseline and never scale with a parent's font-size,
+   so a 16px icon stays 16px next to a 22px heading. */
+.icon { flex: none; vertical-align: -0.18em; }
+
+/* ════════════════ ROOM ACTION BAR ════════════════
+   The single most important change to the room. Before this, the screen
+   offered three full-width calls to action stacked vertically: an optional
+   timer styled as a glowing hero, the deck, and the actual primary action
+   ("Reveal") buried at the bottom in a muted olive that read as disabled.
+   Nothing told you where to look, and the one control that moves the
+   session forward was the quietest thing on the page.
+
+   Now there is one primary action, it sits in the same place for the whole
+   session, and only its label changes: Reveal → Record → Next. That is the
+   pattern the market leader uses, and it is the reason their room feels
+   simpler than ours despite having fewer features.
+
+   On phones it sticks to the bottom of the viewport, inside the thumb arc,
+   which is where the hand already is.
+   ═══════════════════════════════════════════════ */
+.action-bar {
+  position: sticky;
+  top: var(--sp-3);
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--elev-2);
+}
+.action-bar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.action-bar-title {
+  font-size: var(--fs-1);
+  font-weight: var(--fw-semi);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+/* Tabular figures so "3 of 12" does not reflow as the count climbs. */
+.action-bar-count {
+  font-size: var(--fs-2);
+  font-weight: var(--fw-semi);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.action-bar-hint {
+  font-size: var(--fs-2);
+  line-height: var(--lh-snug);
+  color: var(--text-3);
+  text-align: center;
+}
+.action-bar-secondary {
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Progress track. Doubles as the "are we waiting on anyone" signal, so the
+   facilitator does not have to count avatars in the sidebar. */
+.action-bar-track {
+  height: 4px;
+  border-radius: var(--r-full);
+  background: rgba(158,234,196,0.14);
+  overflow: hidden;
+}
+.action-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold2) 100%);
+  transition: width var(--dur-base) var(--ease-out);
+}
+.action-bar-fill.is-complete {
+  background: linear-gradient(90deg, var(--mint) 0%, var(--success) 100%);
+}
+
+@media (max-width: 780px) {
+  .action-bar {
+    position: sticky;
+    top: auto;
+    bottom: 0;
+    margin: 0 calc(var(--sp-4) * -1) calc(var(--sp-4) * -1);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-bottom: none;
+    /* Clear the iOS home indicator so the CTA is never half under it. */
+    padding-bottom: max(var(--sp-4), env(safe-area-inset-bottom));
+    box-shadow: var(--elev-3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action-bar-fill { transition: none; }
 }
 
 html { font-size: 16px; scroll-behavior: smooth; background-color: var(--bg); }
@@ -3338,6 +3614,75 @@ const getFounderRoomConfig = (code = "") => {
 const isFounderRoom = (code) => !!getFounderRoomConfig(code);
 const getFounderDefaultDeck = (code) => getFounderRoomConfig(code)?.defaultDeck || "fibonacci";
 
+/* ═══════════════════════ ICON SET ═══════════════════════
+   One stroke-based family: 24px grid, 1.75 stroke, round caps and joins,
+   currentColor. Replaces the emoji that used to label controls.
+
+   Emoji were removed from structural UI for four reasons, not taste:
+     • They cannot inherit currentColor, so a disabled or muted control
+       kept a full-saturation glyph and looked enabled.
+     • They render from a different font on every OS (Apple Color Emoji,
+       Segoe UI Emoji, Noto), so the brand could not control them.
+     • Screen readers read their CLDR name aloud: a die glyph before
+       was announced as "game die, 0 stories estimated".
+       "0 stories estimated" was announced as "game die, 0 stories estimated".
+     • They are always full colour, which fights a restrained dark palette.
+
+   Card suit glyphs (♦ ♠ ♥ ♣) are kept. They are typographic characters
+   that render from the text font, they carry the casino theme, and they
+   are decorative inside cards that already have a text value.
+════════════════════════════════════════════════════════════ */
+const ICON_PATHS = {
+  link: "M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5",
+  users: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2",
+  eye: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
+  cards: "M8 6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2zM5 7v11a2 2 0 0 0 2 2h9",
+  list: "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01",
+  chart: "M3 3v16a2 2 0 0 0 2 2h16M7 15l3.5-4 3 2.5L18 8",
+  check: "M20 6 9 17l-5-5",
+  close: "M18 6 6 18M6 6l12 12",
+  alert: "M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0",
+  play: "M6 4.5v15l13-7.5z",
+  stop: "M7 7h10v10H7z",
+  copy: "M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
+  arrowRight: "M5 12h14M13 6l6 6-6 6",
+  arrowLeft: "M19 12H5M11 18l-6-6 6-6",
+  plus: "M12 5v14M5 12h14",
+  refresh: "M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5",
+  broadcast: "M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5",
+};
+
+/**
+ * Inline SVG icon. Decorative by default: pass `title` only when the icon
+ * is the sole label for a control, which should be rare, because an icon
+ * without a text label is a guess the user has to make.
+ */
+function Icon({ name, size = 20, title, className = "" }) {
+  const d = ICON_PATHS[name];
+  if (!d) return null;
+  return (
+    <svg
+      className={`icon ${className}`}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      role={title ? "img" : undefined}
+      aria-label={title || undefined}
+      aria-hidden={title ? undefined : "true"}
+      focusable="false"
+    >
+      {title ? <title>{title}</title> : null}
+      <path d={d} />
+    </svg>
+  );
+}
+
 /* ═══════════════════════ CASINO CHIP LOGO ═══════════════════════
    SVG casino chip, 8-segment outer ring, gold inner border, "PP" text.
    Used in NavBar (44px) and LoginModal (52px).
@@ -3455,14 +3800,14 @@ function NavBar({
                 onClick={onHistory}
                 aria-label="View sprint history"
               >
-                📊 History
+                <Icon name="chart" /> History
               </button>
               <div className="nav-account" aria-label="Signed-in account">
                 <span className="nav-account-name">{accountLabel}</span>
                 <span className="nav-account-plan">Free</span>
               </div>
               {onAdmin && (
-                <button className="nav-btn-login" onClick={onAdmin} aria-label="Usage dashboard">📈</button>
+                <button className="nav-btn-login" onClick={onAdmin} aria-label="Usage dashboard"><Icon name="chart" size={18} /></button>
               )}
               <button className="nav-btn-login" onClick={onLogout}>Sign out</button>
             </>
@@ -4450,7 +4795,7 @@ export default function App() {
           remaining: 0,
         });
         await update(ref(db, `rooms/${code}`), { revealed: true });
-        showToast("⏰ Time's up, cards revealed!");
+        showToast("Time is up. Cards revealed.");
       } else {
         await update(ref(db, `rooms/${code}/timer`), { remaining: r });
       }
@@ -4486,7 +4831,7 @@ export default function App() {
             remaining: 0,
             startedBy: null,
           });
-          showToast("🃏 All voted, revealing cards!");
+          showToast("Everyone voted. Revealing cards.");
         }
       }, 700);
     }
@@ -4525,10 +4870,10 @@ export default function App() {
         setCode("");
         setPrefillTeam("");
         window.history.replaceState({}, "", homePath());
-        showToast("⏰ Session auto-ended after 5 hours. Sprint data saved to your history.");
+        showToast("Session ended automatically after 5 hours. Your sprint data is saved to history.");
       } else if (age >= SESSION_WARN_MS && !sessionWarningRef.current) {
         setSessionWarning(true);
-        showToast("⚠️ Session ending in ~10 minutes. Wrap up your planning!");
+        showToast("Session ends in about 10 minutes. Time to wrap up.");
       }
     }, 60 * 1000);
     return () => clearInterval(sessionCheckRef.current);
@@ -4652,7 +4997,7 @@ export default function App() {
     track("room_created");
     track(`deck_${deck}`);
     track(role === "observer" ? "joined_facilitator" : "joined_voter");
-    showToast(`🎲 Room ${c} created! Share this one-off link while the session is active.`);
+    showToast(`Room ${c} is ready. Share the link while the session is active.`);
   };
 
   const handleJoin = async (name, role, c) => {
@@ -4685,7 +5030,7 @@ export default function App() {
     window.history.replaceState({}, "", roomPath(c));
     setScreen("game");
     track(role === "observer" ? "joined_facilitator" : "joined_voter");
-    showToast(`🎲 Welcome, ${name}!`);
+    showToast(`Welcome, ${name}.`);
   };
 
   // ── TEAM ROOM ─────────────────────────────────────────────────────
@@ -4754,7 +5099,7 @@ export default function App() {
     // A Team Room that already existed is a returning team — the stickiness signal.
     track(snap.exists() ? "team_room_reentered" : "room_created_team");
     if (!snap.exists()) track(`deck_${deck}`);
-    showToast(`🎲 Welcome to ${teamName}!`);
+    showToast(`Welcome to ${teamName}.`);
   };
 
   const selectCard = useCallback(
@@ -4916,7 +5261,7 @@ export default function App() {
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     upd[`rooms/${code}/timer/startedBy`] = null;
     await update(ref(db), upd);
-    showToast("🔄 New sprint session, everyone's votes cleared.");
+    showToast("New sprint started. Everyone's votes are cleared.");
   }, [code, roomData, showToast]);
 
   const endSession = useCallback(async () => {
@@ -7130,7 +7475,7 @@ function HistoryModal({ onClose, history }) {
 
         {totalSprints === 0 ? (
           <div className="history-empty">
-            <div className="history-empty-icon" aria-hidden="true">📋</div>
+            <div className="history-empty-icon" aria-hidden="true"><Icon name="list" size={28} /></div>
             <p className="history-empty-title">Your sprint archive is ready</p>
             <p className="history-empty-copy">
               Finish a session while signed in and it will appear here automatically. Sprint history is saved when you
@@ -7455,8 +7800,8 @@ function JoinScreen({
   };
 
   const ROLES = [
-    { r: "voter",    icon: "🃏", l: "Participant", s: "Votes on each story" },
-    { r: "observer", icon: "👁", l: "Facilitator", s: "Runs the session and does not vote" },
+    { r: "voter",    icon: "cards", l: "Participant", s: "Votes on each story" },
+    { r: "observer", icon: "eye", l: "Facilitator", s: "Runs the session and does not vote" },
   ];
 
   const copyTeamUrl = async (room) => {
@@ -7633,7 +7978,7 @@ function JoinScreen({
                           className={copiedDedicatedRoomKey === room.key ? "copied" : ""}
                           onClick={() => copyTeamUrl(room)}
                         >
-                          {copiedDedicatedRoomKey === room.key ? "✓ Invite link copied!" : "Copy link"}
+                          {copiedDedicatedRoomKey === room.key ? "Invite link copied" : "Copy link"}
                         </button>
                       </div>
                       <div className="workspace-actions" style={{ marginTop: 12 }}>
@@ -7822,7 +8167,7 @@ function JoinScreen({
               aria-label={`${l} role: ${s}`}
               onClick={() => setRole(r)}
             >
-              <span className="ri">{icon}</span>
+              <span className="ri"><Icon name={icon} size={22} /></span>
               <span className="rl">{l}</span>
               <span className="rs">{s}</span>
             </button>
@@ -8151,6 +8496,93 @@ function WtpPoll({ onDone }) {
 }
 
 /* ═══════════════════════ GAME SCREEN ═══════════════════════ */
+/* ═══════════════════════ ROOM ACTION BAR ═══════════════════════
+   The facilitator's one primary action, in one fixed place, all session.
+   Only the label changes: Reveal → Record → next item.
+
+   Why a single slot rather than a button per action: a facilitator is
+   running a meeting, talking, and watching a queue at the same time. Every
+   extra control on screen is a decision they have to make while doing
+   something else. One button that is always in the same place is one
+   glance instead of a search.
+════════════════════════════════════════════════════════════════ */
+function RoomActionBar({
+  revealed,
+  votedCount,
+  voterCount,
+  allSame,
+  consensusEstimate,
+  needsManualEstimate,
+  onReveal,
+  onAdvance,
+  canAdvance,
+  advanceLabel,
+}) {
+  const everyoneVoted = voterCount > 0 && votedCount === voterCount;
+  const pct = voterCount ? Math.round((votedCount / voterCount) * 100) : 0;
+
+  const primary = revealed
+    ? {
+        label: allSame && consensusEstimate
+          ? `Record ${consensusEstimate} and continue`
+          : advanceLabel,
+        icon: "arrowRight",
+        onClick: onAdvance,
+        disabled: !canAdvance,
+      }
+    : {
+        label: "Reveal everyone's cards",
+        icon: "eye",
+        onClick: onReveal,
+        disabled: votedCount === 0,
+      };
+
+  // Every branch has to be true in the state it renders in. A facilitator
+  // sitting alone is not "waiting for votes"; there is nobody who could vote.
+  const hint = revealed
+    ? needsManualEstimate
+      ? "Votes are split. Agree a number below, then record it."
+      : "Round complete."
+    : voterCount === 0
+      ? "Nobody can vote yet. Share the invite link to fill the table."
+      : votedCount === 0
+        ? `Waiting for the first card from ${voterCount === 1 ? "your voter" : `your ${voterCount} voters`}.`
+        : everyoneVoted
+          ? "Everyone is in. Reveal when you are ready."
+          : "Reveal early if the room has stopped thinking.";
+
+  return (
+    <section className="action-bar" aria-label="Session controls">
+      <div className="action-bar-head">
+        <span className="action-bar-title">
+          {revealed ? "Cards are up" : "Round in progress"}
+        </span>
+        <span className="action-bar-count">
+          {votedCount} of {voterCount} voted
+        </span>
+      </div>
+      <div className="action-bar-track" aria-hidden="true">
+        <div
+          className={`action-bar-fill${everyoneVoted ? " is-complete" : ""}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <button
+        type="button"
+        className="btn btn--primary btn--lg btn--block"
+        onClick={primary.onClick}
+        disabled={primary.disabled}
+      >
+        <Icon name={primary.icon} />
+        {primary.label}
+      </button>
+      <p className="action-bar-hint" role="status" aria-live="polite">
+        {hint}
+      </p>
+    </section>
+  );
+}
+
 function GameScreen({
   rd,
   myId,
@@ -8319,7 +8751,7 @@ function GameScreen({
   const handleCopyLink = useCallback(async () => {
     const ok = await copyText(shareUrl);
     track("feature_invite");
-    toast(ok ? "🔗 Link copied!" : "Copy blocked by the browser, select the link above and copy it.");
+    toast(ok ? "Invite link copied." : "Copy blocked by the browser, select the link above and copy it.");
     if (!ok) return;
     setHeaderLinkCopied(true);
     clearTimeout(copyFeedbackRef.current);
@@ -8341,7 +8773,7 @@ function GameScreen({
     if (names.length > 1) track("feature_paste");
     onAddStory(names);
     setStoryInput("");
-    if (names.length > 1) toast(`✅ ${names.length} ${estMode.plural} added to the queue.`);
+    if (names.length > 1) toast(`${names.length} ${estMode.plural} added to the queue.`);
   }, [onAddStory, toast, estMode.plural]);
 
   // ── SESSION SUMMARY ──────────────────────────────────────────────
@@ -8381,7 +8813,7 @@ function GameScreen({
     if (summaryTotalPoints !== null) lines.push(`Total points: ${summaryTotalPoints}`);
     track("feature_copy");
     const ok = await copyText(lines.join("\n"));
-    toast(ok ? "📋 Summary copied to clipboard!" : "Copy blocked by the browser, use the CSV download instead.");
+    toast(ok ? "Summary copied to your clipboard." : "Copy blocked by the browser, use the CSV download instead.");
   }, [summaryRows, summarySized, summaryTotalPoints, summaryTitle, estMode.plural, toast]);
 
   const downloadSummaryCsv = useCallback(() => {
@@ -8497,7 +8929,7 @@ function GameScreen({
           <div className="hdr-c">
             <div className="badge">Round {round}</div>
             <div className="badge badge-gold">
-              🎲 {storiesDone} <span className="badge-long">{storiesDone === 1 ? estMode.singular : estMode.plural} </span>done
+              <Icon name="cards" size={16} /> {storiesDone} <span className="badge-long">{storiesDone === 1 ? estMode.singular : estMode.plural} </span>done
             </div>
             {code && (
               <div className="badge" style={{ fontFamily: "monospace", letterSpacing: ".12em", fontSize: ".66rem" }}>
@@ -8517,7 +8949,7 @@ function GameScreen({
                 onClick={handleCopyLink}
                 aria-label="Copy invite link to clipboard"
               >
-                {headerLinkCopied ? "✓ Invite link copied!" : "🔗 Copy Invite Link"}
+                {headerLinkCopied ? <>Invite link copied</> : <><Icon name="link" size={16} /> Copy invite link</>}
               </button>
             </div>
           </div>
@@ -8528,7 +8960,7 @@ function GameScreen({
         {/* Solo invite banner, shown when creator is alone, dismissed once copied or closed */}
         {players.length === 1 && !solobannerDismissed && (
           <div className="solo-invite-banner" role="status">
-            <span className="solo-invite-icon">👥</span>
+            <span className="solo-invite-icon"><Icon name="users" size={20} /></span>
             <div className="solo-invite-body">
               {isPersistentRoom ? (
                 <><strong>Team Room ready.</strong> Share the link once. It stays the same every sprint.</>
@@ -8555,10 +8987,10 @@ function GameScreen({
         )}
         {sessionWarning && (
           <div className="session-warn-banner">
-            <span>⚠️</span>
+            <span><Icon name="alert" size={18} /></span>
             <div className="session-warn-text">
-              <strong>Session ending soon!</strong> Auto-closes in ~10 minutes.
-              Please wrap up your current story.
+              <strong>Session ends soon.</strong> This room closes in about 10
+              minutes. Finish the story you are on.
             </div>
           </div>
         )}
@@ -8582,9 +9014,34 @@ function GameScreen({
         <div className={`game-grid ${isObs ? "as-facilitator" : "as-voter"}`}>
           {/* LEFT COLUMN */}
           <div className="lcol">
-            {/* Timer */}
-            <div className="panel panel-gold">
-              <span className="ptitle">Estimation Timer <span className="ptitle-optional">optional</span></span>
+            {/* The primary action comes first, above the optional timer.
+                Reading order is importance order: what moves the session
+                forward, then the tools that support it. */}
+            {isObs && (
+              <RoomActionBar
+                revealed={revealed}
+                votedCount={votedCount}
+                voterCount={voters.length}
+                allSame={allSame}
+                consensusEstimate={consensusEstimate}
+                needsManualEstimate={requiresManualFinalEstimate}
+                onReveal={onReveal}
+                onAdvance={handleAdvanceToNextItem}
+                canAdvance={!!chosenFinalEstimate}
+                advanceLabel={hasStories && !allStoriesDone ? nextItemButtonLabel : "Record and start next round"}
+              />
+            )}
+
+            {/* Timer. Deliberately a plain panel: it is optional, and it used
+                to carry the loudest treatment on the screen (gold glow, full-
+                width gold CTA) while the action that actually moves the
+                session on sat at the bottom in muted olive. Emphasis now
+                matches importance. */}
+            <div className="panel">
+              <span className="ptitle">
+                <Icon name="clock" size={14} /> Estimation timer{" "}
+                <span className="ptitle-optional">optional</span>
+              </span>
               {isObs ? (
                 <>
                   {!timer.running && !revealed && (
@@ -8603,10 +9060,11 @@ function GameScreen({
                         </div>
                       </div>
                       <button
-                        className="start-btn"
+                        type="button"
+                        className="btn btn--secondary btn--block"
                         onClick={() => onStart(tsel)}
                       >
-                        <span>🃏</span> Start {tsel === 60 ? "1 min" : `${tsel}s`} countdown
+                        <Icon name="play" size={18} /> Start {tsel === 60 ? "1 min" : `${tsel}s`} countdown
                       </button>
                       <div className="btn-hint">
                         The team can vote without this. Use it if you want to time-box the round.
@@ -8662,7 +9120,7 @@ function GameScreen({
                         </div>
                         <div className="rhint">Cards auto-reveal on zero</div>
                         <button className="btn-stop" onClick={onStop}>
-                          ✕ Stop Timer
+                          <Icon name="stop" size={16} /> Stop timer
                         </button>
                       </div>
                     </div>
@@ -8745,19 +9203,10 @@ function GameScreen({
             </div>
 
             {/* Cards */}
+            {!isObs && (
             <div className="panel">
-              <span className="ptitle">
-                {isObs ? "Your Role" : "Your Estimate"}
-              </span>
-              {isObs ? (
-                <div className="obs-box">
-                  <span style={{ fontSize: "1.3rem" }}>👁</span>
-                  <span>
-                    You're the facilitator. Use the controls below to manage the
-                    session.
-                  </span>
-                </div>
-              ) : (
+              <span className="ptitle">Your Estimate</span>
+              {false ? null : (
                 <div className="cards-grid">
                   {cards.map((c, i) => {
                     const sel = myVote === c.val;
@@ -8809,23 +9258,22 @@ function GameScreen({
                     : <>Tip: press <kbd>1</kbd>–<kbd>{Math.min(9, cards.length)}</kbd> for the sizes in order, or <kbd>?</kbd>.</>}
                 </div>
               )}
-              {!isObs && (
-                <div
-                  className={`vstatus${myVote && !revealed ? " voted" : " wait"}`}
-                  style={{ marginTop: 10 }}
-                  role="status"
-                  aria-live="polite"
-                >
-                  {revealed
-                    ? allSame
-                      ? "⏳ Consensus reached, waiting for the facilitator to record the story and move on."
-                      : "💬 Cards are revealed, discuss briefly while the facilitator confirms the final estimate or starts another vote."
-                    : myVote
-                      ? `✓ You picked ${myVote} — waiting for reveal…`
-                      : "Pick a card to cast your vote"}
-                </div>
-              )}
+              <div
+                className={`vstatus${myVote && !revealed ? " voted" : " wait"}`}
+                style={{ marginTop: 10 }}
+                role="status"
+                aria-live="polite"
+              >
+                {revealed
+                  ? allSame
+                    ? "Consensus reached. The facilitator records it and moves on."
+                    : "Cards are up. Discuss the spread while the facilitator confirms the estimate."
+                  : myVote
+                    ? `You picked ${myVote}. Waiting for the rest of the table.`
+                    : "Pick a card to cast your vote."}
+              </div>
             </div>
+            )}
 
             {/* Results */}
             {revealed && (
@@ -8839,7 +9287,7 @@ function GameScreen({
                       <div className="avg-hero-num">{avgDisp}</div>
                       {allSame ? (
                         <div className="avg-hero-consensus">
-                          🎉 {isRealConsensus ? `All ${voted.length} voters picked` : "Everyone who voted picked"} {voted[0].vote}
+                          {isRealConsensus ? `All ${voted.length} voters picked` : "Everyone who voted picked"} {voted[0].vote}
                         </div>
                       ) : (
                         <div className="avg-hero-sub">
@@ -9002,7 +9450,7 @@ function GameScreen({
 
                     {notVoted.length > 0 && (
                       <div className="no-vote">
-                        ⚠️ Didn't vote: {notVoted.map((p) => p.name).join(", ")}
+                        <Icon name="alert" size={16} /> Did not vote: {notVoted.map((p) => p.name).join(", ")}
                       </div>
                     )}
                   </>
@@ -9025,7 +9473,7 @@ function GameScreen({
 
                 {/* Item queue manager */}
                 <div className="story-panel">
-                  <div className="story-panel-title">📋 {estMode.queueTitle} <span className="story-panel-optional">optional</span></div>
+                  <div className="story-panel-title"><Icon name="list" size={16} /> {estMode.queueTitle} <span className="story-panel-optional">optional</span></div>
                   <p className="story-panel-hint">
                     {estMode.hintText}
                   </p>
@@ -9101,22 +9549,10 @@ function GameScreen({
                   )}
                 </div>
 
-                <button
-                  className="btn-reveal-primary"
-                  disabled={!hasVotes || revealed}
-                  onClick={onReveal}
-                >
-                  🂠 Reveal Everyone's Cards
-                </button>
-                {!revealed && (
-                  <div className="btn-hint">
-                    {voters.length === 0
-                      ? "Nobody can vote yet. Share the invite link to fill the table."
-                      : hasVotes
-                        ? `${votedCount} of ${voters.length} in, reveal now, or press R`
-                        : `Waiting for the first card from ${voters.length === 1 ? "your voter" : `your ${voters.length} voters`}…`}
-                  </div>
-                )}
+                {/* Reveal moved to RoomActionBar at the top of this column.
+                    It used to sit here, below the story queue, where it was
+                    off-screen on a phone and styled quietly enough to read as
+                    disabled. */}
                 {revealed && (
                   <>
                     {requiresManualFinalEstimate ? (
@@ -9127,7 +9563,7 @@ function GameScreen({
                             if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
                           }}
                         >
-                          🔄 New Sprint
+                          <Icon name="refresh" size={16} /> New sprint
                         </button>
                       </div>
                     ) : (
@@ -9142,7 +9578,7 @@ function GameScreen({
                               if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
                             }}
                           >
-                            🔄 New Sprint
+                            <Icon name="refresh" size={16} /> New sprint
                           </button>
                         </div>
                         <div className="btn-hint">
@@ -9161,18 +9597,19 @@ function GameScreen({
                         if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
                       }}
                     >
-                      🔄 New Sprint
+                      <Icon name="refresh" size={16} /> New sprint
                     </button>
                   </div>
                 )}
                 <div className="obs-danger-divider"><span>End session</span></div>
                 <button
-                  className="btn-end-session"
+                  type="button"
+                  className="btn btn--danger btn--block"
                   onClick={() => {
                     if (window.confirm("End the session? This disconnects everyone and permanently deletes all session data.")) onEndSession();
                   }}
                 >
-                  🔴 End Session
+                  <Icon name="close" size={16} /> End session
                 </button>
                 <div className="end-session-hint">
                   Disconnects everyone and deletes all session data
@@ -9224,7 +9661,7 @@ function GameScreen({
                           <span className="voted-label">✓ Voted</span>
                         ) : (
                           <span className="waiting-label">
-                            ⏳ Hasn't voted yet
+                            Hasn't voted yet
                           </span>
                         )}
                       </div>
@@ -9492,7 +9929,7 @@ function GameScreen({
             {streak > 0 && (
               <div className={`streak-panel${streak >= 3 ? " streak-hot" : ""}`}>
                 <div className="streak-fire">
-                  {streak >= 5 ? "🔥🔥🔥" : streak >= 3 ? "🔥🔥" : "🔥"}
+                  {"\u2666".repeat(streak >= 5 ? 3 : streak >= 3 ? 2 : 1)}
                 </div>
                 <div className="streak-body">
                   <div className="streak-count">
@@ -9502,7 +9939,7 @@ function GameScreen({
                   </div>
                   <div className="streak-label">
                     {streak >= 5
-                      ? "Unstoppable, team is perfectly aligned 🚀"
+                      ? "Unstoppable. The team is perfectly aligned."
                       : streak >= 3
                       ? "Team is locked in, great backlog clarity"
                       : streak === 2
@@ -9532,7 +9969,7 @@ function GameScreen({
                   {summaryTotalPoints !== null && ` · ${summaryTotalPoints} points total`}
                 </div>
                 <div className="summary-actions">
-                  <button className="btn-inv" onClick={copySummary}>📋 Copy</button>
+                  <button className="btn-inv" onClick={copySummary}><Icon name="copy" size={16} /> Copy</button>
                   <button className="btn-inv" onClick={downloadSummaryCsv}>⬇ CSV</button>
                 </div>
                 {showWtpPoll && <WtpPoll onDone={() => setWtpDone(true)} />}

@@ -50,6 +50,20 @@ const ruleAssertions = existsSync("scripts/rules-test.mjs")
   ? (read("scripts/rules-test.mjs").match(/^await (allow|deny)\(/gm) || []).length
   : 0;
 
+/* Design system health. These three numbers are why the token layer exists:
+   before it there were 18 button classes, 65 font sizes and 86 padding pairs.
+   Regenerating them on every build means the docs show the real figure, so
+   drift is visible in a diff rather than discovered a year later. */
+const cssBlock = app.slice(app.indexOf("const CSS = `"), app.indexOf("`;", app.indexOf("const CSS = `")));
+const uniq = (re, src = cssBlock) => new Set(src.match(re) || []).size;
+const designStats = {
+  fontSizes: uniq(/font-size: *[0-9.]+(?:rem|px)/g),
+  paddingPairs: uniq(/padding: *[0-9]+px [0-9]+px/g),
+  buttonClasses: uniq(/^\.[a-z][a-z0-9-]*(?:btn|button)[a-z0-9-]*/gm),
+  tokens: uniq(/^ {2}--[a-z0-9-]+:/gm),
+  icons: (app.match(/^ {2}[a-zA-Z]+: "[Mm][^"]+",$/gm) || []).length,
+};
+
 const hand = existsSync("docs/AI-CONTEXT.hand.md")
   ? read("docs/AI-CONTEXT.hand.md")
   : "_(no hand-written notes yet: create docs/AI-CONTEXT.hand.md)_";
@@ -148,7 +162,8 @@ ${Object.entries(pkg.scripts).map(([k, v]) => `- \`npm run ${k}\` — \`${v}\``)
 
 ## Tests
 
-\`npm test\` — ${testCount} tests across ${testFiles.join(", ")}. They cover the things
+\`npm test\` — ${testCount} test blocks across ${testFiles.join(", ")} (more cases
+than that at runtime, because \`test.each\` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
 
@@ -158,6 +173,24 @@ be checked by reading them and have to be deployed by hand, which is how two sil
 outages happened. Run this after touching \`database.rules.json\`.
 
 Run both before committing.
+
+## Design system
+
+Read \`docs/DESIGN-SYSTEM.md\` before writing any UI. The short version: use a
+token, never a raw px or hex value; one \`.btn\` base class with four intents;
+one primary action per screen; icons from \`ICON_PATHS\`, never emoji.
+
+| Measure | Now | Note |
+|---|---|---|
+| Design tokens in \`:root\` | ${designStats.tokens} | Type, spacing, elevation, motion, semantic colour |
+| Icons in \`ICON_PATHS\` | ${designStats.icons} | One stroke family, \`currentColor\` |
+| Distinct font sizes in CSS | ${designStats.fontSizes} | Target is the 8-step scale; the rest is unmigrated legacy |
+| Distinct padding pairs | ${designStats.paddingPairs} | Target is the 4px grid |
+| Legacy button classes | ${designStats.buttonClasses} | Migrate onto \`.btn\` when you touch one |
+
+The last three are deliberately unflattering. They are the size of the remaining
+migration, and they should fall over time, never rise. \`src/designsystem.test.js\`
+fails if the token layer, the button system or the no-emoji rule is broken.
 
 ## Components in App.js (${components.length})
 

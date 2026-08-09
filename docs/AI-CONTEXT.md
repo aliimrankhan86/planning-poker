@@ -24,12 +24,12 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 420 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 437 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 18 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 8 KB |
 | `scripts/build-rules.mjs` | Strips comments from the Firebase rules to make the console-pasteable copy | 1 KB |
-| `scripts/gen-ai-context.mjs` | Generates this file | 9 KB |
+| `scripts/gen-ai-context.mjs` | Generates this file | 11 KB |
 | `database.rules.json` | Firebase rules, with comments. **Source of truth.** | 17 KB |
 | `database.rules.publish.json` | Generated. This is what gets pasted into the Firebase console | 12 KB |
 
@@ -111,7 +111,8 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 39 tests across AdminDashboard.test.js, App.test.js, estimation.test.js. They cover the things
+`npm test` — 49 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
+than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
 
@@ -122,9 +123,27 @@ outages happened. Run this after touching `database.rules.json`.
 
 Run both before committing.
 
-## Components in App.js (31)
+## Design system
 
-`BrandMark`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `GameScreen`
+Read `docs/DESIGN-SYSTEM.md` before writing any UI. The short version: use a
+token, never a raw px or hex value; one `.btn` base class with four intents;
+one primary action per screen; icons from `ICON_PATHS`, never emoji.
+
+| Measure | Now | Note |
+|---|---|---|
+| Design tokens in `:root` | 70 | Type, spacing, elevation, motion, semantic colour |
+| Icons in `ICON_PATHS` | 18 | One stroke family, `currentColor` |
+| Distinct font sizes in CSS | 65 | Target is the 8-step scale; the rest is unmigrated legacy |
+| Distinct padding pairs | 86 | Target is the 4px grid |
+| Legacy button classes | 18 | Migrate onto `.btn` when you touch one |
+
+The last three are deliberately unflattering. They are the size of the remaining
+migration, and they should fall over time, never rise. `src/designsystem.test.js`
+fails if the token layer, the button system or the no-emoji rule is broken.
+
+## Components in App.js (33)
+
+`Icon`, `BrandMark`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
 
 ---
 
