@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
+# Live estimation rooms are per-session and hold no indexable content.
+Disallow: /t/
+Disallow: /*?room=
+
 Sitemap: https://www.pointpoker.app/sitemap.xml

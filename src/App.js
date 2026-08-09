@@ -1,5 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { auth, db } from "./firebase";
+import {
+  SITE_URL,
+  DEFAULT_META,
+  DEFAULT_OG_IMAGE as ROUTE_DEFAULT_OG_IMAGE,
+  STATIC_SCREEN_BY_PATH,
+  STATIC_ROUTE_META,
+  PRIVATE_PATHS,
+  MAX_PARTICIPANTS,
+} from "./routeMeta.mjs";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -17,41 +26,84 @@ import {
   onValue,
   update,
   remove,
-  runTransaction,
+  increment,
   serverTimestamp,
   onDisconnect,
 } from "firebase/database";
 
+// Admin-only, so it is code-split: normal visitors never download it.
+const AdminDashboard = lazy(() => import("./AdminDashboard"));
+
 // ── ANONYMOUS USAGE ANALYTICS ────────────────────────────────────
-// Privacy-first, cookie-free analytics.
-// Writes daily increment counters to Firebase /analytics/daily/{date}/{event}.
-// NO personal data, NO user IDs, NO cookies, NO IP addresses stored.
-// Data is aggregate counts only — safe to disclose in privacy policy.
+// Privacy-first. Daily integer counters at /analytics/daily/{date}/{event}.
+// NO personal data, NO user IDs, NO IP addresses, NO third-party scripts.
+// Everything here is an aggregate count, which is what makes it disclosable
+// in the privacy policy and exempt from consent under PECR.
 //
-// Events tracked:
-//   room_created_free / room_created_pro   — room creation by plan
-//   player_joined / observer_joined        — role on join
-//   stories_estimated                      — incremented per story completion
-//   pricing_opened                         — intent to upgrade
-//   pro_activated                          — successful key activation
-//   login_modal_opened                     — engagement with auth flow
-//   timer_used                             — feature adoption: timer
-//   story_queue_used                       — feature adoption: story queue
-//   invite_copied                          — virality signal
-const _analyticsDate = () => new Date().toISOString().slice(0, 10); // "2025-03-28"
-async function track(eventName) {
+// These counters exist to answer four business questions and nothing else:
+//   1. How much is this used?        visit_*, room_created*, joined_*, estimate_recorded
+//   2. Who uses it and how?          device_*, table_*, deck_*, feature_*
+//   3. Is it sticky?                 visit_return, team_room_reentered, session_*
+//   4. Would anyone pay, and for what? pricing_viewed, wtp_* (the one-question poll)
+//
+// Counters are cheap. Adding an event you will not act on is not free — it is
+// noise on the dashboard. Every name below maps to a decision.
+const _analyticsDate = () => new Date().toISOString().slice(0, 10); // "2026-08-09"
+
+// Fire-and-forget. Analytics must never block or break a session.
+function track(eventName) {
   try {
-    await runTransaction(
-      ref(db, `analytics/daily/${_analyticsDate()}/${eventName}`),
-      (current) => (current || 0) + 1,
-    );
+    set(ref(db, `analytics/daily/${_analyticsDate()}/${eventName}`), increment(1))
+      .catch(() => {});
   } catch {
-    // Analytics must never break the main app — swallow all errors silently
+    // Swallow. A broken counter is never worth a broken room.
   }
 }
 
+// Some events are only meaningful once per browser (a new visitor) or once per
+// day (device mix). localStorage is the dedupe key; it holds no personal data.
+function trackOnce(eventName, scope = "ever") {
+  const key = `pp_t_${eventName}`;
+  const stamp = scope === "daily" ? _analyticsDate() : "1";
+  try {
+    if (localStorage.getItem(key) === stamp) return false;
+    localStorage.setItem(key, stamp);
+  } catch {
+    return false; // private mode: skip rather than double-count
+  }
+  track(eventName);
+  return true;
+}
+
+// Buckets keep the counter set small and the dashboard readable. Exact values
+// would mean one counter per possible number, which nobody can chart.
+const bucketTableSize = (n) =>
+  n <= 1 ? "table_solo" : n <= 4 ? "table_2_4" : n <= 8 ? "table_5_8" : "table_9_20";
+const bucketSessionMinutes = (m) =>
+  m < 5 ? "session_under_5m" : m < 20 ? "session_5_20m" : m < 60 ? "session_20_60m" : "session_over_60m";
+
+// How long a room stayed open. Ad revenue is a function of time-on-site, so this
+// is the difference between "worth running ads" and "not worth the ad tag".
+function trackSessionLength(roomData) {
+  const startedAt = roomData?.createdAt;
+  if (typeof startedAt !== "number") return;
+  const minutes = (Date.now() - startedAt) / 60000;
+  if (minutes < 0 || minutes > 60 * 24) return; // clock skew guard
+  track(bucketSessionMinutes(minutes));
+}
+
+// Called once per app load: visitor recency and device mix, the two inputs an
+// ad-network RPM estimate actually depends on.
+function trackVisit() {
+  const isNew = trackOnce("visit_new", "ever");
+  if (!isNew) trackOnce("visit_return", "daily");
+  const mobile = typeof window !== "undefined"
+    && window.matchMedia?.("(max-width: 780px), (pointer: coarse)")?.matches;
+  trackOnce(mobile ? "device_mobile" : "device_desktop", "daily");
+}
+
 // ── SPRINT HISTORY ────────────────────────────────────────────────
-// Saves a session summary to Firebase /history/{uid} when a Pro session ends.
+// Saves a session summary to Firebase /history/{uid} when a session ends.
 // Requires an authenticated user — anonymous sessions are not recorded.
 // Failures are silent so a history error never blocks session teardown.
 async function saveSessionHistory(uid, roomData, roomCode) {
@@ -85,147 +137,16 @@ async function saveSessionHistory(uid, roomData, roomCode) {
   }
 }
 
-const SITE_URL = "https://www.pointpoker.app";
-const DEFAULT_META = {
-  title: "pointpoker — Free Online Planning Poker for Agile & Scrum Teams",
-  description:
-    "pointpoker is a free online planning poker tool for agile and scrum teams. Run sprint planning with real-time voting, story point estimation, story queues, and team alignment analytics.",
-  canonical: `${SITE_URL}/`,
-  robots: "index, follow",
-  ogUrl: `${SITE_URL}/`,
-};
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
-const STATIC_SCREEN_BY_PATH = {
-  "/": "join",
-  "/terms": "terms",
-  "/privacy": "privacy",
-  "/about": "about",
-  "/support": "support",
-  "/trust": "trust",
-  "/what-is-planning-poker": "whatIsPlanningPoker",
-  "/fibonacci-story-points": "fibonacciStoryPoints",
-  "/agile-estimation-tool": "agileEstimationTool",
-  "/pricing": "pricing",
-  "/features": "features",
-  "/planning-poker-online": "planningPokerOnline",
-  "/scrum-poker": "scrumPoker",
-  "/story-point-estimation": "storyPointEstimation",
-  "/remote-sprint-planning": "remoteSprintPlanning",
-};
-const STATIC_ROUTE_META = {
-  "/about": {
-    title: "About pointpoker | Why This Planning Poker Tool Exists",
-    description:
-      "Learn why pointpoker was built for fast, low-friction agile estimation, what makes it different from bloated sprint-planning tools, and how the product is designed to earn team trust.",
-    canonical: `${SITE_URL}/about`,
-    ogUrl: `${SITE_URL}/about`,
-    robots: "index, follow",
-  },
-  "/support": {
-    title: "Support pointpoker | Help, Contact, and Product Guidance",
-    description:
-      "Get support for pointpoker, understand how rooms and Team Rooms work, find help for account and Pro access questions, and contact the team directly.",
-    canonical: `${SITE_URL}/support`,
-    ogUrl: `${SITE_URL}/support`,
-    robots: "index, follow",
-  },
-  "/trust": {
-    title: "Trust and Reliability | pointpoker",
-    description:
-      "Review the trust signals behind pointpoker, including public support and legal routes, authenticated support email, account-linked Pro access, and room safeguards for real sprint planning.",
-    canonical: `${SITE_URL}/trust`,
-    ogUrl: `${SITE_URL}/trust`,
-    robots: "index, follow",
-  },
-  "/what-is-planning-poker": {
-    title: "What Is Planning Poker? Guide for Agile Teams | pointpoker",
-    description:
-      "Learn what planning poker is, why agile teams use it, how simultaneous reveal improves estimation, and how pointpoker helps teams run the workflow online.",
-    canonical: `${SITE_URL}/what-is-planning-poker`,
-    ogUrl: `${SITE_URL}/what-is-planning-poker`,
-    robots: "index, follow",
-  },
-  "/fibonacci-story-points": {
-    title: "Fibonacci Story Points Explained | pointpoker",
-    description:
-      "Understand why agile teams use Fibonacci story points, what the numbers mean, and how to use planning poker to reach a final agreed estimate without false precision.",
-    canonical: `${SITE_URL}/fibonacci-story-points`,
-    ogUrl: `${SITE_URL}/fibonacci-story-points`,
-    robots: "index, follow",
-  },
-  "/agile-estimation-tool": {
-    title: "Agile Estimation Tool for Sprint Planning | pointpoker",
-    description:
-      "Use pointpoker as an agile estimation tool for sprint planning, backlog refinement, facilitator-led voting, and clearer story-point discussions across remote teams.",
-    canonical: `${SITE_URL}/agile-estimation-tool`,
-    ogUrl: `${SITE_URL}/agile-estimation-tool`,
-    robots: "index, follow",
-  },
-  "/pricing": {
-    title: "Planning Poker Pricing | Free and Pro Plans | pointpoker",
-    description:
-      "Compare Free and Pro planning poker pricing. Start free, then upgrade for two dedicated Team Rooms, higher participant limits, and sprint history.",
-    canonical: `${SITE_URL}/pricing`,
-    ogUrl: `${SITE_URL}/pricing`,
-    robots: "index, follow",
-  },
-  "/features": {
-    title: "Planning Poker Features for Agile Teams | pointpoker",
-    description:
-      "Explore pointpoker features for agile estimation: simultaneous reveal, facilitator controls, story queues, Team Alignment analytics, Team Rooms, and sprint history.",
-    canonical: `${SITE_URL}/features`,
-    ogUrl: `${SITE_URL}/features`,
-    robots: "index, follow",
-  },
-  "/planning-poker-online": {
-    title: "Planning Poker Online for Remote Agile Teams | pointpoker",
-    description:
-      "Run planning poker online in any browser. Create a room, invite the team, reveal together, and estimate stories fast without installs or account setup.",
-    canonical: `${SITE_URL}/planning-poker-online`,
-    ogUrl: `${SITE_URL}/planning-poker-online`,
-    robots: "index, follow",
-  },
-  "/scrum-poker": {
-    title: "Scrum Poker App for Sprint Planning | pointpoker",
-    description:
-      "Use pointpoker as a scrum poker app for sprint planning and backlog refinement. Facilitate fast, unbiased story-point discussions with distributed teams.",
-    canonical: `${SITE_URL}/scrum-poker`,
-    ogUrl: `${SITE_URL}/scrum-poker`,
-    robots: "index, follow",
-  },
-  "/story-point-estimation": {
-    title: "Story Point Estimation Tool and Guide | pointpoker",
-    description:
-      "Improve story point estimation with planning poker, Fibonacci cards, facilitator guidance, and clearer team consensus during backlog refinement.",
-    canonical: `${SITE_URL}/story-point-estimation`,
-    ogUrl: `${SITE_URL}/story-point-estimation`,
-    robots: "index, follow",
-  },
-  "/remote-sprint-planning": {
-    title: "Remote Sprint Planning Tool | pointpoker",
-    description:
-      "Run remote sprint planning with a shared planning poker room, facilitator controls, reusable Team Room links, and live sprint analytics.",
-    canonical: `${SITE_URL}/remote-sprint-planning`,
-    ogUrl: `${SITE_URL}/remote-sprint-planning`,
-    robots: "index, follow",
-  },
-  "/terms": {
-    title: "Terms of Service | pointpoker",
-    description:
-      "Read the pointpoker Terms of Service, including acceptable use, liability limits, and account rules for the planning poker app.",
-    canonical: `${SITE_URL}/terms`,
-    ogUrl: `${SITE_URL}/terms`,
-    robots: "noindex, nofollow",
-  },
-  "/privacy": {
-    title: "Privacy Policy | pointpoker",
-    description:
-      "Read the pointpoker Privacy Policy, including data handling, Firebase usage, UK GDPR rights, and retention details.",
-    canonical: `${SITE_URL}/privacy`,
-    ogUrl: `${SITE_URL}/privacy`,
-    robots: "noindex, nofollow",
-  },
-};
+// Route metadata and the prerendered content shell live in one module so the
+// build-time prerenderer and the runtime app can never drift apart.
+const DEFAULT_OG_IMAGE = ROUTE_DEFAULT_OG_IMAGE;
+
+// The app owns scroll position: every route change scrolls to top explicitly.
+// Left on "auto", Chrome restores a stale offset and drops people who open a
+// shared room link halfway down the marketing copy instead of on the form.
+if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+  window.history.scrollRestoration = "manual";
+}
 
 function getScreenForPath(pathname) {
   return STATIC_SCREEN_BY_PATH[pathname] || "join";
@@ -336,7 +257,7 @@ const ESTIMATION_MODES = {
     toastDone: "✅ Story estimated! Vote on the next story.",
     toastNext: "✅ Estimate recorded. Voting on next story.",
     placeholder: "e.g. User login flow, PROJ-42…",
-    hintText: "Add stories to track estimates by name — or just start voting without them. Both work.",
+    hintText: "Add stories to track estimates by name, or just start voting without them. Both work.",
     recordNext: "& Estimate Next Story",
   },
   tasks: {
@@ -353,7 +274,7 @@ const ESTIMATION_MODES = {
     toastDone: "✅ Task estimated! Vote on the next task.",
     toastNext: "✅ Estimate recorded. Voting on next task.",
     placeholder: "e.g. Build login API, Write unit tests, PROJ-42-1…",
-    hintText: "Add tasks to track estimates by name — or just start voting without them. Both work.",
+    hintText: "Add tasks to track estimates by name, or just start voting without them. Both work.",
     recordNext: "& Estimate Next Task",
   },
 };
@@ -379,6 +300,99 @@ const countParticipants = (players = {}, excludeId = null) =>
   Object.entries(players)
     .filter(([playerId, player]) => !!player && playerId !== excludeId)
     .length;
+// Modal plumbing every dialog needs and none of them had: Escape to close,
+// focus moved in on open, focus returned to the trigger on close, and Tab kept
+// inside the dialog (WCAG 2.1.2 — no keyboard trap means you can also get *out*
+// of the modal, which is exactly what returning focus achieves).
+// Set by whatever opens a dialog, read by useDialog. Capturing inside the
+// dialog's own effect is too late: React commits the re-render first, and an
+// autoFocus anywhere on the page behind it has already moved focus.
+let _dialogOpener = null;
+export function rememberDialogOpener() {
+  const el = document.activeElement;
+  _dialogOpener = el instanceof HTMLElement && el !== document.body ? el : null;
+}
+
+function useDialog(onClose) {
+  const ref = useRef(null);
+  // Captured once and never overwritten. StrictMode double-invokes effects in
+  // development, and re-capturing on the second mount would record the dialog's
+  // own close button as the thing to return focus to.
+  const openerRef = useRef(_dialogOpener);
+
+  // Restore focus BEFORE React unmounts the dialog. Doing it afterwards means
+  // racing the commit: the focused node gets removed, the browser resets focus
+  // to <body>, and any timer-based restore lands too late or not at all.
+  const close = useCallback(() => {
+    const opener = openerRef.current;
+    if (opener instanceof HTMLElement && document.body.contains(opener)) {
+      opener.focus();
+    }
+    onClose?.();
+  }, [onClose]);
+
+  useEffect(() => {
+    const node = ref.current;
+    node?.querySelector(
+      "[data-autofocus], input:not([type=hidden]), button, [href], select, textarea",
+    )?.focus?.();
+
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); close(); return; }
+      if (e.key !== "Tab" || !node) return;
+      const focusable = [...node.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )].filter((el) => el.offsetParent !== null);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [close]);
+
+  return [ref, close];
+}
+
+// Clipboard writes fail on http origins, in some in-app browsers, and when the
+// user denies permission. Fall back to a hidden textarea, and always tell the
+// caller whether the copy actually happened so the UI never lies.
+async function copyText(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through to the legacy path
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:-1000px;opacity:0;";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+// RFC 4180 escaping — item names routinely contain commas and quotes.
+const csvCell = (v = "") => `"${String(v).replace(/"/g, '""')}"`;
+// Guests should not retype their name every sprint. Stored locally only —
+// never sent anywhere except into the room they choose to join.
+const NAME_STORAGE_KEY = "pp_display_name";
+const rememberName = (name) => {
+  try { localStorage.setItem(NAME_STORAGE_KEY, String(name || "").slice(0, 40)); } catch {}
+};
+const recallName = () => {
+  try { return localStorage.getItem(NAME_STORAGE_KEY) || ""; } catch { return ""; }
+};
 const ini = (n = "") =>
   n
     .split(" ")
@@ -526,20 +540,6 @@ body::before {
 }
 
 /* ══════════════════════ FACILITATOR RESOLUTION OVERLAY ══════════════════════ */
-.facilitator-overlay-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 996;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 28px 18px;
-  background:
-    radial-gradient(circle at top, rgba(241,185,63,.10), transparent 34%),
-    rgba(4,10,8,.76);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
 .facilitator-overlay {
   width: min(780px, 100%);
   max-height: min(88vh, 760px);
@@ -553,15 +553,6 @@ body::before {
   padding: 28px 28px 24px;
   position: relative;
 }
-.facilitator-overlay-close {
-  position: absolute; top: 16px; right: 18px;
-  width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(239,242,247,.18);
-  background: rgba(239,242,247,.07); color: rgba(239,242,247,.65);
-  font-size: 1.1rem; line-height: 1; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .15s, color .15s, border-color .15s;
-}
-.facilitator-overlay-close:hover { background: rgba(239,242,247,.14); color: #eef2ec; border-color: rgba(239,242,247,.35); }
 .facilitator-overlay-kicker {
   display: inline-flex;
   align-items: center;
@@ -576,25 +567,6 @@ body::before {
   letter-spacing: .16em;
   text-transform: uppercase;
   margin-bottom: 14px;
-}
-.facilitator-overlay-title {
-  font-size: clamp(1.5rem, 2.8vw, 2.15rem);
-  font-weight: 700;
-  letter-spacing: -.04em;
-  line-height: 1.08;
-  color: var(--cream);
-  margin-bottom: 10px;
-}
-.facilitator-overlay-copy {
-  max-width: 62ch;
-  font-size: .98rem;
-  line-height: 1.72;
-  color: rgba(239,242,247,.78);
-  margin-bottom: 18px;
-}
-.facilitator-overlay-copy strong {
-  color: rgba(239,242,247,.96);
-  font-weight: 600;
 }
 .facilitator-overlay-summary {
   display: grid;
@@ -615,7 +587,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.46);
+  color: rgba(239,242,247,.62);
 }
 .facilitator-overlay-summary-v {
   display: block;
@@ -625,26 +597,6 @@ body::before {
   line-height: 1.35;
 }
 .facilitator-overlay-summary-v.gold { color: var(--gold2); }
-.facilitator-overlay-decision {
-  border-radius: 22px;
-  border: 1px solid rgba(241,185,63,.22);
-  background: linear-gradient(180deg, rgba(241,185,63,.09), rgba(255,255,255,.03));
-  padding: 18px 18px 16px;
-}
-.facilitator-overlay-decision-title {
-  font-size: .8rem;
-  font-weight: 700;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--gold2);
-  margin-bottom: 8px;
-}
-.facilitator-overlay-decision-copy {
-  color: rgba(239,242,247,.72);
-  font-size: .88rem;
-  line-height: 1.62;
-  margin-bottom: 16px;
-}
 .facilitator-overlay-grid {
   display: flex;
   flex-wrap: wrap;
@@ -680,11 +632,6 @@ body::before {
   gap: 12px;
   align-items: stretch;
 }
-.facilitator-overlay-save {
-  flex: 1;
-  margin-top: 0;
-  min-height: 52px;
-}
 .facilitator-overlay-revote {
   flex: 0 0 auto;
   min-width: 180px;
@@ -702,12 +649,6 @@ body::before {
 .facilitator-overlay-revote:hover {
   background: rgba(255,255,255,.08);
   border-color: rgba(158,234,196,.26);
-}
-.facilitator-overlay-footnote {
-  margin-top: 14px;
-  color: rgba(239,242,247,.52);
-  font-size: .75rem;
-  line-height: 1.6;
 }
 @media (max-width: 680px) {
   .facilitator-overlay { padding: 22px 18px 20px; }
@@ -748,18 +689,32 @@ body::before {
 .join-suits span:nth-child(2), .join-suits span:nth-child(4) { color: var(--red); opacity: .18; }
 .join-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 2.6rem; font-weight: 700;
+  font-size: clamp(1.75rem, 4.4vw, 2.35rem); font-weight: 700;
   color: var(--cream); text-align: center;
   margin-bottom: 4px; letter-spacing: -0.03em; line-height: 1.1;
   text-shadow: 0 12px 32px rgba(0,0,0,.42);
 }
 .join-sub {
   text-align: center; color: rgba(245,251,247,.76);
-  font-size: .92rem; margin-bottom: 36px; font-weight: 300; letter-spacing: .5px;
+  font-size: .9rem; margin-bottom: 22px; font-weight: 300; letter-spacing: .5px;
+  max-width: 44ch; margin-left: auto; margin-right: auto; line-height: 1.55;
 }
 .join-sub.workspace {
   margin-bottom: 24px;
   letter-spacing: .2px;
+}
+/* Card-suit value strip under the hero — replaces the old "compare plans" CTA */
+.trust-strip {
+  list-style: none; margin: 0 0 26px; padding: 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 7px;
+}
+.trust-strip li {
+  font-size: .72rem; font-weight: 500; letter-spacing: .3px;
+  color: rgba(239,242,247,.78);
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(158,234,196,.14);
+  border-radius: 999px; padding: 5px 11px;
+  white-space: nowrap;
 }
 .workspace-shell {
   display: flex;
@@ -786,7 +741,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .18em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.46);
+  color: rgba(239,242,247,.62);
   margin-bottom: 8px;
 }
 .workspace-title {
@@ -838,7 +793,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.44);
+  color: rgba(239,242,247,.62);
 }
 .workspace-stat-v {
   display: block;
@@ -872,7 +827,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.44);
+  color: rgba(239,242,247,.62);
 }
 .workspace-room-v {
   display: block;
@@ -1056,7 +1011,7 @@ body::before {
 }
 .workspace-inline-note {
   margin-top: 10px;
-  color: rgba(239,242,247,.52);
+  color: rgba(239,242,247,.68);
   font-size: .76rem;
   line-height: 1.5;
 }
@@ -1088,7 +1043,7 @@ body::before {
 }
 .inp:focus { border-color: rgba(126,230,255,.55); background: rgba(255,255,255,.07); box-shadow: 0 0 0 4px rgba(126,230,255,.10), 0 14px 32px rgba(0,0,0,.22); }
 .inp:hover:not(:focus) { background: rgba(255,255,255,.06); border-color: rgba(158,234,196,.22); }
-.inp::placeholder { color: rgba(239,242,247,.50); }
+.inp::placeholder { color: rgba(239,242,247,.66); }
 .role-row { display: flex; gap: 10px; margin-bottom: 28px; }
 .role-btn {
   flex: 1; padding: 14px 8px; border-radius: var(--radius-sm);
@@ -1121,7 +1076,6 @@ body::before {
 .tab-btn { flex: 1; padding: 10px; border-radius: var(--radius-sm); border: 1px solid rgba(158,234,196,.10); background: rgba(255,255,255,.025); color: rgba(245,251,247,.72); font-family: 'Outfit', sans-serif; font-size: .875rem; font-weight: 500; cursor: pointer; transition: all .2s; }
 .tab-btn.active { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.34); color: var(--gold2); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
 .tab-btn:hover:not(.active) { background: rgba(255,255,255,.06); color: rgba(245,251,247,.92); border-color: rgba(158,234,196,.20); }
-.pro-tab-badge { font-size: .52rem; font-weight: 700; letter-spacing: .08em; background: var(--gold); color: var(--ink); border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
 
 /* Team Room preview chip */
 .team-room-choice-row {
@@ -1158,7 +1112,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.46);
+  color: rgba(239,242,247,.62);
 }
 .team-room-choice-btn.active .team-room-choice-label {
   color: rgba(255,217,120,.82);
@@ -1185,7 +1139,7 @@ body::before {
 .estmode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 24px; }
 .estmode-btn { padding: 10px 8px; border-radius: var(--radius-sm); border: 1px solid rgba(158,234,196,.10); background: rgba(255,255,255,.025); color: rgba(245,251,247,.80); font-family: 'Outfit', sans-serif; cursor: pointer; transition: all .2s; text-align: center; }
 .estmode-btn .em-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 3px; }
-.estmode-btn .em-desc  { display: block; font-size: .72rem; color: rgba(239,242,247,.55); line-height: 1.35; }
+.estmode-btn .em-desc  { display: block; font-size: .72rem; color: rgba(239,242,247,.7); line-height: 1.35; }
 .estmode-btn.active { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.34); color: var(--gold2); }
 .estmode-btn.active .em-desc { color: rgba(255,217,120,.65); }
 .estmode-btn:hover:not(.active) { background: rgba(255,255,255,.06); color: rgba(245,251,247,.92); border-color: rgba(158,234,196,.20); }
@@ -1273,7 +1227,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .18em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.48);
+  color: rgba(239,242,247,.66);
   margin-bottom: 10px;
 }
 .seo-plan-card.pro .seo-plan-topline { color: var(--gold2); }
@@ -1392,7 +1346,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.48);
+  color: rgba(239,242,247,.66);
 }
 .hdr-invite-helper {
   font-size: .66rem;
@@ -1478,10 +1432,10 @@ body::before {
 .rtxt { flex: 1; }
 .rstatus { font-size: .72rem; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px; color: rgba(245,251,247,.74); }
 .rstatus.warn { color: #e67e22; } .rstatus.danger { color: #e74c3c; }
-.rhint { font-size: .7rem; color: rgba(239,242,247,.52); margin-top: 3px; }
+.rhint { font-size: .7rem; color: rgba(239,242,247,.68); margin-top: 3px; }
 .btn-stop { margin-top: 8px; padding: 7px 12px; border-radius: 10px; border: 1px solid rgba(158,234,196,.14); background: rgba(255,255,255,.03); color: rgba(245,251,247,.75); font-family: 'Outfit', sans-serif; font-size: .73rem; cursor: pointer; transition: all .2s; }
 .btn-stop:hover { background: rgba(255,255,255,.08); color: var(--cream); }
-.waiting-hint { font-size: .8rem; color: rgba(239,242,247,.54); font-style: italic; text-align: center; padding: 8px 0; }
+.waiting-hint { font-size: .8rem; color: rgba(239,242,247,.62); font-style: italic; text-align: center; padding: 8px 0; }
 
 /* ══════════════════════ PLAYING CARDS ══════════════════════ */
 .cards-grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 0; }
@@ -1546,7 +1500,7 @@ body::before {
 .obs-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(41,128,185,.08); border: 1px solid rgba(41,128,185,.2); border-radius: 10px; color: #5dade2; font-size: .86rem; }
 .vstatus { text-align: center; font-size: .82rem; padding: 8px 0; }
 .vstatus.voted { color: rgba(201,145,42,.7); }
-.vstatus.wait  { color: rgba(239,242,247,.52); font-style: italic; }
+.vstatus.wait  { color: rgba(239,242,247,.68); font-style: italic; }
 
 /* ══════════════════════ RESULTS HERO ══════════════════════ */
 .avg-hero {
@@ -1638,14 +1592,14 @@ body::before {
 .btn-new-session {
   padding: 13px 14px; border-radius: var(--radius-sm);
   background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.10);
-  color: rgba(239,242,247,.58); font-family: 'Outfit', sans-serif;
+  color: rgba(239,242,247,.62); font-family: 'Outfit', sans-serif;
   font-size: .86rem; font-weight: 600; cursor: pointer; transition: all .2s;
   display: flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap;
 }
 .btn-new-session:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); color: var(--cream); }
 /* When New Sprint is the only button in the row, stretch it full-width */
 .obs-secondary-row .btn-new-session:only-child { flex: 1; }
-.btn-hint { font-size: .6rem; color: rgba(239,242,247,.50); text-align: center; margin-top: 1px; font-style: italic; }
+.btn-hint { font-size: .6rem; color: rgba(239,242,247,.66); text-align: center; margin-top: 1px; font-style: italic; }
 .btn-end-session {
   width: 100%; padding: 12px 16px; border-radius: var(--radius-sm);
   background: rgba(224,72,72,.03); border: 1px solid rgba(224,72,72,.18);
@@ -1654,27 +1608,91 @@ body::before {
   display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px;
 }
 .btn-end-session:hover { background: rgba(192,57,43,.1); border-color: rgba(192,57,43,.35); color: #e74c3c; }
-.end-session-hint { font-size: .58rem; color: rgba(239,242,247,.45); text-align: center; margin-top: 3px; font-style: italic; }
+.end-session-hint { font-size: .58rem; color: rgba(239,242,247,.64); text-align: center; margin-top: 3px; font-style: italic; }
 
 /* Story queue panel */
 .story-panel { background: rgba(255,255,255,.03); border: 1px solid rgba(158,234,196,.10); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; }
 .story-panel-title { font-size: .65rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-.story-panel-optional { font-size: .58rem; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: rgba(201,145,42,.7); background: rgba(201,145,42,.1); border: 1px solid rgba(201,145,42,.2); border-radius: 20px; padding: 1px 7px; }
-.story-panel-hint { font-size: .72rem; color: rgba(239,242,247,.45); margin-bottom: 10px; line-height: 1.5; font-style: italic; }
+.ptitle-optional, .story-panel-optional { font-size: .58rem; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: rgba(201,145,42,.7); background: rgba(201,145,42,.1); border: 1px solid rgba(201,145,42,.2); border-radius: 20px; padding: 1px 7px; }
+.story-panel-hint { font-size: .72rem; color: rgba(239,242,247,.64); margin-bottom: 10px; line-height: 1.5; font-style: italic; }
 .story-active { font-size: .92rem; font-weight: 600; color: var(--cream); margin-bottom: 6px; line-height: 1.35; }
 .story-progress { font-size: .68rem; color: rgba(239,242,247,.65); margin-bottom: 10px; }
 .story-add-row { display: flex; gap: 6px; margin-bottom: 8px; }
-.story-inp { flex: 1; padding: 8px 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(158,234,196,.16); border-radius: 10px; color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .8rem; transition: border-color .2s, background .2s; }
-.story-inp::placeholder { color: rgba(239,242,247,.50); }
+.story-inp { flex: 1; min-width: 0; padding: 8px 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(158,234,196,.16); border-radius: 10px; color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .8rem; transition: border-color .2s, background .2s; resize: vertical; min-height: 38px; max-height: 160px; line-height: 1.4; }
+.story-inp::placeholder { color: rgba(239,242,247,.66); }
 .story-inp:focus { outline: none; border-color: var(--gold2); background: rgba(255,255,255,.10); }
 .btn-story-add { padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(241,185,63,.26); background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .2s; }
 .btn-story-add:hover { background: linear-gradient(180deg, rgba(241,185,63,.22), rgba(241,185,63,.11)); }
-.story-list { max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
-.story-item { font-size: .75rem; padding: 4px 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+.story-list { max-height: 168px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+.story-item { font-size: .75rem; padding: 4px 8px; border-radius: 6px; display: flex; gap: 8px; justify-content: space-between; align-items: center; }
 .story-item.done { color: rgba(239,242,247,.62); text-decoration: line-through; }
 .story-item.active { background: var(--goldB); color: var(--gold2); font-weight: 600; }
 .story-item.queued { color: rgba(239,242,247,.75); }
-.story-est { font-size: .68rem; opacity: .7; }
+.story-item-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.story-est { font-size: .68rem; opacity: .7; flex-shrink: 0; }
+.story-item-remove {
+  flex-shrink: 0; width: 24px; height: 24px; line-height: 1; /* WCAG 2.5.8 */
+  border-radius: 6px; border: 1px solid transparent;
+  background: none; color: rgba(239,242,247,.62); cursor: pointer;
+  font-size: .7rem; transition: color .15s, background .15s, border-color .15s;
+}
+.story-item-remove:hover { color: var(--red); background: rgba(214,72,72,.12); border-color: rgba(214,72,72,.28); }
+/* Willingness-to-pay poll */
+.wtp-panel {
+  position: relative; margin-top: 14px; padding: 14px 15px;
+  border: 1px solid rgba(201,145,42,.24); border-radius: 12px;
+  background: rgba(201,145,42,.05);
+}
+.wtp-dismiss {
+  position: absolute; top: 8px; right: 8px;
+  width: 26px; height: 26px; border-radius: 7px;
+  background: none; border: 1px solid transparent; cursor: pointer;
+  color: rgba(239,242,247,.62); font-size: .74rem; line-height: 1;
+}
+.wtp-dismiss:hover { color: var(--cream); background: rgba(255,255,255,.06); border-color: rgba(158,234,196,.18); }
+.wtp-kicker {
+  font-size: .58rem; font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase;
+  color: rgba(232,184,75,.85); margin-bottom: 6px;
+}
+.wtp-q { font-size: .84rem; color: var(--cream); line-height: 1.45; margin-bottom: 11px; padding-right: 26px; }
+.wtp-options { display: flex; flex-direction: column; gap: 6px; }
+.wtp-option {
+  text-align: left; padding: 9px 11px; min-height: 36px;
+  border-radius: 9px; border: 1px solid rgba(158,234,196,.16);
+  background: rgba(255,255,255,.035); color: rgba(239,242,247,.88);
+  font-family: 'Outfit', sans-serif; font-size: .78rem; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.wtp-option:hover { background: rgba(201,145,42,.12); border-color: rgba(201,145,42,.4); transform: translateX(2px); }
+.wtp-note { margin-top: 9px; font-size: .66rem; color: rgba(239,242,247,.66); }
+.wtp-thanks { font-size: .82rem; color: var(--gold2); font-weight: 600; }
+
+.kbd-hint {
+  margin-top: 10px; font-size: .68rem; color: rgba(239,242,247,.64);
+  text-align: center; letter-spacing: .2px;
+}
+.kbd-hint kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .64rem; padding: 1px 5px; border-radius: 4px;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(158,234,196,.18);
+  color: rgba(239,242,247,.72);
+}
+.story-paste-hint { font-size: .68rem; color: rgba(239,242,247,.62); margin: -2px 0 10px; line-height: 1.5; }
+/* Sprint summary */
+.summary-rows { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; }
+.summary-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  padding: 6px 10px; border-radius: 8px;
+  background: rgba(255,255,255,.02); border: 1px solid var(--border);
+}
+.summary-row.sized { background: rgba(201,145,42,.06); border-color: rgba(201,145,42,.14); }
+.summary-row-name { font-size: .8rem; color: rgba(239,242,247,.65); flex: 1; line-height: 1.3; overflow-wrap: anywhere; }
+.summary-row.sized .summary-row-name { color: var(--cream); }
+.summary-row-est { font-size: .88rem; font-weight: 700; color: rgba(239,242,247,.68); white-space: nowrap; }
+.summary-row.sized .summary-row-est { color: var(--gold2); }
+.summary-total { font-size: .72rem; color: rgba(239,242,247,.7); margin-bottom: 10px; letter-spacing: .3px; }
+.summary-actions { display: flex; gap: 8px; }
+.summary-actions .btn-inv { flex: 1; }
 .btn-record-next { width: 100%; padding: 11px; border-radius: var(--radius-sm); border: none; background: linear-gradient(135deg, rgba(75,216,137,.80), rgba(44,176,112,.62)); color: #04100b; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: all .2s; margin-top: 4px; box-shadow: 0 12px 28px rgba(75,216,137,.18); }
 .btn-record-next:hover { background: linear-gradient(135deg, rgba(95,230,154,.88), rgba(52,194,123,.72)); }
 .btn-record-next:disabled { opacity: .3; cursor: not-allowed; }
@@ -1743,39 +1761,7 @@ body::before {
 .inline-final-actions {
   margin-top: 4px;
 }
-.final-estimate-grid {
-  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
-}
-.final-estimate-chip {
-  min-width: 60px; padding: 12px 14px; border-radius: 15px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.04); color: var(--cream);
-  font-family: 'Outfit', sans-serif; font-size: .98rem; font-weight: 700;
-  cursor: pointer; transition: all .18s;
-}
-.final-estimate-chip:hover {
-  border-color: rgba(241,185,63,.34);
-  background: rgba(241,185,63,.10);
-  transform: translateY(-1px);
-}
-.final-estimate-chip.active {
-  border-color: rgba(241,185,63,.52);
-  background: linear-gradient(180deg, rgba(241,185,63,.20), rgba(241,185,63,.10));
-  color: var(--gold3);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 10px 22px rgba(241,185,63,.14);
-}
-.final-estimate-actions {
-  display: flex; gap: 10px; align-items: stretch; margin-bottom: 10px;
-}
-.final-estimate-save {
-  flex: 1;
-  min-height: 50px;
-}
-.final-estimate-footnote {
-  font-size: .68rem; line-height: 1.5; color: rgba(239,242,247,.48);
-}
 @media (max-width: 680px) {
-  .final-estimate-actions { flex-direction: column; }
 }
 .story-name-banner { background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06)); border: 1px solid rgba(126,230,255,.16); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; }
 .story-name-label { font-size: .58rem; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); display: block; margin-bottom: 3px; }
@@ -1838,7 +1824,7 @@ body::before {
   color: #ff8a7d;
 }
 .sep { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
-.nobody { font-size: .78rem; color: rgba(239,242,247,.50); font-style: italic; text-align: center; padding: 10px 0; }
+.nobody { font-size: .78rem; color: rgba(239,242,247,.66); font-style: italic; text-align: center; padding: 10px 0; }
 
 /* ══════════════════════ SESSION STATS ══════════════════════ */
 .ss-grid { display: flex; gap: 8px; }
@@ -1880,7 +1866,7 @@ body::before {
 .solo-invite-copy:hover { background: rgba(201,145,42,.28); }
 .solo-invite-dismiss {
   padding: 4px 8px; background: none; border: none;
-  color: rgba(239,242,247,.4); font-size: .78rem; cursor: pointer;
+  color: rgba(239,242,247,.62); font-size: .78rem; cursor: pointer;
   flex-shrink: 0; transition: color .15s;
 }
 .solo-invite-dismiss:hover { color: rgba(239,242,247,.7); }
@@ -1918,7 +1904,7 @@ body::before {
 }
 .a-kpi-v { font-size: 1.22rem; font-weight: 700; color: var(--gold2); line-height: 1.1; display: block; }
 .a-kpi-l {
-  font-size: .60rem; color: rgba(239,242,247,.50); margin-top: 3px; display: block;
+  font-size: .60rem; color: rgba(239,242,247,.66); margin-top: 3px; display: block;
   font-weight: 400; text-transform: uppercase; letter-spacing: .05em;
 }
 /* Team Alignment */
@@ -1929,37 +1915,37 @@ body::before {
 .a-align-score.good    { color: #2ecc71; }
 .a-align-score.ok      { color: var(--gold); }
 .a-align-score.low     { color: rgba(230,126,34,.90); }   /* amber — coaching signal, not an error */
-.a-align-score.neutral { color: rgba(239,242,247,.40); }  /* muted — not enough data yet */
+.a-align-score.neutral { color: rgba(239,242,247,.62); }  /* muted — not enough data yet */
 .a-align-bar-track { height: 5px; border-radius: 3px; background: rgba(255,255,255,.09); overflow: hidden; }
 .a-align-bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
 .a-align-bar-fill.good    { background: linear-gradient(90deg,#2ecc71,#27ae60); }
 .a-align-bar-fill.ok      { background: linear-gradient(90deg,var(--gold),var(--gold2)); }
 .a-align-bar-fill.low     { background: linear-gradient(90deg,#e67e22,#d35400); }  /* amber, not red */
 .a-align-bar-fill.neutral { background: rgba(255,255,255,.07); }
-.a-align-sub  { font-size: .68rem; color: rgba(239,242,247,.48); margin-top: 5px; line-height: 1.4; }
-.a-align-note { font-size: .60rem; color: rgba(239,242,247,.28); margin-top: 3px; font-style: italic; }
+.a-align-sub  { font-size: .68rem; color: rgba(239,242,247,.66); margin-top: 5px; line-height: 1.4; }
+.a-align-note { font-size: .60rem; color: rgba(239,242,247,.62); margin-top: 3px; font-style: italic; }
 /* Per-story breakdown */
 .a-stories { margin-top: 14px; }
 .a-section-title {
   font-size: .65rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
-  color: rgba(239,242,247,.40); margin-bottom: 4px;
+  color: rgba(239,242,247,.62); margin-bottom: 4px;
 }
 .a-story-list { max-height: 180px; overflow-y: auto; }
 .a-story-row { display: flex; align-items: center; padding: 5px 0; border-top: 1px solid rgba(255,255,255,.05); }
 .a-story-row:first-child { border-top: none; }
-.a-story-idx { font-size: .62rem; color: rgba(239,242,247,.28); width: 16px; flex-shrink: 0; font-weight: 400; text-align: right; }
+.a-story-idx { font-size: .62rem; color: rgba(239,242,247,.62); width: 16px; flex-shrink: 0; font-weight: 400; text-align: right; }
 .a-story-name { flex: 1; font-size: .76rem; color: rgba(239,242,247,.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 8px; }
 .a-story-est {
   font-size: .72rem; font-weight: 600; color: var(--gold2);
   background: rgba(232,184,75,.10); border: 1px solid rgba(232,184,75,.22);
   border-radius: 12px; padding: 2px 9px; flex-shrink: 0;
 }
-.a-empty { font-size: .72rem; color: rgba(239,242,247,.36); font-style: italic; padding: 6px 0; }
+.a-empty { font-size: .72rem; color: rgba(239,242,247,.62); font-style: italic; padding: 6px 0; }
 /* Estimate distribution chips */
 .analytics-breakdown { margin-top: 14px; }
 .analytics-breakdown-title {
   font-size: .65rem; font-weight: 500; letter-spacing: .08em;
-  text-transform: uppercase; color: rgba(239,242,247,.40); margin-bottom: 7px;
+  text-transform: uppercase; color: rgba(239,242,247,.62); margin-bottom: 7px;
 }
 .analytics-size-breakdown { margin-top: 14px; }
 .analytics-size-grid {
@@ -1994,7 +1980,7 @@ body::before {
 }
 .analytics-size-copy {
   font-size: .66rem;
-  color: rgba(239,242,247,.52);
+  color: rgba(239,242,247,.68);
 }
 .analytics-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .analytics-chip {
@@ -2002,7 +1988,7 @@ body::before {
   background: rgba(255,255,255,.05); border: 1px solid var(--border); font-size: .78rem; line-height: 1;
 }
 .analytics-chip-val { font-weight: 600; color: var(--gold2); }
-.analytics-chip-cnt { color: rgba(239,242,247,.50); font-weight: 300; }
+.analytics-chip-cnt { color: rgba(239,242,247,.66); font-weight: 300; }
 
 /* ══════════════════════ STREAK / ESTIMATION SPREE ══════════════════════ */
 .streak-panel {
@@ -2037,34 +2023,38 @@ body::before {
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
 /* ══════════════════════ COOKIE CONSENT ══════════════════════ */
+/* Storage notice, not a consent gate: nothing here needs consent under PECR
+   (essential storage only), so it stays out of the way of the primary action. */
 .cookie-banner {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
-  background: rgba(6,16,13,.90); backdrop-filter: blur(18px) saturate(1.2);
-  border-top: 1px solid rgba(158,234,196,.12);
-  padding: 16px 24px;
+  position: fixed; bottom: 14px; right: 14px; z-index: 600;
+  max-width: 340px;
+  background: rgba(6,16,13,.94); backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid rgba(158,234,196,.14);
+  border-radius: 14px;
+  padding: 13px 15px;
+  box-shadow: 0 18px 42px rgba(0,0,0,.45);
   animation: fadeIn .3s ease;
 }
 .cookie-inner {
-  max-width: 900px; margin: 0 auto;
-  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap;
 }
 .cookie-text {
-  flex: 1; min-width: 200px;
-  font-size: .78rem; line-height: 1.6;
-  color: rgba(239,242,247,.72); font-weight: 300;
+  flex: 1 1 100%; min-width: 0;
+  font-size: .72rem; line-height: 1.55;
+  color: rgba(239,242,247,.68); font-weight: 300;
 }
 .cookie-text strong { color: rgba(239,242,247,.90); font-weight: 600; }
 .cookie-actions {
-  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px; flex: 1 1 100%; justify-content: flex-end;
 }
 .cookie-link {
-  font-size: .75rem; color: var(--gold2); text-decoration: underline;
+  font-size: .75rem; min-height: 24px; display: inline-flex; align-items: center; color: var(--gold2); text-decoration: underline;
   text-decoration-color: rgba(232,184,75,.4); white-space: nowrap;
   font-family: 'Outfit', sans-serif; cursor: pointer; background: none; border: none;
 }
 .cookie-link:hover { color: var(--gold3); }
 .cookie-accept {
-  padding: 9px 20px; border: none; border-radius: 12px;
+  padding: 7px 16px; border: none; border-radius: 10px;
   background: linear-gradient(135deg, #f0b43f 0%, #ffd978 58%, #fff0b0 100%);
   color: var(--ink); font-family: 'Outfit', sans-serif;
   font-size: .82rem; font-weight: 700; cursor: pointer;
@@ -2073,8 +2063,9 @@ body::before {
 }
 .cookie-accept:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(241,185,63,.28); }
 @media (max-width: 600px) {
-  .cookie-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .cookie-actions { width: 100%; justify-content: space-between; }
+  .cookie-banner { left: 10px; right: 10px; bottom: 10px; max-width: none; }
+  .kbd-hint { display: none; }
+  .cookie-actions { justify-content: space-between; }
 }
 
 /* ══════════════════════ LOADING ══════════════════════ */
@@ -2082,297 +2073,15 @@ body::before {
 .spinner { width: 34px; height: 34px; border: 3px solid rgba(201,145,42,.18); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
 
 /* ══════════════════════ PRICING MODAL ══════════════════════ */
-.pricing-overlay {
-  position: fixed; inset: 0; z-index: 900;
-  background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px; animation: fadeIn .2s ease;
-}
-.pricing-modal {
-  width: 100%; max-width: 700px; max-height: 92vh; overflow-y: auto;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
-    linear-gradient(155deg, rgba(12,28,23,.96) 0%, rgba(7,15,13,.98) 58%, rgba(4,10,9,1) 100%);
-  border: 1px solid rgba(158,234,196,.14);
-  border-radius: 28px; padding: 40px 36px 36px;
-  box-shadow: 0 48px 120px rgba(0,0,0,.78), inset 0 1px 0 rgba(255,255,255,.06);
-  position: relative; animation: fadeUp .3s ease;
-  backdrop-filter: blur(24px) saturate(1.16);
-  -webkit-backdrop-filter: blur(24px) saturate(1.16);
-}
-.pricing-modal::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--mint), var(--gold2), var(--aqua), transparent);
-  background-size: 300% auto; animation: shimmer 3s linear infinite; border-radius: 24px 24px 0 0;
-}
-.pricing-close {
-  position: absolute; top: 16px; right: 18px;
-  background: transparent; border: 1px solid var(--border);
-  color: rgba(239,242,247,.60); border-radius: 8px;
-  width: 32px; height: 32px; font-size: 1.1rem;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: all .2s;
-}
-.pricing-close:hover { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
-.pricing-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 2rem; font-weight: 700; color: var(--cream);
-  letter-spacing: -0.03em; text-align: center; margin-bottom: 4px;
-}
-.pricing-sub {
-  text-align: center; color: rgba(239,242,247,.65);
-  font-size: .82rem; margin-bottom: 24px; font-weight: 300;
-}
 /* Billing toggle */
-.billing-toggle-row {
-  display: flex; justify-content: center; gap: 4px;
-  background: rgba(255,255,255,.03); border: 1px solid rgba(158,234,196,.10);
-  border-radius: 100px; padding: 4px; margin: 0 auto 18px; width: fit-content;
-}
-.billing-btn {
-  padding: 7px 22px; border-radius: 100px; border: none; background: transparent;
-  color: rgba(239,242,247,.60); font-family: 'Outfit', sans-serif;
-  font-size: .84rem; font-weight: 500; cursor: pointer; transition: all .2s;
-  display: flex; align-items: center; gap: 7px;
-}
-.billing-btn.active {
-  background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); color: var(--gold2); font-weight: 600;
-}
-.billing-save {
-  font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
-  background: rgba(46,204,113,.18); color: #2ecc71; border-radius: 100px; padding: 2px 7px;
-}
-.billing-save.dim { background: rgba(255,255,255,.06); color: rgba(239,242,247,.40); }
 /* Currency switcher */
-.currency-row {
-  display: flex; justify-content: center; gap: 6px; margin-bottom: 24px;
-}
-.currency-btn {
-  padding: 6px 16px; border-radius: 100px; border: 1px solid rgba(158,234,196,.12);
-  background: rgba(255,255,255,.025); color: rgba(239,242,247,.65); font-family: 'Outfit', sans-serif;
-  font-size: .80rem; font-weight: 500; cursor: pointer; transition: all .2s;
-}
-.currency-btn.active { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.4); color: var(--gold2); font-weight: 600; }
-.currency-btn:hover:not(.active) { background: rgba(255,255,255,.06); color: var(--cream); border-color: rgba(158,234,196,.20); }
 /* Pricing cards */
-.pricing-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-.pricing-card {
-  border: 1px solid rgba(158,234,196,.14); border-radius: 22px;
-  padding: 28px 22px 24px; background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-  display: flex; flex-direction: column; gap: 0; position: relative;
-  transition: border-color .2s, transform .2s, box-shadow .2s;
-}
-.pricing-card:hover { transform: translateY(-3px); box-shadow: 0 24px 48px rgba(0,0,0,.24); }
-.pricing-card.pro {
-  border-color: rgba(241,185,63,.38);
-  background: linear-gradient(160deg, rgba(241,185,63,.11), rgba(126,230,255,.05) 70%, rgba(241,185,63,.03));
-  box-shadow: 0 0 40px rgba(241,185,63,.08);
-}
-.pricing-badge {
-  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
-  color: var(--ink); font-size: .65rem; font-weight: 700;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  padding: 4px 14px; border-radius: 100px; white-space: nowrap;
-}
-.pricing-tier { font-size: .68rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.60); margin-bottom: 10px; }
-.pricing-card.pro .pricing-tier { color: var(--gold2); }
-.pricing-price { margin-bottom: 6px; display: flex; align-items: baseline; gap: 4px; }
-.pricing-amount { font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 700; color: var(--cream); line-height: 1; letter-spacing: -0.04em; }
-.pricing-card.pro .pricing-amount { color: var(--gold2); }
-.pricing-period { font-size: .82rem; color: rgba(239,242,247,.55); }
-.pricing-desc { font-size: .78rem; color: rgba(239,242,247,.60); margin-bottom: 18px; min-height: 32px; line-height: 1.45; }
-.pricing-features { display: flex; flex-direction: column; gap: 9px; margin-bottom: 22px; flex: 1; }
-.pricing-feature {
-  display: flex; align-items: flex-start; gap: 9px;
-  font-size: .80rem; color: rgba(239,242,247,.82); line-height: 1.35;
-}
 .pf-icon { font-size: .85rem; flex-shrink: 0; margin-top: 1px; }
 .pf-icon.yes { color: var(--green); }
-.pf-icon.no  { color: rgba(239,242,247,.25); }
-.pricing-card.pro .pricing-feature { color: rgba(239,242,247,.90); }
-.pricing-cta {
-  width: 100%; padding: 13px; border-radius: var(--radius-sm);
-  font-family: 'Outfit', sans-serif; font-size: .9rem; font-weight: 600;
-  cursor: pointer; transition: all .2s; border: 1px solid var(--border2);
-  background: transparent; color: rgba(239,242,247,.80);
-}
-.pricing-cta:hover { background: var(--surface2); color: var(--cream); border-color: var(--border2); }
-.pricing-cta:disabled {
-  cursor: not-allowed;
-  opacity: .72;
-  transform: none;
-  box-shadow: none;
-}
-.pricing-cta.pro-cta {
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
-  color: var(--ink); border: none;
-  box-shadow: 0 14px 30px rgba(241,185,63,.26), inset 0 1px 0 rgba(255,255,255,.48);
-}
-.pricing-cta.pro-cta:hover { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(241,185,63,.34), inset 0 1px 0 rgba(255,255,255,.58); }
-.pricing-cta.pro-cta:disabled {
-  background: linear-gradient(135deg, rgba(240,180,63,.72) 0%, rgba(255,217,120,.72) 55%, rgba(255,240,176,.72) 100%);
-  color: rgba(8,17,14,.76);
-}
+.pf-icon.no  { color: rgba(239,242,247,.62); }
 /* Billing note below price */
-.pricing-billing-note { font-size: .72rem; color: rgba(239,242,247,.45); margin-bottom: 14px; line-height: 1.4; }
 /* Trial note below CTA */
-.pricing-trial-note { font-size: .66rem; color: rgba(239,242,247,.38); text-align: center; margin-top: 7px; }
-.pricing-summary-card {
-  max-width: 520px;
-  margin: 0 auto 8px;
-}
-.pricing-summary-card .pricing-amount {
-  font-size: 2.5rem;
-}
-.pricing-summary-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
-.pricing-journey-box {
-  margin: 0 0 20px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: 1px solid rgba(241,185,63,.18);
-  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(255,255,255,.03));
-}
-.pricing-journey-k {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 9px;
-  font-size: .62rem;
-  font-weight: 700;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: rgba(255,217,120,.82);
-}
-.pricing-journey-title {
-  color: var(--cream);
-  font-size: .96rem;
-  font-weight: 600;
-  letter-spacing: -.01em;
-}
-.pricing-journey-copy {
-  margin: 7px 0 0;
-  color: rgba(239,242,247,.72);
-  font-size: .8rem;
-  line-height: 1.55;
-}
-.pricing-journey-steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-}
-.pricing-journey-step {
-  min-width: 0;
-  padding: 11px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.12);
-  background: rgba(255,255,255,.03);
-}
-.pricing-journey-step-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  margin-bottom: 8px;
-  border-radius: 999px;
-  background: rgba(241,185,63,.18);
-  color: var(--gold2);
-  font-size: .72rem;
-  font-weight: 700;
-}
-.pricing-journey-step strong {
-  display: block;
-  color: var(--cream);
-  font-size: .8rem;
-  line-height: 1.4;
-}
-.pricing-journey-step span {
-  display: block;
-  margin-top: 5px;
-  color: rgba(239,242,247,.58);
-  font-size: .74rem;
-  line-height: 1.45;
-}
-.pricing-support-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px 18px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(158,234,196,.14);
-  background: rgba(255,255,255,.03);
-  color: rgba(239,242,247,.84);
-  font-size: .86rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all .2s;
-}
-.pricing-support-link:hover {
-  background: rgba(255,255,255,.06);
-  color: var(--cream);
-  border-color: rgba(158,234,196,.24);
-}
-/* Pro key activation */
-.pro-key-section {
-  border-top: 1px solid rgba(255,255,255,.07); margin-top: 20px; padding-top: 16px;
-}
-.pro-key-toggle {
-  background: none; border: none; color: rgba(239,242,247,.50); font-family: 'Outfit', sans-serif;
-  font-size: .78rem; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 6px;
-  transition: color .2s;
-}
-.pro-key-toggle:hover { color: var(--gold2); }
-.pro-key-body { margin-top: 12px; }
-.pro-key-gate {
-  padding: 13px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(158,234,196,.12);
-  background: rgba(255,255,255,.03);
-}
-.pro-key-copy {
-  font-size: .78rem;
-  line-height: 1.55;
-  color: rgba(239,242,247,.60);
-  margin-bottom: 12px;
-}
-.pro-key-copy:last-child { margin-bottom: 0; }
-.pro-key-row { display: flex; gap: 8px; }
-.pro-key-input {
-  flex: 1; padding: 10px 14px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border2); background: var(--surface);
-  color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .84rem;
-  letter-spacing: .08em; font-weight: 500;
-  outline: none; transition: border-color .2s;
-}
-.pro-key-input:focus { border-color: rgba(201,146,42,.5); }
-.pro-key-input::placeholder { color: rgba(239,242,247,.25); letter-spacing: .04em; font-weight: 300; }
-.pro-key-btn {
-  padding: 10px 18px; border-radius: var(--radius-sm);
-  background: var(--goldB); border: 1px solid rgba(201,146,42,.3);
-  color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .84rem;
-  font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap;
-}
-.pro-key-btn:hover:not(:disabled) { background: rgba(201,145,42,.18); border-color: rgba(201,146,42,.55); }
-.pro-key-btn:disabled { opacity: .5; cursor: not-allowed; }
-.pro-key-btn.full {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.pro-key-status { font-size: .76rem; margin-top: 8px; line-height: 1.45; }
-.pro-key-status.success { color: #2ecc71; }
-.pro-key-status.error   { color: #e74c3c; }
-.pro-key-status a { color: var(--gold2); text-decoration: none; }
-.pricing-footer { text-align: center; font-size: .72rem; color: rgba(239,242,247,.45); line-height: 1.6; margin-top: 18px; }
-.pricing-footer a { color: var(--gold2); text-decoration: none; }
-.pricing-footer a:hover { text-decoration: underline; }
+/* Account status pill */
 /* Pricing button on join screen */
 .btn-pricing {
   display: block; margin: 0 auto 20px;
@@ -2384,20 +2093,31 @@ body::before {
 }
 .btn-pricing:hover { background: var(--goldA); border-color: rgba(201,146,42,.5); }
 @media (max-width: 600px) {
-  .pricing-cards { grid-template-columns: 1fr; }
-  .pricing-modal { padding: 32px 20px 28px; }
-  .pricing-summary-actions { flex-direction: column; }
-  .pricing-summary-actions > * { width: 100%; }
-  .pricing-journey-steps { grid-template-columns: 1fr; }
 }
 
 /* ══════════════════════ RESPONSIVE ══════════════════════ */
 @media (max-width: 780px) {
   .game-grid { grid-template-columns: 1fr; }
-  .rcol { order: -1; }
-  .hdr-c { order: 3; width: 100%; justify-content: center; padding-bottom: 6px; }
-  .hdr-r { order: 2; width: 100%; justify-content: flex-end; }
-  .hdr-invite { width: 100%; justify-content: space-between; }
+  /* Voters get the cards first; facilitators get the table and controls first.
+     Previously both saw the roster and analytics before anything actionable,
+     which on a 375px screen meant scrolling past a full viewport to vote. */
+  .game-grid.as-voter .rcol { order: 1; }
+  .game-grid.as-facilitator .rcol { order: -1; }
+  /* One compact row: back, code, copy. The full URL is not readable or useful
+     on a phone, and it was pushing the whole room below the fold. */
+  /* In a room the .hdr already carries brand, code, and Leave — stacking the
+     marketing navbar on top of it cost 65px of a 812px screen for nothing. */
+  .in-room .navbar { display: none; }
+  .in-room .hdr { top: 0; }
+  .hdr { padding: 0 14px; }
+  .hdr-in { min-height: 52px; padding: 7px 0; gap: 8px; flex-wrap: nowrap; }
+  .hdr-l .chip-logo { display: none; }
+  .hdr-c { order: 0; flex: 1; justify-content: center; gap: 6px; }
+  .hdr-c .badge:first-child { display: none; }
+  .badge-long { display: none; }
+  .hdr-r { order: 0; }
+  .hdr-invite { padding: 0; border: none; background: none; gap: 0; }
+  .hdr-invite-copy { display: none; }
   .cards-grid { justify-content: center; }
   .pcard { width: 82px; height: 118px; }
   .pcard-bignum { font-size: 2.2rem; }
@@ -2405,6 +2125,7 @@ body::before {
   .game-body { padding: 16px 16px 60px; }
   .obs-secondary-row { flex-direction: column; }
   .join-box { padding: 36px 24px 32px; }
+  .solo-invite-banner { flex-wrap: wrap; }
 }
 @media (max-width: 420px) {
   .join-title { font-size: 2.1rem; }
@@ -2419,6 +2140,22 @@ body::before {
 .app { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
 
 /* ══════════════════════ GLOBAL NAVBAR ══════════════════════ */
+/* Screen-reader-only text: present in the accessibility tree, invisible on screen. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+/* WCAG 2.4.11 — a focused element must not be hidden behind the sticky bars. */
+:focus-visible { scroll-margin-top: 132px; scroll-margin-bottom: 24px; }
+.skip-link {
+  position: absolute; left: 12px; top: -60px; z-index: 900;
+  padding: 10px 16px; border-radius: 0 0 10px 10px;
+  background: var(--gold2); color: var(--ink);
+  font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .82rem;
+  text-decoration: none; transition: top .18s;
+}
+.skip-link:focus { top: 0; }
 .navbar {
   background: rgba(6,16,13,.84);
   border-bottom: 1px solid rgba(158,234,196,.08);
@@ -2432,14 +2169,23 @@ body::before {
   display: flex; align-items: center; justify-content: space-between;
   height: 64px; gap: 16px;
 }
-.navbar-left  { display: flex; align-items: center; gap: 12px; }
-.navbar-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.navbar-left  { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
+.navbar-right { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 0 auto; }
+/* Links scroll horizontally on narrow screens instead of being clipped
+   behind the right-hand actions. Scrollbar hidden — the fade edge hints at it. */
 .navbar-links {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-left: 10px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 8px;
 }
+.navbar-links::-webkit-scrollbar { display: none; }
+.navbar-links > * { flex: 0 0 auto; }
 .navbar-brand {
   font-family: 'Outfit', sans-serif;
   font-size: 1.22rem; font-weight: 700;
@@ -2540,17 +2286,17 @@ body::before {
   letter-spacing: -.02em;
 }
 .footer-brand-desc {
-  font-size: .78rem; color: rgba(239,242,247,.45); line-height: 1.65;
+  font-size: .78rem; color: rgba(239,242,247,.64); line-height: 1.65;
   font-weight: 300; max-width: 280px;
 }
 .footer-col-links { display: flex; flex-direction: column; gap: 2px; }
 .footer-col-title {
   font-size: .62rem; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: rgba(239,242,247,.38);
+  text-transform: uppercase; color: rgba(239,242,247,.62);
   margin-bottom: 10px;
 }
 .footer-link {
-  color: rgba(239,242,247,.55); font-size: .83rem; text-decoration: none;
+  color: rgba(239,242,247,.7); font-size: .83rem; text-decoration: none;
   padding: 5px 0; transition: color .15s;
   background: none; border: none; cursor: pointer;
   font-family: 'Outfit', sans-serif; text-align: left;
@@ -2565,11 +2311,11 @@ body::before {
   flex-wrap: wrap; gap: 12px;
 }
 .footer-copy {
-  font-size: .72rem; color: rgba(239,242,247,.28); font-weight: 300;
+  font-size: .72rem; color: rgba(239,242,247,.62); font-weight: 300;
   line-height: 1.5;
 }
 .footer-legal-note {
-  font-size: .68rem; color: rgba(239,242,247,.22); line-height: 1.6;
+  font-size: .68rem; color: rgba(239,242,247,.62); line-height: 1.6;
   max-width: 480px; text-align: right;
 }
 
@@ -2615,7 +2361,7 @@ body::before {
 }
 .login-modal-close {
   position: absolute; top: 14px; right: 16px;
-  background: none; border: none; color: rgba(239,242,247,.45);
+  background: none; border: none; color: rgba(239,242,247,.64);
   font-size: 1.3rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
   transition: color .2s, background .2s;
 }
@@ -2647,7 +2393,7 @@ body::before {
 }
 .account-status-row + .account-status-row { margin-top: 10px; }
 .account-status-label {
-  color: rgba(239,242,247,.52);
+  color: rgba(239,242,247,.68);
   text-transform: uppercase;
   letter-spacing: .08em;
   font-size: .66rem;
@@ -2706,29 +2452,9 @@ body::before {
 }
 .login-upgrade-sub {
   margin: 5px 0 0;
-  color: rgba(239,242,247,.56);
+  color: rgba(239,242,247,.62);
   font-size: .78rem;
   line-height: 1.5;
-}
-.login-upgrade-link {
-  flex-shrink: 0;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(241,185,63,.20);
-  background: rgba(241,185,63,.08);
-  color: var(--gold2);
-  font-family: 'Outfit', sans-serif;
-  font-size: .74rem;
-  font-weight: 700;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all .18s ease;
-}
-.login-upgrade-link:hover {
-  background: rgba(241,185,63,.13);
-  border-color: rgba(241,185,63,.34);
-  color: var(--gold3);
 }
 .login-upgrade-note {
   margin-top: 12px;
@@ -2746,7 +2472,7 @@ body::before {
 }
 .login-modal-divider {
   display: flex; align-items: center; gap: 12px;
-  margin: 20px 0; color: rgba(239,242,247,.28); font-size: .72rem;
+  margin: 20px 0; color: rgba(239,242,247,.62); font-size: .72rem;
   letter-spacing: 1px; text-transform: uppercase;
 }
 .login-modal-divider::before, .login-modal-divider::after {
@@ -2755,12 +2481,12 @@ body::before {
 .login-modal-coming {
   background: rgba(255,255,255,.04); border: 1px solid var(--border);
   border-radius: 12px; padding: 16px; text-align: center;
-  font-size: .82rem; color: rgba(239,242,247,.45); line-height: 1.55;
+  font-size: .82rem; color: rgba(239,242,247,.64); line-height: 1.55;
 }
 .login-modal-coming strong { color: rgba(239,242,247,.70); font-weight: 600; }
 .login-modal-upgrade {
   margin-top: 20px; text-align: center;
-  font-size: .82rem; color: rgba(239,242,247,.45);
+  font-size: .82rem; color: rgba(239,242,247,.64);
 }
 .login-modal-upgrade a {
   color: var(--gold2); text-decoration: none; font-weight: 600;
@@ -2786,34 +2512,6 @@ body::before {
   background: rgba(255,255,255,.06);
   border-color: rgba(158,234,196,.24);
 }
-.login-pro-panel {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,.07);
-}
-.login-section-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: rgba(255,217,120,.88);
-  font-family: 'Outfit', sans-serif;
-  font-size: .82rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: left;
-}
-.login-section-toggle:hover { color: var(--gold3); }
-.login-pro-copy {
-  margin: 10px 0 14px;
-  font-size: .78rem;
-  line-height: 1.55;
-  color: rgba(239,242,247,.58);
-}
 .auth-mode-row {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;
 }
@@ -2831,9 +2529,6 @@ body::before {
 }
 .auth-status.success { color: #2ecc71; background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.18); }
 .auth-status.error   { color: #e74c3c; background: rgba(231,76,60,.06); border: 1px solid rgba(231,76,60,.15); }
-.pro-key-status { font-size: .8rem; margin-top: 8px; text-align: center; padding: 6px 0; border-radius: 6px; }
-.pro-key-status.success { color: #2ecc71; background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.18); }
-.pro-key-status.error   { color: #e74c3c; background: rgba(231,76,60,.06);  border: 1px solid rgba(231,76,60,.15);  }
 .nav-account {
   display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-right: 12px;
   min-width: 0;
@@ -2850,21 +2545,6 @@ body::before {
 .nav-account-plan.pro {
   color: var(--gold2); border-color: rgba(201,145,42,.32); background: rgba(201,145,42,.12);
 }
-.pricing-account-note {
-  margin: 0 0 12px; font-size: .8rem; color: rgba(239,242,247,.56);
-}
-.pricing-state-box {
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(158,234,196,.12);
-  font-size: .78rem;
-  line-height: 1.5;
-}
-.pricing-state-neutral { color: rgba(239,242,247,.72); }
-.pricing-state-ok { color: var(--gold2); font-weight: 600; }
-.pricing-state-warn { color: rgba(255,217,120,.82); }
 
 /* ─── Nav upgrade wrapper ─── */
 /* Wrapper is exactly button height so it aligns with sibling buttons in navbar-right.
@@ -2880,32 +2560,12 @@ body::before {
   top: calc(100% + 3px);
   left: 50%;
   transform: translateX(-50%);
-  font-size: .58rem; font-weight: 500; color: rgba(239,242,247,.42);
+  font-size: .58rem; font-weight: 500; color: rgba(239,242,247,.62);
   letter-spacing: .15px; line-height: 1; pointer-events: none;
   white-space: nowrap;
 }
 
 /* ─── Game upgrade strip — free users only ─── */
-.game-upgrade-strip {
-  background: linear-gradient(90deg, rgba(241,185,63,.09), rgba(241,185,63,.04));
-  border-top: 1px solid rgba(241,185,63,.16);
-  padding: 10px 20px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  flex-shrink: 0;
-}
-.game-upgrade-strip-text {
-  font-size: .78rem; color: rgba(239,242,247,.58); line-height: 1.4;
-}
-.game-upgrade-strip-cta {
-  padding: 7px 18px; border-radius: 10px; border: none;
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
-  color: #1a1208; font-family: 'Outfit', sans-serif;
-  font-size: .78rem; font-weight: 700; cursor: pointer;
-  white-space: nowrap; transition: all .2s;
-  box-shadow: 0 4px 14px rgba(241,185,63,.20);
-  flex-shrink: 0;
-}
-.game-upgrade-strip-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(241,185,63,.30); }
 
 /* ─── Footer plan comparison bar ─── */
 .footer-plan-bar {
@@ -2922,14 +2582,14 @@ body::before {
   white-space: nowrap;
 }
 .footer-plan-badge.free {
-  background: rgba(255,255,255,.07); color: rgba(239,242,247,.50);
+  background: rgba(255,255,255,.07); color: rgba(239,242,247,.66);
   border: 1px solid rgba(255,255,255,.10);
 }
 .footer-plan-badge.pro {
   background: rgba(201,145,42,.14); color: var(--gold2);
   border: 1px solid rgba(201,145,42,.28);
 }
-.footer-plan-text { font-size: .76rem; color: rgba(239,242,247,.42); }
+.footer-plan-text { font-size: .76rem; color: rgba(239,242,247,.62); }
 .footer-plan-divider {
   width: 1px; height: 18px; background: rgba(255,255,255,.08); flex-shrink: 0;
 }
@@ -2965,7 +2625,7 @@ body::before {
   color: var(--cream); letter-spacing: -0.03em; margin: 0 0 8px;
 }
 .legal-updated {
-  font-size: .78rem; color: rgba(239,242,247,.42); margin: 0 0 40px;
+  font-size: .78rem; color: rgba(239,242,247,.62); margin: 0 0 40px;
 }
 .legal-body h2 {
   font-family: 'Outfit', sans-serif; font-size: 1.08rem; font-weight: 600;
@@ -3108,7 +2768,7 @@ body::before {
   margin-top: 6px;
   font-size: .76rem;
   line-height: 1.55;
-  color: rgba(239,242,247,.58);
+  color: rgba(239,242,247,.62);
 }
 .marketing-section {
   background: rgba(255,255,255,.035);
@@ -3239,7 +2899,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.48);
+  color: rgba(239,242,247,.66);
   margin-bottom: 10px;
 }
 .marketing-plan-card.pro .marketing-plan-topline { color: var(--gold2); }
@@ -3253,7 +2913,7 @@ body::before {
 .marketing-plan-sub {
   margin-top: 6px;
   font-size: .82rem;
-  color: rgba(239,242,247,.58);
+  color: rgba(239,242,247,.62);
   line-height: 1.6;
 }
 .marketing-note-panel {
@@ -3293,7 +2953,7 @@ body::before {
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.44);
+  color: rgba(239,242,247,.62);
 }
 .marketing-link-title {
   font-size: .96rem;
@@ -3374,7 +3034,7 @@ body::before {
 .history-close {
   position: absolute; top: 18px; right: 18px;
   background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10);
-  color: rgba(239,242,247,.55); width: 32px; height: 32px;
+  color: rgba(239,242,247,.7); width: 32px; height: 32px;
   border-radius: 10px; cursor: pointer; font-size: .85rem;
   display: flex; align-items: center; justify-content: center;
   transition: all .18s;
@@ -3386,7 +3046,7 @@ body::before {
   letter-spacing: -0.03em; margin-bottom: 4px;
 }
 .history-sub {
-  font-size: .82rem; color: rgba(239,242,247,.48); margin: 0;
+  font-size: .82rem; color: rgba(239,242,247,.66); margin: 0;
 }
 .history-insights {
   display: grid; grid-template-columns: repeat(4, 1fr);
@@ -3400,18 +3060,18 @@ body::before {
 }
 .hi-label {
   font-size: .62rem; letter-spacing: 1.5px; text-transform: uppercase;
-  color: rgba(239,242,247,.42);
+  color: rgba(239,242,247,.62);
 }
 .hi-v {
   font-size: 1.8rem; font-weight: 700; color: var(--gold2);
   letter-spacing: -0.04em; line-height: 1;
 }
 .hi-unit {
-  font-size: .7rem; color: rgba(239,242,247,.46); line-height: 1.35;
+  font-size: .7rem; color: rgba(239,242,247,.62); line-height: 1.35;
 }
 .hi-trend-up   { color: #4bd889; }
 .hi-trend-down { color: #e74c3c; }
-.hi-trend-flat { color: rgba(239,242,247,.55); }
+.hi-trend-flat { color: rgba(239,242,247,.7); }
 .history-list { display: flex; flex-direction: column; gap: 10px; }
 .history-item {
   background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
@@ -3423,9 +3083,9 @@ body::before {
 .hi-item-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .hi-sprint-label {
   font-size: .72rem; font-weight: 700; letter-spacing: 1.2px;
-  text-transform: uppercase; color: rgba(239,242,247,.38);
+  text-transform: uppercase; color: rgba(239,242,247,.62);
 }
-.hi-sprint-date { font-size: .72rem; color: rgba(239,242,247,.38); }
+.hi-sprint-date { font-size: .72rem; color: rgba(239,242,247,.62); }
 .hi-item-stats { display: flex; gap: 20px; flex-shrink: 0; }
 .hi-stat {
   display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
@@ -3438,10 +3098,10 @@ body::before {
 .hi-stat-val.gold { color: var(--gold2); }
 .hi-stat-key {
   font-size: .58rem; letter-spacing: 1.2px; text-transform: uppercase;
-  color: rgba(239,242,247,.38);
+  color: rgba(239,242,247,.62);
 }
 .history-empty {
-  text-align: center; padding: 52px 28px 46px; color: rgba(239,242,247,.45);
+  text-align: center; padding: 52px 28px 46px; color: rgba(239,242,247,.64);
   border: 1px solid rgba(255,255,255,.06);
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
@@ -3460,7 +3120,7 @@ body::before {
   margin: 0 0 8px;
 }
 .history-empty-copy {
-  font-size: .92rem; line-height: 1.7; color: rgba(239,242,247,.58);
+  font-size: .92rem; line-height: 1.7; color: rgba(239,242,247,.62);
   max-width: 520px; margin: 0 auto;
 }
 .history-empty-copy strong {
@@ -3514,7 +3174,6 @@ body::before {
   .login-modal { padding: 34px 22px 26px; max-width: 100%; }
   .auth-mode-row { grid-template-columns: 1fr; }
   .login-upgrade-head { flex-direction: column; align-items: stretch; }
-  .login-upgrade-link { width: 100%; justify-content: center; }
   .navbar.authenticated .nav-account {
     display: flex;
     margin-right: 0;
@@ -3524,19 +3183,104 @@ body::before {
   .navbar.authenticated .nav-account-name { max-width: 104px; font-size: .74rem; }
   .navbar.authenticated .nav-account-plan { font-size: .62rem; padding: 3px 8px; letter-spacing: .1em; }
   .navbar:not(.authenticated) .nav-account { display: none; }
-  .game-upgrade-strip { flex-direction: column; align-items: flex-start; gap: 8px; }
   .footer-plan-item:last-of-type .footer-plan-text { display: none; }
 }
+/* ══════════════════════ REDUCED MOTION (WCAG 2.3.3) ══════════════════════ */
+/* Confetti, card deals, pulses, and smooth scrolling are all decorative.
+   Honour the OS setting rather than making people sit through them. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .confetti-canvas { display: none; }
+}
+
+/* ══════════════════════ ADMIN DASHBOARD ══════════════════════ */
+.ad-wrap { max-width: 1180px; margin: 0 auto; padding: 28px 22px 72px; width: 100%; }
+.ad-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
+.ad-back { background: none; border: none; color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .78rem; cursor: pointer; padding: 0 0 8px; }
+.ad-title { font-size: 1.7rem; font-weight: 700; color: var(--cream); letter-spacing: -.02em; }
+.ad-sub { font-size: .78rem; color: rgba(239,242,247,.6); margin-top: 4px; }
+.ad-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ad-window { display: flex; gap: 4px; background: rgba(255,255,255,.04); border: 1px solid rgba(158,234,196,.14); border-radius: 10px; padding: 3px; }
+.ad-window-btn { min-height: 32px; padding: 5px 12px; border-radius: 8px; border: none; background: none; color: rgba(239,242,247,.68); font-family: 'Outfit', sans-serif; font-size: .74rem; cursor: pointer; }
+.ad-window-btn.active { background: var(--goldB); color: var(--gold2); font-weight: 600; }
+.ad-btn { min-height: 34px; padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(158,234,196,.2); background: rgba(255,255,255,.05); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .76rem; cursor: pointer; }
+.ad-btn:hover { background: rgba(255,255,255,.09); }
+.ad-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.ad-kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 3px; }
+.ad-kpi-v { font-size: 1.9rem; font-weight: 700; color: var(--gold2); line-height: 1.05; }
+.ad-kpi-l { font-size: .72rem; letter-spacing: .8px; text-transform: uppercase; color: rgba(239,242,247,.62); }
+.ad-kpi-s { font-size: .7rem; color: rgba(239,242,247,.64); margin-top: 2px; }
+.ad-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.ad-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+.ad-panel.wide { grid-column: 1 / -1; }
+.ad-panel-title { font-size: .95rem; font-weight: 700; color: var(--cream); margin-bottom: 4px; }
+.ad-panel-hint { font-size: .72rem; color: rgba(239,242,247,.7); line-height: 1.5; margin-bottom: 14px; }
+.ad-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.ad-stats > div { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; display: flex; flex-direction: column; gap: 2px; }
+.ad-stats span { font-size: 1.15rem; font-weight: 700; color: var(--cream); }
+.ad-stats em { font-style: normal; font-size: .68rem; color: rgba(239,242,247,.7); line-height: 1.35; }
+.ad-bars { display: flex; flex-direction: column; gap: 7px; }
+.ad-bar-row { display: grid; grid-template-columns: minmax(84px, 1.1fr) 3fr minmax(74px, auto); align-items: center; gap: 10px; }
+.ad-bar-label { font-size: .74rem; color: rgba(239,242,247,.78); }
+.ad-bar-track { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
+.ad-bar-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--gold) 0%, var(--gold3) 100%); }
+.ad-bar-value { font-size: .74rem; color: var(--cream); text-align: right; font-variant-numeric: tabular-nums; }
+.ad-bar-value em { font-style: normal; color: rgba(239,242,247,.64); margin-left: 6px; font-size: .68rem; }
+.ad-empty { font-size: .74rem; color: rgba(239,242,247,.64); font-style: italic; padding: 6px 0; }
+.ad-trend { margin-bottom: 16px; }
+.ad-trend-head { display: flex; justify-content: space-between; font-size: .72rem; color: rgba(239,242,247,.62); margin-bottom: 7px; }
+.ad-trend-max { color: rgba(239,242,247,.62); }
+.ad-trend-plot { display: flex; align-items: flex-end; gap: 2px; height: 76px; padding: 0 1px; }
+.ad-trend-col { flex: 1; min-width: 2px; border-radius: 2px 2px 0 0; background: linear-gradient(180deg, var(--gold3) 0%, var(--gold) 100%); }
+.ad-trend-col.zero { background: rgba(255,255,255,.07); }
+.ad-trend-axis { display: flex; justify-content: space-between; font-size: .64rem; color: rgba(239,242,247,.62); margin-top: 5px; }
+.ad-inputs { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 14px; }
+.ad-inputs label { display: flex; flex-direction: column; gap: 5px; font-size: .7rem; color: rgba(239,242,247,.62); }
+.ad-inputs input { width: 108px; min-height: 34px; padding: 7px 10px; border-radius: 9px; border: 1px solid rgba(158,234,196,.18); background: rgba(255,255,255,.05); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .82rem; }
+.ad-calc { display: flex; flex-direction: column; gap: 2px; padding: 7px 14px; border-left: 1px solid var(--border); }
+.ad-calc span { font-size: 1.15rem; font-weight: 700; color: var(--cream); }
+.ad-calc.strong span { color: var(--gold2); font-size: 1.5rem; }
+.ad-calc em { font-style: normal; font-size: .66rem; color: rgba(239,242,247,.7); }
+.ad-verdict { border-radius: 11px; padding: 12px 14px; font-size: .8rem; line-height: 1.55; border: 1px solid; }
+.ad-verdict.good { background: rgba(39,174,96,.07); border-color: rgba(39,174,96,.28); color: rgba(239,242,247,.9); }
+.ad-verdict.warn { background: rgba(201,145,42,.07); border-color: rgba(201,145,42,.3); color: rgba(239,242,247,.9); }
+.ad-verdict-row { margin: 10px 0; }
+.ad-dismissed { font-size: .7rem; color: rgba(239,242,247,.64); }
+.ad-foot { margin-top: 22px; font-size: .72rem; color: rgba(239,242,247,.64); line-height: 1.6; }
+.ad-gate { max-width: 520px; margin: 60px auto; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 30px; text-align: center; }
+.ad-gate-title { font-size: 1.25rem; color: var(--cream); margin-bottom: 10px; }
+.ad-gate-copy { font-size: .84rem; color: rgba(239,242,247,.7); line-height: 1.65; margin-bottom: 18px; }
+.ad-gate-copy code { font-family: ui-monospace, Menlo, monospace; font-size: .78rem; color: var(--gold2); }
+@media (max-width: 900px) {
+  .ad-kpis { grid-template-columns: repeat(2, 1fr); }
+  .ad-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .ad-wrap { padding: 20px 14px 60px; }
+  .ad-kpis { grid-template-columns: 1fr; }
+  .ad-bar-row { grid-template-columns: minmax(70px, 1fr) 2fr auto; gap: 8px; }
+  .ad-calc { border-left: none; padding-left: 0; }
+}
+
 `;
 
 /* ═══════════════════════ ROOM CONFIG ═══════════════════════ */
 // Dynamic rooms: each Create generates a unique 5-char code.
 // URL is updated via replaceState so links can be shared directly.
-const FREE_MAX_PARTICIPANTS = 8;  // Free tier: total people in room, including facilitator
-const PRO_MAX_PARTICIPANTS  = 20; // Pro tier: total people in room, including facilitators
-const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours — auto-end + save history
+// ── FREE FOR EVERYONE ────────────────────────────────────────────
+// Every feature is unlocked for every user while we grow the user base.
+// MAX_PARTICIPANTS is imported from routeMeta.mjs so the marketing copy and the
+// enforced cap can never disagree. Rooms in Firebase still carry a `plan` field
+// (the security rules require it) but it no longer changes what anyone can do.
+const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours, auto-end + save history
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
-const PLAYER_AWAY_TIMEOUT_MS = 60 * 60 * 1000;       // 1 hour — grace period before sweeping disconnected players
+const PLAYER_AWAY_TIMEOUT_MS = 60 * 60 * 1000;       // 1 hour, grace period before sweeping disconnected players
 const ROOM_SWEEP_INTERVAL_MS = 15 * 60 * 1000;       // Best-effort stale-room cleanup cadence per browser
 const ROOM_SWEEP_STORAGE_KEY = "pp_last_room_sweep";
 const DEFAULT_TIMER_DURATION = 30;
@@ -3642,9 +3386,9 @@ const isFounderRoom = (code) => !!getFounderRoomConfig(code);
 const getFounderDefaultDeck = (code) => getFounderRoomConfig(code)?.defaultDeck || "fibonacci";
 
 /* ═══════════════════════ CASINO CHIP LOGO ═══════════════════════
-   SVG casino chip — 8-segment outer ring, gold inner border, "PP" text.
+   SVG casino chip, 8-segment outer ring, gold inner border, "PP" text.
    Used in NavBar (44px) and LoginModal (52px).
-   onClick: optional handler — e.g. navigate home.
+   onClick: optional handler, e.g. navigate home.
 ═══════════════════════════════════════════════════════════════════ */
 function BrandMark({ onClick, size = 44, label = "Go to home" }) {
   return (
@@ -3703,23 +3447,23 @@ function RouteLink({ href, onNavigate, className, children, ...props }) {
 function NavBar({
   onLogoClick,
   onLogin,
-  onRegister,
+  onStartFree,
   onPlans,
   onSupport,
   onTrust,
   onFaq,
   currentUser,
-  currentPlan,
   onLogout,
   onHistory,
+  onAdmin,
   showMarketingNav = true,
+  inRoom = false,
 }) {
   const accountLabel = currentUser?.displayName || currentUser?.email || null;
-  const isPro = currentPlan === "pro";
 
   return (
     <nav
-      className={`navbar${currentUser ? " authenticated" : ""}${isPro ? " pro-user" : ""}`}
+      className={`navbar${currentUser ? " authenticated" : ""}`}
       role="navigation"
       aria-label="Main navigation"
     >
@@ -3728,15 +3472,15 @@ function NavBar({
           <BrandMark
             onClick={onLogoClick}
             size={44}
-            label="pointpoker — go to home"
+            label="pointpoker, go to home"
           />
           <button className="navbar-brand" onClick={onLogoClick}>
             <BrandWordmark />
           </button>
           {showMarketingNav && (
             <div className="navbar-links" aria-label="Marketing sections">
-              <NavLinkButton onClick={onPlans} ariaLabel="Go to plans">
-                Plans
+              <NavLinkButton onClick={onPlans} ariaLabel="Go to pricing">
+                Pricing
               </NavLinkButton>
               <NavLinkButton onClick={onSupport} ariaLabel="Go to support">
                 Support
@@ -3753,36 +3497,31 @@ function NavBar({
         <div className="navbar-right">
           {currentUser ? (
             <>
-              {isPro && (
-                <button
-                  className="nav-btn-history"
-                  onClick={onHistory}
-                  aria-label="View sprint history"
-                >
-                  📊 History
-                </button>
-              )}
+              <button
+                className="nav-btn-history"
+                onClick={onHistory}
+                aria-label="View sprint history"
+              >
+                📊 History
+              </button>
               <div className="nav-account" aria-label="Signed-in account">
                 <span className="nav-account-name">{accountLabel}</span>
-                <span className={`nav-account-plan${isPro ? " pro" : ""}`}>
-                  {isPro ? "✓ Pro" : "Free"}
-                </span>
+                <span className="nav-account-plan">Free</span>
               </div>
-              <button className="nav-btn-login" onClick={onLogout}>Sign out</button>
-              {!isPro && (
-                <div className="nav-btn-wrapper">
-                  <button className="nav-btn-register" onClick={onRegister}>✦ Upgrade to Pro</button>
-                  <span className="nav-upgrade-sub">2 Team Rooms · 20 participants · Sprint history</span>
-                </div>
+              {onAdmin && (
+                <button className="nav-btn-login" onClick={onAdmin} aria-label="Usage dashboard">📈</button>
               )}
+              <button className="nav-btn-login" onClick={onLogout}>Sign out</button>
             </>
           ) : (
             <>
-              <button className="nav-btn-login" onClick={onLogin}>Sign in / Create account</button>
-              <div className="nav-btn-wrapper">
-                <button className="nav-btn-register" onClick={onRegister}>✦ Get Pro</button>
-                <span className="nav-upgrade-sub">2 Team Rooms · 20 participants · Sprint history</span>
-              </div>
+              <button className="nav-btn-login" onClick={onLogin}>Sign in</button>
+              {!inRoom && (
+                <div className="nav-btn-wrapper">
+                  <button className="nav-btn-register" onClick={onStartFree}>Start a free room</button>
+                  <span className="nav-upgrade-sub">No sign-up · No card · No limits</span>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -3795,41 +3534,34 @@ function NavBar({
    Three-column footer: brand, legal links, product links.
    onCookieSettings: resets cookie consent so the banner re-appears.
 ═══════════════════════════════════════════════════════════════ */
-function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser, onNavTerms, onNavPrivacy, onNavigate }) {
+function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, onNavigate }) {
   const year = new Date().getFullYear();
   const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
-  const isPro = currentPlan === "pro";
   const signedIn = !!currentUser;
 
   return (
     <footer className="site-footer" aria-label="Site footer">
 
-      {/* ── Free vs Pro comparison bar ── */}
-      {!signedIn && <div className="footer-plan-bar">
+      {/* ── Free-for-everyone bar ── */}
+      <div className="footer-plan-bar">
         <div className="footer-plan-item">
-          <span className="footer-plan-badge free">Free</span>
-          <span className="footer-plan-text">Up to 8 participants · All card decks · No account needed</span>
+          <span className="footer-plan-badge free">£0</span>
+          <span className="footer-plan-text">
+            Every feature, every team, no card. Up to {MAX_PARTICIPANTS} people per room, unlimited rounds, unlimited stories, no ads.
+          </span>
         </div>
         <div className="footer-plan-divider" aria-hidden="true" />
         <div className="footer-plan-item">
-          <span className="footer-plan-badge pro">Pro</span>
-          <span className="footer-plan-text">2 dedicated Team Rooms · Up to 20 participants · Sprint history · From £5/mo</span>
-        </div>
-        {!isPro && (
-          <button className="footer-plan-cta" onClick={onShowPricing}>
-            ✦ Upgrade to Pro
-          </button>
-        )}
-        {isPro && (
-          <span style={{ marginLeft: "auto", fontSize: ".76rem", color: "var(--gold2)", fontWeight: 600 }}>
-            ✓ You're on Pro
+          <span className="footer-plan-badge pro">Later</span>
+          <span className="footer-plan-text">
+            Paid add-ons may arrive once the tool has a real user base. Everything listed here stays free.
           </span>
-        )}
-      </div>}
+        </div>
+      </div>
 
       <div className="footer-inner">
 
-        {/* Column 1 — Brand */}
+        {/* Column 1, Brand */}
         <div className="footer-col-brand">
           <div className="footer-brand-row">
             <BrandMark size={36} label="pointpoker"/>
@@ -3837,9 +3569,7 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
           </div>
           <p className="footer-brand-desc">
             {signedIn
-              ? isPro
-                ? "Your Pro workspace is live. Reuse either dedicated Team Room, share invite links quickly, and keep sprint history attached to your account."
-                : "Your Free workspace is ready. Create and join sessions now, then upgrade only when you want two dedicated Team Rooms."
+              ? "Your workspace is live. Reuse either Team Room, share the invite link, and keep sprint history attached to your account."
               : "Free, real-time planning poker for agile and Scrum teams. No sign-up required. Works in any browser."}
           </p>
           {!signedIn && (
@@ -3850,7 +3580,7 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
           )}
         </div>
 
-        {/* Column 2 — Legal */}
+        {/* Column 2, Legal */}
         <div className="footer-col-links">
           <div className="footer-col-title">Legal</div>
           <button className="footer-link" onClick={onNavTerms}>Terms of Service</button>
@@ -3859,19 +3589,17 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
           <button className="footer-link" onClick={onNavPrivacy}>Data &amp; GDPR</button>
         </div>
 
-        {/* Column 3 — Product */}
+        {/* Column 3, Product */}
         <div className="footer-col-links">
           <div className="footer-col-title">{signedIn ? "Account" : "Product"}</div>
           {signedIn ? (
             <>
               <span className="footer-link" style={{ color: "rgba(239,242,247,.62)", cursor: "default" }}>
-                {isPro ? "Pro workspace active" : "Free workspace active"}
+                Workspace active · Free
               </span>
-              {!isPro && (
-                <button className="footer-link" onClick={onShowPricing}>Upgrade to Pro</button>
-              )}
+              <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>Features</RouteLink>
               <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>Support</RouteLink>
-              <a href={`mailto:${support}`} className="footer-link">Billing &amp; Support</a>
+              <a href={`mailto:${support}`} className="footer-link">Email support</a>
             </>
           ) : (
             <>
@@ -3887,7 +3615,7 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
         </div>
       </div>
 
-      {/* Bottom bar — copyright + legal note */}
+      {/* Bottom bar, copyright + legal note */}
       <div className="footer-bottom">
         <div className="footer-copy">
           © {year} pointpoker. All rights reserved.
@@ -3898,11 +3626,11 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
           Use is subject to our{" "}
           <button
             onClick={onNavTerms}
-            style={{ color: "rgba(239,242,247,.38)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
+            style={{ color: "rgba(239,242,247,.62)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
           >
             Terms of Service
           </button>
-          . Firebase, Vercel, and Stripe are third-party services and
+          . Firebase and Vercel are third-party services and
           are not affiliated with pointpoker.
         </div>
       </div>
@@ -3916,17 +3644,13 @@ function SiteFooter({ onCookieSettings, onShowPricing, currentPlan, currentUser,
    1. Email/password sign in
    2. Account creation
    3. Password reset
-   4. Manual Pro key activation
 ═══════════════════════════════════════════════════════════════ */
 function LoginModal({
   onClose,
   onAuthSuccess,
-  onProActivated,
   currentUser,
-  currentPlan = "free",
   initialMode = "signin",
   entryIntent = "general",
-  onShowPricing,
 }) {
   const [mode, setMode] = useState(currentUser ? "account" : initialMode);
   const [nameInput, setNameInput] = useState("");
@@ -3935,53 +3659,37 @@ function LoginModal({
   const [authStatus, setAuthStatus] = useState(null);
   const [authError, setAuthError] = useState("");
   const [registerSuccess, setRegisterSuccess] = useState(null);
-  const [keyInput, setKeyInput] = useState("");
-  const [keyStatus, setKeyStatus] = useState(null);
-  const isPro = currentPlan === "pro";
-  const upgradeIntent = entryIntent === "upgrade";
+  // "teamroom" = the user tried to host a Team Room, which needs an owner identity.
+  const teamRoomIntent = entryIntent === "teamroom";
   const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
-  const [showActivation, setShowActivation] = useState(
-    () => upgradeIntent || (!!currentUser && !isPro)
-  );
+  const [dialogRef, closeDialog] = useDialog(onClose);
 
   const title = currentUser
-    ? isPro
-      ? "Your Pro account"
-      : "Your free account"
+    ? "Your account"
     : mode === "register"
-      ? upgradeIntent
-        ? "Create your Pro-ready account"
-        : "Create your account"
+      ? "Create your free account"
       : mode === "reset"
         ? "Reset your password"
-        : upgradeIntent
-          ? "Sign in to continue to Pro"
-          : "Sign in to your account";
+        : "Sign in";
 
   const subtitle = currentUser
-    ? isPro
-      ? "This account already has Pro access, sprint history, and two dedicated Team Rooms."
-      : "This account is on the free plan. Upgrade this same account when you want two dedicated Team Rooms, 20 participants, and sprint history."
+    ? "Everything on pointpoker is free. This account holds your two Team Rooms and your sprint history."
     : mode === "register"
-      ? upgradeIntent
-        ? "Create the account that will own your Pro plan, dedicated Team Rooms, and sprint history across devices."
-        : "Accounts keep plan status, dedicated Team Rooms, billing, and sprint history tied to one place across devices."
+      ? teamRoomIntent
+        ? "Team Rooms are free. The account exists so the room URL is yours and no other team can land in it."
+        : "Free, no card, about thirty seconds. You get two permanent Team Room links and your sprint history."
       : mode === "reset"
         ? "Enter your account email and we’ll send a password reset link."
-        : upgradeIntent
-          ? "Use the account that should own your Pro plan, dedicated Team Rooms, and sprint history."
-          : "Free rooms work without an account. Sign in only if you already have one or want account-linked Pro access.";
+        : "Welcome back. Your Team Rooms and sprint history are waiting.";
   const modeHint = currentUser
-    ? isPro
-      ? "You can use both dedicated Team Rooms and Sprint History immediately on this account."
-      : "Fastest path: activate Pro on this account, then name your two dedicated Team Rooms."
-    : upgradeIntent
-      ? "Create your account now. We’ll take you straight back to Pro activation next."
+    ? "Both Team Rooms and Sprint History are already available on this account."
+    : teamRoomIntent
+      ? "One free account, then your Team Room links never change again."
       : mode === "register"
-        ? "New here? Create one account and keep your future Pro access tied to it."
+        ? "You never need an account to run a room, only to keep permanent Team Room links."
         : mode === "signin"
-          ? "Already registered? Sign in to restore your plan and sprint history."
-        : "We’ll email you a reset link for this account.";
+          ? "Already registered? Sign in to restore your Team Rooms and sprint history."
+          : "We’ll email you a reset link for this account.";
   const isRegisterTransition =
     mode === "register" &&
     (authStatus === "loading" ||
@@ -4127,33 +3835,10 @@ function LoginModal({
     }
   };
 
-  const handleKey = async () => {
-    if (!currentUser) {
-      setKeyStatus("login");
-      return;
-    }
-    if (!keyInput.trim()) return;
-    setKeyStatus("loading");
-    const result = await validateAndSavePro(keyInput.trim(), currentUser);
-    if (result === "ok") {
-      track("pro_activated");
-      setKeyStatus("ok");
-      setTimeout(() => onProActivated?.(), 700);
-    } else if (result === "claimed") {
-      setKeyStatus("claimed");
-    } else if (result === "retry") {
-      setKeyStatus("retry");
-    } else if (result === "invalid") {
-      setKeyStatus("invalid");
-    } else {
-      setKeyStatus("error");
-    }
-  };
-
   return (
-    <div className="login-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="login-modal" role="dialog" aria-modal="true" aria-label={title}>
-        <button className="login-modal-close" onClick={onClose} aria-label="Close">×</button>
+    <div className="login-modal-backdrop" onClick={(e) => e.target === e.currentTarget && closeDialog()}>
+      <div className="login-modal" role="dialog" aria-modal="true" aria-label={title} ref={dialogRef}>
+        <button className="login-modal-close" onClick={closeDialog} aria-label="Close">×</button>
 
         {/* Chip */}
         <div className="login-modal-chip">
@@ -4171,15 +3856,13 @@ function LoginModal({
                 <strong>{currentUser.displayName || currentUser.email || "Current account"}</strong>
               </div>
               <div className="account-status-row">
-                <span className="account-status-label">Current plan</span>
-                <span className={`account-status-pill${isPro ? " pro" : ""}`}>
-                  {isPro ? "Pro active" : "Free plan"}
-                </span>
+                <span className="account-status-label">Plan</span>
+                <span className="account-status-pill">Free, everything unlocked</span>
               </div>
             </>
           ) : (
             <p className="account-status-copy">
-              Use free rooms instantly, or create an account when you want billing, Pro access, and sprint history to follow you.
+              You never need an account to run a room. Create one if you want two permanent Team Room links and sprint history that follows you across devices.
             </p>
           )}
         </div>
@@ -4260,7 +3943,7 @@ function LoginModal({
             )}
             {authStatus === "verify" && (
               <div className="auth-status success">
-                ✓ Account created. Check {registerSuccess?.email || "your email"} to verify your address{upgradeIntent ? ", then continue to Pro activation." : "."}
+                ✓ Account created. Check {registerSuccess?.email || "your email"} to verify your address.
               </div>
             )}
             {authStatus === "verify_resent" && (
@@ -4284,13 +3967,13 @@ function LoginModal({
             )}
             {mode === "register" && !registerComplete && (
               <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleRegister} disabled={authStatus === "loading"}>
-                {authStatus === "loading" ? "Creating account…" : upgradeIntent ? "Create account to activate Pro" : "Create account"}
+                {authStatus === "loading" ? "Creating account…" : teamRoomIntent ? "Create account & claim my Team Rooms" : "Create free account"}
               </button>
             )}
             {mode === "register" && registerComplete && (
               <>
                 <button className="btn-primary" style={{ marginTop: 12 }} onClick={handleRegisterContinue}>
-                  {upgradeIntent ? "Continue to Pro setup" : "Continue to workspace"}
+                  {teamRoomIntent ? "Continue to my Team Rooms" : "Continue to workspace"}
                 </button>
                 <button
                   type="button"
@@ -4352,115 +4035,67 @@ function LoginModal({
           </button>
         )}
 
-        {!isPro && (
+        {currentUser ? (
           <div className="login-upgrade-card">
             <div className="login-upgrade-head">
               <div>
-                <div className="login-upgrade-title">
-                  {currentUser ? "Upgrade this account to Pro" : "Need Pro for your team?"}
-                </div>
+                <div className="login-upgrade-title">What this account gives you</div>
                 <p className="login-upgrade-sub">
-                  {currentUser
-                    ? "Activate Pro once on this account, then choose the names for both dedicated Team Rooms."
-                    : "2 dedicated Team Rooms, Sprint History, and up to 20 participants."}
+                  Two permanent Team Room links and your sprint history, both already active on this account.
                 </p>
               </div>
-              {onShowPricing && (
-                <button
-                  type="button"
-                  className="login-upgrade-link"
-                  onClick={onShowPricing}
-                >
-                  {currentUser ? "See Pro setup" : "View plans"}
-                </button>
-              )}
             </div>
-
-            {currentUser ? (
-              <div className="login-pro-panel">
-                <button
-                  type="button"
-                  className="login-section-toggle"
-                  onClick={() => setShowActivation((v) => !v)}
-                  aria-expanded={showActivation}
-                >
-                  {showActivation ? "▾" : "▸"} I already have an activation code
-                </button>
-                {showActivation && (
-                  <>
-                    <p className="login-pro-copy">
-                      Best for early customers and internal team access before Stripe checkout is live. Activate this account once and you can name both dedicated Team Rooms immediately afterwards.
-                    </p>
-                    <label className="lbl">Pro Activation Key</label>
-                    <input
-                      className="inp"
-                      placeholder="PPRO-XXXX-XXXX-XXXX"
-                      value={keyInput}
-                      onChange={(e) => { setKeyInput(e.target.value.toUpperCase()); setKeyStatus(null); }}
-                      onKeyDown={(e) => e.key === "Enter" && handleKey()}
-                      style={{ letterSpacing: "0.1em", fontFamily: "monospace", marginBottom: 8 }}
-                      maxLength={19}
-                    />
-                    {keyStatus === "loading" && (
-                      <div className="pro-key-status" style={{ color: "rgba(239,242,247,.55)" }}>Verifying…</div>
-                    )}
-                    {keyStatus === "ok" && (
-                      <div className="pro-key-status success">✓ Pro activated for this account.</div>
-                    )}
-                    {keyStatus === "invalid" && (
-                      <div className="pro-key-status error">Key not recognised. Check the format: PPRO-XXXX-XXXX-XXXX</div>
-                    )}
-                    {keyStatus === "claimed" && (
-                      <div className="pro-key-status error">This activation key is already attached to another account.</div>
-                    )}
-                    {keyStatus === "error" && (
-                      <div className="pro-key-status error">Could not verify your code right now. Check your connection and confirm activation access is configured.</div>
-                    )}
-                    {keyStatus === "retry" && (
-                      <div className="pro-key-status error">This key is attached to this account, but Pro setup did not finish. Try once more or contact support.</div>
-                    )}
-                    <button
-                      className="btn-primary"
-                      style={{ marginTop: 12 }}
-                      onClick={handleKey}
-                      disabled={keyStatus === "loading" || keyStatus === "ok"}
-                    >
-                      {keyStatus === "loading" ? "Verifying…" : "Activate Pro"}
-                    </button>
-                  </>
-                )}
+          </div>
+        ) : (
+          <div className="login-upgrade-card">
+            <div className="login-upgrade-head">
+              <div>
+                <div className="login-upgrade-title">What an account adds</div>
+                <p className="login-upgrade-sub">
+                  Two permanent Team Room links that never change, plus sprint history so you can see velocity and alignment over time. Both free.
+                </p>
               </div>
-            ) : (
-              <div className="login-upgrade-note">
-                <strong>Pro access attaches to an account.</strong> Create or sign in first, then come back here to activate your code so your dedicated Team Rooms, billing, and sprint history stay with you across devices.
-              </div>
-            )}
+            </div>
+            <div className="login-upgrade-note">
+              <strong>Everything else is already free without an account.</strong> Rooms, all card decks, {MAX_PARTICIPANTS} participants, the queue, timer, analytics, and export work for anyone with the link.
+            </div>
           </div>
         )}
 
         <div className="login-modal-upgrade">
-          {isPro ? (
-            <>
-              Need help with your Pro workspace?{" "}
-              <a
-                href={`mailto:${support}`}
-                style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600 }}
-              >
-                Contact support ↗
-              </a>
-            </>
-          ) : (
-            <>
-              Need help with access or billing?{" "}
-              <button
-                type="button"
-                onClick={onShowPricing}
-                style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600, border: "none", background: "none", padding: 0, cursor: "pointer" }}
-              >
-                Review plans ↗
-              </button>
-            </>
-          )}
+          Something not working?{" "}
+          <a
+            href={`mailto:${support}`}
+            style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600 }}
+          >
+            Email support ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════ COOKIE / STORAGE NOTICE ═══════════════════════ */
+function CookieBanner({ onAccept }) {
+  // Nothing here needs consent, so the notice bows out on its own rather than
+  // waiting for a click it does not actually need.
+  useEffect(() => {
+    const t = setTimeout(onAccept, 12000);
+    return () => clearTimeout(t);
+  }, [onAccept]);
+  return (
+    <div className="cookie-banner" role="note" aria-label="Storage notice">
+      <div className="cookie-inner">
+        <p className="cookie-text">
+          <strong>Essential browser storage only.</strong>{" "}
+          Firebase keeps your session; your display name and this notice are remembered locally.
+          No advertising, tracking, or third-party analytics cookies, nothing to opt out of.
+        </p>
+        <div className="cookie-actions">
+          <a href="/privacy" className="cookie-link" target="_blank" rel="noopener noreferrer">Privacy</a>
+          <a href="/terms" className="cookie-link" target="_blank" rel="noopener noreferrer">Terms</a>
+          <button className="cookie-accept" onClick={onAccept}>Got it</button>
         </div>
       </div>
     </div>
@@ -4468,45 +4103,34 @@ function LoginModal({
 }
 
 /* ═══════════════════════ MAIN APP ═══════════════════════ */
-function CookieBanner({ onAccept }) {
-  return (
-    <div className="cookie-banner" role="dialog" aria-label="Cookie notice" aria-live="polite">
-      <div className="cookie-inner">
-        <p className="cookie-text">
-          <strong>We use essential browser storage only.</strong>{" "}
-          This includes Firebase session data and a preference flag to remember your consent.
-          No advertising, tracking, or third-party analytics cookies are used. See our{" "}
-          <a href="/privacy" className="cookie-link" target="_blank" rel="noopener noreferrer">Privacy Policy</a>{" "}
-          and{" "}
-          <a href="/terms" className="cookie-link" target="_blank" rel="noopener noreferrer">Terms of Service</a>.
-        </p>
-        <div className="cookie-actions">
-          <a href="/privacy" className="cookie-link" target="_blank" rel="noopener noreferrer">Privacy</a>
-          <a href="/terms" className="cookie-link" target="_blank" rel="noopener noreferrer">Terms</a>
-          <button className="cookie-accept" onClick={onAccept}>Accept &amp; Continue</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   const [screen, setScreen] = useState(() => getScreenForPath(window.location.pathname));
-  const [myId] = useState(uid);
+  // Per-tab identity, persisted so a refresh reconnects as the same player
+  // instead of leaving a ghost behind and burning a seat in the room.
+  const [myId] = useState(() => {
+    try {
+      const existing = sessionStorage.getItem("pp_player_id");
+      if (existing) return existing;
+      const fresh = uid();
+      sessionStorage.setItem("pp_player_id", fresh);
+      return fresh;
+    } catch {
+      return uid();
+    }
+  });
   const [myRole, setMyRole] = useState("voter");
   const [authUser, setAuthUser] = useState(() => auth.currentUser);
   const [accountProfile, setAccountProfile] = useState(null);
-  const currentPlan = authUser ? (accountProfile?.plan || "free") : "free";
   const [cookieAccepted, setCookieAccepted] = useState(
     () => {
       try { return localStorage.getItem("pp_cookie_ok") === "1"; }
       catch { return false; }
     }
   );
-  const acceptCookies = () => {
+  const acceptCookies = useCallback(() => {
     try { localStorage.setItem("pp_cookie_ok", "1"); } catch {}
     setCookieAccepted(true);
-  };
+  }, []);
   const resetCookieBanner = () => {
     try { localStorage.removeItem("pp_cookie_ok"); } catch {}
     setCookieAccepted(false);
@@ -4515,12 +4139,9 @@ export default function App() {
     initialMode: "signin",
     entryIntent: "general",
   });
-  const [pricingModalConfig, setPricingModalConfig] = useState({
-    initialShowKey: false,
-    entryIntent: "general",
-    justRegistered: false,
-  });
   const [proSetupFocusToken, setProSetupFocusToken] = useState(0);
+  // Bumped by the nav CTA to pull focus back to the "create a room" form.
+  const [startFocusToken, setStartFocusToken] = useState(0);
 
   // ── SPA NAVIGATION ────────────────────────────────────────────────
   // Navigate within the SPA without a full-page reload.
@@ -4531,26 +4152,16 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "auto" });
   };
   const openLoginModal = useCallback((initialMode = "signin", entryIntent = "general") => {
+    rememberDialogOpener();
     setLoginModalConfig({ initialMode, entryIntent });
     setShowLoginModal(true);
   }, []);
-  const openPricingModal = useCallback((config = {}) => {
-    setPricingModalConfig({
-      initialShowKey: false,
-      entryIntent: "general",
-      justRegistered: false,
-      ...config,
-    });
-    setShowPricingModal(true);
-    track("pricing_opened");
-  }, []);
-  const openRelevantPricingModal = useCallback((config = {}) => {
-    openPricingModal(
-      authUser
-        ? { initialShowKey: true, entryIntent: "activate", ...config }
-        : { entryIntent: "upgrade", ...config },
-    );
-  }, [authUser, openPricingModal]);
+  // No paywall any more — "see the plan" just goes to the pricing page,
+  // which explains that everything is free.
+  const openPricing = useCallback(() => {
+    track("pricing_viewed");
+    navTo("/pricing");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const jumpToMarketingSection = useCallback((sectionId) => {
     if (!sectionId) return;
     const focusSection = () => {
@@ -4570,7 +4181,6 @@ export default function App() {
   }, [screen]);
   // Global modal states — NavBar triggers these from any screen
   const [showLoginModal,   setShowLoginModal]   = useState(false);
-  const [showPricingModal, setShowPricingModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [sprintHistory,    setSprintHistory]    = useState([]);
   useEffect(() => {
@@ -4621,6 +4231,17 @@ export default function App() {
     const roomCode = new URLSearchParams(window.location.search).get("room");
     const teamMatch = pathname.match(/^\/t\/([a-z0-9-]+)$/i);
     const teamSlug = teamMatch?.[1] || "";
+
+    if (PRIVATE_PATHS.includes(pathname)) {
+      applyRouteMeta({
+        title: "Usage dashboard | pointpoker",
+        description: "Owner-only usage analytics.",
+        canonical: `${SITE_URL}/`,
+        ogUrl: `${SITE_URL}/`,
+        robots: "noindex, nofollow",
+      });
+      return;
+    }
 
     if (STATIC_ROUTE_META[pathname]) {
       applyRouteMeta(STATIC_ROUTE_META[pathname]);
@@ -4682,7 +4303,6 @@ export default function App() {
           });
         } else {
           const current = snap.val() || {};
-          await ensureClaimedProLicense(user, current);
           const teamRooms = resolveDedicatedTeamRooms(current, user);
           await update(ref(db, `users/${user.uid}`), {
             email: user.email || current.email || "",
@@ -4707,9 +4327,9 @@ export default function App() {
     return () => unsub();
   }, [authUser?.uid]);
 
-  // ── SPRINT HISTORY LISTENER — Pro users only ──────────────────
+  // ── SPRINT HISTORY LISTENER — every signed-in account ──────────
   useEffect(() => {
-    if (!authUser?.uid || currentPlan !== "pro") {
+    if (!authUser?.uid) {
       setSprintHistory([]);
       return undefined;
     }
@@ -4721,7 +4341,7 @@ export default function App() {
       setSprintHistory(entries);
     });
     return () => unsub();
-  }, [authUser?.uid, currentPlan]);
+  }, [authUser?.uid]);
 
   useEffect(() => {
     if (screen !== "join") return;
@@ -4753,6 +4373,40 @@ export default function App() {
       cancelled = true;
     };
   }, [screen, showToast]);
+
+  // One visit ping per app load: new-vs-returning and device mix.
+  useEffect(() => { trackVisit(); }, []);
+
+  // ── SEAMLESS REFRESH ─────────────────────────────────────────────
+  // myId survives a reload (sessionStorage), so if this browser is still listed
+  // as a player in the room named in the URL, walk straight back in instead of
+  // showing the join form and asking for a name that is already on file.
+  const rejoinAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (rejoinAttemptedRef.current) return;
+    rejoinAttemptedRef.current = true;
+    const pathMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+    const roomCode = pathMatch?.[1] || new URLSearchParams(window.location.search).get("room");
+    if (!roomCode) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await get(ref(db, `rooms/${roomCode}/players/${myId}`));
+        if (cancelled || !snap.exists()) return;
+        const me = snap.val() || {};
+        setMyRole(me.role === "observer" ? "observer" : "voter");
+        setCode(pathMatch ? pathMatch[1] : roomCode.toUpperCase());
+        setScreen("game");
+        await update(ref(db, `rooms/${roomCode}/players/${myId}`), {
+          online: true,
+          disconnectedAt: null,
+        });
+      } catch {
+        // Falling back to the join form is a perfectly good outcome here.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [myId]);
 
   // sessionWarningRef: prevents the session-check interval from restarting
   // every time the sessionWarning flag flips, eliminating unnecessary churn.
@@ -4861,7 +4515,7 @@ export default function App() {
           remaining: 0,
         });
         await update(ref(db, `rooms/${code}`), { revealed: true });
-        showToast("⏰ Time's up — cards revealed!");
+        showToast("⏰ Time's up, cards revealed!");
       } else {
         await update(ref(db, `rooms/${code}/timer`), { remaining: r });
       }
@@ -4897,7 +4551,7 @@ export default function App() {
             remaining: 0,
             startedBy: null,
           });
-          showToast("🃏 All voted — revealing cards!");
+          showToast("🃏 All voted, revealing cards!");
         }
       }, 700);
     }
@@ -4909,10 +4563,8 @@ export default function App() {
   const createdAtRef    = useRef(null);
   // Refs used by endSession and auto-expire so they don't need to be in dep arrays
   const authUserRef     = useRef(null);
-  const currentPlanRef  = useRef("free");
   useEffect(() => { if (roomData?.createdAt) createdAtRef.current = roomData.createdAt; }, [roomData?.createdAt]); // eslint-disable-line
   useEffect(() => { authUserRef.current    = authUser;    }, [authUser]);
-  useEffect(() => { currentPlanRef.current = currentPlan; }, [currentPlan]);
 
   // ── SESSION EXPIRY CHECK ──────────────────────────────────────────
   // sessionWarning is intentionally NOT in the dependency array — we
@@ -4927,8 +4579,8 @@ export default function App() {
       const age = Date.now() - start;
       if (age >= SESSION_MAX_MS) {
         clearInterval(sessionCheckRef.current);
-        // Save history for authenticated Pro users before tearing down the room
-        if (authUserRef.current && currentPlanRef.current === "pro" && roomDataRef.current) {
+        // Save history for signed-in users before tearing down the room
+        if (authUserRef.current && roomDataRef.current) {
           await saveSessionHistory(authUserRef.current.uid, roomDataRef.current, code);
         }
         await remove(ref(db, `rooms/${code}`));
@@ -4952,6 +4604,7 @@ export default function App() {
   // only code + myId in deps — yet always acts on current room state.
   const goBack = useCallback(() => {
     const rd = roomDataRef.current;
+    trackSessionLength(rd);
 
     // Clear local timer interval before leaving
     if (timerRef.current) {
@@ -4985,29 +4638,24 @@ export default function App() {
     window.history.replaceState({}, "", homePath());
   }, [code, myId]);
 
-  // ── BROWSER CLOSE / REFRESH CLEANUP ──────────────────────────────
-  // Uses roomDataRef for the same stale-closure reason as goBack.
-  // Also stops orphaned timers and cleans up empty rooms.
+  // ── BROWSER CLOSE / REFRESH ──────────────────────────────────────
+  // Deliberately does NOT delete the room or the player. beforeunload cannot
+  // tell a refresh from a tab close, and it does not fire reliably on mobile
+  // Safari at all — so deleting here meant a solo facilitator pressing F5 lost
+  // their room and their whole story queue. The Firebase onDisconnect handler
+  // already marks the player offline the moment the socket drops, and
+  // sweepStaleRooms removes rooms whose players have all been away for an hour.
+  // All this handler does is release a timer nobody is driving any more.
   useEffect(() => {
     const cleanup = () => {
       const rd = roomDataRef.current;
       if (!code || !myId) return;
-
       if (rd?.timer?.running && rd?.timer?.startedBy === myId) {
-        update(ref(db, `rooms/${code}/timer`), { running: false });
-      }
-
-      const allPlayerIds = Object.keys(rd?.players || {});
-      const remainingAfterLeave = allPlayerIds.filter((id) => id !== myId);
-
-      if (remainingAfterLeave.length === 0) {
-        remove(ref(db, `rooms/${code}`));
-      } else {
-        remove(ref(db, `rooms/${code}/players/${myId}`));
+        update(ref(db, `rooms/${code}/timer`), { running: false, startedBy: null });
       }
     };
-    window.addEventListener("beforeunload", cleanup);
-    return () => window.removeEventListener("beforeunload", cleanup);
+    window.addEventListener("pagehide", cleanup);
+    return () => window.removeEventListener("pagehide", cleanup);
   }, [code, myId]);
 
   // ── MOBILE RECONNECT PRESENCE ────────────────────────────────────
@@ -5042,7 +4690,7 @@ export default function App() {
       consensusCount: 0,
       deck,
       estimationMode,
-      plan: currentPlan === "pro" ? "pro" : "free",
+      plan: "free",
       timer: { running: false, duration: 30, remaining: 30 },
       players: { [myId]: { id: myId, name, role, voted: false, vote: null, online: true } },
     });
@@ -5054,8 +4702,9 @@ export default function App() {
     // Update URL so the creator can copy/share the link immediately.
     window.history.replaceState({}, "", roomPath(c));
     setScreen("game");
-    track(currentPlan === "pro" ? "room_created_pro" : "room_created_free");
-    if (role === "observer") track("observer_joined"); else track("player_joined");
+    track("room_created");
+    track(`deck_${deck}`);
+    track(role === "observer" ? "joined_facilitator" : "joined_voter");
     showToast(`🎲 Room ${c} created! Share this one-off link while the session is active.`);
   };
 
@@ -5070,13 +4719,8 @@ export default function App() {
     }
     const data = snap.val();
     const currentCount = countParticipants(data.players || {}, myId);
-    const maxForPlan = data.plan === "pro" ? PRO_MAX_PARTICIPANTS : FREE_MAX_PARTICIPANTS;
-    if (currentCount >= maxForPlan) {
-      if (data.plan !== "pro") {
-        showToast(`Room full (free tier: ${FREE_MAX_PARTICIPANTS} participants including facilitator). The host can upgrade to Pro for up to ${PRO_MAX_PARTICIPANTS} participants.`);
-      } else {
-        showToast(`This room is full (max ${PRO_MAX_PARTICIPANTS} participants).`);
-      }
+    if (currentCount >= MAX_PARTICIPANTS) {
+      showToast(`This room is full. ${MAX_PARTICIPANTS} people are already in, including the facilitator. Ask the host to start a second room.`);
       return;
     }
     setMyRole(role);
@@ -5093,7 +4737,7 @@ export default function App() {
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).update({ online: false, disconnectedAt: serverTimestamp() });
     window.history.replaceState({}, "", roomPath(c));
     setScreen("game");
-    track(role === "observer" ? "observer_joined" : "player_joined");
+    track(role === "observer" ? "joined_facilitator" : "joined_voter");
     showToast(`🎲 Welcome, ${name}!`);
   };
 
@@ -5105,29 +4749,23 @@ export default function App() {
     pendingSessionNameRef.current = name;
     const c = teamCode(teamName);
     const founderRoom = isFounderRoom(c);
-    // Team Room is a Pro feature. Founder team is always Pro.
-    // All other team rooms are set to Pro for now — Stripe will gate
-    // creation at Phase 3 once payment is wired up.
-    const plan = "pro";
     const snap = await new Promise((res) =>
       onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
     );
     const existingRoom = snap.exists() ? snap.val() || {} : null;
-    const canEnterExistingTeamRoom = !!existingRoom;
-    const canCreateDedicatedTeamRoom = currentPlan === "pro" || founderRoom;
-    if (!canEnterExistingTeamRoom && !canCreateDedicatedTeamRoom) {
-      setShowPricingModal(true);
-      track("pricing_opened");
-      showToast("Team Rooms are a Pro feature for hosts. Upgrade to unlock two dedicated fixed room URLs.");
+    // Hosting a Team Room needs a free account: the slug is derived from the
+    // account name so two different teams can never collide on the same URL.
+    // Joining someone else's shared Team Room stays open to guests.
+    if (!existingRoom && !authUser && !founderRoom) {
+      openLoginModal("register", "teamroom");
+      showToast("Create a free account to host a Team Room, it keeps your room URL yours alone.");
       return;
     }
-    const existingPlan = existingRoom ? (existingRoom.plan || "pro") : plan;
     const currentCount = existingRoom
       ? countParticipants(existingRoom.players || {}, myId)
       : 0;
-    const maxForPlan = existingPlan === "pro" ? PRO_MAX_PARTICIPANTS : FREE_MAX_PARTICIPANTS;
-    if (currentCount >= maxForPlan) {
-      showToast(`This room is full (max ${maxForPlan} participants).`);
+    if (currentCount >= MAX_PARTICIPANTS) {
+      showToast(`This Team Room is full. ${MAX_PARTICIPANTS} people are already in.`);
       return;
     }
     setMyRole(role);
@@ -5143,7 +4781,8 @@ export default function App() {
         consensusCount: 0,
         deck,
         estimationMode,
-        plan,
+        // Everything is free — "free" is the only plan new rooms are created with.
+        plan: "free",
         teamName,
         founderRoom,
         timer: { running: false, duration: 30, remaining: 30 },
@@ -5164,8 +4803,10 @@ export default function App() {
     // Keep the clean stable team-room URL so invites and browser refreshes stay consistent.
     window.history.replaceState({}, "", teamRoomPath(c));
     setScreen("game");
-    track(role === "observer" ? "observer_joined" : "player_joined");
-    if (!snap.exists()) track("room_created_pro"); // Team rooms are always Pro
+    track(role === "observer" ? "joined_facilitator" : "joined_voter");
+    // A Team Room that already existed is a returning team — the stickiness signal.
+    track(snap.exists() ? "team_room_reentered" : "room_created_team");
+    if (!snap.exists()) track(`deck_${deck}`);
     showToast(`🎲 Welcome to ${teamName}!`);
   };
 
@@ -5183,6 +4824,11 @@ export default function App() {
   );
 
   const revealVotes = useCallback(async () => {
+    // Table size is the single most important input to any per-seat pricing
+    // model, so it is sampled once per room at the first reveal.
+    if (!roomDataRef.current?.revealed && (roomDataRef.current?.round || 1) === 1) {
+      track(bucketTableSize(countParticipants(roomDataRef.current?.players || {})));
+    }
     await update(ref(db, `rooms/${code}`), { revealed: true });
     await update(ref(db, `rooms/${code}/timer`), {
       running: false,
@@ -5222,12 +4868,14 @@ export default function App() {
     try {
       await update(ref(db), upd);
       if (estimate !== null) {
-        track("stories_estimated");
+        track("estimate_recorded");
+        if (isConsensus) track("consensus_first_vote");
         showToast(getEstMode(roomData?.estimationMode).toastDone);
       }
       return true;
-    } catch {
-      showToast("Could not save that estimate. Please try again.");
+    } catch (err) {
+      console.error("[pointpoker] newRound write failed", err);
+      showToast("Could not save that estimate, check your connection and try again.");
       return false;
     }
   }, [code, roomData, showToast]);
@@ -5235,18 +4883,42 @@ export default function App() {
   // ── STORY QUEUE ───────────────────────────────────────────────────
   // Stories can be added at any time before or during a session.
   // Stored in Firebase so all players see the active story name live.
-  const addStory = useCallback(async (name) => {
+  // Accepts one name or a list. A list is written in a single multi-path update
+  // so pasting a 30-line backlog cannot race itself into overwriting index 0.
+  const addStory = useCallback(async (nameOrNames) => {
     // Firebase returns stories as {0:{...}, 1:{...}} — an object, not an array.
     // .length on an object is undefined, so use Object.keys to get the count.
-    const sanitised = name.trim().slice(0, 200); // enforce 200-char max server-side
-    if (!sanitised) return;
+    const names = (Array.isArray(nameOrNames) ? nameOrNames : [nameOrNames])
+      .map((n) => String(n ?? "").trim().slice(0, 200)) // enforce the 200-char rule
+      .filter(Boolean);
+    if (!names.length) return;
     const current = roomData?.stories || {};
-    const idx = Object.keys(current).length;
+    const startIdx = Object.keys(current).length;
     // Track the first story added — signals the story queue feature is being used
-    if (idx === 0) track("story_queue_used");
-    await update(ref(db, `rooms/${code}/stories/${idx}`), {
-      name: sanitised,
-      estimate: null,
+    if (startIdx === 0) track("feature_queue");
+    const upd = {};
+    names.forEach((name, i) => {
+      upd[`rooms/${code}/stories/${startIdx + i}`] = { name, estimate: null };
+    });
+    await update(ref(db), upd);
+  }, [code, roomData]);
+
+  // Drop a queued item. Stories are index-keyed and activeStory is an index into
+  // them, so the whole list is rewritten and the pointer shifted to match.
+  const removeStory = useCallback(async (idx) => {
+    const current = roomData?.stories || {};
+    const list = Object.values(current);
+    if (idx < 0 || idx >= list.length) return;
+    const activeIdx = roomData?.activeStory ?? 0;
+    if (idx < activeIdx) return; // already estimated, keep the record honest
+    const next = list.filter((_, i) => i !== idx);
+    // One write for the whole list — a multi-path update may not mix a parent
+    // path with its own children, so `stories` is replaced wholesale.
+    await update(ref(db), {
+      [`rooms/${code}/stories`]: next.length
+        ? Object.fromEntries(next.map((story, i) => [i, story]))
+        : null,
+      [`rooms/${code}/activeStory`]: Math.min(activeIdx, next.length),
     });
   }, [code, roomData]);
 
@@ -5270,11 +4942,13 @@ export default function App() {
     upd[`rooms/${code}/timer/startedBy`] = null;
     try {
       await update(ref(db), upd);
-      track("stories_estimated");
+      track("estimate_recorded");
+      if (isConsensus) track("consensus_first_vote");
       showToast(getEstMode(roomData?.estimationMode).toastNext);
       return true;
-    } catch {
-      showToast("Could not save that estimate. Please try again.");
+    } catch (err) {
+      console.error("[pointpoker] recordAndNextStory write failed", err);
+      showToast("Could not save that estimate, check your connection and try again.");
       return false;
     }
   }, [code, roomData, showToast]);
@@ -5295,7 +4969,7 @@ export default function App() {
     upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
     upd[`rooms/${code}/timer/startedBy`] = null;
     await update(ref(db), upd);
-    showToast("🔄 New sprint session — everyone's votes cleared.");
+    showToast("🔄 New sprint session, everyone's votes cleared.");
   }, [code, roomData, showToast]);
 
   const endSession = useCallback(async () => {
@@ -5306,8 +4980,9 @@ export default function App() {
     }
     remainingRef.current = null;
     clearInterval(sessionCheckRef.current);
-    // Save sprint history for authenticated Pro users
-    if (authUserRef.current && currentPlanRef.current === "pro" && roomDataRef.current) {
+    trackSessionLength(roomDataRef.current);
+    // Save sprint history for signed-in users
+    if (authUserRef.current && roomDataRef.current) {
       await saveSessionHistory(authUserRef.current.uid, roomDataRef.current, code);
     }
     await remove(ref(db, `rooms/${code}`));
@@ -5327,7 +5002,7 @@ export default function App() {
         remaining: sec,
         startedBy: myId,
       });
-      track("timer_used");
+      track("feature_timer");
     },
     [code, myId],
   );
@@ -5389,28 +5064,33 @@ export default function App() {
     <>
       <style>{CSS}</style>
 
-      {/* ── Global shell — NavBar → content → Footer ── */}
-      <div className="page-shell">
+      {/* ── Global shell, NavBar → content → Footer ── */}
+      <div className={`page-shell${screen === "game" ? " in-room" : ""}`}>
+        <a className="skip-link" href="#main">Skip to main content</a>
         <NavBar
           onLogoClick={() => {
             if (screen === "game") { goBack(); return; }
             if (screen !== "join") { navTo("/"); return; }
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          onLogin={()    => { openLoginModal("signin", "general"); track("login_modal_opened"); }}
-          onRegister={() => openRelevantPricingModal()}
-          onPlans={() => navTo("/pricing")}
+          onLogin={()    => { openLoginModal("signin", "general"); track("signup_started"); }}
+          onStartFree={() => {
+            if (screen !== "join") { navTo("/"); }
+            setStartFocusToken((v) => v + 1);
+          }}
+          onPlans={openPricing}
           onSupport={() => navTo("/support")}
           onTrust={() => navTo("/trust")}
           onFaq={() => jumpToMarketingSection("faq")}
           currentUser={authUser}
-          currentPlan={currentPlan}
           onLogout={handleLogout}
-          onHistory={() => setShowHistoryModal(true)}
+          onHistory={() => { rememberDialogOpener(); setShowHistoryModal(true); }}
+          onAdmin={authUser ? () => navTo("/admin") : null}
           showMarketingNav={screen !== "game" && !authUser}
+          inRoom={screen === "game"}
         />
 
-        <div className="app">
+        <main className="app" id="main" tabIndex={-1}>
           {screen === "terms" && (
             <TermsPage onBack={() => navTo("/")} />
           )}
@@ -5453,6 +5133,11 @@ export default function App() {
           {screen === "remoteSprintPlanning" && (
             <RemoteSprintPlanningPage onNavigate={navTo} />
           )}
+          {screen === "admin" && (
+            <Suspense fallback={<div className="loading"><div className="spinner" /></div>}>
+              <AdminDashboard currentUser={authUser} onBack={() => navTo("/")} />
+            </Suspense>
+          )}
           {screen === "join" && (
             <JoinScreen
               onCreate={handleCreate}
@@ -5460,11 +5145,11 @@ export default function App() {
               onTeamRoom={handleTeamRoom}
               prefillCode={code}
               prefillTeam={prefillTeam}
-              onShowPricing={openRelevantPricingModal}
               currentUser={authUser}
-              currentPlan={currentPlan}
               accountProfile={accountProfile}
               proSetupFocusToken={proSetupFocusToken}
+              startFocusToken={startFocusToken}
+              onRequireAccount={() => openLoginModal("register", "teamroom")}
               onNavigate={navTo}
             />
           )}
@@ -5494,25 +5179,26 @@ export default function App() {
               onStop={stopTimer}
               onRemoveParticipant={removeParticipant}
               onAddStory={addStory}
+              onRemoveStory={removeStory}
               onRecordStory={recordAndNextStory}
               sessionWarning={sessionWarning}
               toast={showToast}
-              currentPlan={currentPlan}
-              onShowPricing={openRelevantPricingModal}
             />
           )}
-          <div className={`toast${toastOn ? " show" : ""}`}>{toast}</div>
-        </div>
+          {/* Toasts carry the only confirmation of several actions, so they are
+              announced rather than being a purely visual flash. */}
+          <div className={`toast${toastOn ? " show" : ""}`} role="status" aria-live="polite">
+            {toastOn ? toast : ""}
+          </div>
+        </main>
 
-        <SiteFooter
+        {screen !== "game" && <SiteFooter
           onCookieSettings={resetCookieBanner}
-          onShowPricing={openRelevantPricingModal}
-          currentPlan={currentPlan}
           currentUser={authUser}
           onNavTerms={() => navTo("/terms")}
           onNavPrivacy={() => navTo("/privacy")}
           onNavigate={navTo}
-        />
+        />}
       </div>
 
       {/* ── Overlays ── */}
@@ -5521,64 +5207,23 @@ export default function App() {
         <LoginModal
           onClose={() => setShowLoginModal(false)}
           onAuthSuccess={(event) => {
-            const shouldResumePricing = loginModalConfig.entryIntent === "upgrade";
+            const wantedTeamRoom = loginModalConfig.entryIntent === "teamroom";
             setShowLoginModal(false);
-            if (event?.mode === "register" && shouldResumePricing) {
+            if (event?.mode === "register") {
+              track("signup_completed");
               showToast(
                 event?.verificationSent
-                  ? "Account created. Check your email to verify your address, then activate Pro below."
-                  : "Account created. Continue below to activate Pro.",
-              );
-            } else if (event?.mode === "register") {
-              showToast(
-                event?.verificationSent
-                  ? "Account created. Check your email to verify your address."
+                  ? "Account created, check your email to verify the address."
                   : "Account created. Verification email could not be sent yet.",
               );
             } else {
-              showToast("Account ready.");
+              showToast("Signed in.");
             }
-            if (shouldResumePricing) {
-              openPricingModal({
-                initialShowKey: true,
-                entryIntent: "activate",
-                justRegistered: event?.mode === "register",
-              });
-            }
-          }}
-          onProActivated={() => {
-            setShowLoginModal(false);
-            setProSetupFocusToken((v) => v + 1);
-            showToast("Pro activated. Name your two Team Rooms in the workspace.");
+            if (wantedTeamRoom) setProSetupFocusToken((v) => v + 1);
           }}
           currentUser={authUser}
-          currentPlan={currentPlan}
           initialMode={loginModalConfig.initialMode}
           entryIntent={loginModalConfig.entryIntent}
-          onShowPricing={() => {
-            setShowLoginModal(false);
-            openRelevantPricingModal();
-          }}
-        />
-      )}
-      {showPricingModal && (
-        <PricingModal
-          onClose={() => setShowPricingModal(false)}
-          onProActivated={() => {
-            setShowPricingModal(false);
-            setProSetupFocusToken((v) => v + 1);
-            showToast("Pro activated. Name your two Team Rooms in the workspace.");
-          }}
-          currentUser={authUser}
-          currentPlan={currentPlan}
-          initialShowKey={pricingModalConfig.initialShowKey}
-          entryIntent={pricingModalConfig.entryIntent}
-          justRegistered={pricingModalConfig.justRegistered}
-          onRequireLogin={() => {
-            setShowPricingModal(false);
-            openLoginModal("register", "upgrade");
-            track("login_modal_opened");
-          }}
         />
       )}
       {showHistoryModal && (
@@ -5592,7 +5237,7 @@ export default function App() {
 }
 
 /* ═══════════════════════ CONFETTI ═══════════════════════
-   Pure-canvas confetti — no external deps.
+   Pure-canvas confetti, no external deps.
    Fires once, runs for ~4 seconds, then self-destructs.
 
    Props:
@@ -5720,21 +5365,6 @@ function Confetti({ onDone, big }) {
   );
 }
 
-/* ═══════════════════════ PRICING MODAL ═══════════════════════ */
-const PRICING = {
-  USD: { symbol: "$",  pro: 8,  proAnnual: 6  },
-  GBP: { symbol: "£",  pro: 6,  proAnnual: 5  },
-  EUR: { symbol: "€",  pro: 7,  proAnnual: 6  },
-};
-
-// ── Stripe Payment Links ─────────────────────────────────────────────────────
-// Replace placeholder values with real Stripe Payment Link URLs after setup.
-// Format: https://buy.stripe.com/XXXXXXXX
-const STRIPE_LINKS = {
-  monthly: { GBP: "#upgrade", USD: "#upgrade", EUR: "#upgrade" },
-  annual:  { GBP: "#upgrade", USD: "#upgrade", EUR: "#upgrade" },
-};
-
 function MarketingSection({ title, intro, children }) {
   return (
     <section className="marketing-section">
@@ -5814,104 +5444,115 @@ function MarketingPageShell({
 }
 
 function PricingPage({ onNavigate }) {
-  const monthly = `${PRICING.GBP.symbol}${PRICING.GBP.pro}/mo`;
-  const annual = `${PRICING.GBP.symbol}${PRICING.GBP.proAnnual}/mo`;
-
   return (
     <MarketingPageShell
       eyebrow="Pricing"
-      title="Planning poker pricing that starts free and only upgrades when the team truly needs it"
-      intro="pointpoker is designed for real sprint planning, not gated demos. Run free sessions instantly, then move to Pro when your team wants two dedicated Team Rooms, higher participant capacity, and sprint history attached to an account."
+      title="Planning poker pricing: everything is free, for every team"
+      intro="There is no paid tier, no trial countdown and no credit card field anywhere on pointpoker. All three card decks, the countdown timer, facilitator analytics, story queues, CSV export and two fixed Team Rooms are free for everyone while we grow the user base."
       highlights={[
-        { value: "£0", label: "Free rooms with no account required" },
-        { value: `${FREE_MAX_PARTICIPANTS}/${PRO_MAX_PARTICIPANTS}`, label: "Participant capacity from Free to Pro" },
-        { value: annual, label: "Annual Pro rate from per month" },
+        { value: "£0", label: "Every feature, every team, no card" },
+        { value: `${MAX_PARTICIPANTS}`, label: "Participants per room, facilitators included" },
+        { value: "0", label: "Ads, trackers, and usage caps" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
-      primaryLabel="Start free room"
+      primaryLabel="Start a free room"
       secondaryHref="/features"
       secondaryLabel="See all features"
     >
       <MarketingSection
-        title="Choose the plan that matches how your team runs sprint planning"
-        intro="Free is built for quick, low-friction estimation. Pro is for recurring teams that want two dedicated reusable rooms and sprint context that carries forward."
+        title="One plan. It costs nothing."
+        intro="Most planning poker tools give away a stripped-down room and charge for the parts that make the ceremony work. We did the opposite. Ship the whole thing, free, and find out how many teams actually want it."
       >
         <div className="marketing-plan-grid">
-          <article className="marketing-plan-card">
-            <div className="marketing-plan-topline">Free</div>
+          <article className="marketing-plan-card pro">
+            <div className="marketing-plan-topline">Everyone</div>
             <div className="marketing-plan-price">£0</div>
             <p className="marketing-plan-sub">
-              Best for ad-hoc sprint planning, client sessions, and teams that want to start estimating in seconds.
+              You do not need an account to run or join a room. A free account reserves your two permanent Team Room URLs and stores your sprint history. That is all it does.
             </p>
             <ul className="marketing-list">
-              <li>Up to {FREE_MAX_PARTICIPANTS} participants including the facilitator</li>
-              <li>All three card decks and simultaneous reveal</li>
-              <li>Story queue, facilitator controls, and live analytics</li>
-              <li>No account required for normal room participation</li>
+              <li>Up to {MAX_PARTICIPANTS} participants per room, facilitators included</li>
+              <li>Unlimited voting rounds and unlimited stories per session</li>
+              <li>Fibonacci, T-Shirt, and Powers of 2 decks with simultaneous reveal</li>
+              <li>Story or task queue, bulk paste import, countdown timer</li>
+              <li>Facilitator mode with consensus rate, spread, and outlier analytics</li>
+              <li>Clipboard summary and CSV download for Jira, Linear, or a spreadsheet</li>
+              <li>Two fixed Team Rooms and sprint history with a free account</li>
+              <li>No ads, no third-party tracking cookies, no data resale</li>
             </ul>
           </article>
-          <article className="marketing-plan-card pro">
-            <div className="marketing-plan-topline">Pro</div>
-            <div className="marketing-plan-price">{monthly}</div>
+          <article className="marketing-plan-card">
+            <div className="marketing-plan-topline">What others charge</div>
+            <div className="marketing-plan-price">£20–30/mo</div>
             <p className="marketing-plan-sub">
-              Starts at {monthly} monthly or {annual} annually. Best for teams that estimate together every sprint and want a room they can bookmark and reuse.
+              For context, not as a swipe. These are the limits teams most often run into on other free tiers.
             </p>
             <ul className="marketing-list">
-              <li>Two dedicated Team Rooms with fixed shareable URLs</li>
-              <li>Up to {PRO_MAX_PARTICIPANTS} participants per session</li>
-              <li>Sprint history, trend visibility, and reusable team workflow</li>
-              <li>Account-linked access that follows the user across devices</li>
+              <li>Free tiers capped at around seven participants</li>
+              <li>Free games capped at a handful of votes or issues per session</li>
+              <li>Session timer and automatic averages behind a paid plan</li>
+              <li>Ad-supported free rooms</li>
+              <li>Per-facilitator pricing for one ceremony a fortnight</li>
             </ul>
           </article>
         </div>
         <div className="marketing-note-panel">
-          <strong>Current rollout note:</strong> Stripe checkout wiring is still being finalised. Today, the cleanest route into Pro is to create an account and activate access on that account so your dedicated Team Rooms and sprint history stay attached to one identity.
+          <strong>Why free, and for how long.</strong> A planning poker tool is only useful if the whole team
+          will actually open it, and a paywall kills that on the first invite. So the plan is to keep every
+          feature free, watch how many teams use it, and only look at paid add-ons once there is a real user
+          base to serve. If that day comes, everything on this page stays free. Anything paid would be new
+          work on top of it, and we would say so clearly and well in advance.
         </div>
       </MarketingSection>
 
       <MarketingSection
-        title="When teams normally upgrade"
-        intro="The right upgrade trigger is operational repeatability, not curiosity. Most teams stay happily on Free until estimation becomes a recurring habit."
+        title="What free does and does not mean here"
+        intro="Free products usually have a catch. Here is exactly where ours sits, so you can decide with your eyes open."
       >
         <div className="marketing-card-grid">
           <article className="marketing-card">
-            <h3 className="marketing-card-title">Stay on Free when estimation is occasional</h3>
+            <h3 className="marketing-card-title">You are not the product</h3>
             <p className="marketing-card-copy">
-              If you only need a room for backlog refinement, sprint planning workshops, or one-off client sessions, Free already gives you the full card decks, facilitator mode, and live reveal flow.
+              No advertising, no third-party analytics scripts, no session recording, nothing sold on. The only
+              usage data collected is an anonymous daily count of events such as "a room was created". No names,
+              no room contents, no identifiers of any kind.
             </p>
           </article>
           <article className="marketing-card">
-            <h3 className="marketing-card-title">Upgrade when the same team estimates together repeatedly</h3>
+            <h3 className="marketing-card-title">Rooms are deliberately temporary</h3>
             <p className="marketing-card-copy">
-              Pro becomes worthwhile when you want two dedicated Team Rooms your team can bookmark, reuse every sprint, and keep separate by squad, product, or ceremony.
+              A room and its votes are deleted when everyone leaves, and idle rooms get swept automatically.
+              That keeps the running cost low enough to stay free, and it means old estimates are not sitting
+              somewhere you had forgotten about.
             </p>
           </article>
           <article className="marketing-card">
-            <h3 className="marketing-card-title">Upgrade when sprint history starts to matter</h3>
+            <h3 className="marketing-card-title">Support is best-effort, and honest about it</h3>
             <p className="marketing-card-copy">
-              Teams that want to track throughput, consensus rate, and pacing over time should use Pro so those session summaries stay attached to an account.
+              This is a small, independently run product. Email gets answered by a person, usually quickly, but
+              there is no SLA behind it. If you work somewhere that needs one, factor that in before you commit.
             </p>
           </article>
         </div>
       </MarketingSection>
 
       <MarketingRelatedLinks
-        title="Compare the product before you commit"
-        intro="If you are still deciding, these pages cover the core workflow, Scrum use cases, and story-point estimation approach in more depth."
+        title="See what you get before you invite the team"
+        intro="No sign-up wall, so the fastest check is simply to open a room. These pages cover the workflow in more depth."
         onNavigate={onNavigate}
         links={[
-          { href: "/features", kicker: "Product", title: "Explore all features", copy: "See how simultaneous reveal, facilitator controls, Team Rooms, and sprint history fit together." },
-          { href: "/planning-poker-online", kicker: "Guide", title: "Planning poker online", copy: "Understand how the product works for remote estimation without installs or account friction." },
-          { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "See how the workflow supports structured estimates and better team agreement." },
+          { href: "/features", kicker: "Product", title: "Explore all features", copy: "Simultaneous reveal, facilitator controls, Team Rooms, analytics, and export in detail." },
+          { href: "/planning-poker-online", kicker: "Guide", title: "Planning poker online", copy: "How remote estimation works here with no installs and no account friction." },
+          { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "How the workflow supports structured estimates and faster team agreement." },
         ]}
       />
 
       <section className="marketing-cta-strip">
         <div>
-          <h2 className="marketing-cta-title">Start with the free workflow, then upgrade only when your team needs permanence</h2>
+          <h2 className="marketing-cta-title">Open a room and try it on a real story</h2>
           <p className="marketing-cta-copy">
-            pointpoker is intentionally simple to adopt. Create a room, run a live session, and only move to Pro when dedicated Team Rooms and sprint history become operationally useful.
+            Nothing to sign up for and nothing to compare. Create a room, paste the link into your team chat, and size something you actually have to estimate this sprint.
           </p>
         </div>
         <div className="marketing-actions">
@@ -5960,7 +5601,7 @@ function AboutPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">A clean upgrade path when repeatability matters</h3>
             <p className="marketing-card-copy">
-              Pro is intentionally focused on two dedicated Team Rooms, higher participant limits, and sprint history. It is designed for recurring team rhythm, not for locking basic estimation behind billing first.
+              Nothing is locked behind billing. Every feature, decks, timer, queue, analytics, export, Team Rooms, is free for every team while we find out how many teams this is genuinely useful to.
             </p>
           </article>
         </div>
@@ -5999,7 +5640,7 @@ function AboutPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">Focused product scope</h3>
             <p className="marketing-card-copy">
-              The product is deliberately narrow: run planning poker well, keep the room flow clean, and add only the Pro features that improve repeat use rather than adding unnecessary complexity.
+              The product is deliberately narrow: run planning poker well, keep the room flow clean, and add only what improves repeat use rather than piling on complexity nobody asked for.
             </p>
           </article>
         </div>
@@ -6012,7 +5653,7 @@ function AboutPage({ onNavigate }) {
         links={[
           { href: "/trust", kicker: "Trust", title: "Trust and reliability", copy: "Review the support posture, mail authentication, and product safeguards behind the live workflow." },
           { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the live room flow, facilitator controls, Team Alignment analytics, and sprint-history layer." },
-          { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "Understand when Free is enough and when Pro becomes operationally useful." },
+          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing. Here is exactly what free covers and why the product is built this way." },
           { href: "/remote-sprint-planning", kicker: "Remote", title: "Remote sprint planning", copy: "See how the browser-first workflow fits distributed teams and recurring ceremonies." },
         ]}
       />
@@ -6027,11 +5668,11 @@ function SupportPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Support"
       title="Get help with pointpoker, understand the workflow, and know where to go when your team has questions"
-      intro="pointpoker is designed to feel simple in the room, but good support still matters. This page explains the most common product questions, when Free vs Pro matters, and how to contact support directly."
+      intro="pointpoker is designed to feel simple in the room, but good support still matters. This page answers the most common product questions and shows you how to reach a person directly."
       highlights={[
         { value: "Email", label: support },
         { value: "Free", label: "Normal room participation without account setup" },
-        { value: "Pro", label: "2 dedicated Team Rooms and sprint history" },
+        { value: "£0", label: "Every feature, including Team Rooms and history" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
@@ -6051,9 +5692,9 @@ function SupportPage({ onNavigate }) {
             </p>
           </article>
           <article className="marketing-card">
-            <h3 className="marketing-card-title">Pro access questions</h3>
+            <h3 className="marketing-card-title">Account questions</h3>
             <p className="marketing-card-copy">
-              Pro access is attached to an account. That is what keeps dedicated Team Room ownership and sprint history tied to one reusable identity across sessions and devices.
+              A free account exists for one reason: it reserves your two Team Room URLs so no other team can land in your room, and it keeps sprint history tied to you across devices. Everything else works without one.
             </p>
           </article>
           <article className="marketing-card">
@@ -6084,7 +5725,7 @@ function SupportPage({ onNavigate }) {
       >
         <ul className="marketing-list">
           <li><strong>Free rooms are for fast ad-hoc estimation:</strong> create a room, invite the team, and run the ceremony without forcing everyone through accounts.</li>
-          <li><strong>Pro is for repeatability:</strong> two dedicated Team Rooms, sprint history, and higher participant limits are useful when the same team estimates together every sprint.</li>
+          <li><strong>Accounts are for repeatability:</strong> two fixed Team Rooms and sprint history help when the same team estimates together every sprint. Both are free.</li>
           <li><strong>Facilitators do not need to vote:</strong> the facilitator role exists to manage reveal, re-vote, moderation, and final estimate capture.</li>
           <li><strong>Real names are required:</strong> participants and facilitators must enter a genuine name so the room stays understandable to the whole team.</li>
           <li><strong>Support questions are easier to solve with context:</strong> sharing the room code, team slug, or exact flow that failed usually shortens the back-and-forth significantly.</li>
@@ -6098,7 +5739,7 @@ function SupportPage({ onNavigate }) {
         links={[
           { href: "/trust", kicker: "Trust", title: "Trust and reliability", copy: "Review the public trust signals, support posture, and product safeguards behind the workflow." },
           { href: "/about", kicker: "About", title: "Why pointpoker exists", copy: "Understand the product philosophy and why the workflow is intentionally lightweight." },
-          { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "See when Free is enough and when Pro becomes the right operational step." },
+          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for everyone. Here is what that covers and how long it lasts." },
         ]}
       />
     </MarketingPageShell>
@@ -6112,11 +5753,11 @@ function TrustPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Trust and reliability"
       title="Trust signals for teams that want a lightweight planning poker tool without lightweight operating standards"
-      intro="pointpoker is intentionally simple on the surface, but teams still need to know the basics are handled properly. This page brings together the practical trust signals behind the product: clear support, public legal routes, authenticated email, account-linked Pro access, and room safeguards that keep live sessions understandable."
+      intro="pointpoker is intentionally simple on the surface, but teams still need to know the basics are handled properly. This page brings together the practical trust signals behind the product: clear support, public legal routes, authenticated email, no ads or tracking cookies, and room safeguards that keep live sessions understandable."
       highlights={[
         { value: "Direct", label: `Support at ${support}` },
         { value: "Verified", label: "SPF, DKIM, and DMARC now pass" },
-        { value: "Account-bound", label: "Pro access stays attached to one identity" },
+        { value: "No ads", label: "No advertising or third-party tracking cookies" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
@@ -6144,7 +5785,7 @@ function TrustPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">Clear account boundaries</h3>
             <p className="marketing-card-copy">
-              Free participation stays friction-light, but Pro access is tied to an authenticated account so dedicated Team Rooms and sprint history remain attached to the right owner.
+              Participation stays friction-light and needs no account at all. Team Room ownership is tied to an authenticated account so a room URL stays with the right team.
             </p>
           </article>
         </div>
@@ -6159,7 +5800,7 @@ function TrustPage({ onNavigate }) {
           <li><strong>Facilitator actions are explicit:</strong> reveal, re-vote, final-estimate capture, and moderation controls are structured so the next step is hard to miss.</li>
           <li><strong>Deck values stay valid:</strong> final saved estimates must match the active deck, which prevents misleading derived values from polluting sprint history.</li>
           <li><strong>Temporary and permanent rooms are described honestly:</strong> ad-hoc rooms now make their session-active nature clear, while Team Rooms keep the reusable wording they deserve.</li>
-          <li><strong>Pro entitlements are not cosmetic:</strong> the Firebase rules layer now enforces active-license-backed Pro profiles rather than trusting broad client-side state.</li>
+          <li><strong>Room data is validated server-side:</strong> the Firebase rules layer enforces room shape, name lengths, and deck-safe estimates rather than trusting the browser.</li>
         </ul>
       </MarketingSection>
 
@@ -6175,15 +5816,15 @@ function TrustPage({ onNavigate }) {
             </p>
           </article>
           <article className="marketing-card">
-            <h3 className="marketing-card-title">Account-linked Pro workflow</h3>
+            <h3 className="marketing-card-title">Account-linked Team Rooms</h3>
             <p className="marketing-card-copy">
-              Pro now follows the user across devices, preserves two fixed Team Room URLs, and keeps sprint history attached to one account instead of floating in anonymous browser state.
+              Your two fixed Team Room URLs and your sprint history follow your account across devices instead of floating in anonymous browser state that a cleared cache can wipe.
             </p>
           </article>
           <article className="marketing-card">
             <h3 className="marketing-card-title">Published data and rules posture</h3>
             <p className="marketing-card-copy">
-              Firebase rules now validate room shape, deck-safe estimates, and Pro entitlement state, while the product exposes its legal, privacy, and support posture publicly rather than hiding it behind signup.
+              Firebase rules validate room shape and deck-safe estimates, while the product exposes its legal, privacy, and support posture publicly rather than hiding it behind a signup wall.
             </p>
           </article>
         </div>
@@ -6196,7 +5837,7 @@ function TrustPage({ onNavigate }) {
         links={[
           { href: "/about", kicker: "About", title: "Why pointpoker exists", copy: "See the product philosophy behind the lightweight workflow and focused upgrade path." },
           { href: "/support", kicker: "Support", title: "Support and product guidance", copy: "See where to get help, what questions come up most often, and how the workflow is explained." },
-          { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "Understand when Free is enough and when account-linked Pro becomes operationally useful." },
+          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for everyone, and a straight answer on why and for how long." },
         ]}
       />
     </MarketingPageShell>
@@ -6343,10 +5984,10 @@ function FibonacciStoryPointsPage({ onNavigate }) {
         intro="The deck works best when the team treats it as a conversation tool, not a scoring machine."
       >
         <ul className="marketing-list">
-          <li><strong>Pick a baseline story first</strong> so the team has a shared reference for what a 2, 3, or 5 roughly feels like.</li>
-          <li><strong>Use split votes as a signal</strong> that the story needs discussion, not as a reason to average numbers automatically.</li>
-          <li><strong>Record only valid deck values</strong> so sprint history and throughput stay consistent with the method the team chose.</li>
-          <li><strong>Re-vote when the discussion changes understanding</strong> instead of forcing a conclusion too early.</li>
+          <li><strong>Pick a baseline story first:</strong> so the team has a shared reference for what a 2, 3, or 5 roughly feels like.</li>
+          <li><strong>Use split votes as a signal:</strong> that the story needs discussion, not as a reason to average numbers automatically.</li>
+          <li><strong>Record only valid deck values:</strong> so sprint history and throughput stay consistent with the method the team chose.</li>
+          <li><strong>Re-vote when the discussion changes understanding:</strong> instead of forcing a conclusion too early.</li>
         </ul>
       </MarketingSection>
 
@@ -6441,7 +6082,7 @@ function AgileEstimationToolPage({ onNavigate }) {
           <li><strong>Backlog refinement:</strong> estimate stories before sprint commitment and surface unclear scope early.</li>
           <li><strong>Sprint planning:</strong> move through the queue, discuss disagreement, and come out with a clearer sense of sprint scope.</li>
           <li><strong>Remote estimation ceremonies:</strong> share one link, keep everyone in sync, and let the facilitator keep momentum.</li>
-          <li><strong>Recurring team rituals:</strong> Pro Team Rooms make it easy to reuse the same room every sprint once the team has a repeatable cadence.</li>
+          <li><strong>Recurring team rituals:</strong> Team Rooms make it easy to reuse the same room every sprint once the team has a repeatable cadence.</li>
         </ul>
       </MarketingSection>
 
@@ -6465,7 +6106,7 @@ function AgileEstimationToolPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">It creates reusable context over time</h3>
             <p className="marketing-card-copy">
-              With Pro, sprint history and two dedicated Team Rooms help the same team come back to a consistent estimation workflow instead of starting from scratch every sprint.
+              Sprint history and two fixed Team Rooms help the same team come back to a consistent estimation workflow instead of starting from scratch every sprint.
             </p>
           </article>
         </div>
@@ -6494,7 +6135,7 @@ function FeaturesPage({ onNavigate }) {
       highlights={[
         { value: "3", label: "Card decks: Fibonacci, T-Shirt, Powers of 2" },
         { value: "Live", label: "Realtime reveal, votes, and participant sync" },
-        { value: "Pro", label: "2 dedicated Team Rooms and sprint history when ready" },
+        { value: "£0", label: "Team Rooms and sprint history included free" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
@@ -6504,7 +6145,7 @@ function FeaturesPage({ onNavigate }) {
     >
       <MarketingSection
         title="Core estimation workflow"
-        intro="The product is designed around what teams actually do in planning poker: create a room, add items to estimate — stories or tasks — vote simultaneously, discuss differences, and move on without resetting the whole session."
+        intro="The product is designed around what teams actually do in planning poker: create a room, add items to estimate, stories or tasks, vote simultaneously, discuss differences, and move on without resetting the whole session."
       >
         <div className="marketing-card-grid">
           <article className="marketing-card">
@@ -6514,7 +6155,7 @@ function FeaturesPage({ onNavigate }) {
             </p>
           </article>
           <article className="marketing-card">
-            <h3 className="marketing-card-title">Estimate stories or tasks — your choice</h3>
+            <h3 className="marketing-card-title">Estimate stories or tasks, your choice</h3>
             <p className="marketing-card-copy">
               Choose whether you are sizing user stories as a whole or individual tasks within them. Add items as you go or preload the queue, record the agreed estimate, and move straight to the next item without rebuilding the room.
             </p>
@@ -6556,12 +6197,12 @@ function FeaturesPage({ onNavigate }) {
 
       <MarketingSection
         title="Features teams rely on as they grow"
-        intro="Free handles the live planning flow. Pro adds the repeatable operational layer that helps the same team come back sprint after sprint."
+        intro="Everything below is included for every team at no cost, the live planning flow and the repeatable operational layer that brings the same team back sprint after sprint."
       >
         <ul className="marketing-list">
           <li><strong>Dedicated Team Rooms:</strong> two fixed URLs the team can bookmark and reuse every sprint.</li>
           <li><strong>Sprint history:</strong> session summaries stay attached to the account and become a reliable archive.</li>
-          <li><strong>Higher participant limits:</strong> Pro rooms support up to {PRO_MAX_PARTICIPANTS} people instead of {FREE_MAX_PARTICIPANTS}.</li>
+          <li><strong>Room capacity:</strong> every room supports up to {MAX_PARTICIPANTS} people, facilitators included.</li>
           <li><strong>Name, role, and invite clarity:</strong> participants can still join shared rooms without unnecessary account friction.</li>
         </ul>
       </MarketingSection>
@@ -6571,7 +6212,7 @@ function FeaturesPage({ onNavigate }) {
         intro="These pages explain the workflow from different angles: search intent, Scrum language, and story-point estimation practice."
         onNavigate={onNavigate}
         links={[
-          { href: "/pricing", kicker: "Plans", title: "Pricing and plan fit", copy: "See exactly when Free is enough and when Pro becomes worth it." },
+          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing. See exactly what free covers and why it is built this way." },
           { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker use cases", copy: "See how the same workflow supports Scrum Masters, Product Owners, and remote engineering teams." },
           { href: "/remote-sprint-planning", kicker: "Remote", title: "Remote sprint planning", copy: "Learn how the product fits distributed ceremonies and recurring shared-room workflows." },
         ]}
@@ -6653,7 +6294,7 @@ function PlanningPokerOnlinePage({ onNavigate }) {
         links={[
           { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "See how the same flow supports backlog refinement and sprint planning in Scrum teams." },
           { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "Learn how the product supports Fibonacci-based discussions and facilitator-led agreement." },
-          { href: "/pricing", kicker: "Plans", title: "Free vs Pro", copy: "Compare when the free room flow is enough and when two dedicated Team Rooms are worth it." },
+          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for every team. Read the full pricing promise and what it covers." },
         ]}
       />
     </MarketingPageShell>
@@ -6801,7 +6442,7 @@ function StoryPointEstimationPage({ onNavigate }) {
         links={[
           { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "See how the browser-first room flow supports live estimation from anywhere." },
           { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "Understand how the same estimation flow fits sprint planning and backlog refinement." },
-          { href: "/pricing", kicker: "Plans", title: "Pricing and Team Room fit", copy: "Compare Free and Pro when estimation becomes a recurring team ritual with dedicated reusable rooms." },
+          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, including the fixed Team Rooms recurring ceremonies rely on." },
         ]}
       />
     </MarketingPageShell>
@@ -6817,13 +6458,13 @@ function RemoteSprintPlanningPage({ onNavigate }) {
       highlights={[
         { value: "1 link", label: "Share in Slack, Teams, Zoom, or calendar invites" },
         { value: "Live", label: "Votes, reveals, and story flow sync in real time" },
-        { value: "Reuse", label: "Pro gives you 2 fixed Team Room URLs every sprint" },
+        { value: "Reuse", label: "2 fixed Team Room URLs, free, every sprint" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
       primaryLabel="Start remote room"
       secondaryHref="/pricing"
-      secondaryLabel="See Pro pricing"
+      secondaryLabel="See pricing"
     >
       <MarketingSection
         title="What remote teams usually need"
@@ -6845,7 +6486,7 @@ function RemoteSprintPlanningPage({ onNavigate }) {
           <article className="marketing-card">
             <h3 className="marketing-card-title">Persistent room when the team is ready</h3>
             <p className="marketing-card-copy">
-              Pro adds two dedicated Team Rooms so recurring squads stop recreating and re-sharing the same room every sprint.
+              Team Rooms give recurring squads two fixed URLs so nobody recreates and re-shares the same room every sprint.
             </p>
           </article>
         </div>
@@ -6856,10 +6497,10 @@ function RemoteSprintPlanningPage({ onNavigate }) {
         intro="These are the habits that usually make remote sprint planning feel lightweight rather than exhausting."
       >
         <ul className="marketing-list">
-          <li><strong>Share the room before the meeting starts</strong> so people can join as the call opens.</li>
-          <li><strong>Keep story names visible and estimates structured</strong> so discussion stays anchored to one backlog item at a time.</li>
-          <li><strong>Use facilitator-only controls</strong> to keep reveals, re-votes, and final estimate decisions consistent.</li>
-          <li><strong>Reuse one of your two dedicated Team Rooms</strong> when the team estimates together every sprint and wants a stable operating rhythm.</li>
+          <li><strong>Share the room before the meeting starts:</strong> so people can join as the call opens.</li>
+          <li><strong>Keep story names visible and estimates structured:</strong> so discussion stays anchored to one backlog item at a time.</li>
+          <li><strong>Use facilitator-only controls:</strong> to keep reveals, re-votes, and final estimate decisions consistent.</li>
+          <li><strong>Reuse one of your two dedicated Team Rooms:</strong> when the team estimates together every sprint and wants a stable operating rhythm.</li>
         </ul>
       </MarketingSection>
 
@@ -6870,15 +6511,12 @@ function RemoteSprintPlanningPage({ onNavigate }) {
         links={[
           { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "Understand the browser-first room flow and live reveal model." },
           { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the facilitator controls, story queue, Team Alignment, and history features." },
-          { href: "/pricing", kicker: "Plans", title: "Free vs Pro for remote teams", copy: "See when reusable dedicated Team Rooms become the right operational upgrade." },
+          { href: "/pricing", kicker: "Pricing", title: "What it costs remote teams", copy: "Nothing, including the reusable Team Rooms distributed squads rely on." },
         ]}
       />
     </MarketingPageShell>
   );
 }
-
-// ── Pro status ───────────────────────────────────────────────────────────────
-const PRO_KEY_REGEX = /^PPRO-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 
 function getAuthErrorMessage(error) {
   switch (error?.code) {
@@ -7029,132 +6667,13 @@ async function saveUserProfile(user, profile = {}) {
   await update(ref(db, `users/${user.uid}`), nextProfile);
 }
 
-async function writeProUserProfile(user, formattedKey, currentProfile = {}) {
-  const teamRooms = resolveDedicatedTeamRooms(currentProfile, user);
-  await update(ref(db, `users/${user.uid}`), {
-    email: user.email || currentProfile.email || "",
-    displayName: user.displayName || currentProfile.displayName || "",
-    teamRoomName: teamRooms.primary,
-    teamRooms,
-    plan: "pro",
-    billingStatus: "active",
-    createdAt: currentProfile.createdAt || Date.now(),
-    proKey: formattedKey,
-    proActivatedAt: Date.now(),
-    lastLoginAt: Date.now(),
-  });
-}
 
-async function reconcileProActivationState(user, formattedKey) {
-  if (!user?.uid) return "error";
-  try {
-    const [licenseSnap, profileSnap] = await Promise.all([
-      get(ref(db, `licenses/${formattedKey}`)).catch(() => null),
-      get(ref(db, `users/${user.uid}`)).catch(() => null),
-    ]);
-    const license = licenseSnap?.exists?.() ? (licenseSnap.val() || {}) : null;
-    const profile = profileSnap?.exists?.() ? (profileSnap.val() || {}) : {};
-    if (!license || license.active !== true) return "invalid";
-    if (license.claimedBy && license.claimedBy !== user.uid) return "claimed";
-    if (profile?.plan === "pro" && String(profile?.proKey || "").trim().toUpperCase() === formattedKey) {
-      return "ok";
-    }
-    if (license.claimedBy === user.uid) {
-      await writeProUserProfile(user, formattedKey, profile || {});
-      return "ok";
-    }
-  } catch {
-    // Fall through to generic retry guidance below.
-  }
-  return "retry";
-}
 
-async function markCheckoutIntent(user, billing, currency) {
-  if (!user?.uid) return;
-  const snap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
-  const currentProfile = snap?.exists?.() ? snap.val() || {} : {};
-  const teamRooms = resolveDedicatedTeamRooms(currentProfile, user);
-  await update(ref(db, `users/${user.uid}`), {
-    billingCycle: billing,
-    currency,
-    billingStatus: "checkout_started",
-    checkoutStartedAt: Date.now(),
-    email: user.email || "",
-    displayName: user.displayName || "",
-    teamRoomName: teamRooms.primary,
-    teamRooms,
-  });
-}
 
-async function ensureClaimedProLicense(user, profile = {}) {
-  const formatted = String(profile?.proKey || "").trim().toUpperCase();
-  if (!user?.uid || profile?.plan !== "pro" || !PRO_KEY_REGEX.test(formatted)) return;
-  const licenseRef = ref(db, `licenses/${formatted}`);
-  const snap = await get(licenseRef).catch(() => null);
-  if (!snap?.exists?.() || snap.val()?.active !== true) return;
-  const license = snap.val() || {};
-  if (license.claimedBy === user.uid) return;
-  if (license.claimedBy && license.claimedBy !== user.uid) return;
-  await runTransaction(
-    licenseRef,
-    (current) => {
-      if (!current || current.active !== true) return current;
-      if (current.claimedBy && current.claimedBy !== user.uid) return;
-      if (current.claimedBy === user.uid) return current;
-      return {
-        ...current,
-        claimedBy: user.uid,
-        claimedAt: current.claimedAt || profile.proActivatedAt || Date.now(),
-      };
-    },
-    { applyLocally: false },
-  ).catch(() => null);
-}
 
-async function validateAndSavePro(key, user = null) {
-  const formatted = key.trim().toUpperCase();
-  if (!PRO_KEY_REGEX.test(formatted)) return "invalid";
-  try {
-    const licenseRef = ref(db, `licenses/${formatted}`);
-    const snap = await get(licenseRef);
-    if (!snap.exists() || snap.val().active !== true) return "invalid";
-    if (user?.uid) {
-      const license = snap.val() || {};
-      if (license.claimedBy && license.claimedBy !== user.uid) return "claimed";
-      if (!license.claimedBy) {
-        const claimResult = await runTransaction(
-          licenseRef,
-          (current) => {
-            if (!current || current.active !== true) return current;
-            if (current.claimedBy) return;
-            return {
-              ...current,
-              claimedBy: user.uid,
-              claimedAt: Date.now(),
-            };
-          },
-          { applyLocally: false },
-        );
-        if (!claimResult.committed) return "claimed";
-      }
-      const profileSnap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
-      const currentProfile = profileSnap?.exists?.() ? profileSnap.val() || {} : {};
-      try {
-        await writeProUserProfile(user, formatted, currentProfile);
-      } catch {
-        const retrySnap = await get(ref(db, `users/${user.uid}`)).catch(() => null);
-        const retryProfile = retrySnap?.exists?.() ? retrySnap.val() || {} : currentProfile;
-        await writeProUserProfile(user, formatted, retryProfile);
-      }
-    }
-    return "ok";
-  } catch {
-    return user?.uid ? reconcileProActivationState(user, formatted) : "error";
-  }
-}
 
 /* ═══════════════════════ HISTORY MODAL ═══════════════════════
-   Pro-only. Shows all saved sprint sessions with velocity insights.
+   Shows all saved sprint sessions with velocity insights, for any signed-in account.
    history: array of session records from Firebase /history/{uid}
 ═══════════════════════════════════════════════════════════════ */
 /* ═══════════════════════ LEGAL PAGE SHELL ═══════════════════════
@@ -7202,8 +6721,9 @@ function TermsPage({ onBack }) {
       <h2>2. Description of the Service</h2>
       <p>
         pointpoker is a web-based planning poker tool designed to assist agile and Scrum teams in
-        collaborative story-point estimation. The Service is provided on a free tier and a paid
-        Pro tier. Features and limits differ between tiers and are described on the pricing page.
+        collaborative story-point estimation. The Service is currently provided free of charge to all
+        users, with no paid tier and no payment taken. We may introduce paid features in future; if we
+        do, we will say so in advance and the features available free at that time will remain free.
       </p>
       <p>
         The Service is provided via third-party infrastructure including Google Firebase (real-time
@@ -7235,7 +6755,6 @@ function TermsPage({ onBack }) {
         <li>Attempt to gain unauthorised access to any part of the Service, its infrastructure, or another user's data;</li>
         <li>Interfere with or disrupt the integrity or performance of the Service;</li>
         <li>Conduct automated scraping, crawling, or data extraction without our written consent;</li>
-        <li>Misuse or fraudulently activate Pro subscription keys;</li>
         <li>Reverse engineer, decompile, or disassemble any component of the Service;</li>
         <li>Use the Service in any manner that could damage, disable, or impair our infrastructure.</li>
       </ul>
@@ -7244,21 +6763,16 @@ function TermsPage({ onBack }) {
         discretion, that you have violated this acceptable use policy.
       </p>
 
-      <h2>5. Pro Subscription</h2>
+      <h2>5. Charges</h2>
       <p>
-        Access to Pro features requires a valid Pro subscription or activation key. Subscription
-        fees are payable in advance and are non-refundable except as required by applicable consumer
-        protection law. Where you purchase as a consumer in the United Kingdom, the Consumer Rights
-        Act 2015 and Consumer Contracts Regulations 2013 may apply.
+        The Service is free of charge. We do not collect payment details, we do not operate a paid
+        tier, and no part of the Service is behind a paywall. Because nothing is sold to you, no
+        consumer purchase, refund, or cancellation rights arise in respect of the Service.
       </p>
       <p>
-        Pro activation keys are personal to the account holder and may not be resold, transferred,
-        or shared. We reserve the right to deactivate keys that we reasonably believe have been
-        obtained or used fraudulently.
-      </p>
-      <p>
-        We may change Pro pricing at any time. Any price changes will take effect at the start of
-        your next billing cycle and will be communicated in advance.
+        We may introduce optional paid features in future. If we do, they will be additional to the
+        functionality that is free at that time, they will be clearly identified before any charge,
+        and no payment will ever be taken without your express agreement.
       </p>
 
       <h2>6. Intellectual Property</h2>
@@ -7320,7 +6834,7 @@ function TermsPage({ onBack }) {
 
       <h2>10. Third-Party Services</h2>
       <p>
-        The Service integrates with third-party services including Google Firebase, Vercel, and Stripe.
+        The Service integrates with third-party services including Google Firebase and Vercel.
         Your use of such services is subject to their respective terms and privacy policies. We are not
         responsible for the practices, content, or availability of any third-party services.
       </p>
@@ -7333,7 +6847,7 @@ function TermsPage({ onBack }) {
       </p>
       <p>
         We will make reasonable efforts to provide advance notice of material changes that affect
-        paying Pro subscribers.
+        how teams use the Service.
       </p>
 
       <h2>12. Governing Law and Jurisdiction</h2>
@@ -7387,30 +6901,30 @@ function PrivacyPage({ onBack }) {
       <p>We collect and process only the data necessary to provide the Service:</p>
       <ul>
         <li>
-          <strong>Account data</strong> — If you register, we collect your email address and
+          <strong>Account data</strong> If you register, we collect your email address and
           display name. These are required to create and manage your account.
         </li>
         <li>
-          <strong>Session data</strong> — Room codes, team names, story names, and vote values
+          <strong>Session data</strong> Room codes, team names, story names, and vote values
           are stored temporarily in Firebase Realtime Database while a session is active.
-          Free sessions are deleted when the session ends. Pro session summaries (total points,
-          stories estimated, consensus rate) are retained in your account history.
+          Session data is deleted when the session ends. If you are signed in, a summary of the
+          session (total points, stories estimated, consensus rate) is retained in your account
+          history until you delete it.
         </li>
         <li>
-          <strong>Usage analytics</strong> — We count anonymised events (e.g. "room created",
+          <strong>Usage analytics</strong> We count anonymised events (e.g. "room created",
           "pricing page viewed") as daily integer totals in Firebase. No personal data, device
           identifiers, or IP addresses are stored in analytics. These counts cannot be linked
           back to any individual.
         </li>
         <li>
-          <strong>Technical data</strong> — Firebase and Vercel may log standard server data
+          <strong>Technical data</strong> Firebase and Vercel may log standard server data
           (IP addresses, browser type, access timestamps) as part of their infrastructure
           operations. We do not control or access this data outside their platforms.
         </li>
         <li>
-          <strong>Payment data</strong> — Pro subscription payments are processed by Stripe.
-          We do not receive or store your full card details. Stripe's privacy policy governs
-          payment data handling.
+          <strong>Payment data</strong> None. The Service is free, we take no payments, and we
+          do not collect or store card or billing details of any kind.
         </li>
       </ul>
 
@@ -7421,16 +6935,16 @@ function PrivacyPage({ onBack }) {
       </p>
       <ul>
         <li>
-          <strong>Contract performance (Article 6(1)(b))</strong> — Processing your account
+          <strong>Contract performance (Article 6(1)(b))</strong> Processing your account
           data and session data is necessary to deliver the Service you have requested.
         </li>
         <li>
-          <strong>Legitimate interests (Article 6(1)(f))</strong> — We process anonymised
+          <strong>Legitimate interests (Article 6(1)(f))</strong> We process anonymised
           usage analytics to understand how the Service is used and to improve it. These
           interests are not overridden by your rights, as no personal data is included.
         </li>
         <li>
-          <strong>Consent (Article 6(1)(a))</strong> — We rely on your consent for storing
+          <strong>Consent (Article 6(1)(a))</strong> We rely on your consent for storing
           a preference cookie (cookie consent flag) in your browser. You may withdraw this
           consent at any time via the Cookie Settings link in the footer.
         </li>
@@ -7441,8 +6955,7 @@ function PrivacyPage({ onBack }) {
       <ul>
         <li>To create and authenticate your account;</li>
         <li>To operate and deliver the planning poker Service;</li>
-        <li>To store Pro sprint history data associated with your account;</li>
-        <li>To process payments via Stripe;</li>
+        <li>To store sprint history associated with your account;</li>
         <li>To count anonymised usage events to improve the product;</li>
         <li>To respond to support enquiries you send to us;</li>
         <li>To comply with our legal obligations.</li>
@@ -7458,12 +6971,12 @@ function PrivacyPage({ onBack }) {
       </p>
       <ul>
         <li>
-          <strong>Firebase authentication persistence</strong> — Firebase stores your
+          <strong>Firebase authentication persistence</strong> Firebase stores your
           authentication session in IndexedDB or local storage to keep you signed in across
           browser sessions. This is strictly necessary for the authentication feature.
         </li>
         <li>
-          <strong>Cookie consent preference</strong> — A single flag (<code>pp_cookie_ok</code>)
+          <strong>Cookie consent preference</strong> A single flag (<code>pp_cookie_ok</code>)
           is stored in local storage to record that you have accepted this notice. It contains
           no personal data.
         </li>
@@ -7480,7 +6993,7 @@ function PrivacyPage({ onBack }) {
       </p>
       <ul>
         <li>
-          <strong>Google Firebase</strong> — Provides real-time database (session data) and
+          <strong>Google Firebase</strong> Provides real-time database (session data) and
           authentication. Data may be stored in Google's data centres, which may be located
           within the EEA and other regions. Google LLC is certified under the EU-US Data
           Privacy Framework. See{" "}
@@ -7489,17 +7002,10 @@ function PrivacyPage({ onBack }) {
           </a>.
         </li>
         <li>
-          <strong>Vercel Inc.</strong> — Hosts and serves the Service. Standard server access
+          <strong>Vercel Inc.</strong> Hosts and serves the Service. Standard server access
           logs may be retained by Vercel in accordance with their privacy policy. See{" "}
           <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">
             Vercel Privacy Policy
-          </a>.
-        </li>
-        <li>
-          <strong>Stripe Inc.</strong> — Processes Pro subscription payments. Stripe is a
-          certified PCI DSS Level 1 service provider. See{" "}
-          <a href="https://stripe.com/gb/privacy" target="_blank" rel="noopener noreferrer">
-            Stripe Privacy Policy
           </a>.
         </li>
       </ul>
@@ -7507,14 +7013,13 @@ function PrivacyPage({ onBack }) {
       <h2>7. Data Retention</h2>
       <p>
         We retain your data for as long as your account is active or as needed to provide the
-        Service. Session data for free rooms is deleted immediately when the session ends.
-        Pro account data (account profile and sprint history) is retained while your account
-        remains active.
+        Service. Room session data is deleted when the session ends, and rooms left idle are
+        removed automatically. Account data (profile and sprint history) is retained while your
+        account remains active.
       </p>
       <p>
-        If you request account deletion, we will delete your personal data within 30 days,
-        except where we are required to retain it by law (for example, financial records for
-        VAT purposes, which we retain for 6 years as required by HMRC).
+        If you request account deletion, we will delete your personal data within 30 days, except
+        where we are required to retain it by law.
       </p>
 
       <h2>8. Your Rights Under UK GDPR</h2>
@@ -7524,31 +7029,31 @@ function PrivacyPage({ onBack }) {
       </p>
       <ul>
         <li>
-          <strong>Right of access</strong> — You may request a copy of the personal data we
+          <strong>Right of access</strong> You may request a copy of the personal data we
           hold about you.
         </li>
         <li>
-          <strong>Right to rectification</strong> — You may ask us to correct inaccurate or
+          <strong>Right to rectification</strong> You may ask us to correct inaccurate or
           incomplete data.
         </li>
         <li>
-          <strong>Right to erasure ("right to be forgotten")</strong> — You may request that
+          <strong>Right to erasure ("right to be forgotten")</strong> You may request that
           we delete your personal data, subject to legal retention requirements.
         </li>
         <li>
-          <strong>Right to restriction of processing</strong> — You may ask us to restrict
+          <strong>Right to restriction of processing</strong> You may ask us to restrict
           processing of your data in certain circumstances.
         </li>
         <li>
-          <strong>Right to data portability</strong> — You may request your data in a
+          <strong>Right to data portability</strong> You may request your data in a
           structured, machine-readable format.
         </li>
         <li>
-          <strong>Right to object</strong> — You may object to processing based on legitimate
+          <strong>Right to object</strong> You may object to processing based on legitimate
           interests at any time.
         </li>
         <li>
-          <strong>Right to withdraw consent</strong> — Where processing is based on consent,
+          <strong>Right to withdraw consent</strong> Where processing is based on consent,
           you may withdraw it at any time without affecting the lawfulness of prior processing.
         </li>
       </ul>
@@ -7589,7 +7094,7 @@ function PrivacyPage({ onBack }) {
       <h2>11. International Transfers</h2>
       <p>
         Your data may be processed in countries outside the United Kingdom, including the United
-        States, by our third-party processors (Firebase, Vercel, Stripe). Each processor has
+        States, by our third-party processors (Firebase, Vercel). Each processor has
         appropriate safeguards in place, such as Standard Contractual Clauses or recognised
         certification frameworks, to ensure your data is protected to UK GDPR standards.
       </p>
@@ -7624,6 +7129,7 @@ function PrivacyPage({ onBack }) {
 }
 
 function HistoryModal({ onClose, history }) {
+  const [dialogRef, closeDialog] = useDialog(onClose);
   const totalSprints = history.length;
 
   // Compute insights from numeric-point sessions only
@@ -7663,7 +7169,7 @@ function HistoryModal({ onClose, history }) {
   };
 
   return (
-    <div className="history-overlay" role="dialog" aria-modal="true" aria-label="Sprint history">
+    <div className="history-overlay" role="dialog" aria-modal="true" aria-label="Sprint history" ref={dialogRef}>
       <div className="history-modal">
         <div className="history-header">
           <div>
@@ -7674,7 +7180,7 @@ function HistoryModal({ onClose, history }) {
                 : `${totalSprints} session${totalSprints !== 1 ? "s" : ""} recorded`}
             </p>
           </div>
-          <button className="history-close" onClick={onClose} aria-label="Close history">✕</button>
+          <button className="history-close" onClick={closeDialog} aria-label="Close history">✕</button>
         </div>
 
         {totalSprints === 0 ? (
@@ -7682,8 +7188,8 @@ function HistoryModal({ onClose, history }) {
             <div className="history-empty-icon" aria-hidden="true">📋</div>
             <p className="history-empty-title">Your sprint archive is ready</p>
             <p className="history-empty-copy">
-              Finish a Pro session and it will appear here automatically. Sprint history is saved when you
-              <strong> end a session</strong> or when a room auto-expires after <strong>5 hours</strong>.
+              Finish a session while signed in and it will appear here automatically. Sprint history is saved when you
+              <strong>end a session</strong> or when a room auto-expires after <strong>5 hours</strong>.
             </p>
           </div>
         ) : (
@@ -7754,430 +7260,6 @@ function HistoryModal({ onClose, history }) {
   );
 }
 
-function PricingModal({
-  onClose,
-  onProActivated,
-  currentUser,
-  currentPlan,
-  onRequireLogin,
-  initialShowKey = false,
-  entryIntent = "general",
-  justRegistered = false,
-}) {
-  const [currency, setCurrency]   = useState("GBP");
-  const [billing,  setBilling]    = useState("annual");  // "monthly" | "annual"
-  const [keyInput, setKeyInput]   = useState("");
-  const [keyStatus, setKeyStatus] = useState(null);      // null | "checking" | "ok" | "invalid" | "error"
-  const [showKey,  setShowKey]    = useState(
-    () => initialShowKey || (!!currentUser && currentPlan !== "pro" && entryIntent === "activate")
-  );
-  const [billingStatus, setBillingStatus] = useState(null);
-  const activationTimerRef = useRef(null);
-
-  const p       = PRICING[currency];
-  const isAnn   = billing === "annual";
-  const price   = isAnn ? p.proAnnual : p.pro;
-  const annTotal = p.proAnnual * 12;
-  const savePct = Math.round((1 - p.proAnnual / p.pro) * 100);
-  const stripeUrl = STRIPE_LINKS[billing][currency];
-  const support   = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
-  const checkoutLive = stripeUrl !== "#upgrade";
-  const isPro = currentPlan === "pro";
-  const activationPrimary = !checkoutLive && !!currentUser && !isPro;
-  const quickStartTitle = justRegistered
-    ? "Account ready for Pro"
-    : currentUser
-      ? "Upgrade this account to Pro"
-      : "Best way to start on Pro";
-  const quickStartCopy = justRegistered
-    ? "Your account is ready. Activate Pro below, then choose the names for your two dedicated Team Rooms in the workspace."
-    : currentUser
-      ? "This account is ready for Pro. Activate your code below, then name the two dedicated Team Rooms you want this account to own."
-      : "Create one account first, then activate Pro on that same account so billing, Team Rooms, and sprint history all stay attached to one identity.";
-  const quickStartSteps = currentUser
-    ? [
-        { title: "Activate this account", copy: "Enter your Pro code once on this signed-in account." },
-        { title: "Name your Team Rooms", copy: "Choose the shared room names you want before your username." },
-        { title: "Reuse both links", copy: "Bookmark and share the two fixed URLs with your teams." },
-      ]
-    : [
-        { title: "Create your account", copy: "Start with the account that will own your Pro plan." },
-        { title: "Activate Pro", copy: "Use your code after registration to unlock both fixed rooms." },
-        { title: "Choose room names", copy: "Name the two Team Rooms you want and keep reusing them." },
-      ];
-
-  const FREE_FEATURES = [
-    { yes: true,  text: `Up to ${FREE_MAX_PARTICIPANTS} participants per session` },
-    { yes: true,  text: "All card decks — Fibonacci, T-Shirt, Powers of 2"      },
-    { yes: true,  text: "Simultaneous reveal with live vote breakdown"           },
-    { yes: true,  text: "Story or task queue, session summary export"            },
-    { yes: true,  text: "Facilitator mode and sprint analytics"                  },
-    { yes: false, text: "2 dedicated Team Rooms with fixed URLs"                 },
-    { yes: false, text: `Up to ${PRO_MAX_PARTICIPANTS} participants per session` },
-    { yes: false, text: "Sprint history — velocity trends across sprints"        },
-    { yes: false, text: "Priority support"                                       },
-  ];
-
-  const PRO_FEATURES = [
-    { yes: true, text: "Everything in Free, always"                              },
-    { yes: true, text: "2 dedicated Team Rooms — fixed URLs every sprint"        },
-    { yes: true, text: `Up to ${PRO_MAX_PARTICIPANTS} participants per session`  },
-    { yes: true, text: "Sprint history — velocity trends and consensus insights" },
-    { yes: true, text: "Share each fixed URL once, then let teams rejoin by name" },
-    { yes: true, text: "Estimation Spree streak and alignment analytics"         },
-    { yes: true, text: "Priority support via email"                              },
-  ];
-
-  const handleActivate = async () => {
-    if (!currentUser) {
-      setBillingStatus("login");
-      if (onRequireLogin) onRequireLogin();
-      return;
-    }
-    if (!keyInput.trim()) return;
-    setKeyStatus("checking");
-    const result = await validateAndSavePro(keyInput, currentUser);
-    setKeyStatus(result);
-    if (result === "ok") {
-      track("pro_activated");
-      clearTimeout(activationTimerRef.current);
-      activationTimerRef.current = setTimeout(() => {
-        if (onProActivated) onProActivated();
-      }, 1100);
-    }
-  };
-
-  useEffect(() => () => clearTimeout(activationTimerRef.current), []);
-
-  const handleCheckout = async () => {
-    if (isPro) return;
-    if (!currentUser) {
-      setBillingStatus("login");
-      if (onRequireLogin) onRequireLogin();
-      return;
-    }
-    if (!checkoutLive) {
-      setBillingStatus("activation");
-      setShowKey(true);
-      return;
-    }
-    setBillingStatus("redirecting");
-    markCheckoutIntent(currentUser, billing, currency).catch(() => {
-      // Billing intent should not block checkout.
-    });
-    window.location.assign(stripeUrl);
-  };
-
-  if (isPro) {
-    return (
-      <div className="pricing-overlay" onClick={onClose}>
-        <div className="pricing-modal" onClick={e => e.stopPropagation()}>
-          <button className="pricing-close" onClick={onClose} aria-label="Close pricing">✕</button>
-
-          <h2 className="pricing-title">Your Pro plan is active</h2>
-          <p className="pricing-sub">
-            This account already has everything unlocked. There is nothing to upgrade or buy here.
-          </p>
-
-          <div className="pricing-card pro pricing-summary-card">
-            <div className="pricing-tier">Pro active</div>
-            <div className="pricing-price">
-              <span className="pricing-amount">✓</span>
-              <span className="pricing-period">already unlocked on this account</span>
-            </div>
-            <p className="pricing-desc">
-              Signed in as {currentUser?.email || "your current account"}. Use your dedicated Team Rooms, run larger sessions, and keep sprint history attached to this identity across devices.
-            </p>
-            <div className="pricing-state-box">
-              <span className="pricing-state-ok">✓ No upsell is shown while this account remains on Pro.</span>
-            </div>
-            <div className="pricing-features">
-              {PRO_FEATURES.map((f, i) => (
-                <div className="pricing-feature" key={i}>
-                  <span className="pf-icon yes">✓</span>
-                  <span>{f.text}</span>
-                </div>
-              ))}
-            </div>
-            <div className="pricing-summary-actions">
-              <button className="pricing-cta pro-cta" onClick={onClose}>
-                Back to workspace
-              </button>
-              <a className="pricing-support-link" href={`mailto:${support}`}>
-                Contact support
-              </a>
-            </div>
-          </div>
-
-          <p className="pricing-footer">
-            Need help with Team Rooms or billing?{" "}
-            <a href={`mailto:${support}`}>Contact support</a>
-            {" · "}
-            <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
-            {" · "}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="pricing-overlay" onClick={onClose}>
-      <div className="pricing-modal" onClick={e => e.stopPropagation()}>
-        <button className="pricing-close" onClick={onClose} aria-label="Close pricing">✕</button>
-
-        <h2 className="pricing-title">Simple, Transparent Pricing</h2>
-        <p className="pricing-sub">
-          Free forever for small teams. Pro gives you two dedicated Team Rooms, more participant capacity, and sprint history.
-        </p>
-
-        <div className="pricing-journey-box">
-          <div className="pricing-journey-k">Pro setup</div>
-          <div className="pricing-journey-title">{quickStartTitle}</div>
-          <p className="pricing-journey-copy">{quickStartCopy}</p>
-          <div className="pricing-journey-steps">
-            {quickStartSteps.map((step, index) => (
-              <div className="pricing-journey-step" key={step.title}>
-                <span className="pricing-journey-step-num">{index + 1}</span>
-                <strong>{step.title}</strong>
-                <span>{step.copy}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Billing toggle ── */}
-        <div className="billing-toggle-row">
-          <button
-            type="button"
-            className={`billing-btn${billing === "monthly" ? " active" : ""}`}
-            aria-pressed={billing === "monthly"}
-            onClick={() => setBilling("monthly")}
-          >Monthly</button>
-          <button
-            type="button"
-            className={`billing-btn${billing === "annual" ? " active" : ""}`}
-            aria-pressed={billing === "annual"}
-            onClick={() => setBilling("annual")}
-          >
-            Annual
-            {billing === "annual"
-              ? <span className="billing-save">Save {savePct}%</span>
-              : <span className="billing-save dim">Save {savePct}%</span>}
-          </button>
-        </div>
-
-        {/* ── Currency switcher ── */}
-        <div className="currency-row">
-          {["GBP", "USD", "EUR"].map(c => (
-            <button
-              key={c}
-              type="button"
-              className={`currency-btn${currency === c ? " active" : ""}`}
-              aria-pressed={currency === c}
-              onClick={() => setCurrency(c)}
-            >
-              {c === "GBP" ? "🇬🇧 GBP" : c === "USD" ? "🇺🇸 USD" : "🇪🇺 EUR"}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Pricing cards ── */}
-        <div className="pricing-cards">
-
-          {/* Free */}
-          <div className="pricing-card">
-            <div className="pricing-tier">Free</div>
-            <div className="pricing-price">
-              <span className="pricing-amount">{p.symbol}0</span>
-              <span className="pricing-period">/ forever</span>
-            </div>
-            <p className="pricing-desc">
-              No account, no credit card. Get your team estimating in under 10 seconds.
-            </p>
-            <div className="pricing-features">
-              {FREE_FEATURES.map((f, i) => (
-                <div className="pricing-feature" key={i}>
-                  <span className={`pf-icon ${f.yes ? "yes" : "no"}`}>{f.yes ? "✓" : "–"}</span>
-                  <span>{f.text}</span>
-                </div>
-              ))}
-            </div>
-            <button className="pricing-cta" onClick={onClose}>Get Started Free</button>
-          </div>
-
-          {/* Pro */}
-          <div className="pricing-card pro">
-            <span className="pricing-badge">{isAnn ? "Best Value" : "Most Popular"}</span>
-            <div className="pricing-tier">Pro</div>
-
-            <div className="pricing-price">
-              <span className="pricing-amount">{p.symbol}{price}</span>
-              <span className="pricing-period">/ mo</span>
-            </div>
-
-            {isAnn
-              ? <p className="pricing-billing-note">Billed as {p.symbol}{annTotal}/year</p>
-              : <p className="pricing-billing-note">Switch to annual and save {p.symbol}{p.pro - p.proAnnual}/mo</p>}
-
-            <p className="pricing-desc">
-              Two dedicated Team Rooms you can name yourself and reuse every sprint — no need to recreate them before every session.
-            </p>
-            <div className="pricing-account-note">
-              {currentUser
-                ? `Signed in as ${currentUser.email}. This account will own both Team Rooms and future billing.`
-                : "Create one account first so your plan, Team Rooms, and sprint history follow you across devices."}
-            </div>
-            <div className="pricing-state-box">
-              {isPro ? (
-                <span className="pricing-state-ok">✓ This account already has Pro access.</span>
-              ) : justRegistered ? (
-                <span className="pricing-state-ok">✓ Account created. Activate Pro below to finish setup on this same account.</span>
-              ) : currentUser && !checkoutLive ? (
-                <span className="pricing-state-ok">Fastest route: activate Pro below on this account, then name your two Team Rooms in the workspace.</span>
-              ) : currentUser ? (
-                checkoutLive
-                  ? <span className="pricing-state-neutral">Signed in and ready for checkout.</span>
-                  : <span className="pricing-state-warn">Checkout is not live yet. Use your activation code for now, then keep this same account for Stripe later.</span>
-              ) : (
-                <span className="pricing-state-neutral">Create an account first so Pro access, billing, and sprint history stay attached to one identity.</span>
-              )}
-            </div>
-            <div className="pricing-features">
-              {PRO_FEATURES.map((f, i) => (
-                <div className="pricing-feature" key={i}>
-                  <span className="pf-icon yes">✓</span>
-                  <span>{f.text}</span>
-                </div>
-              ))}
-            </div>
-
-            <button className="pricing-cta pro-cta" onClick={handleCheckout} disabled={isPro}>
-              {isPro
-                ? "Your Pro plan is active"
-                : activationPrimary
-                  ? "Activate this account ↓"
-                : currentUser
-                  ? "Continue to secure checkout →"
-                  : checkoutLive
-                    ? "Create account to continue →"
-                    : "Create account for Pro →"}
-            </button>
-            <p className="pricing-trial-note">
-              {!checkoutLive
-                ? "Temporary setup: activate Pro with your code while Stripe checkout is being finalised"
-                : "Secure checkout via Stripe · Cancel anytime"}
-            </p>
-            {billingStatus === "login" && (
-              <p className="pro-key-status error">Create or sign in to an account before activating or purchasing Pro.</p>
-            )}
-            {billingStatus === "activation" && (
-              <p className="pro-key-status success">Scroll down to enter your Pro activation code.</p>
-            )}
-            {billingStatus === "redirecting" && (
-              <p className="pro-key-status success">Opening Stripe checkout…</p>
-            )}
-          </div>
-        </div>
-
-        {/* ── Pro key activation ── */}
-        <div className="pro-key-section">
-          <button
-            className="pro-key-toggle"
-            onClick={() => setShowKey(v => !v)}
-            aria-expanded={showKey}
-          >
-            {showKey ? "▾" : "▸"} {currentUser ? "Activate this account with a code" : "Sign in to activate Pro with a code"}
-          </button>
-          {showKey && (
-            <div className="pro-key-body">
-              {!currentUser ? (
-                <div className="pro-key-gate">
-                  <p className="pro-key-copy">
-                    Pro access is attached to your account, not just this browser. Sign in or create your account first, then return here to activate your code.
-                  </p>
-                  <button
-                    className="pro-key-btn full"
-                    onClick={() => onRequireLogin?.()}
-                  >
-                    Sign in or create account
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <p className="pro-key-copy">
-                    This is the simplest short-term Pro path while Stripe checkout is still being finalised. Activate this account here, then name your two dedicated Team Rooms in the workspace.
-                  </p>
-                  <div className="pro-key-row">
-                    <input
-                      type="text"
-                      className="pro-key-input"
-                      placeholder="PPRO-XXXX-XXXX-XXXX"
-                      value={keyInput}
-                      onChange={e => {
-                        setKeyInput(e.target.value.toUpperCase());
-                        setKeyStatus(null);
-                      }}
-                      onKeyDown={(e) => e.key === "Enter" && handleActivate()}
-                      maxLength={19}
-                      spellCheck={false}
-                    />
-                    <button
-                      className="pro-key-btn"
-                      onClick={handleActivate}
-                      disabled={keyStatus === "checking" || !keyInput.trim()}
-                    >
-                      {keyStatus === "checking" ? "…" : "Activate"}
-                    </button>
-                  </div>
-                  {keyStatus === "ok" && (
-                    <p className="pro-key-status success">
-                      ✓ Pro activated — your 2 dedicated Team Rooms are unlocked.
-                    </p>
-                  )}
-                  {keyStatus === "invalid" && (
-                    <p className="pro-key-status error">
-                      Key not recognised. Check your confirmation email or{" "}
-                      <a href={`mailto:${support}`}>contact support</a>.
-                    </p>
-                  )}
-                  {keyStatus === "claimed" && (
-                    <p className="pro-key-status error">
-                      This activation key is already attached to another account.{" "}
-                      <a href={`mailto:${support}`}>Contact support</a> if you need it moved.
-                    </p>
-                  )}
-                  {keyStatus === "retry" && (
-                    <p className="pro-key-status error">
-                      This key is attached to this account, but Pro setup did not finish. Try once more or{" "}
-                      <a href={`mailto:${support}`}>contact support</a>.
-                    </p>
-                  )}
-                  {keyStatus === "error" && (
-                    <p className="pro-key-status error">
-                      Could not reach our servers. Check your connection and try again.
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        <p className="pricing-footer">
-          Prices shown ex. VAT · VAT added at checkout where applicable<br />
-          <a href={`mailto:${support}`}>Contact support</a>
-          {" · "}
-          <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
-          {" · "}
-          <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-        </p>
-      </div>
-    </div>
-  );
-}
-
 /* ═══════════════════════ JOIN SCREEN ═══════════════════════ */
 function JoinScreen({
   onCreate,
@@ -8185,15 +7267,14 @@ function JoinScreen({
   onTeamRoom,
   prefillCode,
   prefillTeam,
-  onShowPricing,
   currentUser,
-  currentPlan = "free",
   accountProfile,
   proSetupFocusToken = 0,
+  startFocusToken = 0,
+  onRequireAccount,
   onNavigate,
 }) {
   const signedIn = !!currentUser;
-  const isPro = currentPlan === "pro";
   const teamRouteMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
   const teamQuery = new URLSearchParams(window.location.search).get("team");
   const defaultName = currentUser?.displayName || deriveDisplayNameFallback(currentUser?.email || "");
@@ -8222,13 +7303,14 @@ function JoinScreen({
     (room) => room.code === teamRouteMatch?.[1],
   );
   const isSharedTeamRoomEntry = !!prefillTeam && (!!teamRouteMatch || !!teamQuery);
-  const canHostPermanentTeamRoom = isPro;
+  // Hosting a Team Room needs a free account so the URL slug is unique to you.
+  // Joining a Team Room someone shared works for anyone, signed in or not.
+  const canHostPermanentTeamRoom = signedIn;
   const canEnterTeamRoom = canHostPermanentTeamRoom || isSharedTeamRoomEntry;
-  const showTeamRoomProBadge = !canEnterTeamRoom;
   const nameSeedKey = signedIn ? `${currentUser?.uid || currentUser?.email || ""}:${defaultName}` : "guest";
   // Priority: ?team= → team tab, ?room= → join tab, otherwise → create tab
-  const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : (signedIn && isPro ? "team" : "create"));
-  const [nameDraft, setNameDraft] = useState(signedIn ? defaultName : "");
+  const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : (signedIn ? "team" : "create"));
+  const [nameDraft, setNameDraft] = useState(signedIn ? defaultName : recallName());
   const [nameEdited, setNameEdited] = useState(false);
   const [role, setRole] = useState("voter");
   const [deck, setDeck] = useState(() => getFounderDefaultDeck(prefillTeam));
@@ -8238,7 +7320,7 @@ function JoinScreen({
     matchedDedicatedRoomFromRoute?.key || "primary",
   );
   const selectedDedicatedRoom = dedicatedTeamRooms.find((room) => room.key === selectedDedicatedRoomKey) || dedicatedTeamRooms[0];
-  const [teamName, setTeamName] = useState(prefillTeam || (signedIn && isPro ? selectedDedicatedRoom?.name || "" : ""));
+  const [teamName, setTeamName] = useState(prefillTeam || (signedIn ? selectedDedicatedRoom?.name || "" : ""));
   const [dedicatedRoomLabel, setDedicatedRoomLabel] = useState(dedicatedRoomLabelSeed);
   const [dedicatedRoomLabelDirty, setDedicatedRoomLabelDirty] = useState(false);
   const [savingDedicatedRoomLabel, setSavingDedicatedRoomLabel] = useState(false);
@@ -8249,17 +7331,22 @@ function JoinScreen({
   const teamEntryRef = useRef(null);
   const workspaceRoomEditorRef = useRef(null);
   const workspaceRoomEditorInputRef = useRef(null);
+  // No autoFocus here on purpose. It re-fired on every remount and yanked focus
+  // out of whatever the person was doing (including out of an open dialog), it
+  // pops the keyboard over the page on mobile, and it skips screen-reader users
+  // past the content. The name is remembered locally, so the field is usually
+  // already filled anyway.
   const nameInputRef = useRef(null);
   const teamUrlCopiedRef = useRef(null);
   const dedicatedRoomLabelStatusRef = useRef(null);
   const autoEnterOwnTeamRoomRef = useRef(false);
   const lastProSetupFocusTokenRef = useRef(0);
   const lastNameSeedKeyRef = useRef(nameSeedKey);
-  const lastNameSeedValueRef = useRef(signedIn ? defaultName : "");
+  const lastNameSeedValueRef = useRef(signedIn ? defaultName : recallName());
   const dedicatedRoomLabelSeedKey = signedIn ? `${currentUser?.uid || ""}:${accountDedicatedRooms.primary}:${accountDedicatedRooms.secondary}` : "guest";
   const lastDedicatedRoomLabelSeedRef = useRef(dedicatedRoomLabelSeedKey);
   const nameEditedRef = useRef(false);
-  const nameValueRef = useRef(signedIn ? defaultName : "");
+  const nameValueRef = useRef(signedIn ? defaultName : recallName());
   const dedicatedRoomPreview = buildDedicatedTeamRoomsFromLabel(
     dedicatedRoomLabel,
     accountProfile || {},
@@ -8273,9 +7360,9 @@ function JoinScreen({
   const clearErr = () => setErr("");
   // Live preview of the room code a team name would produce
   const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
-  const isOwnDedicatedTeamRoom = isPro && !!previewCode && dedicatedTeamRooms.some((room) => room.code === previewCode);
+  const isOwnDedicatedTeamRoom = signedIn && !!previewCode && dedicatedTeamRooms.some((room) => room.code === previewCode);
   const teamPrimaryLabel = !canEnterTeamRoom
-    ? "Upgrade to unlock 2 Team Rooms →"
+    ? "Create a free account for 2 Team Rooms →"
     : isSharedTeamRoomEntry
       ? "Join Team Room →"
       : "Open selected Team Room →";
@@ -8289,7 +7376,9 @@ function JoinScreen({
     if (INVALID_PLACEHOLDER_NAMES.has(enteredName.toLowerCase())) {
       return { ok: false, message: "Please enter your real name before joining." };
     }
-    return { ok: true, name: enteredName.slice(0, 40) };
+    const name = enteredName.slice(0, 40);
+    rememberName(name);
+    return { ok: true, name };
   }, [resolveEnteredName]);
 
   const syncEnteredName = useCallback((nextName) => {
@@ -8347,8 +7436,8 @@ function JoinScreen({
       if (!isSharedTeamRoomEntry) setTeamName("");
       return;
     }
-    if (!prefillTeam && isPro) setTeamName(selectedDedicatedRoom?.name || "");
-  }, [signedIn, prefillTeam, isPro, selectedDedicatedRoom?.name, isSharedTeamRoomEntry]);
+    if (!prefillTeam && signedIn) setTeamName(selectedDedicatedRoom?.name || "");
+  }, [signedIn, prefillTeam, selectedDedicatedRoom?.name, isSharedTeamRoomEntry]);
 
   useEffect(() => {
     if (signedIn && isSharedTeamRoomEntry && teamQuery && teamName !== teamQuery) {
@@ -8378,9 +7467,9 @@ function JoinScreen({
       if (!rc.trim()) { setErr("Please enter a room code"); return; }
       onJoin(enteredName, role, rc.trim().toUpperCase());
     } else {
-      // team room
+      // team room — hosting one needs a free account for a unique URL
       if (!canEnterTeamRoom) {
-        onShowPricing();
+        onRequireAccount?.();
         return;
       }
       if (!teamName.trim()) { setErr("Please enter your team name"); return; }
@@ -8427,10 +7516,10 @@ function JoinScreen({
 
   const copyTeamUrl = async (room) => {
     if (!room?.url) return;
-    try {
-      await navigator.clipboard.writeText(room.url);
-    } catch {
-      // Clipboard failure should still surface visible feedback to keep the action intelligible.
+    const ok = await copyText(room.url);
+    if (!ok) {
+      setErr("Your browser blocked the copy. Select the link above and copy it manually.");
+      return;
     }
     setCopiedDedicatedRoomKey(room.key);
     clearErr();
@@ -8441,7 +7530,7 @@ function JoinScreen({
   useEffect(() => () => clearTimeout(teamUrlCopiedRef.current), []);
   useEffect(() => () => clearTimeout(dedicatedRoomLabelStatusRef.current), []);
   useEffect(() => {
-    if (!signedIn || !isPro || !proSetupFocusToken) return;
+    if (!signedIn || !proSetupFocusToken) return;
     if (lastProSetupFocusTokenRef.current === proSetupFocusToken) return;
     lastProSetupFocusTokenRef.current = proSetupFocusToken;
     setHighlightWorkspaceSetup(true);
@@ -8451,11 +7540,11 @@ function JoinScreen({
     }, 80);
     const timeout = setTimeout(() => setHighlightWorkspaceSetup(false), 2600);
     return () => clearTimeout(timeout);
-  }, [signedIn, isPro, proSetupFocusToken]);
+  }, [signedIn, proSetupFocusToken]);
 
   useEffect(() => {
     if (autoEnterOwnTeamRoomRef.current) return;
-    if (!signedIn || !isPro || !isSharedTeamRoomEntry) return;
+    if (!signedIn || !isSharedTeamRoomEntry) return;
     if (!teamRouteMatch || !matchedDedicatedRoomFromRoute) return;
     const validatedName = validateEnteredName();
     if (!validatedName.ok) return;
@@ -8464,7 +7553,6 @@ function JoinScreen({
     onTeamRoom(nextName, role, matchedDedicatedRoomFromRoute.name, deck);
   }, [
     signedIn,
-    isPro,
     isSharedTeamRoomEntry,
     teamRouteMatch,
     matchedDedicatedRoomFromRoute,
@@ -8478,19 +7566,29 @@ function JoinScreen({
     <div className="join-wrap">
       <div className="join-box">
 
-        {/* Decorative chip — visual anchor inside the card */}
+        {/* Decorative chip, visual anchor inside the card */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
           <BrandMark size={56} label="pointpoker"/>
         </div>
 
-        <h1 className="join-title">{signedIn ? `Welcome back${defaultName ? `, ${defaultName.split(" ")[0]}` : ""}` : "Start Estimating"}</h1>
+        <h1 className="join-title">
+          {signedIn
+            ? `Welcome back${defaultName ? `, ${defaultName.split(" ")[0]}` : ""}`
+            : "Free Planning Poker for Agile Teams"}
+        </h1>
         <p className={`join-sub${signedIn ? " workspace" : ""}`}>
           {signedIn
-            ? isPro
-              ? "Your workspace is ready. Start a room, open one of your two fixed Team Rooms, or join a shared session."
-              : "Create a room instantly, join a shared session, or upgrade when you want two dedicated Team Rooms."
-            : "Free online planning poker for agile teams. Create a room in seconds, share one link, and estimate together in real time."}
+            ? "Your workspace is ready. Start a room, open one of your two fixed Team Rooms, or join a shared session."
+            : "Deal a room, share the link, everyone reveals at once. Every feature is free, and you do not need an account to play."}
         </p>
+        {!signedIn && (
+          <ul className="trust-strip" aria-label="What you get">
+            <li>♠ Free for everyone</li>
+            <li>♥ No sign-up to play</li>
+            <li>♦ Up to {MAX_PARTICIPANTS} at the table</li>
+            <li>♣ No ads</li>
+          </ul>
+        )}
 
         {signedIn ? (
           <div className="workspace-shell">
@@ -8498,18 +7596,12 @@ function JoinScreen({
               <div className="workspace-top">
                 <div>
                   <div className="workspace-label">Account workspace</div>
-                  <div className="workspace-title">
-                    {isPro ? "Your Pro workspace is ready" : "You are signed in on the free plan"}
-                  </div>
+                  <div className="workspace-title">Your workspace is ready</div>
                   <p className="workspace-copy">
-                    {isPro
-                      ? "Use either dedicated Team Room for recurring sprint planning, or create ad-hoc rooms when you need a one-off session."
-                      : "Use Create Room or Join Room for normal sessions. When you want Pro, activate this same account so your Team Rooms and sprint history stay attached to it."}
+                    Use either Team Room for recurring sprint planning, or spin up a one-off room when you just need a quick session.
                   </p>
                 </div>
-                <span className={`workspace-pill${isPro ? " pro" : ""}`}>
-                  {isPro ? "Pro active" : "Free plan"}
-                </span>
+                <span className="workspace-pill">Free · everything on</span>
               </div>
             </div>
 
@@ -8519,19 +7611,17 @@ function JoinScreen({
                 <span className="workspace-stat-v">{defaultName}</span>
               </div>
               <div className="workspace-stat">
-                <span className="workspace-stat-k">{isPro ? "Dedicated Team Rooms" : "Pro on this account"}</span>
-                <span className="workspace-stat-v">
-                  {isPro ? "2 fixed room URLs ready" : `Activate this account for 2 fixed Team Rooms, sprint history, and up to ${PRO_MAX_PARTICIPANTS} participants`}
-                </span>
+                <span className="workspace-stat-k">Your Team Rooms</span>
+                <span className="workspace-stat-v">2 fixed room URLs ready</span>
               </div>
             </div>
 
-            {isPro ? (
+            {signedIn ? (
               <div className="workspace-card">
-                <div className="workspace-label">Dedicated Team Rooms</div>
-                <div className="workspace-title">Two fixed room URLs tied to your Pro account</div>
+                <div className="workspace-label">Your Team Rooms</div>
+                <div className="workspace-title">Two fixed room URLs tied to your account</div>
                 <p className="workspace-copy">
-                  Every Pro account now includes two dedicated Team Rooms. Share the links once, bookmark them, and keep separate recurring spaces for different squads, products, or ceremonies.
+                  Every account includes two Team Rooms, free. Share the links once, bookmark them, and keep separate recurring spaces for different squads, products, or ceremonies.
                 </p>
                 <div
                   ref={workspaceRoomEditorRef}
@@ -8541,7 +7631,7 @@ function JoinScreen({
                     <div>
                       <div className="workspace-room-editor-title">Choose the shared Team Room name. We add your username automatically.</div>
                       <p className="workspace-inline-note workspace-room-editor-note">
-                        Pick the room name your teams will recognise first. We then append your username <strong>{dedicatedRoomOwnerSuffix}</strong> so both fixed URLs stay unique to your Pro account.
+                        Pick the room name your teams will recognise first. We then append your username <strong>{dedicatedRoomOwnerSuffix}</strong> so both fixed URLs stay unique to your account.
                       </p>
                     </div>
                     {dedicatedRoomLabelStatus === "saved" && <span className="workspace-room-editor-badge">Saved</span>}
@@ -8632,33 +7722,9 @@ function JoinScreen({
                   </button>
                 </div>
               </div>
-            ) : (
-              <div className="workspace-card">
-                <div className="workspace-label">Pro setup path</div>
-                <div className="workspace-title">Upgrade this same account when you want fixed Team Rooms</div>
-                <p className="workspace-copy">
-                  You can keep using free rooms instantly. When you are ready, activate Pro on this account and then choose the two dedicated Team Room names you want your teams to reuse.
-                </p>
-                <div className="workspace-actions">
-                  <button
-                    type="button"
-                    className="workspace-action-btn gold"
-                    onClick={() => onShowPricing?.({ initialShowKey: true, entryIntent: "activate" })}
-                  >
-                    Activate Pro on this account
-                  </button>
-                  <button type="button" className="workspace-action-btn" onClick={() => onShowPricing?.({ entryIntent: "upgrade" })}>
-                    Compare plans
-                  </button>
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
-        ) : (
-          <button className="btn-pricing" onClick={onShowPricing}>
-            ✦ Compare Free &amp; Pro
-          </button>
-        )}
+        ) : null}
 
         {/* Three-tab navigation */}
         <div className="tab-row">
@@ -8685,11 +7751,10 @@ function JoinScreen({
             onClick={() => { setTab("team"); clearErr(); }}
           >
             Team Room
-            {showTeamRoomProBadge && <span className="pro-tab-badge">PRO</span>}
           </button>
         </div>
 
-        {/* Your Name — always shown */}
+        {/* Your Name, always shown */}
         <label className="lbl">Your Name</label>
         <input
           key={`name-${nameSeedKey}`}
@@ -8704,7 +7769,8 @@ function JoinScreen({
             if (liveValue !== nameValueRef.current) syncEnteredName(liveValue);
           }}
           onKeyDown={(e) => e.key === "Enter" && go()}
-          autoFocus={!signedIn}
+          aria-invalid={err ? "true" : undefined}
+          aria-describedby={err ? "join-error" : undefined}
         />
         {signedIn && (
           <div className="workspace-inline-note">
@@ -8738,9 +7804,9 @@ function JoinScreen({
         {/* Team Room: team name input + live code preview */}
         {tab === "team" && (
           <div ref={teamEntryRef}>
-            {signedIn && isPro && !isSharedTeamRoomEntry && (
+            {signedIn && !isSharedTeamRoomEntry && (
               <>
-                <label className="lbl">Choose Dedicated Room</label>
+                <label className="lbl">Choose Team Room</label>
                 <div className="team-room-choice-row">
                   {dedicatedTeamRooms.map((room) => (
                     <button
@@ -8768,7 +7834,7 @@ function JoinScreen({
               value={teamName}
               onChange={(e) => { setTeamName(e.target.value); clearErr(); }}
               onKeyDown={(e) => e.key === "Enter" && go()}
-              readOnly={isSharedTeamRoomEntry || (signedIn && isPro)}
+              readOnly={isSharedTeamRoomEntry || (signedIn)}
             />
             {previewCode && (
               <div className="team-code-preview">
@@ -8779,29 +7845,27 @@ function JoinScreen({
             {!canEnterTeamRoom ? (
               <div className="team-pro-gate">
                 <span className="team-pro-gate-text">
-                  Team Room requires a Pro account. Type your team name to preview the URL, then upgrade to unlock two dedicated fixed room URLs.
+                  Team Rooms are free. They need a free account so that nobody else can claim your room URL, which takes about thirty seconds.
                 </span>
-                <button type="button" className="team-pro-gate-link" onClick={onShowPricing}>
-                  View Pro plans →
+                <button type="button" className="team-pro-gate-link" onClick={() => onRequireAccount?.()}>
+                  Create a free account →
                 </button>
               </div>
             ) : isSharedTeamRoomEntry ? (
               <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
-                {signedIn && !isPro
-                  ? "You are joining a shared Team Room. Only the host needs Pro — your own plan stays Free."
-                  : "This team's dedicated room is ready. Add your name, choose your role, and join the live session."}
+                This team's room is ready. Add your name, choose your role, and join the live session, no account needed.
               </p>
             ) : (
               <p style={{ fontSize: ".82rem", color: "rgba(239,242,247,.65)", marginBottom: "18px", lineHeight: 1.6 }}>
                 {isOwnDedicatedTeamRoom
-                  ? "This dedicated Team Room is fixed to your Pro account. Keep the link bookmarked and reuse it whenever this team estimates."
-                  : "Your Pro account includes two fixed Team Rooms. Pick the room you want to use, then keep both links bookmarked for recurring sprint planning."}
+                  ? "This Team Room is fixed to your account. Keep the link bookmarked and reuse it whenever this team estimates."
+                  : "Your account includes two fixed Team Rooms. Pick the one you want, then keep both links bookmarked for recurring sprint planning."}
               </p>
             )}
           </div>
         )}
 
-        {/* Role picker — always shown */}
+        {/* Role picker, always shown */}
         <label className="lbl">Your Role</label>
         <div className="role-row">
           {ROLES.map(({ r, icon, l, s }) => (
@@ -8820,7 +7884,7 @@ function JoinScreen({
           ))}
         </div>
 
-        {/* Deck picker — shown on Create and Team tabs */}
+        {/* Deck picker, shown on Create and Team tabs */}
         {(tab === "create" || tab === "team") && (
           <>
             <label className="lbl">Card Deck</label>
@@ -8830,7 +7894,10 @@ function JoinScreen({
                 return (
                   <button
                     key={k}
+                    type="button"
                     className={`deck-btn${deck === k ? " active" : ""}`}
+                    aria-pressed={deck === k}
+                    aria-label={`${d.label} deck: ${d.desc}`}
                     onClick={() => setDeck(k)}
                   >
                     <span className="dk-label">{d.label}</span>
@@ -8840,7 +7907,7 @@ function JoinScreen({
               })}
             </div>
 
-            {/* Estimation mode picker — what is the team estimating? */}
+            {/* Estimation mode picker, what is the team estimating? */}
             <label className="lbl">What Are You Estimating?</label>
             <div className="estmode-grid">
               {Object.values(ESTIMATION_MODES).map((m) => (
@@ -8849,6 +7916,7 @@ function JoinScreen({
                   type="button"
                   className={`estmode-btn${estMode === m.key ? " active" : ""}`}
                   aria-pressed={estMode === m.key}
+                  aria-label={`${m.label}: ${m.desc}`}
                   onClick={() => setEstMode(m.key)}
                 >
                   <span className="em-label">{m.label}</span>
@@ -8859,20 +7927,25 @@ function JoinScreen({
           </>
         )}
 
-        {err && <div className="err">{err}</div>}
+        {err && <div className="err" id="join-error" role="alert">{err}</div>}
         <button className="btn-primary" onClick={go}>
           {tab === "create" ? "Create Room →"
             : tab === "join" ? "Join Room →"
             : teamPrimaryLabel}
         </button>
         {!signedIn && tab === "create" && (
-          <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
-            Free forever · Up to {FREE_MAX_PARTICIPANTS} participants including facilitator · Ready in under 10 seconds
+          <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.7)", textAlign: "center", marginTop: "10px" }}>
+            Free · Up to {MAX_PARTICIPANTS} at the table · Live in ten seconds
+          </p>
+        )}
+        {!signedIn && tab === "join" && (
+          <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.7)", textAlign: "center", marginTop: "10px" }}>
+            Got a link instead? Open it and you'll join straight away.
           </p>
         )}
         {!signedIn && tab === "team" && (
-          <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.55)", textAlign: "center", marginTop: "10px" }}>
-            Pro · Two fixed Team Rooms per account — same links, every sprint
+          <p style={{ fontSize: ".78rem", color: "rgba(239,242,247,.7)", textAlign: "center", marginTop: "10px" }}>
+            Two fixed Team Rooms per account. Same links, every sprint, free.
           </p>
         )}
       </div>
@@ -8883,7 +7956,15 @@ function JoinScreen({
         <p className="seo-intro">
           pointpoker gives agile teams a fast, low-friction way to run planning poker online. Create a room,
           share one link in Slack, Teams, or Zoom, and let everyone vote at the same time. No install,
-          no training, and no account required for free sessions.
+          no training, no ads, and no account needed to play.
+        </p>
+        <p className="seo-intro">
+          <strong>Everything is free right now, every feature, for every team.</strong> Other planning poker
+          tools cap your free sessions at a handful of votes, seven participants, or hide the timer and averages
+          behind a paid plan. Here you get {MAX_PARTICIPANTS} people per room, unlimited voting rounds,
+          unlimited stories, all three card decks, the timer, full analytics, and export, for £0. We are
+          focused on being genuinely useful to as many teams as possible first. If paid add-ons ever arrive,
+          everything listed on this page stays free.
         </p>
 
         <div className="seo-grid">
@@ -8899,7 +7980,7 @@ function JoinScreen({
             <h3 className="seo-h3">How It Works</h3>
             <ol className="seo-ol">
               <li>Create a room or join one from a shared link</li>
-              <li>Add the item you are estimating — a user story or a specific task within one</li>
+              <li>Add the item you are estimating, a user story or a specific task within one</li>
               <li>Vote with Fibonacci, T-Shirt sizing, or Powers of 2</li>
               <li>Reveal cards together and discuss only when estimates differ</li>
               <li>Let the facilitator record the final agreed estimate or run another vote</li>
@@ -8908,34 +7989,37 @@ function JoinScreen({
           </div>
         </div>
 
-        <div className="seo-plan-section scroll-target" id="plans" tabIndex="-1" aria-label="Plans overview">
-          <h3 className="seo-h3">Plans that match how teams actually estimate</h3>
+        <div className="seo-plan-section scroll-target" id="plans" tabIndex="-1" aria-label="Pricing overview">
+          <h3 className="seo-h3">What it costs: nothing</h3>
           <p className="seo-p seo-plan-intro">
-            Start free in seconds. Upgrade only when you want two dedicated Team Rooms, higher participant capacity, and sprint history linked to your account.
+            One product, free for every team, while we find out how many of you there are. No tiers, no trial clock, no card.
           </p>
           <div className="seo-plan-grid">
-            <article className="seo-plan-card">
-              <div className="seo-plan-topline">Free</div>
+            <article className="seo-plan-card pro">
+              <div className="seo-plan-topline">Everyone</div>
               <div className="seo-plan-price">£0</div>
               <ul className="seo-plan-list">
-                <li>Up to {FREE_MAX_PARTICIPANTS} participants including the facilitator</li>
-                <li>All card decks, story or task queue</li>
-                <li>Facilitator mode and live analytics</li>
+                <li>Up to {MAX_PARTICIPANTS} participants including facilitators</li>
+                <li>Unlimited rounds and unlimited stories per session</li>
+                <li>All card decks, story or task queue, countdown timer</li>
+                <li>Facilitator mode, live analytics, clipboard and CSV export</li>
+                <li>Two fixed Team Rooms and sprint history with a free account</li>
               </ul>
             </article>
-            <article className="seo-plan-card pro">
-              <div className="seo-plan-topline">Pro</div>
-              <div className="seo-plan-price">from £5/mo</div>
+            <article className="seo-plan-card">
+              <div className="seo-plan-topline">Compared with</div>
+              <div className="seo-plan-price">£20–30/mo</div>
               <ul className="seo-plan-list">
-                <li>Two dedicated Team Rooms with fixed URLs</li>
-                <li>Up to {PRO_MAX_PARTICIPANTS} participants per sprint</li>
-                <li>Sprint history and cross-device account access</li>
+                <li>Common free caps elsewhere: 7 participants, or 9 votes per game</li>
+                <li>Timers and averages often sit behind a paid tier</li>
+                <li>Some free tools are ad-supported</li>
+                <li>Per-facilitator pricing adds up fast for one ceremony a sprint</li>
               </ul>
             </article>
           </div>
           <div className="seo-plan-actions">
             <RouteLink href="/pricing" onNavigate={onNavigate} className="btn-pricing seo-plan-cta">
-              View full pricing
+              Read the full pricing promise
             </RouteLink>
           </div>
         </div>
@@ -8943,17 +8027,19 @@ function JoinScreen({
           <div className="seo-features">
           <h3 className="seo-h3">What Makes This Planning Poker Tool Different</h3>
           <ul className="seo-ul">
-            <li><strong>Zero setup, every time</strong> — create a room and share the link in under 10 seconds, no account needed</li>
-            <li><strong>Simultaneous vote reveal</strong> — prevents anchoring bias so every estimate is honest and independent</li>
-            <li><strong>Three card decks</strong> — Fibonacci (1–34), T-Shirt sizing (XS–XXL), or Powers of 2, matched to how your team thinks</li>
-            <li><strong>Story or task estimation</strong> — choose whether you are sizing user stories as a whole or individual tasks within them; the queue, banners, and analytics all adapt to your choice</li>
-            <li><strong>Item queue</strong> — load your full sprint backlog or task list and work through it in order, one item at a time</li>
-            <li><strong>Team Alignment analytics</strong> — facilitators see live consensus rate, total story points, estimate distribution, and re-vote patterns</li>
-            <li><strong>Estimation Spree</strong> — a live streak counter celebrates when the team aligns consistently, reinforcing good backlog clarity</li>
-            <li><strong>Built-in countdown timer</strong> — keep each estimation round time-boxed and the whole session on track</li>
-            <li><strong>Session summary</strong> — copy all story point estimates to the clipboard at the end for your sprint tool</li>
-            <li><strong>Facilitator mode</strong> — join without a vote card and manage reveal, re-votes, participant moderation, and session flow from the analytics view</li>
-            <li><strong>Dedicated Team Rooms (Pro)</strong> — two fixed URLs your teams can reuse every sprint, no fresh setup every time</li>
+            <li><strong>Zero setup, every time:</strong> create a room and share the link in under 10 seconds, no account needed</li>
+            <li><strong>Simultaneous vote reveal:</strong> prevents anchoring bias so every estimate is honest and independent</li>
+            <li><strong>Three card decks:</strong> Fibonacci (1 to 34), T-shirt sizing (XS to XXL), or Powers of 2, whichever matches how your team thinks</li>
+            <li><strong>Story or task estimation:</strong> choose whether you are sizing user stories as a whole or individual tasks within them; the queue, banners, and analytics all adapt to your choice</li>
+            <li><strong>Item queue:</strong> load your full sprint backlog or task list and work through it in order, one item at a time</li>
+            <li><strong>Team Alignment analytics:</strong> facilitators see live consensus rate, total story points, estimate distribution, and re-vote patterns</li>
+            <li><strong>Estimation Spree:</strong> a live streak counter celebrates when the team aligns consistently, reinforcing good backlog clarity</li>
+            <li><strong>Built-in countdown timer:</strong> keep each estimation round time-boxed and the whole session on track</li>
+            <li><strong>Session summary:</strong> copy every estimate to the clipboard or download a CSV for Jira, Linear, Azure DevOps, or a spreadsheet</li>
+            <li><strong>Facilitator mode:</strong> join without a vote card and manage reveal, re-votes, participant moderation, and session flow from the analytics view</li>
+            <li><strong>Team Rooms:</strong> two fixed URLs your teams reuse every sprint, no fresh setup each time. Free with a free account</li>
+            <li><strong>Keyboard shortcuts:</strong> press 1–9 to vote, R to reveal, N for the next item; the whole ceremony without touching the mouse</li>
+            <li><strong>No ads and no tracking cookies:</strong> nothing to block, nothing sold, nothing following your team around</li>
           </ul>
           <p className="seo-p" style={{ marginTop: 16 }}>
             Explore the dedicated pages for{" "}
@@ -8984,16 +8070,19 @@ function JoinScreen({
             <div className="seo-faq-item">
               <h4 className="seo-h4">Is this planning poker tool actually free?</h4>
               <p className="seo-p">
-                Yes, and it stays free. The free tier gives you up to {FREE_MAX_PARTICIPANTS} participants,
-                all three card decks, a full queue (story or task mode), session analytics, and clipboard export —
-                no credit card, no account, no time limit. Pro adds two dedicated Team Rooms and up to {PRO_MAX_PARTICIPANTS} participants.
+                Yes, everything, for everyone, right now. Up to {MAX_PARTICIPANTS} participants, unlimited
+                voting rounds, unlimited stories, all three card decks, the queue, the countdown timer,
+                facilitator analytics, CSV and clipboard export, and two fixed Team Rooms. No credit card,
+                no trial clock, no ads. We are concentrating on growing a real user base first; if paid
+                add-ons arrive later, everything described here stays free.
               </p>
             </div>
             <div className="seo-faq-item">
               <h4 className="seo-h4">Do I need to create an account?</h4>
               <p className="seo-p">
-                No for free sessions. Enter your name, create a room, and share the link. Create an account
-                only when you want Pro features such as two dedicated Team Rooms and sprint history linked to you.
+                No. Enter your name, create a room, share the link, that is the whole flow. A free account
+                only exists so we can reserve two permanent Team Room URLs to you (so no other team can land
+                in your room) and keep your sprint history across devices.
               </p>
             </div>
             <div className="seo-faq-item">
@@ -9001,7 +8090,7 @@ function JoinScreen({
               <p className="seo-p">
                 Fibonacci (1, 2, 3, 5, 8, 13, 21, 34) reflects how estimation uncertainty grows with
                 complexity. The widening gaps between numbers make it easy for teams to distinguish
-                small, medium, and large effort without false precision — and force a real conversation
+                small, medium, and large effort without false precision, and force a real conversation
                 when two people are far apart. See the{" "}
                 <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">full Fibonacci guide</RouteLink>
                 {" "}for the reasoning in more depth.
@@ -9018,7 +8107,7 @@ function JoinScreen({
               <h4 className="seo-h4">What is the Team Alignment score?</h4>
               <p className="seo-p">
                 The Team Alignment score (visible to facilitators) tracks the percentage of stories
-                that reached first-round consensus — where every voter picked the same card.
+                that reached first-round consensus, where every voter picked the same card.
                 A high score means your backlog is well-defined. A low score flags stories that
                 need more acceptance criteria before the sprint begins.
               </p>
@@ -9026,14 +8115,92 @@ function JoinScreen({
             <div className="seo-faq-item">
               <h4 className="seo-h4">How many people can join a planning poker session?</h4>
               <p className="seo-p">
-                Free rooms support up to {FREE_MAX_PARTICIPANTS} participants. Pro rooms support up to {PRO_MAX_PARTICIPANTS}.
-                That count includes the facilitator, so the room cap is based on everyone in the session, not just voters.
+                Up to {MAX_PARTICIPANTS} people per room, counting facilitators as well as voters. That covers
+                a large scrum team plus product, design, and QA in the same session. Bigger group? Run two rooms
+                in parallel and merge the results.
+              </p>
+            </div>
+            <div className="seo-faq-item">
+              <h4 className="seo-h4">How is this different from other free planning poker tools?</h4>
+              <p className="seo-p">
+                Most free planning poker apps cap something that matters: seven participants, nine votes per
+                game, five issues per session, or they show ads and hide the timer and averages behind a paid
+                tier. Nothing here is capped or ad-supported. You also get facilitator analytics —
+                consensus rate, spread, outlier highlighting, and re-vote tracking, that normally only
+                appears in paid tiers.
+              </p>
+            </div>
+            <div className="seo-faq-item">
+              <h4 className="seo-h4">What happens to my session data?</h4>
+              <p className="seo-p">
+                Rooms are temporary. When everyone leaves, the room and its votes are deleted, and any room
+                left idle is swept automatically. No advertising or third-party analytics cookies are used.
+                Sprint history is only stored if you are signed in, and only for you.
               </p>
             </div>
           </div>
         </div>
       </section>
       )}
+    </div>
+  );
+}
+
+/* ═══════════════════════ WILLINGNESS-TO-PAY POLL ═══════════════════════
+   Usage counters can tell you how much a free product is used. They cannot
+   tell you what anyone would pay, revealed preference from a free product is
+   silent on price. This is the smallest honest instrument that answers it.
+
+   Rules that keep it from being annoying, and keep the data clean:
+     • facilitators only (they are the ones who would hold a budget)
+     • only after they have actually recorded 3+ estimates (earned the ask)
+     • inline in the summary panel, never a modal, never blocking
+     • once per browser, ever, answered or dismissed, it does not come back
+═══════════════════════════════════════════════════════════════════════ */
+const WTP_STORAGE_KEY = "pp_wtp_answered";
+const WTP_OPTIONS = [
+  { key: "wtp_zero",  label: "Nothing, free is the reason we use it" },
+  { key: "wtp_5",     label: "Up to £5 a month for the team" },
+  { key: "wtp_15",    label: "£6–15 a month for the team" },
+  { key: "wtp_30",    label: "More than £15 a month for the team" },
+];
+
+function WtpPoll({ onDone }) {
+  const [answered, setAnswered] = useState(false);
+  const answer = (key) => {
+    track(key);
+    try { localStorage.setItem(WTP_STORAGE_KEY, "1"); } catch {}
+    setAnswered(true);
+    setTimeout(onDone, 2600);
+  };
+  const dismiss = () => {
+    track("wtp_dismissed");
+    try { localStorage.setItem(WTP_STORAGE_KEY, "1"); } catch {}
+    onDone();
+  };
+
+  if (answered) {
+    return (
+      <div className="wtp-panel" role="status">
+        <div className="wtp-thanks">Thank you, that genuinely shapes what gets built next.</div>
+      </div>
+    );
+  }
+  return (
+    <div className="wtp-panel" role="group" aria-labelledby="wtp-q">
+      <button type="button" className="wtp-dismiss" onClick={dismiss} aria-label="Dismiss this question">✕</button>
+      <div className="wtp-kicker">One question, then never again</div>
+      <div className="wtp-q" id="wtp-q">
+        pointpoker is free and staying free. If it were paid, what would this be worth to your team?
+      </div>
+      <div className="wtp-options">
+        {WTP_OPTIONS.map((o) => (
+          <button key={o.key} type="button" className="wtp-option" onClick={() => answer(o.key)}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+      <div className="wtp-note">Anonymous. No email, no follow-up, no change to your access.</div>
     </div>
   );
 }
@@ -9056,11 +8223,10 @@ function GameScreen({
   onStop,
   onRemoveParticipant,
   onAddStory,
+  onRemoveStory,
   onRecordStory,
   sessionWarning,
   toast,
-  currentPlan,
-  onShowPricing,
 }) {
   const cards = getCards(deck);
   const estMode = getEstMode(rd.estimationMode);
@@ -9121,8 +8287,19 @@ function GameScreen({
     : null;
   const avgDisp =
     avg !== null ? (Number.isInteger(avg) ? avg : avg.toFixed(1)) : "—";
+  // Everyone who voted picked the same card. "?" is excluded on purpose: a room
+  // full of "?" means nobody knows, which is the opposite of agreement.
   const allSame =
-    new Set(voted.map((p) => p.vote)).size === 1 && voted.length >= 1;
+    new Set(voted.map((p) => p.vote)).size === 1 &&
+    voted.length >= 1 &&
+    voted[0]?.vote !== "?";
+  // "Agreed" for the alignment metric means the whole table voted and matched —
+  // not just the two people who happened to click before the facilitator revealed.
+  const isFullTableAgreement = allSame && voted.length === voters.length;
+  // Only celebrate when there was actually a table to agree with.
+  const isRealConsensus = isFullTableAgreement && voters.length > 1;
+  const unanimousUnknown =
+    voted.length > 0 && voted.every((p) => p.vote === "?");
   const minV = nums.length ? Math.min(...nums) : null;
   const maxV = nums.length ? Math.max(...nums) : null;
   const medianV = nums.length
@@ -9144,8 +8321,10 @@ function GameScreen({
   const revealedVotesSummary = voted.map((p) => p.vote).join(" • ");
   const revealHeroLabel = allSame ? "Agreed estimate" : "Average vote";
   const revealHeroHelper = allSame
-    ? "Everyone picked the same card on this vote."
-    : "Use the range below to guide the discussion. The facilitator records the final agreed estimate next.";
+    ? "Everyone who voted picked the same card."
+    : unanimousUnknown
+      ? "Everyone played ?. Nobody has enough to size this yet, clarify the item, then re-vote."
+      : "Use the range below to guide the discussion. The facilitator records the final agreed estimate next.";
 
   const saveFinalEstimateAndContinue = useCallback(() => {
     if (!chosenFinalEstimate) return;
@@ -9155,9 +8334,9 @@ function GameScreen({
 
   const handleAdvanceToNextItem = useCallback(() => {
     if (!chosenFinalEstimate) return;
-    if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, allSame);
-    else onNewRound(chosenFinalEstimate, allSame);
-  }, [chosenFinalEstimate, hasStories, allStoriesDone, onRecordStory, onNewRound, allSame]);
+    if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, isFullTableAgreement);
+    else onNewRound(chosenFinalEstimate, isFullTableAgreement);
+  }, [chosenFinalEstimate, hasStories, allStoriesDone, onRecordStory, onNewRound, isFullTableAgreement]);
 
   const handleRevoteStory = useCallback(() => {
     onNewRound(null, false);
@@ -9177,7 +8356,7 @@ function GameScreen({
 
   // Fire confetti + consensus banner exactly once per consensus reveal
   useEffect(() => {
-    if (revealed && allSame && confettiFiredForRoundRef.current !== round) {
+    if (revealed && isRealConsensus && confettiFiredForRoundRef.current !== round) {
       confettiFiredForRoundRef.current = round;
       setShowConfetti(true);
       setShowConsensus(true);
@@ -9190,7 +8369,7 @@ function GameScreen({
       setShowConfetti(false);
       setShowConsensus(false);
     }
-  }, [revealed, allSame, round]);
+  }, [revealed, isRealConsensus, round]);
 
   useEffect(() => {
     if (revealed) {
@@ -9214,16 +8393,153 @@ function GameScreen({
     clearTimeout(copyFeedbackRef.current);
   }, []);
 
-  const handleCopyLink = useCallback(() => {
-    navigator.clipboard.writeText(shareUrl);
-    track("invite_copied");
-    toast("🔗 Link copied!");
+  const handleCopyLink = useCallback(async () => {
+    const ok = await copyText(shareUrl);
+    track("feature_invite");
+    toast(ok ? "🔗 Link copied!" : "Copy blocked by the browser, select the link above and copy it.");
+    if (!ok) return;
     setHeaderLinkCopied(true);
     clearTimeout(copyFeedbackRef.current);
     copyFeedbackRef.current = setTimeout(() => {
       setHeaderLinkCopied(false);
     }, 1600);
   }, [shareUrl, toast]);
+
+  // Accepts a single item or a pasted multi-line backlog. Blank lines and
+  // common list prefixes ("1. ", "- ", "* ") are stripped so a copied backlog
+  // does not arrive with numbering baked into every name.
+  const addStoryLines = useCallback((raw) => {
+    const names = String(raw)
+      .split(/\r?\n/)
+      .map((line) => line.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, "").trim())
+      .filter(Boolean)
+      .slice(0, 200);
+    if (!names.length) return;
+    if (names.length > 1) track("feature_paste");
+    onAddStory(names);
+    setStoryInput("");
+    if (names.length > 1) toast(`✅ ${names.length} ${estMode.plural} added to the queue.`);
+  }, [onAddStory, toast, estMode.plural]);
+
+  // ── SESSION SUMMARY ──────────────────────────────────────────────
+  // Works whether or not the facilitator used the named queue: queued items
+  // keep their names, un-named rounds fall back to "Story 1", "Story 2"…
+  const summaryRows = hasStories
+    ? stories.map((st) => ({ name: st.name, estimate: st.estimate ?? null }))
+    : rounds.map((r, i) => ({
+        name: `${estMode.progressLabel} ${i + 1}`,
+        estimate: r?.estimate ?? null,
+      }));
+  const summarySized = summaryRows.filter((r) => r.estimate != null).length;
+  const summaryNumeric = summaryRows
+    .filter((r) => r.estimate != null && r.estimate !== "")
+    .map((r) => Number(r.estimate))
+    .filter((n) => Number.isFinite(n));
+  const summaryTotalPoints = summaryNumeric.length
+    ? summaryNumeric.reduce((a, b) => a + b, 0)
+    : null;
+
+  const summaryTitle = rd.teamName ? `${rd.teamName} — estimates` : "Sprint estimation summary";
+
+  // Ask about price only once the facilitator has got real value out of a session.
+  const [wtpDone, setWtpDone] = useState(false);
+  const wtpAlreadyAnswered = (() => {
+    try { return localStorage.getItem(WTP_STORAGE_KEY) === "1"; } catch { return true; }
+  })();
+  const showWtpPoll = isObs && !wtpDone && !wtpAlreadyAnswered && summarySized >= 3;
+
+  const copySummary = useCallback(async () => {
+    const lines = [summaryTitle, "=".repeat(summaryTitle.length), ""];
+    summaryRows.forEach((r, i) => {
+      lines.push(`${i + 1}. ${r.name}  →  ${r.estimate != null ? r.estimate : "not estimated"}`);
+    });
+    lines.push("");
+    lines.push(`${estMode.plural}: ${summaryRows.length} · estimated: ${summarySized}`);
+    if (summaryTotalPoints !== null) lines.push(`Total points: ${summaryTotalPoints}`);
+    track("feature_copy");
+    const ok = await copyText(lines.join("\n"));
+    toast(ok ? "📋 Summary copied to clipboard!" : "Copy blocked by the browser, use the CSV download instead.");
+  }, [summaryRows, summarySized, summaryTotalPoints, summaryTitle, estMode.plural, toast]);
+
+  const downloadSummaryCsv = useCallback(() => {
+    track("feature_csv");
+    const rows = [["#", "Item", "Estimate"]].concat(
+      summaryRows.map((r, i) => [String(i + 1), r.name, r.estimate != null ? String(r.estimate) : ""]),
+    );
+    const csv = rows.map((cols) => cols.map(csvCell).join(",")).join("\r\n");
+    // BOM so Excel opens UTF-8 item names correctly
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pointpoker-${(code || "session").toLowerCase()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("⬇ CSV downloaded.");
+  }, [summaryRows, code, toast]);
+
+  // ── KEYBOARD SHORTCUTS ───────────────────────────────────────────
+  // Numeric decks match on the card's actual value, so "5" plays 5 and not the
+  // fifth card. Multi-digit values work through a short buffer: type "13" and
+  // the 13 is played. Non-numeric decks (T-shirt) fall back to 1-N by position,
+  // which matches how the sizes are ordered on screen.
+  // Facilitator: R reveals, N records and moves on. Ignored while typing.
+  const numericDeck = cards.some((c) => !isNaN(Number(c.val)) && c.val !== "?");
+  const digitBufferRef = useRef({ text: "", at: 0 });
+  useEffect(() => {
+    const playCard = (val) => {
+      setOptimisticVote(val);
+      onCard(val);
+    };
+    const onKey = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      const key = e.key.toLowerCase();
+
+      if (!isObs && !revealed) {
+        if (key === "?" || key === "/") {
+          const wild = cards.find((c) => c.val === "?");
+          if (wild) { e.preventDefault(); playCard(wild.val); }
+          return;
+        }
+        if (/^[0-9]$/.test(e.key)) {
+          e.preventDefault();
+          if (!numericDeck) {
+            const idx = Number(e.key) - 1;
+            if (idx >= 0 && idx < cards.length) playCard(cards[idx].val);
+            return;
+          }
+          const now = performance.now();
+          const buf = digitBufferRef.current;
+          const next = now - buf.at < 900 ? buf.text + e.key : e.key;
+          // Keep the buffer only while it can still grow into a real card.
+          const canExtend = cards.some((c) => c.val.startsWith(next) && c.val !== next);
+          const exact = cards.find((c) => c.val === next);
+          if (exact && !canExtend) {
+            digitBufferRef.current = { text: "", at: 0 };
+            playCard(exact.val);
+            return;
+          }
+          if (canExtend) {
+            digitBufferRef.current = { text: next, at: now };
+            if (exact) playCard(exact.val); // provisional; a second digit refines it
+            return;
+          }
+          digitBufferRef.current = { text: "", at: 0 };
+          const fresh = cards.find((c) => c.val === e.key);
+          if (fresh) playCard(fresh.val);
+          return;
+        }
+      }
+      if (isObs && key === "r" && hasVotes && !revealed) { e.preventDefault(); onReveal(); return; }
+      if (isObs && key === "n" && revealed && chosenFinalEstimate) { e.preventDefault(); handleAdvanceToNextItem(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isObs, revealed, cards, numericDeck, onCard, onReveal, hasVotes, chosenFinalEstimate, handleAdvanceToNextItem]);
 
   const prog = timer.running ? timer.remaining / timer.duration : 1;
   const offset = CIRC * (1 - prog);
@@ -9233,16 +8549,16 @@ function GameScreen({
 
   return (
     <>
-      {/* Confetti — mounts when consensus detected, canvas self-destructs when done */}
-      {showConfetti && <Confetti onDone={() => setShowConfetti(false)} big={allSame} />}
-      {/* Full-screen burst banner — auto-dismisses after 3.5s */}
+      {/* Confetti, mounts when consensus detected, canvas self-destructs when done */}
+      {showConfetti && <Confetti onDone={() => setShowConfetti(false)} big={isRealConsensus} />}
+      {/* Full-screen burst banner, auto-dismisses after 3.5s */}
       {showConsensus && voted.length > 0 && (
         <div className="consensus-overlay" aria-live="polite">
           <div className="consensus-burst">
             <span className="consensus-burst-emoji">🎉</span>
             <div className="consensus-burst-text">Perfect Consensus!</div>
             <div className="consensus-burst-sub">
-              Everyone picked {voted[0].vote} — the team agrees
+              All {voted.length} voters picked {voted[0].vote} — the team agrees
             </div>
           </div>
         </div>
@@ -9258,7 +8574,7 @@ function GameScreen({
           <div className="hdr-c">
             <div className="badge">Round {round}</div>
             <div className="badge badge-gold">
-              🎲 {storiesDone} {storiesDone === 1 ? estMode.singular : estMode.plural} estimated
+              🎲 {storiesDone} <span className="badge-long">{storiesDone === 1 ? estMode.singular : estMode.plural} </span>done
             </div>
             {code && (
               <div className="badge" style={{ fontFamily: "monospace", letterSpacing: ".12em", fontSize: ".66rem" }}>
@@ -9286,19 +8602,15 @@ function GameScreen({
       </header>
 
       <div className="game-body">
-        {/* Solo invite banner — shown when creator is alone, dismissed once copied or closed */}
+        {/* Solo invite banner, shown when creator is alone, dismissed once copied or closed */}
         {players.length === 1 && !solobannerDismissed && (
           <div className="solo-invite-banner" role="status">
             <span className="solo-invite-icon">👥</span>
             <div className="solo-invite-body">
               {isPersistentRoom ? (
-                <>
-                  <strong>Your dedicated Team Room is ready.</strong> Share this fixed link now and your team can keep reusing it every sprint.
-                </>
+                <><strong>Team Room ready.</strong> Share the link once. It stays the same every sprint.</>
               ) : (
-                <>
-                  <strong>Your one-off room is ready.</strong> Share this link while the session is active. If everyone leaves, create a fresh room next time.
-                </>
+                <><strong>Room ready.</strong> Share the link to fill the table.</>
               )}
             </div>
             <button
@@ -9328,7 +8640,7 @@ function GameScreen({
           </div>
         )}
 
-        {/* Current item banner — visible to all players */}
+        {/* Current item banner, visible to all players */}
         {activeStory && !allStoriesDone && (
           <div className="story-name-banner">
             <span className="story-name-label">
@@ -9344,12 +8656,12 @@ function GameScreen({
           </div>
         )}
 
-        <div className="game-grid">
+        <div className={`game-grid ${isObs ? "as-facilitator" : "as-voter"}`}>
           {/* LEFT COLUMN */}
           <div className="lcol">
             {/* Timer */}
             <div className="panel panel-gold">
-              <span className="ptitle">Estimation Timer</span>
+              <span className="ptitle">Estimation Timer <span className="ptitle-optional">optional</span></span>
               {isObs ? (
                 <>
                   {!timer.running && !revealed && (
@@ -9371,8 +8683,11 @@ function GameScreen({
                         className="start-btn"
                         onClick={() => onStart(tsel)}
                       >
-                        <span>🃏</span> Start Voting — {tsel === 60 ? "1 min" : `${tsel}s`}
+                        <span>🃏</span> Start {tsel === 60 ? "1 min" : `${tsel}s`} countdown
                       </button>
+                      <div className="btn-hint">
+                        The team can vote without this. Use it if you want to time-box the round.
+                      </div>
                     </>
                   )}
                   {timer.running && (
@@ -9404,8 +8719,11 @@ function GameScreen({
                             justifyContent: "center",
                           }}
                         >
-                          <span className={`rnum${urgent ? " urgent" : ""}`}>
+                          <span className={`rnum${urgent ? " urgent" : ""}`} aria-hidden="true">
                             {timer.remaining}
+                          </span>
+                          <span className="visually-hidden">
+                            {urgent ? `${timer.remaining} seconds left` : ""}
                           </span>
                         </div>
                       </div>
@@ -9429,8 +8747,8 @@ function GameScreen({
                   {revealed && (
                     <div className="waiting-hint">
                       {requiresManualFinalEstimate
-                        ? "Votes are split — discuss briefly, then confirm the agreed estimate."
-                        : "Round complete — use the Next item to Estimate button below when you are ready to continue."}
+                        ? "Votes are split, discuss briefly, then confirm the agreed estimate."
+                        : "Round complete, use the Next item to Estimate button below when you are ready to continue."}
                     </div>
                   )}
                 </>
@@ -9465,8 +8783,11 @@ function GameScreen({
                             justifyContent: "center",
                           }}
                         >
-                          <span className={`rnum${urgent ? " urgent" : ""}`}>
+                          <span className={`rnum${urgent ? " urgent" : ""}`} aria-hidden="true">
                             {timer.remaining}
+                          </span>
+                          <span className="visually-hidden">
+                            {urgent ? `${timer.remaining} seconds left` : ""}
                           </span>
                         </div>
                       </div>
@@ -9475,7 +8796,7 @@ function GameScreen({
                           className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}
                         >
                           {urgent
-                            ? "Pick a card — NOW!"
+                            ? "Pick a card, NOW!"
                             : warn
                               ? "Last few seconds!"
                               : "Pick your card!"}
@@ -9489,9 +8810,11 @@ function GameScreen({
                     <div className="waiting-hint">
                       {revealed
                         ? allSame
-                          ? "✓ Cards revealed — consensus reached"
-                          : "✓ Cards revealed — review the spread below"
-                        : "Waiting for the facilitator to start voting…"}
+                          ? "✓ Cards revealed, consensus reached"
+                          : "✓ Cards revealed, review the spread below"
+                        : myVote
+                          ? "✓ Card played. The cards flip once everyone has voted."
+                          : "Play your card whenever you are ready. The timer is optional, and the cards flip once everyone has voted."}
                     </div>
                   )}
                 </>
@@ -9556,15 +8879,24 @@ function GameScreen({
                   })}
                 </div>
               )}
+              {!isObs && !revealed && (
+                <div className="kbd-hint">
+                  {numericDeck
+                    ? <>Tip: type the value you want. <kbd>3</kbd>, <kbd>8</kbd>, <kbd>13</kbd>, or <kbd>?</kbd> for the wild card.</>
+                    : <>Tip: press <kbd>1</kbd>–<kbd>{Math.min(9, cards.length)}</kbd> for the sizes in order, or <kbd>?</kbd>.</>}
+                </div>
+              )}
               {!isObs && (
                 <div
                   className={`vstatus${myVote && !revealed ? " voted" : " wait"}`}
                   style={{ marginTop: 10 }}
+                  role="status"
+                  aria-live="polite"
                 >
                   {revealed
                     ? allSame
-                      ? "⏳ Consensus reached — waiting for the facilitator to record the story and move on."
-                      : "💬 Cards are revealed — discuss briefly while the facilitator confirms the final estimate or starts another vote."
+                      ? "⏳ Consensus reached, waiting for the facilitator to record the story and move on."
+                      : "💬 Cards are revealed, discuss briefly while the facilitator confirms the final estimate or starts another vote."
                     : myVote
                       ? `✓ You picked ${myVote} — waiting for reveal…`
                       : "Pick a card to cast your vote"}
@@ -9574,7 +8906,7 @@ function GameScreen({
 
             {/* Results */}
             {revealed && (
-              <div className="panel panel-gold">
+              <div className="panel panel-gold" role="region" aria-live="polite" aria-label="Vote results">
                 {voted.length > 0 && (
                   <>
                     <div className="avg-hero">
@@ -9584,7 +8916,7 @@ function GameScreen({
                       <div className="avg-hero-num">{avgDisp}</div>
                       {allSame ? (
                         <div className="avg-hero-consensus">
-                          🎉 Everyone picked {voted[0].vote} on this vote
+                          🎉 {isRealConsensus ? `All ${voted.length} voters picked` : "Everyone who voted picked"} {voted[0].vote}
                         </div>
                       ) : (
                         <div className="avg-hero-sub">
@@ -9680,9 +9012,15 @@ function GameScreen({
                     {isObs && requiresManualFinalEstimate && (
                       <div className="inline-final-decision" role="group" aria-label="Facilitator choose final estimate">
                         <div className="inline-final-decision-kicker">Facilitator decision</div>
-                        <div className="inline-final-decision-title">Choose the agreed estimate for this item</div>
+                        <div className="inline-final-decision-title">
+                          {unanimousUnknown
+                            ? "Nobody could size this one"
+                            : "Choose the agreed estimate for this item"}
+                        </div>
                         <div className="inline-final-decision-copy">
-                          The votes are mixed. Select the estimate your team agrees to record, then move straight to the next item. The summary above is only for discussion.
+                          {unanimousUnknown
+                            ? "Every voter played ?. That is a signal the item needs clearer acceptance criteria, not a number. Clarify it and re-vote, or record a placeholder and come back to it."
+                            : "The votes are mixed. Select the estimate your team agrees to record, then move straight to the next item. The summary above is only for discussion."}
                         </div>
                         <div className="facilitator-overlay-summary inline-final-summary">
                           <div className="facilitator-overlay-summary-card">
@@ -9724,14 +9062,14 @@ function GameScreen({
                               : "Select the agreed estimate to continue"}
                           </button>
                           <button className="facilitator-overlay-revote" type="button" onClick={handleRevoteStory}>
-                            ↺ Re-vote this item
+                            ↺ Re-vote this {estMode.singular}
                           </button>
                         </div>
                       </div>
                     )}
                     {isObs && !requiresManualFinalEstimate && (
                       <button
-                        className={`btn-record-next btn-next-item-cta${allSame ? " consensus" : ""}`}
+                        className={`btn-record-next btn-next-item-cta${isRealConsensus ? " consensus" : ""}`}
                         disabled={!chosenFinalEstimate}
                         onClick={handleAdvanceToNextItem}
                       >
@@ -9757,7 +9095,7 @@ function GameScreen({
                     <div className="final-estimate-kicker">Decision required</div>
                     <div className="final-estimate-title">Pick the agreed estimate in the reveal panel, then move to the next item.</div>
                     <div className="final-estimate-copy">
-                      The facilitator controls now sit directly under <strong>Who Picked What</strong> so you can record the team decision without waiting for a popup.
+                      The facilitator controls now sit directly under <strong>Who Picked What:</strong> so you can record the team decision without waiting for a popup.
                     </div>
                   </div>
                 )}
@@ -9769,31 +9107,37 @@ function GameScreen({
                     {estMode.hintText}
                   </p>
                   <div className="story-add-row">
-                    <input
+                    <textarea
                       className="story-inp"
                       placeholder={estMode.placeholder}
                       value={storyInput}
-                      maxLength={200}
+                      rows={1}
                       onChange={(e) => setStoryInput(e.target.value)}
+                      onPaste={(e) => {
+                        // Paste a whole backlog: one item per line, straight from
+                        // Jira, Linear, a spreadsheet column, or a doc.
+                        const text = e.clipboardData?.getData("text") || "";
+                        if (!text.includes("\n")) return;
+                        e.preventDefault();
+                        addStoryLines(text);
+                      }}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && storyInput.trim()) {
-                          onAddStory(storyInput.trim());
-                          setStoryInput("");
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          addStoryLines(storyInput);
                         }
                       }}
                     />
                     <button
                       className="btn-story-add"
                       disabled={!storyInput.trim()}
-                      onClick={() => {
-                        if (storyInput.trim()) {
-                          onAddStory(storyInput.trim());
-                          setStoryInput("");
-                        }
-                      }}
+                      onClick={() => addStoryLines(storyInput)}
                     >
                       + Add
                     </button>
+                  </div>
+                  <div className="story-paste-hint">
+                    Paste a whole list, one {estMode.singular} per line, and every line gets queued at once.
                   </div>
                   {hasStories && (
                     <>
@@ -9806,11 +9150,25 @@ function GameScreen({
                           const state =
                             i < activeStoryIdx ? "done" :
                             i === activeStoryIdx ? "active" : "queued";
+                          const isTshirtDeck = deck === "tshirt";
                           return (
                             <div key={i} className={`story-item ${state}`}>
-                              <span>{i + 1}. {s.name}</span>
+                              <span className="story-item-name">{i + 1}. {s.name}</span>
                               {s.estimate != null && (
-                                <span className="story-est">{s.estimate} pts</span>
+                                <span className="story-est">
+                                  {s.estimate}{isTshirtDeck ? "" : " pts"}
+                                </span>
+                              )}
+                              {state !== "done" && (
+                                <button
+                                  type="button"
+                                  className="story-item-remove"
+                                  aria-label={`Remove ${s.name} from the queue`}
+                                  title="Remove from queue"
+                                  onClick={() => onRemoveStory?.(i)}
+                                >
+                                  ✕
+                                </button>
                               )}
                             </div>
                           );
@@ -9829,9 +9187,11 @@ function GameScreen({
                 </button>
                 {!revealed && (
                   <div className="btn-hint">
-                    {hasVotes
-                      ? "Ready — all votes are in!"
-                      : "Waiting for team to finish voting…"}
+                    {voters.length === 0
+                      ? "Nobody can vote yet. Share the invite link to fill the table."
+                      : hasVotes
+                        ? `${votedCount} of ${voters.length} in, reveal now, or press R`
+                        : `Waiting for the first card from ${voters.length === 1 ? "your voter" : `your ${voters.length} voters`}…`}
                   </div>
                 )}
                 {revealed && (
@@ -9851,7 +9211,7 @@ function GameScreen({
                       <>
                         <div className="obs-secondary-row" style={{ marginTop: 8 }}>
                           <button className="btn-next-round" onClick={handleRevoteStory}>
-                            ↺ Re-vote this story
+                            ↺ Re-vote this {estMode.singular}
                           </button>
                           <button
                             className="btn-new-session"
@@ -9863,7 +9223,7 @@ function GameScreen({
                           </button>
                         </div>
                         <div className="btn-hint">
-                          "Re-vote" keeps the same story · "New Sprint" resets everything
+                          "Re-vote" keeps the same {estMode.singular} · "New Sprint" resets everything
                         </div>
                       </>
                     )}
@@ -9905,7 +9265,7 @@ function GameScreen({
               <span className="ptitle">At the Table</span>
               {voters.length > 0 && !revealed && (
                 <>
-                  <div className="vp-head">
+                  <div className="vp-head" role="status" aria-live="polite">
                     <span>
                       {votedCount} of {voters.length} voted
                     </span>
@@ -9994,7 +9354,7 @@ function GameScreen({
               </div>
             </div>
 
-            {/* Sprint Analytics — facilitator only */}
+            {/* Sprint Analytics, facilitator only */}
             {isObs && (() => {
               const isTshirt = deck === "tshirt";
               const tshirtOrder = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -10088,6 +9448,19 @@ function GameScreen({
                   : "—";
               const avgDisp2 = avgSP !== null ? `${avgSP} sp` : isTshirt ? "—" : "—";
 
+              // Nothing recorded yet: a full empty dashboard pushes the actual
+              // controls a screen further down, so show one line instead.
+              if (storiesDone === 0 && sizedStories.length === 0) {
+                return (
+                  <div className="panel">
+                    <span className="ptitle">Sprint Analytics</span>
+                    <div className="a-empty" style={{ marginTop: 6 }}>
+                      Consensus rate, spread, and {estMode.singular} totals appear here after the first recorded estimate.
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div className="panel">
                   <span className="ptitle">Sprint Analytics</span>
@@ -10167,7 +9540,7 @@ function GameScreen({
                       <div className="a-empty">
                         {storiesDone > 0
                           ? `Add ${estMode.singular} names to the queue to track estimates here.`
-                          : `No ${estMode.plural} sized yet — estimates will appear here after the first round.`}
+                          : `No ${estMode.plural} sized yet, estimates will appear here after the first round.`}
                       </div>
                     )}
                   </div>
@@ -10192,7 +9565,7 @@ function GameScreen({
               );
             })()}
 
-            {/* Estimation Spree — shown when streak ≥ 1, all players saw same consensus */}
+            {/* Estimation Spree, shown when streak ≥ 1, all players saw same consensus */}
             {streak > 0 && (
               <div className={`streak-panel${streak >= 3 ? " streak-hot" : ""}`}>
                 <div className="streak-fire">
@@ -10206,78 +9579,45 @@ function GameScreen({
                   </div>
                   <div className="streak-label">
                     {streak >= 5
-                      ? "Unstoppable — team is perfectly aligned 🚀"
+                      ? "Unstoppable, team is perfectly aligned 🚀"
                       : streak >= 3
-                      ? "Team is locked in — great backlog clarity"
+                      ? "Team is locked in, great backlog clarity"
                       : streak === 2
-                      ? "Two in a row — team understands the work"
-                      : "First consensus — everyone on the same page"}
+                      ? "Two in a row, team understands the work"
+                      : "First consensus, everyone on the same page"}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Session summary — appears once stories have estimates */}
-            {hasStories && stories.some((s) => s.estimate != null) && (
+            {/* Session summary, works with or without a named queue */}
+            {summaryRows.length > 0 && (
               <div className="panel">
                 <span className="ptitle">Sprint Summary</span>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", marginBottom: "12px" }}>
-                  {stories.map((s, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "baseline",
-                        padding: "6px 10px",
-                        borderRadius: "8px",
-                        background: s.estimate != null ? "rgba(201,145,42,.06)" : "rgba(255,255,255,.02)",
-                        border: "1px solid",
-                        borderColor: s.estimate != null ? "rgba(201,145,42,.14)" : "var(--border)",
-                      }}
-                    >
-                      <span style={{ fontSize: ".8rem", color: s.estimate != null ? "var(--cream)" : "rgba(239,242,247,.65)", flex: 1, paddingRight: "8px", lineHeight: 1.3 }}>
-                        {s.name}
-                      </span>
-                      <span style={{ fontSize: ".88rem", fontWeight: 700, color: s.estimate != null ? "var(--gold2)" : "rgba(239,242,247,.52)", whiteSpace: "nowrap" }}>
-                        {s.estimate != null ? `${s.estimate}` : "—"}
+                <div className="summary-rows">
+                  {summaryRows.map((row, i) => (
+                    <div key={i} className={`summary-row${row.estimate != null ? " sized" : ""}`}>
+                      <span className="summary-row-name">{row.name}</span>
+                      <span className="summary-row-est">
+                        {row.estimate != null ? row.estimate : "—"}
                       </span>
                     </div>
                   ))}
                 </div>
-                <button
-                  className="btn-inv"
-                  onClick={() => {
-                    const lines = ["Sprint Estimation Summary", "========================", ""];
-                    stories.forEach((s, i) => {
-                      lines.push(`${i + 1}. ${s.name}  →  ${s.estimate != null ? s.estimate + " pts" : "not estimated"}`);
-                    });
-                    lines.push("");
-                    lines.push(`Total ${estMode.plural}: ${stories.length}`);
-                    lines.push(`Estimated: ${stories.filter((s) => s.estimate != null).length}`);
-                    navigator.clipboard.writeText(lines.join("\n"));
-                    toast("📋 Summary copied to clipboard!");
-                  }}
-                >
-                  📋 Copy Summary
-                </button>
+                <div className="summary-total">
+                  {summarySized} of {summaryRows.length} sized
+                  {summaryTotalPoints !== null && ` · ${summaryTotalPoints} points total`}
+                </div>
+                <div className="summary-actions">
+                  <button className="btn-inv" onClick={copySummary}>📋 Copy</button>
+                  <button className="btn-inv" onClick={downloadSummaryCsv}>⬇ CSV</button>
+                </div>
+                {showWtpPoll && <WtpPoll onDone={() => setWtpDone(true)} />}
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {/* ── Free-tier upgrade nudge — hidden for Pro users ── */}
-      {currentPlan !== "pro" && rd.plan !== "pro" && (
-        <div className="game-upgrade-strip">
-          <span className="game-upgrade-strip-text">
-            Free plan · up to {FREE_MAX_PARTICIPANTS} participants · upgrade for 2 dedicated Team Rooms, sprint history, and up to {PRO_MAX_PARTICIPANTS} participants
-          </span>
-          <button className="game-upgrade-strip-cta" onClick={onShowPricing}>
-            ✦ Upgrade to Pro
-          </button>
-        </div>
-      )}
     </>
   );
 }
