@@ -165,12 +165,36 @@ analytics. Roughly half of real usage picks a non-default deck. A also made the
 y=1260 desktop and y=1364 mobile, both below the y=1119 it started from. Hiding
 a 50/50 irreversible choice to save 75px on the other path is the wrong trade.
 
-**Neither variation touched the real constraint.** The hero above the form —
-title, subtitle and four trust pills — is about 600px on its own, which is why
-the primary action still needs a 320px scroll on a laptop. That is the largest
-remaining lever on this screen and it is untouched, deliberately, so the A/B
-comparison isolated one variable. Anyone picking this up next should start
-there rather than shaving the form further.
+**The hero constraint is now fixed, and the fix changed the form back.** The
+hero sat stacked on top of the form inside one 440px card: 397px of marketing
+above the control people came for, with 829px of empty width either side of it.
+From 1024px up the two now sit side by side — hero copy left, form card right —
+and nothing was removed to do it. The primary action went from a 320px scroll to
+**0px at 1024×768 and 44px at 1280×720**.
+
+That fix then made variation B's own layout obsolete. Deck and estimating were
+put side by side to save vertical space back when the hero was eating it; with
+the hero moved, that pressure is gone, and at a 480px card the paired columns
+gave each option 58px of width for an 82px label, so "Powers of 2" and "User
+Stories" both wrapped. They are stacked full width again. **If you are tempted
+to re-pair them to save height, the height is no longer scarce and the wrapping
+is why they were separated.**
+
+**Two traps in the type sweep, if you ever repeat one.**
+
+A CSS-only pass misses the `style={{fontSize: ".78rem"}}` values written inline
+in the JSX — there were eight, and the smallest surviving text on the page after
+the CSS sweep was one of them. Grep both.
+
+And wrapping is not clipping. The first regression harness checked
+`scrollWidth > clientWidth` and reported everything clean while four option
+labels were visibly broken across two lines. Text that wraps still fits its box.
+Measure rendered height against line-height instead.
+
+**The join tabs are "Create / Join / Team", not "… Room".** At 375px three tabs
+carrying "Room" cannot fit one line at any size down to the 13px floor — 87px of
+label in 64px of column. The tab picks the mode and the primary action names the
+outcome, since it already reads "Create Room →". Do not add the noun back.
 
 ## Deployment record
 

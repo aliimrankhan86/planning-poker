@@ -204,7 +204,8 @@ describe("role selection", () => {
   test("a room cannot be created until a role is chosen", () => {
     render(<App />);
     fireEvent.change(nameField(), { target: { value: "Alex" } });
-    // "Create Room" alone also matches the tab; the submit carries the arrow.
+    // The tab is now "Create" and only the submit says "Create Room →", so
+    // this no longer has to disambiguate — the arrow is kept as the exact name.
     fireEvent.click(screen.getByRole("button", { name: "Create Room →" }));
     expect(screen.getByRole("alert")).toHaveTextContent(/role/i);
   });
