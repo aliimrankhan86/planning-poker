@@ -1437,6 +1437,24 @@ body::before {
 }
 .choice-permanence > svg { flex: none; margin-top: 1px; }
 
+/* ── Session options, side by side (variation B) ───────────────────────
+   Two irreversible choices kept visible by halving the space they take,
+   rather than by hiding one of them. Stacks below 520px, where two columns
+   of three options each would put every label on two lines. */
+/* Matches the bottom margin .choice-permanence pulls back against, so the
+   note sits flush under the group it describes. */
+.session-grid { display: grid; grid-template-columns: 3fr 2fr; gap: var(--sp-4); margin-bottom: var(--sp-5); }
+.session-field { min-width: 0; }
+.session-field .choice-grid { margin-bottom: var(--sp-3); }
+.session-summary-cards { color: var(--text-2); font-weight: var(--fw-semi); }
+@media (max-width: 520px) {
+  .session-grid { grid-template-columns: 1fr; gap: var(--sp-2); }
+}
+
+/* Label-only option, one line, no description underneath. */
+.choice--tight { flex-direction: row; padding: var(--sp-2) var(--sp-2); }
+.choice--tight .choice-label { font-size: var(--fs-2); }
+
 /* ══════════════════════ SEO CONTENT SECTION ══════════════════════ */
 .seo-section {
   width: 100%; max-width: 860px; margin-top: 56px;
@@ -8230,50 +8248,62 @@ function JoinScreen({
         {/* Deck picker, shown on Create and Team tabs */}
         {(tab === "create" || tab === "team") && (
           <>
-            <label className="lbl">Card Deck</label>
-            <div className="choice-grid" style={{ "--choice-cols": 3 }}>
-              {DECK_KEYS.map((k) => {
-                const d = DECK_DEFINITIONS[k];
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    className="choice"
-                    aria-pressed={deck === k}
-                    aria-label={`${d.label} deck: ${d.desc}`}
-                    onClick={() => setDeck(k)}
-                  >
-                    <span className="choice-label">{d.label}</span>
-                    <span className="choice-desc">{d.desc}</span>
-                  </button>
-                );
-              })}
+            {/* Variation B — density rather than disclosure. Both choices are
+                irreversible for the life of the room, so neither is hidden.
+                They sit side by side as label-only options, and the per-option
+                descriptions collapse into one line that shows the selected
+                deck's actual cards — more useful than "1, 2, 3, 5, 8…" printed
+                three times, once under every deck the user did not pick. */}
+            <div className="session-grid">
+              <div className="session-field">
+                <label className="lbl">Card Deck</label>
+                <div className="choice-grid" style={{ "--choice-cols": 3 }}>
+                  {DECK_KEYS.map((k) => {
+                    const d = DECK_DEFINITIONS[k];
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        className="choice choice--tight"
+                        aria-pressed={deck === k}
+                        aria-label={`${d.label} deck: ${d.desc}`}
+                        onClick={() => setDeck(k)}
+                      >
+                        <span className="choice-label">{d.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="session-field">
+                <label className="lbl">Estimating</label>
+                <div className="choice-grid">
+                  {Object.values(ESTIMATION_MODES).map((m) => (
+                    <button
+                      key={m.key}
+                      type="button"
+                      className="choice choice--tight"
+                      aria-pressed={estMode === m.key}
+                      aria-label={`${m.label}: ${m.desc}`}
+                      onClick={() => setEstMode(m.key)}
+                    >
+                      <span className="choice-label">{m.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Estimation mode picker, what is the team estimating? */}
-            <label className="lbl">What Are You Estimating?</label>
-            <div className="choice-grid">
-              {Object.values(ESTIMATION_MODES).map((m) => (
-                <button
-                  key={m.key}
-                  type="button"
-                  className="choice"
-                  aria-pressed={estMode === m.key}
-                  aria-label={`${m.label}: ${m.desc}`}
-                  onClick={() => setEstMode(m.key)}
-                >
-                  <span className="choice-label">{m.label}</span>
-                  <span className="choice-desc">{m.desc}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Both are write-once in the database rules, so the room is stuck
-                with whatever is picked here. Saying it at the point of choice
-                is the only place it can prevent the mistake. */}
+            {/* One line carrying what the two selections actually mean, plus
+                the fact that neither can be changed once the room exists. */}
             <p className="choice-permanence">
               <Icon name="alert" size={15} />
-              <span>The deck and what you estimate are fixed for this room. To use a different deck, create another room.</span>
+              <span>
+                <span className="session-summary-cards">{DECK_DEFINITIONS[deck].desc}</span>
+                {" — "}
+                {ESTIMATION_MODES[estMode].desc.toLowerCase()}. Both are fixed for this room once created.
+              </span>
             </p>
           </>
         )}
