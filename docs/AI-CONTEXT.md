@@ -153,6 +153,31 @@ fails if the token layer, the button system or the no-emoji rule is broken.
 
 ## Things that will bite you
 
+## Deployment record
+
+**Rules published to production on 2026-08-09** and verified against the live
+database, not just the console's success toast. The three-`.parent()` estimate
+fix, the analytics lockdown, the removal of the licences node and the admin
+allowlist are all live. Verification method, worth repeating after any future
+publish, because the console will happily tell you it saved something broken:
+
+```bash
+DB=<REACT_APP_FIREBASE_DATABASE_URL>
+# An unauthenticated REST call is evaluated exactly like an anonymous browser.
+curl -s -o /dev/null -w '%{http_code}\n' -X PUT -d '"8"' $DB/rooms/<code>/stories/0/estimate.json
+```
+
+200 means allowed, 401 means denied. Confirmed live: a queued-story estimate is
+accepted, a wrong-deck value is rejected, a room claiming `plan:"pro"` is
+rejected, analytics is unreadable, a counter cannot be forged or reset, nobody
+can self-promote to admin, and `/rooms` cannot be enumerated.
+
+**Two things in the live database that are not in the rules.** `/licenses` still
+holds data from before the product went free; the node has no rule any more so
+it falls to the `$other` deny-all and no client can reach it. `/ops` is written
+by Cloud Functions through the admin SDK, which bypasses rules entirely, so the
+deny-all does not affect it. Do not "tidy" either by adding rules for them.
+
 **The Firebase rules are the source of truth and they must be redeployed by hand.**
 Editing `database.rules.json` changes nothing in production until someone pastes
 `database.rules.publish.json` into the Firebase console or runs
