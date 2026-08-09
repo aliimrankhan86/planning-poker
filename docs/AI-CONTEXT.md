@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 447 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 449 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 18 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 8 KB |
@@ -111,7 +111,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 68 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 70 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -131,7 +131,7 @@ one primary action per screen; icons from `ICON_PATHS`, never emoji.
 
 | Measure | Now | Note |
 |---|---|---|
-| Design tokens in `:root` | 72 | Type, spacing, elevation, motion, semantic colour |
+| Design tokens in `:root` | 71 | Type, spacing, elevation, motion, semantic colour |
 | Icons in `ICON_PATHS` | 18 | One stroke family, `currentColor` |
 | Distinct font sizes in CSS | 45 | Target is the 8-step scale; the rest is unmigrated legacy |
 | Distinct padding pairs | 83 | Target is the 4px grid |
@@ -353,6 +353,31 @@ container edge — which reads as broken, not as scrollable. Raising the type
 floor widened each link and made it obvious. Pricing, Support, Trust and
 Features are all in the footer, so nothing is lost. Do not "fix" the hidden
 links by re-showing them; the bar has no room and the footer already has them.
+
+**An empty room's primary action is the invite, not Reveal.** A facilitator who
+has just made a room is alone in it. The action bar's primary slot held "Reveal
+everyone's cards", disabled, because there was nothing to reveal — the loudest
+control on the screen did nothing — while the one action that mattered, sharing
+the link, was a secondary button inside a banner carrying a dismiss X that could
+hide it. `RoomActionBar` now branches on `roomIsEmpty` (`!revealed &&
+voterCount === 0`) and the slot carries "Copy the invite link" until somebody
+can vote. Verified in two browser tabs: the moment a participant joins, the slot
+hands back to Reveal.
+
+That also removed the third copy of the same invite. The header strip has one,
+the action bar's primary is the other, and the solo banner was a third — it now
+only appears for a Team Room, where "the link stays the same every sprint" is
+information the header does not carry.
+
+**Do not render a count of nothing.** "0 of 1 voted" is fine; "0 of 0 voted"
+over an empty progress bar is not, and neither is a gold "0 stories done" badge
+on a room that has not started. Zeroes read as data. Both are now conditional on
+there being something to report — the design system had this rule and the room
+was breaking it in two places.
+
+**`--radius-sm` was 14px, which is `--r-md`, not `--r-sm` (10px).** It has been
+remapped and deleted. Anyone doing that migration by name rather than by value
+would have silently shrunk eleven corners.
 
 **Numbers can pass while a screen looks broken.** That nav defect survived a
 clean five-width automated sweep — no horizontal overflow, no clipped element,

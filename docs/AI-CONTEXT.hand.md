@@ -205,6 +205,31 @@ floor widened each link and made it obvious. Pricing, Support, Trust and
 Features are all in the footer, so nothing is lost. Do not "fix" the hidden
 links by re-showing them; the bar has no room and the footer already has them.
 
+**An empty room's primary action is the invite, not Reveal.** A facilitator who
+has just made a room is alone in it. The action bar's primary slot held "Reveal
+everyone's cards", disabled, because there was nothing to reveal — the loudest
+control on the screen did nothing — while the one action that mattered, sharing
+the link, was a secondary button inside a banner carrying a dismiss X that could
+hide it. `RoomActionBar` now branches on `roomIsEmpty` (`!revealed &&
+voterCount === 0`) and the slot carries "Copy the invite link" until somebody
+can vote. Verified in two browser tabs: the moment a participant joins, the slot
+hands back to Reveal.
+
+That also removed the third copy of the same invite. The header strip has one,
+the action bar's primary is the other, and the solo banner was a third — it now
+only appears for a Team Room, where "the link stays the same every sprint" is
+information the header does not carry.
+
+**Do not render a count of nothing.** "0 of 1 voted" is fine; "0 of 0 voted"
+over an empty progress bar is not, and neither is a gold "0 stories done" badge
+on a room that has not started. Zeroes read as data. Both are now conditional on
+there being something to report — the design system had this rule and the room
+was breaking it in two places.
+
+**`--radius-sm` was 14px, which is `--r-md`, not `--r-sm` (10px).** It has been
+remapped and deleted. Anyone doing that migration by name rather than by value
+would have silently shrunk eleven corners.
+
 **Numbers can pass while a screen looks broken.** That nav defect survived a
 clean five-width automated sweep — no horizontal overflow, no clipped element,
 nothing past the viewport — because a scroll container that slices its content
