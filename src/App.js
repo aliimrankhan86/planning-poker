@@ -944,38 +944,6 @@ body::before {
 .join-layout { width: 100%; max-width: 440px; }
 .join-mark { display: flex; justify-content: center; margin-bottom: var(--sp-5); }
 
-/* From 1024px the two sit side by side. The form column stays exactly the
-   440px card it already was; the hero takes the width that was empty margin. */
-@media (min-width: 1024px) {
-  .join-layout {
-    max-width: 1080px;
-    display: grid;
-    /* 480px, not the old 440: raising the type floor widened every option
-       label, and at 440 minus 80px of card padding "Powers of 2" and the
-       "Create Room" tab both wrapped to two lines. Widen the container rather
-       than shrink the type back — the horizontal space is free here. */
-    grid-template-columns: minmax(0, 1fr) 480px;
-    gap: var(--sp-12);
-    align-items: center;
-  }
-  /* Scoped to .join-layout so it beats the base .join-box rule on specificity
-     rather than on source order — the base rule is defined further down. */
-  /* 48px of top padding was sized for a card that opened with a logo and a
-     headline. Those moved to the hero column; what is left starts with a tab
-     row, which does not need that much air above it. */
-  .join-layout .join-box {
-    max-width: 480px;
-    padding: var(--sp-6) var(--sp-8) var(--sp-8);
-  }
-  .join-hero { text-align: left; }
-  .join-mark { justify-content: flex-start; }
-  .join-title { text-align: left; font-size: clamp(2.1rem, 3.2vw, 2.75rem); }
-  .join-sub { text-align: left; margin-left: 0; max-width: 40ch; }
-  .trust-strip { justify-content: flex-start; }
-  /* The card animates up on load; the hero should not slide independently. */
-  .join-box { animation: none; }
-}
-
 .join-box {
   width: 100%; max-width: 440px;
   background:
@@ -1023,13 +991,60 @@ body::before {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 7px;
 }
 .trust-strip li {
-  font-size: var(--fs-1); font-weight: 500; letter-spacing: .3px;
+  font-size: var(--fs-1); font-weight: 500; letter-spacing: var(--fs-1-tracking);
   color: rgba(239,242,247,.78);
   background: rgba(255,255,255,.045);
   border: 1px solid rgba(158,234,196,.14);
   border-radius: 999px; padding: 5px 11px;
   white-space: nowrap;
 }
+
+/* From 1024px the hero and the form sit side by side. The form column stays
+   exactly the card it already was; the hero takes the width that was empty
+   margin either side.
+
+   This block sits BELOW every rule it overrides, and that placement is
+   load-bearing. It used to sit above them, where — at equal specificity —
+   the base rules won on source order and seven of these declarations did
+   nothing at all: the title stayed centred while the logo went left, which
+   is how the hero shipped with its mark and its headline on two different
+   axes. src/designsystem.test.js now fails if any min-width override is
+   cancelled by a rule written after it. Do not move this block up.
+
+   Note for anyone editing comments in this CSS block: it is a JS template
+   literal, so a backtick here ends the string and breaks the build. */
+@media (min-width: 1024px) {
+  .join-layout {
+    max-width: 1080px;
+    display: grid;
+    /* 480px, not the old 440: raising the type floor widened every option
+       label, and at 440 minus 80px of card padding "Powers of 2" and the
+       "Create Room" tab both wrapped to two lines. Widen the container rather
+       than shrink the type back — the horizontal space is free here. */
+    grid-template-columns: minmax(0, 1fr) 480px;
+    gap: var(--sp-12);
+    align-items: center;
+  }
+  /* 48px of top padding was sized for a card that opened with a logo and a
+     headline. Those moved to the hero column; what is left starts with a tab
+     row, which does not need that much air above it. */
+  .join-box {
+    max-width: 480px;
+    padding: var(--sp-6) var(--sp-8) var(--sp-8);
+    /* The card animates up on load; the hero should not slide independently. */
+    animation: none;
+  }
+  /* The mark, the headline, the subtitle and the trust strip are one column
+     of content and share one alignment axis. Whenever that axis moves, all
+     four move together — a logo on a different edge to its own headline is
+     the first thing the eye catches. */
+  .join-hero { text-align: left; }
+  .join-mark { justify-content: flex-start; }
+  .join-title { text-align: left; font-size: clamp(2.1rem, 3.2vw, 2.75rem); }
+  .join-sub { text-align: left; margin-left: 0; max-width: 40ch; }
+  .trust-strip { justify-content: flex-start; }
+}
+
 .workspace-shell {
   display: flex;
   flex-direction: column;
@@ -1932,17 +1947,9 @@ body::before {
   padding-top: var(--sp-3);
   border-top: 1px solid var(--border);
 }
-.btn-reveal-primary {
-  width: 100%; padding: 16px 20px; border: none; border-radius: var(--r-md);
-  background: linear-gradient(135deg, var(--gold), var(--gold2));
-  color: var(--ink); font-family: 'Outfit', sans-serif;
-  font-size: 1rem; font-weight: 700; cursor: pointer;
-  transition: all .2s; letter-spacing: .3px;
-  box-shadow: 0 4px 20px rgba(201,145,42,.4);
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-}
-.btn-reveal-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,145,42,.55); }
-.btn-reveal-primary:disabled { opacity: .3; cursor: not-allowed; transform: none; box-shadow: none; }
+/* .btn-reveal-primary lived here. The room's Reveal control moved into
+   RoomActionBar and onto .btn--primary; the rule outlived its last call site
+   and was carrying a fourth gold gradient nothing rendered. */
 .obs-secondary-row { display: flex; gap: 10px; }
 .btn-next-round {
   flex: 1; padding: 13px 14px; border-radius: var(--r-md);
@@ -2347,7 +2354,8 @@ body::before {
 .analytics-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .analytics-chip {
   display: flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px;
-  background: rgba(255,255,255,.05); border: 1px solid var(--border); font-size: var(--fs-1); line-height: 1;
+  background: rgba(255,255,255,.05); border: 1px solid var(--border);
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); line-height: var(--lh-snug);
 }
 .analytics-chip-val { font-weight: 600; color: var(--gold2); }
 .analytics-chip-cnt { color: rgba(239,242,247,.66); font-weight: 300; }
@@ -2607,24 +2615,13 @@ body::before {
 .chip-logo:active { transform: translateY(0) scale(1.01); }
 
 /* Nav auth buttons */
-.nav-btn-login {
-  padding: 8px 18px; border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.16); background: rgba(255,255,255,.03);
-  color: rgba(239,242,247,.80); font-family: 'Outfit', sans-serif;
-  font-size: .83rem; font-weight: 500; cursor: pointer;
-  transition: all .2s; letter-spacing: .2px;
-}
-.nav-btn-login:hover { background: rgba(255,255,255,.08); color: var(--cream); border-color: rgba(158,234,196,.28); }
-.nav-btn-register {
-  padding: 8px 20px; border-radius: 12px; border: none;
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
-  color: var(--ink); font-family: 'Outfit', sans-serif;
-  font-size: .83rem; font-weight: 700; cursor: pointer;
-  transition: all .2s; letter-spacing: .2px;
-  box-shadow: 0 12px 26px rgba(241,185,63,.24), inset 0 1px 0 rgba(255,255,255,.48);
-}
-.nav-btn-register:hover { transform: translateY(-1px); box-shadow: 0 16px 32px rgba(241,185,63,.30), inset 0 1px 0 rgba(255,255,255,.56); }
-.nav-btn-register:active { transform: none; }
+/* .nav-btn-login and .nav-btn-register were a parallel button implementation:
+   their own padding, their own 12px radius (off the 10/14/20 scale), their own
+   .83rem type (a fourth size within 0.3px of --fs-1), their own gold gradient
+   distinct from the one .btn--primary uses, and a 33px height against the
+   system's 44px floor. The visual now comes from .btn; these class names
+   survive only as hooks for the responsive show/hide rules below, which are
+   about navbar layout rather than how a button looks. */
 
 /* ── Sticky game header top already set in the .hdr block above; kept here for reference ── */
 
@@ -2908,24 +2905,16 @@ body::before {
   color: var(--gold2); border-color: rgba(201,145,42,.32); background: rgba(201,145,42,.12);
 }
 
-/* ─── Nav upgrade wrapper ─── */
-/* Wrapper is exactly button height so it aligns with sibling buttons in navbar-right.
-   The subtitle floats below via absolute positioning and does not affect layout. */
-.nav-btn-wrapper {
-  position: relative;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-}
-.nav-upgrade-sub {
-  position: absolute;
-  top: calc(100% + 3px);
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: var(--fs-1); font-weight: 500; color: rgba(239,242,247,.62);
-  letter-spacing: .15px; line-height: 1; pointer-events: none;
-  white-space: nowrap;
-}
+/* The navbar CTA used to carry a caption — "No sign-up · No card · No limits"
+   — pinned under it with position:absolute. The bar is a hard 64px with no
+   horizontal slack, so nothing reserved room for the caption: it was crushed
+   to line-height 1, which at 13px gave it a line box 3.5px shorter than its
+   own glyphs, and the descenders of "sign-up" crossed the bar's bottom
+   border. Five hacks held one line of text in a container that could not
+   take it. The bar was the wrong container, and the claim was already made
+   better by every page it appeared on — /pricing opens with "no paid tier,
+   no trial countdown and no credit card field anywhere". Removed, not
+   restyled. */
 
 /* ─── Game upgrade strip — free users only ─── */
 
@@ -3491,15 +3480,8 @@ body::before {
 }
 
 /* NavBar history button */
-.nav-btn-history {
-  padding: 8px 14px; border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.16); background: rgba(255,255,255,.04);
-  color: rgba(239,242,247,.75); font-family: 'Outfit', sans-serif;
-  font-size: .82rem; font-weight: 500; cursor: pointer;
-  transition: all .2s; letter-spacing: .2px;
-  display: flex; align-items: center; gap: 6px;
-}
-.nav-btn-history:hover { background: rgba(255,255,255,.08); color: var(--cream); border-color: rgba(158,234,196,.28); }
+/* .nav-btn-history: see the note by .nav-btn-login. Visual comes from .btn;
+   the name is kept for the authenticated-only display rules. */
 
 @media (max-width: 780px) {
   .history-insights { grid-template-columns: repeat(2, 1fr); }
@@ -3533,12 +3515,20 @@ body::before {
   .navbar { padding: 0 14px; }
   .navbar-inner { gap: 10px; }
   .navbar-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-  .navbar.authenticated .nav-btn-login { display: inline-flex; padding: 7px 12px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
-  .navbar.authenticated .nav-btn-history { display: inline-flex; padding: 7px 11px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
+  /* Narrow bars buy width by tightening horizontal padding and dropping to the
+     small type role. The 44px tap floor from .btn is deliberately untouched:
+     a phone is where it matters most. */
+  .navbar.authenticated .nav-btn-login,
+  .navbar.authenticated .nav-btn-history { display: inline-flex; }
   .navbar:not(.authenticated) .nav-btn-login { display: none; }
+  .navbar .nav-btn-login,
+  .navbar .nav-btn-history,
+  .navbar .nav-btn-register {
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-1);
+    letter-spacing: var(--fs-1-tracking);
+  }
   .nav-link-btn { padding: 6px 10px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
-  .nav-btn-register { font-size: var(--fs-1); padding: 7px 13px; }
-  .nav-upgrade-sub { display: none; }
   .login-modal { padding: 34px 22px 26px; max-width: 100%; }
   .auth-mode-row { grid-template-columns: 1fr; }
   .login-upgrade-head { flex-direction: column; align-items: stretch; }
@@ -3855,6 +3845,12 @@ function NavBar({
   onLogout,
   onHistory,
   onAdmin,
+  /* On the join screen the form is already on the page, and this control only
+     scrolls to it and focuses the name field. Ranking it as a second gold
+     primary alongside "Create Room" would give one screen two loudest things
+     and mis-state which one completes the task. Elsewhere it is the only call
+     to action in the bar, so it keeps the primary treatment. */
+  onJoinScreen = false,
   showMarketingNav = true,
   inRoom = false,
 }) {
@@ -3897,7 +3893,7 @@ function NavBar({
           {currentUser ? (
             <>
               <button
-                className="nav-btn-history"
+                className="btn btn--secondary btn--sm nav-btn-history"
                 onClick={onHistory}
                 aria-label="View sprint history"
               >
@@ -3908,18 +3904,20 @@ function NavBar({
                 <span className="nav-account-plan">Free</span>
               </div>
               {onAdmin && (
-                <button className="nav-btn-login" onClick={onAdmin} aria-label="Usage dashboard"><Icon name="chart" size={18} /></button>
+                <button className="btn btn--ghost btn--sm nav-btn-login" onClick={onAdmin} aria-label="Usage dashboard"><Icon name="chart" size={18} /></button>
               )}
-              <button className="nav-btn-login" onClick={onLogout}>Sign out</button>
+              <button className="btn btn--ghost btn--sm nav-btn-login" onClick={onLogout}>Sign out</button>
             </>
           ) : (
             <>
-              <button className="nav-btn-login" onClick={onLogin}>Sign in</button>
+              <button className="btn btn--ghost btn--sm nav-btn-login" onClick={onLogin}>Sign in</button>
               {!inRoom && (
-                <div className="nav-btn-wrapper">
-                  <button className="nav-btn-register" onClick={onStartFree}>Start a free room</button>
-                  <span className="nav-upgrade-sub">No sign-up · No card · No limits</span>
-                </div>
+                <button
+                  className={`btn btn--${onJoinScreen ? "secondary" : "primary"} btn--sm nav-btn-register`}
+                  onClick={onStartFree}
+                >
+                  Start a free room
+                </button>
               )}
             </>
           )}
@@ -5485,6 +5483,7 @@ export default function App() {
             if (screen !== "join") { navTo("/"); }
             setStartFocusToken((v) => v + 1);
           }}
+          onJoinScreen={screen === "join"}
           onPlans={openPricing}
           onSupport={() => navTo("/support")}
           onTrust={() => navTo("/trust")}

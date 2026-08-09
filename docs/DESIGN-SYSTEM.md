@@ -84,6 +84,24 @@ Line height travels with size: `--lh-tight` (1.15) for display, `--lh-snug` (1.3
 for UI, `--lh-body` (1.6) for prose. Weights are `--fw-regular` through
 `--fw-bold`; hierarchy comes from size and weight, never colour alone.
 
+**A line box has to hold the text inside it.** The navbar carried
+"No sign-up · No card · No limits" at 13px with `line-height: 1`. Outfit's ink
+at 13px measures **16.5px**, so the glyphs stood 3.5px taller than the box
+allotted to them and the descenders of "sign-up" crossed the navbar's bottom
+border. It read as squashed because it was squashed: the text was bigger than
+its own line.
+
+`line-height: 1` is legitimate for a *single glyph* in a fixed box — an icon
+button's ✕, a card suit mark — where there is one character and no descender to
+collide with anything. It is never right for a run of words at a reading size.
+`src/designsystem.test.js` fails on any block that pairs `line-height: 1` with a
+`--fs-1/2/3` font size, and keeps the single-glyph exemptions in one short list
+with the reason next to each.
+
+The tell to watch for: `position: absolute` plus `line-height: 1` plus
+`white-space: nowrap` on the same element is almost always the signature of text
+forced into a container that will not take it. Fix the container.
+
 Use `font-variant-numeric: tabular-nums` for anything that counts or ticks. "3 of
 12" reflowing to "10 of 12" mid-round is a layout shift nobody asked for.
 
@@ -129,6 +147,16 @@ padding, font and radius. That is what produced 18 button classes.
 is a `--secondary`; if that still feels wrong, the screen is doing too much. This
 is the single rule that fixed the room: it previously offered three full-width
 calls to action stacked vertically and gave no clue which one mattered.
+
+The rule is per *screen*, not per component, so a shared component may have to
+step down on some routes. The navbar's "Start a free room" is the only call to
+action in the bar on thirteen routes and is `--primary` there; on the join screen
+it only scrolls to the form below it and focuses the first field, so it drops to
+`--secondary` and leaves the gold to "Create Room", which is the control that
+finishes the job. `NavBar` takes `onJoinScreen` for exactly this.
+
+Ranking in the bar runs `--ghost` (Sign in) → `--secondary` → `--primary`. Three
+visible tiers, one gold.
 
 Every `.btn` is at least `--tap-min` (44px) tall. Sizes change padding and type,
 never that floor. WCAG 2.2 AA (2.5.8) requires 24px; 44px is the Apple HIG figure
@@ -228,6 +256,36 @@ A named scale, so nothing gets a `z-index` of 99999 again: `--z-base` 0,
 
 ---
 
+## Source order is part of the system
+
+CSS is one long string in `src/App.js`. At equal specificity the **later** rule
+wins, so a `@media` block must sit **below** every base rule it overrides.
+
+The hero shipped with its logo hard left and its headline centred, on the same
+screen. Nothing was wrong with either rule: the `@media (min-width: 1024px)`
+block had been written *above* the base rules, so seven of its declarations
+silently did nothing — the title's alignment and desktop size, the subtitle's
+alignment and measure, the trust strip's alignment, and a card animation
+override. `.join-mark` happened to be declared above the block and did apply,
+which is exactly why the mark and the headline ended up on different axes.
+
+This had been hit once before, on `.join-box`, and was patched by scoping it to
+`.join-layout .join-box` so it won on specificity instead of order. That fixed
+one selector, left four broken, and put a comment explaining the trap directly
+above the rules still falling into it. **Specificity is the wrong tool here.**
+Move the block; do not out-specify it.
+
+`src/designsystem.test.js` now fails if any `min-width` override is cancelled by
+a rule written after it, anywhere in the file.
+
+Two related traps in this file:
+
+- The CSS lives in a **template literal**, so a backtick inside a CSS comment
+  ends the string and breaks the build.
+- Elements that belong to one visual group — a mark, its headline, its
+  subtitle — must move alignment together. If a breakpoint moves one, it moves
+  all of them, in the same block.
+
 ## Layout and placement
 
 **Reading order is importance order.** In the room, the facilitator's primary
@@ -274,14 +332,25 @@ Done: tokens, button system, icon set, room layout, and the option controls —
 Type is done too: every `font-size` in the CSS block and every inline
 `style={{fontSize}}` in the JSX now resolves to a token, and a test enforces it.
 
+The navbar is done: `.nav-btn-login`, `.nav-btn-register` and `.nav-btn-history`
+were a parallel button implementation carrying their own padding, a 12px radius
+off the 10/14/20 scale, `.83rem`/`.82rem` type (two more sizes within 0.3px of
+`--fs-1`), a fourth gold gradient, and a 33px height against the 44px floor.
+They render from `.btn` now; the class names survive only as hooks for the
+responsive show/hide rules, which are about bar layout rather than how a button
+looks. Every nav control measures 44px at every width.
+
+`.btn-reveal-primary` is deleted. It had no call site left — the room's Reveal
+moved into `RoomActionBar` and onto `.btn--primary` — and was carrying a fifth
+gold gradient nothing rendered.
+
 Not done:
 
-- `.nav-btn-history`, `.nav-btn-login`, `.nav-btn-register`, `.btn-new-session`,
-  `.btn-reveal-primary` and the marketing page buttons still carry their own
-  padding, radius and colour values. Their type is on the scale; the rest is not.
-- `--radius-sm` still has 17 uses; `--r-sm` is its replacement.
+- `.btn-new-session`, `.btn-next-round` and the marketing page buttons still
+  carry their own padding, radius and colour values. Their type is on the scale;
+  the rest is not.
 
 Migrate opportunistically: when you touch a component, move it onto the tokens.
 Do not do it as one sweeping change, because there is no visual regression test
-to catch what it breaks — the type sweep was safe to do wholesale only because
-it was measured in a live browser at five widths before and after.
+to catch what it breaks — the type sweep and the navbar were safe only because
+both were measured in a live browser at five widths before and after.

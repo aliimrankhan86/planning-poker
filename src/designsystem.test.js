@@ -250,6 +250,156 @@ describe("an empty room asks for the thing it needs", () => {
   });
 });
 
+/* ── A media query cannot override a rule written below it ────────────
+   The hero shipped with its logo hard left and its headline centred, on
+   the same screen, at the same moment. The cause was source order, not
+   design: the `@media (min-width: 1024px)` block was written ABOVE the
+   base rules it meant to override. Same specificity, so the later rule
+   wins, and four of the six overrides in that block silently did
+   nothing. `.join-mark` was declared above the block and so did apply —
+   which is precisely why the logo moved left while the title, the
+   subtitle and the trust strip stayed centred.
+
+   This had already been hit once, on `.join-box`, and the repair then
+   was to scope it to `.join-layout .join-box` so it won on specificity
+   instead of on order. That fixed one selector and left the other four
+   broken, with a comment explaining the trap sitting directly above
+   them. Specificity was the wrong tool: it patches one symptom and
+   leaves the model wrong. Order is the model.
+──────────────────────────────────────────────────────────────────────── */
+describe("media queries come after the rules they override", () => {
+  const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  /* Walks top-level blocks, recording where each selector last sets each
+     property, and which properties each min-width block tries to override. */
+  const scan = (src) => {
+    const base = new Map(); // "selector|prop" -> last index at depth 0
+    const overrides = [];   // { selector, prop, at }
+    const props = (decls) =>
+      [...decls.matchAll(/(^|;)\s*([a-z-]+)\s*:/g)].map((m) => m[2]);
+    const blocks = (text, offset) => {
+      const found = [];
+      let i = 0;
+      while (i < text.length) {
+        const open = text.indexOf("{", i);
+        if (open === -1) break;
+        let depth = 1;
+        let j = open + 1;
+        while (j < text.length && depth > 0) {
+          if (text[j] === "{") depth++;
+          else if (text[j] === "}") depth--;
+          j++;
+        }
+        found.push({
+          prelude: text.slice(i, open).trim(),
+          body: text.slice(open + 1, j - 1),
+          at: offset + i,
+        });
+        i = j;
+      }
+      return found;
+    };
+
+    for (const rule of blocks(src, 0)) {
+      if (/^@media/.test(rule.prelude)) {
+        if (!/min-width/.test(rule.prelude)) continue;
+        for (const inner of blocks(rule.body, 0)) {
+          if (/^@/.test(inner.prelude)) continue;
+          for (const sel of inner.prelude.split(",").map((s) => s.trim())) {
+            for (const prop of props(inner.body)) {
+              overrides.push({ selector: sel, prop, at: rule.at });
+            }
+          }
+        }
+      } else if (rule.prelude && !rule.prelude.startsWith("@")) {
+        for (const sel of rule.prelude.split(",").map((s) => s.trim())) {
+          for (const prop of props(rule.body)) base.set(`${sel}|${prop}`, rule.at);
+        }
+      }
+    }
+    return { base, overrides };
+  };
+
+  test("no min-width override is cancelled by a later base rule", () => {
+    const { base, overrides } = scan(stripped);
+    const dead = overrides
+      .filter((o) => {
+        const at = base.get(`${o.selector}|${o.prop}`);
+        return at !== undefined && at > o.at;
+      })
+      .map((o) => `${o.selector} { ${o.prop} }`);
+    expect([...new Set(dead)]).toEqual([]);
+  });
+});
+
+/* ── A line box has to hold the text inside it ─────────────────────────
+   The navbar carried "No sign-up · No card · No limits" at 13px with
+   `line-height: 1`. Outfit's ink at 13px measures 16.5px, so the glyphs
+   stood 3.5px taller than the box allotted to them and the descenders of
+   "sign-up" crossed the navbar's bottom border. It read as squashed
+   because it was: the text was larger than its own line.
+
+   `line-height: 1` is fine for a single glyph — an icon button, a suit
+   mark, a card numeral — where there is one character and no descender
+   to collide with anything. It is never right for a run of words at a
+   reading size. The scale bottoms out at --lh-tight (1.15) for a reason.
+──────────────────────────────────────────────────────────────────────── */
+describe("small text is given room to breathe", () => {
+  /* Exempt: fixed-size boxes holding exactly one glyph, where line-height 1
+     is what centres that glyph rather than what crushes a sentence.
+       .story-item-remove  24x24, renders "✕"
+       .wtp-dismiss        26x26, renders "✕"
+       .pcard-suit-sm      a single card suit mark
+     A new entry here needs the same test: one character, fixed box. */
+  const GLYPH_ONLY = [".story-item-remove", ".wtp-dismiss", ".pcard-suit-sm"];
+
+  test("no run of reading-size text is crushed to line-height 1", () => {
+    const bare = css.replace(/\/\*[\s\S]*?\*\//g, "");
+    const crushed = [...bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(
+        ([, , decls]) =>
+          /font-size:\s*var\(--fs-[123]\)/.test(decls) &&
+          /line-height:\s*1\s*[;}]?\s*$/m.test(decls),
+      )
+      .map(([, sel]) => sel.trim().split("\n").pop().trim())
+      .filter((sel) => !GLYPH_ONLY.some((g) => sel.startsWith(g)));
+    expect(crushed).toEqual([]);
+  });
+});
+
+describe("the navbar does not hang text off its own edge", () => {
+  /* The caption was absolutely positioned so it would not push the CTA out
+     of alignment with Sign in, which meant nothing reserved room for it, so
+     it had to be crushed to fit, and it still overflowed. Five hacks —
+     absolute positioning, line-height 1, a 3px offset, nowrap, and
+     display:none below 520px — held one line of text in a bar that is a
+     hard 64px tall with zero horizontal slack. The bar was the wrong
+     container. Every claim it made is stated more fully by the page it
+     sits on: /pricing leads with "no paid tier, no trial countdown and no
+     credit card field anywhere". */
+  test("the absolutely positioned nav caption is gone", () => {
+    expect(css).not.toContain(".nav-upgrade-sub");
+    expect(app).not.toContain("nav-upgrade-sub");
+  });
+});
+
+describe("one primary action per screen", () => {
+  /* Migrating the navbar CTA onto .btn--primary gave the join screen two gold
+     gradients of equal weight: "Start a free room" in the bar and
+     "Create Room" in the form. The bar's control only scrolls to that form and
+     focuses its first field, so ranking the two equally told the user the
+     shortcut mattered as much as the thing it is a shortcut to. On every other
+     route it is the only call to action in the bar and stays primary. */
+  test("the navbar CTA steps down where the form already is", () => {
+    const nav = app.slice(app.indexOf("function NavBar"), app.indexOf("function SiteFooter"));
+    expect(nav).toMatch(/onJoinScreen \? "secondary" : "primary"/);
+  });
+
+  test("the join screen passes its own identity to the bar", () => {
+    expect(app).toMatch(/onJoinScreen=\{screen === "join"\}/);
+  });
+});
+
 describe("revealed round", () => {
   test("vote cards are marked inoperable to assistive tech once revealed", () => {
     /* The click and keydown handlers already return early when revealed, and

@@ -111,7 +111,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 70 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 75 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -134,8 +134,8 @@ one primary action per screen; icons from `ICON_PATHS`, never emoji.
 | Design tokens in `:root` | 71 | Type, spacing, elevation, motion, semantic colour |
 | Icons in `ICON_PATHS` | 18 | One stroke family, `currentColor` |
 | Distinct font sizes in CSS | 45 | Target is the 8-step scale; the rest is unmigrated legacy |
-| Distinct padding pairs | 83 | Target is the 4px grid |
-| Legacy button classes | 14 | Migrate onto `.btn` when you touch one |
+| Distinct padding pairs | 79 | Target is the 4px grid |
+| Legacy button classes | 10 | Migrate onto `.btn` when you touch one |
 
 The last three are deliberately unflattering. They are the size of the remaining
 migration, and they should fall over time, never rise. `src/designsystem.test.js`
@@ -527,4 +527,73 @@ they pay. If a metric on the dashboard does not change a decision, delete it.
 The willingness-to-pay poll is the only thing on the site that can answer the pricing
 question. Usage counters cannot: revealed preference from a free product is silent on
 price. Treat stated preference as a ceiling and halve it.
+
+## Layout bugs that survived a passing test suite
+
+Three defects shipped together and all three came from the same place: a rule that
+looked correct in isolation and was wrong in context. Worth reading before touching
+the CSS block.
+
+**A media query above the rule it overrides does nothing.** The hero shipped with the
+logo hard left and the headline centred. Both rules were right; the `@media
+(min-width: 1024px)` block was written above the base rules, and at equal specificity
+the later rule wins. Seven declarations were dead: the title's alignment *and* its
+desktop font size, the subtitle's alignment, margin and measure, the trust strip's
+alignment, and the card's animation override. `.join-mark` was declared above the block
+so its override did apply — which is precisely why the mark and the headline ended up
+on different axes. The visible symptom was one line of the actual damage.
+
+This had already been hit once on `.join-box` and was patched by scoping it to
+`.join-layout .join-box` to win on specificity. That fixed one selector, left four
+broken, and left a comment about the trap sitting directly above the rules still in it.
+Patching with specificity hides the class of bug. Move the block.
+
+**A line box smaller than its own text.** The navbar caption sat at 13px with
+`line-height: 1`. Outfit's ink at 13px is 16.5px, so the glyphs were 3.5px taller than
+their line and the descenders of "sign-up" crossed the navbar's bottom border. That is
+what "squashed" means, measurably. The same defect was live in the admin dashboard on
+`.analytics-chip`.
+
+The caption was removed rather than restyled. The navbar is a hard 64px with zero
+horizontal slack at 1104px, so nothing could reserve room for it: it had accumulated
+five hacks (absolute positioning, `line-height: 1`, a 3px offset, `nowrap`, and
+`display: none` below 520px) and still overflowed. And every claim it made was already
+made better by the page under it — `/pricing` opens with "no paid tier, no trial
+countdown and no credit card field anywhere", and the join screen states the same three
+facts in the H1, the sub, the trust strip and the CTA label. It was the fourth
+restatement, and the only illegible one.
+
+**Measure before believing a heuristic.** The automated sweep also flagged
+`.brand-wordmark` for the same pattern — ink 5px taller than its box. Measured against
+the mark beside it, both centre at y=32, offset 0: the overflow is symmetric, nothing
+clips it, and it is a two-word lockup rather than prose. Left alone. A sweep produces
+candidates, not verdicts.
+
+## What the tests now pin
+
+- `no min-width override is cancelled by a later base rule` — walks every top-level rule
+  and every `min-width` block and fails on any override the source order kills. It found
+  seven dead declarations on its first run, four more than had been noticed by eye.
+- `no run of reading-size text is crushed to line-height 1` — with a short exemption list
+  for fixed boxes holding one glyph, each with its reason.
+- `the navbar CTA steps down where the form already is` — the one-primary-per-screen rule
+  is per screen, so a shared component sometimes has to change rank by route.
+
+## Two traps specific to this file
+
+- The CSS is a JS **template literal**. A backtick inside a CSS comment ends the string
+  and breaks the build with a parse error pointing at an unrelated line.
+- `app.indexOf("SITE FOOTER")` in a test hits the CSS section header, not the component.
+  Anchor slices on `function <Name>`, which is unique.
+
+## Secrets
+
+The 21st.dev MCP key was pasted in plaintext and is compromised. The user-scope config
+now reads `${TWENTYFIRST_API_KEY}` instead of a literal, and the literal was scrubbed
+from `~/.claude.json`, `~/.claude/history.jsonl`, the session transcripts and the shell
+history by equal-length in-place overwrite (the transcripts have open append handles, so
+rewriting them would have broken the running session).
+
+Note for future scrubbing: grepping for a secret by its literal value writes it straight
+back into the transcript of the session doing the grep. Match it by pattern instead.
 
