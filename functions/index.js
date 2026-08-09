@@ -412,3 +412,96 @@ exports.notifyOnProActivation = functions
   if (failures.length) throw failures[0];
   return null;
   });
+
+/* ═══════════════════ STALE ROOM REAPER ═══════════════════
+   Rooms whose occupants all closed the tab before the five-hour in-app expiry
+   are never cleaned by anyone, because nothing in a browser can find them.
+   Reaping needs to list /rooms, and no client may read /rooms — the room code
+   is the only thing protecting a live session, so an enumerable room list
+   would hand every session on the site to anyone who asked for it.
+
+   That makes this an admin-SDK job. It used to be attempted from the client
+   (sweepStaleRooms in src/App.js), where the read was denied every time and a
+   bare catch hid it, so rooms have been accumulating since launch.
+
+   Deploy with:  npx firebase-tools deploy --only functions:reapStaleRooms
+═════════════════════════════════════════════════════════════ */
+
+const SESSION_MAX_MS = 5 * 60 * 60 * 1000; // matches SESSION_MAX_MS in src/App.js
+const DEFAULT_TIMER_DURATION = 30;
+
+// A team room is a permanent address, so it is reset rather than deleted:
+// the same URL has to keep working for the next sprint.
+function freshTeamRoomState(roomId, room, now) {
+  const duration =
+    Number(room && room.timer && room.timer.duration) || DEFAULT_TIMER_DURATION;
+  return {
+    createdAt: now,
+    revealed: false,
+    round: 1,
+    storiesDone: 0,
+    streak: 0,
+    consensusCount: 0,
+    deck: (room && room.deck) || "fibonacci",
+    plan: "free", // every room is free; writing "pro" here is rejected by the rules
+    teamName: (room && room.teamName) || roomId,
+    founderRoom: !!(room && room.founderRoom),
+    timer: { running: false, duration, remaining: duration, startedBy: null },
+    players: {},
+  };
+}
+
+exports.reapStaleRooms = functions
+  .runWith({ timeoutSeconds: 300, memory: "512MB" })
+  .pubsub.schedule("every 6 hours")
+  .timeZone("Europe/London")
+  .onRun(async () => {
+    const now = Date.now();
+    const cutoff = now - SESSION_MAX_MS;
+
+    // Only expired rooms come back, not the whole table. Needs
+    // ".indexOn": ["createdAt"] on rooms, which database.rules.json declares.
+    const snap = await db
+      .ref("rooms")
+      .orderByChild("createdAt")
+      .endAt(cutoff)
+      .once("value");
+
+    if (!snap.exists()) {
+      functions.logger.info("reapStaleRooms: nothing to reap.");
+      return null;
+    }
+
+    const rooms = snap.val() || {};
+    const updates = {};
+    let deleted = 0;
+    let reset = 0;
+
+    Object.keys(rooms).forEach((roomId) => {
+      const room = rooms[roomId];
+      const createdAt = Number(room && room.createdAt) || 0;
+      // endAt also returns rooms with no createdAt at all, since null sorts
+      // first. Leave those alone rather than guessing their age.
+      if (!createdAt || now - createdAt < SESSION_MAX_MS) return;
+
+      // Room-level paths only. A multi-path update may not contain both a path
+      // and its own descendant, and mixing the two is what broke the client
+      // sweeper this replaces.
+      if (room && (room.teamName || room.founderRoom)) {
+        updates["rooms/" + roomId] = freshTeamRoomState(roomId, room, now);
+        reset += 1;
+      } else {
+        updates["rooms/" + roomId] = null;
+        deleted += 1;
+      }
+    });
+
+    if (!deleted && !reset) {
+      functions.logger.info("reapStaleRooms: no rooms past the cutoff.");
+      return null;
+    }
+
+    await db.ref().update(updates);
+    functions.logger.info("reapStaleRooms: done.", { deleted, reset });
+    return null;
+  });

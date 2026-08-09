@@ -46,6 +46,9 @@ const testCount = testFiles
   .reduce((a, b) => a + b, 0);
 const topLevelRuleNodes = Object.keys(rules.rules).filter((k) => !k.startsWith("."));
 const analyticsRead = rules.rules.analytics?.[".read"] || "(none)";
+const ruleAssertions = existsSync("scripts/rules-test.mjs")
+  ? (read("scripts/rules-test.mjs").match(/^await (allow|deny)\(/gm) || []).length
+  : 0;
 
 const hand = existsSync("docs/AI-CONTEXT.hand.md")
   ? read("docs/AI-CONTEXT.hand.md")
@@ -145,9 +148,16 @@ ${Object.entries(pkg.scripts).map(([k, v]) => `- \`npm run ${k}\` — \`${v}\``)
 
 ## Tests
 
-${testCount} tests across ${testFiles.join(", ")}. They cover the two things that break
-silently: SEO route metadata uniqueness, and the dashboard arithmetic that business
-decisions rest on. Run them before committing.
+\`npm test\` — ${testCount} tests across ${testFiles.join(", ")}. They cover the things
+that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
+uniqueness, and the dashboard arithmetic that business decisions rest on.
+
+\`npm run test:rules\` — ${ruleAssertions} assertions against the real Firebase rules
+engine in the emulator (needs JDK 21, which the script locates itself). The rules cannot
+be checked by reading them and have to be deployed by hand, which is how two silent
+outages happened. Run this after touching \`database.rules.json\`.
+
+Run both before committing.
 
 ## Components in App.js (${components.length})
 

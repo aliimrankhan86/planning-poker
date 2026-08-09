@@ -20,6 +20,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "build:rules": "node scripts/build-rules.mjs",
+    "test:rules": "node scripts/build-rules.mjs && PATH=\"$(/usr/libexec/java_home -v 21 2>/dev/null)/bin:$PATH\" npx --yes firebase-tools emulators:exec --only database --project demo-pointpoker 'node scripts/rules-test.mjs'",
     "prerender": "node scripts/prerender.mjs",
     "docs": "node scripts/gen-ai-context.mjs"
   },
@@ -27,6 +28,16 @@
     "extends": [
       "react-app",
       "react-app/jest"
+    ],
+    "overrides": [
+      {
+        "files": [
+          "src/**/*.test.js"
+        ],
+        "rules": {
+          "testing-library/no-node-access": "off"
+        }
+      }
     ]
   },
   "browserslist": {

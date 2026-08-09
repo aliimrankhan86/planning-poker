@@ -9,6 +9,7 @@ import {
   PRIVATE_PATHS,
   MAX_PARTICIPANTS,
 } from "./routeMeta.mjs";
+import { tally, showNum, teamCode } from "./estimation";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -283,16 +284,6 @@ const INVALID_PLACEHOLDER_NAMES = new Set(["alex johnson", "e.g. alex johnson"])
 const CIRC = 201.1;
 const uid = () => Math.random().toString(36).slice(2, 10);
 const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
-// Derives a stable, human-readable URL slug from a team name.
-// "RPA Dev Team" → "rpa-dev-team" — shareable, memorable, consistent.
-const teamCode = (name) =>
-  name.trim().toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")  // strip special chars but preserve slug hyphens
-    .replace(/\s+/g, "-")           // spaces → hyphens
-    .replace(/-{2,}/g, "-")         // collapse double-hyphens
-    .replace(/^-|-$/g, "")          // trim leading/trailing hyphens
-    .slice(0, 24)                   // max 24 chars
-  || "team";
 const homePath = () => "/";
 const roomPath = (code) => `/?room=${encodeURIComponent(code)}`;
 const teamRoomPath = (teamNameOrCode) => `/t/${teamCode(teamNameOrCode)}`;
@@ -3281,90 +3272,52 @@ body::before {
 const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours, auto-end + save history
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
 const PLAYER_AWAY_TIMEOUT_MS = 60 * 60 * 1000;       // 1 hour, grace period before sweeping disconnected players
-const ROOM_SWEEP_INTERVAL_MS = 15 * 60 * 1000;       // Best-effort stale-room cleanup cadence per browser
-const ROOM_SWEEP_STORAGE_KEY = "pp_last_room_sweep";
-const DEFAULT_TIMER_DURATION = 30;
 
-function hasSweepCooldown() {
+// Removes players whose socket dropped over an hour ago, from one room, by the
+// clients still sitting in it.
+//
+// This used to live inside sweepStaleRooms, where it shared a single atomic
+// multi-path update with the whole-room deletes. Firebase rejects an update
+// containing both `rooms/X` and `rooms/X/players/Y` — an expired room with an
+// away player produced exactly that pair, the SDK threw before sending
+// anything, the bare catch swallowed it, and the entire sweep silently did
+// nothing. Keeping the two scopes apart makes that collision unrepresentable.
+async function sweepAwayPlayers(code, players) {
+  const now = Date.now();
+  const gone = Object.entries(players || {}).filter(([, p]) => {
+    const at = Number(p?.disconnectedAt || 0);
+    return at > 0 && now - at > PLAYER_AWAY_TIMEOUT_MS;
+  });
+  if (!gone.length) return 0;
   try {
-    const last = Number(localStorage.getItem(ROOM_SWEEP_STORAGE_KEY) || 0);
-    return Date.now() - last < ROOM_SWEEP_INTERVAL_MS;
-  } catch {
-    return false;
-  }
-}
-
-function markRoomSweepRun() {
-  try {
-    localStorage.setItem(ROOM_SWEEP_STORAGE_KEY, String(Date.now()));
-  } catch {
-    // Best-effort only — room sweeper must never break app usage.
-  }
-}
-
-async function sweepStaleRooms() {
-  try {
-    const snap = await get(ref(db, "rooms"));
-    if (!snap.exists()) return 0;
-    const rooms = snap.val() || {};
-    const now = Date.now();
-    const updates = {};
-
-    const buildExpiredTeamRoomState = (roomId, room) => {
-      const timerDuration = Number(room?.timer?.duration || DEFAULT_TIMER_DURATION) || DEFAULT_TIMER_DURATION;
-      return {
-        createdAt: now,
-        revealed: false,
-        round: 1,
-        storiesDone: 0,
-        streak: 0,
-        consensusCount: 0,
-        deck: room?.deck || getFounderDefaultDeck(roomId),
-        plan: room?.plan || "pro",
-        teamName: room?.teamName || roomId,
-        founderRoom: !!room?.founderRoom,
-        timer: {
-          running: false,
-          duration: timerDuration,
-          remaining: timerDuration,
-          startedBy: null,
-        },
-        players: {},
-      };
-    };
-
-    Object.entries(rooms).forEach(([roomId, room]) => {
-      const createdAt = Number(room?.createdAt || 0);
-
-      // Sweep players who have been disconnected for more than 1 hour
-      Object.entries(room?.players || {}).forEach(([playerId, player]) => {
-        const disconnectedAt = Number(player?.disconnectedAt || 0);
-        if (disconnectedAt && now - disconnectedAt > PLAYER_AWAY_TIMEOUT_MS) {
-          updates[`rooms/${roomId}/players/${playerId}`] = null;
-        }
-      });
-
-      if (!createdAt || now - createdAt < SESSION_MAX_MS) return;
-
-      const isPersistentTeamRoom = !!room?.teamName || !!room?.founderRoom;
-
-      if (isPersistentTeamRoom) {
-        updates[`rooms/${roomId}`] = buildExpiredTeamRoomState(roomId, room);
-        return;
-      }
-
-      updates[`rooms/${roomId}`] = null;
-    });
-
-    const count = Object.keys(updates).length;
-    if (count > 0) {
-      await update(ref(db), updates);
-    }
-    return count;
+    await update(
+      ref(db, `rooms/${code}/players`),
+      Object.fromEntries(gone.map(([id]) => [id, null])),
+    );
+    return gone.length;
   } catch {
     return 0;
   }
 }
+
+// ── WHY THERE IS NO CLIENT-SIDE ROOM SWEEPER ─────────────────────
+// There used to be a sweepStaleRooms() here, called on every visit to the join
+// screen. It could never have worked, for three separate reasons:
+//
+//   1. It read /rooms to list every room. No client may read /rooms — room
+//      codes are the only thing protecting a session, so an enumerable room
+//      list would hand every live session to anyone who asked. The read was
+//      denied every single time and a bare catch swallowed it.
+//   2. It built one atomic update holding both `rooms/X` and
+//      `rooms/X/players/Y`. Firebase rejects a multi-path update containing a
+//      path and its own descendant, so the SDK threw before sending anything.
+//   3. It wrote plan:"pro" when resetting a team room, which the rules reject.
+//
+// Reaping orphaned rooms needs to enumerate them, and nothing that runs in a
+// browser should be able to. It belongs to the admin SDK: see reapStaleRooms
+// in functions/index.js. What clients can safely do, they still do — a room's
+// own occupants end it at five hours (SESSION EXPIRY CHECK below) and remove
+// players who have been away for an hour (sweepAwayPlayers above).
 
 // ── FOUNDER DETECTION ────────────────────────────────────────
 // Stored encoded so the team codes are not readable as plain text
@@ -4356,24 +4309,6 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, [screen]);
 
-  useEffect(() => {
-    if (screen !== "join") return;
-    if (hasSweepCooldown()) return;
-
-    let cancelled = false;
-    markRoomSweepRun();
-
-    (async () => {
-      const removed = await sweepStaleRooms();
-      if (cancelled || removed <= 0) return;
-      showToast(`🧹 Cleared ${removed} stale room${removed === 1 ? "" : "s"} in the background.`);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [screen, showToast]);
-
   // One visit ping per app load: new-vs-returning and device mix.
   useEffect(() => { trackVisit(); }, []);
 
@@ -4644,7 +4579,8 @@ export default function App() {
   // Safari at all — so deleting here meant a solo facilitator pressing F5 lost
   // their room and their whole story queue. The Firebase onDisconnect handler
   // already marks the player offline the moment the socket drops, and
-  // sweepStaleRooms removes rooms whose players have all been away for an hour.
+  // The room's own occupants end it at five hours, and reapStaleRooms in
+  // functions/index.js clears rooms everybody abandoned before that.
   // All this handler does is release a timer nobody is driving any more.
   useEffect(() => {
     const cleanup = () => {
@@ -4675,6 +4611,16 @@ export default function App() {
     return () => unsub();
   }, [screen, code, myId]); // eslint-disable-line
 
+  // ── AWAY-PLAYER SWEEP ────────────────────────────────────────────
+  // Handled from inside the room rather than by the global sweeper, which only
+  // ran when somebody happened to load the join screen. Idempotent: once the
+  // away players are gone the filter is empty and no write is issued, so this
+  // running on every room update costs nothing.
+  useEffect(() => {
+    if (screen !== "game" || !code) return;
+    sweepAwayPlayers(code, roomData?.players);
+  }, [screen, code, roomData?.players]);
+
   const handleCreate = async (name, role, deck = "fibonacci", estimationMode = "stories") => {
     pendingSessionNameRef.current = name;
     const c = mkCode();
@@ -4696,7 +4642,8 @@ export default function App() {
     });
 
     // Server-side soft-disconnect: marks offline rather than removing immediately.
-    // Stale players (offline > 1hr) are swept by sweepStaleRooms.
+    // Players offline for more than an hour are removed by sweepAwayPlayers,
+    // run by whoever is still in the room.
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).update({ online: false, disconnectedAt: serverTimestamp() });
 
     // Update URL so the creator can copy/share the link immediately.
@@ -6659,8 +6606,6 @@ async function saveUserProfile(user, profile = {}) {
     displayName: profile.displayName || user.displayName || "",
     teamRoomName: teamRooms.primary,
     teamRooms,
-    plan: profile.plan || "free",
-    billingStatus: profile.billingStatus || "inactive",
     createdAt: profile.createdAt || Date.now(),
     lastLoginAt: Date.now(),
   };
@@ -8243,7 +8188,23 @@ function GameScreen({
   const copyFeedbackRef = useRef(null);
 
   const players = Object.values(rd.players || {});
-  const voters = players.filter((p) => p.role === "voter");
+  // Every derived number on the reveal screen comes from one tested function.
+  // See src/estimation.js — the maths is the product, so it lives where it can
+  // be tested without a browser.
+  const {
+    voters,
+    voted,
+    avg,
+    median: medianV,
+    min: minV,
+    max: maxV,
+    spread,
+    allSame,
+    isFullTableAgreement,
+    isRealConsensus,
+    unanimousUnknown,
+    consensusEstimate,
+  } = tally(players);
   const observers = players.filter((p) => p.role === "observer");
   const remoteVote = rd.players?.[myId]?.vote || null;
   const myVote = optimisticVote ?? remoteVote;
@@ -8274,47 +8235,9 @@ function GameScreen({
   const votedCount = voters.filter((p) => p.voted).length;
   const notVoted = voters.filter((p) => !p.voted);
 
-  const voted = voters.filter((p) => p.voted);
   const finalEstimateOptions = cards.map((c) => c.val);
-  // Filter to numeric-only votes. T-shirt values (XS/S/M/L/XL/XXL) are
-  // intentionally excluded — they would produce NaN and corrupt stats.
-  const nums = voted
-    .map((p) => p.vote)
-    .filter((v) => v !== "?" && !isNaN(Number(v)) && v !== "")
-    .map(Number);
-  const avg = nums.length
-    ? nums.reduce((a, b) => a + b, 0) / nums.length
-    : null;
-  const avgDisp =
-    avg !== null ? (Number.isInteger(avg) ? avg : avg.toFixed(1)) : "—";
-  // Everyone who voted picked the same card. "?" is excluded on purpose: a room
-  // full of "?" means nobody knows, which is the opposite of agreement.
-  const allSame =
-    new Set(voted.map((p) => p.vote)).size === 1 &&
-    voted.length >= 1 &&
-    voted[0]?.vote !== "?";
-  // "Agreed" for the alignment metric means the whole table voted and matched —
-  // not just the two people who happened to click before the facilitator revealed.
-  const isFullTableAgreement = allSame && voted.length === voters.length;
-  // Only celebrate when there was actually a table to agree with.
-  const isRealConsensus = isFullTableAgreement && voters.length > 1;
-  const unanimousUnknown =
-    voted.length > 0 && voted.every((p) => p.vote === "?");
-  const minV = nums.length ? Math.min(...nums) : null;
-  const maxV = nums.length ? Math.max(...nums) : null;
-  const medianV = nums.length
-    ? (() => {
-        const s = [...nums].sort((a, b) => a - b);
-        const m = Math.floor(s.length / 2);
-        return s.length % 2 === 0 ? (s[m - 1] + s[m]) / 2 : s[m];
-      })()
-    : null;
-  const medianDisp =
-    medianV !== null
-      ? Number.isInteger(medianV) ? medianV : medianV.toFixed(1)
-      : "—";
-  const spread = minV !== null && maxV !== null ? maxV - minV : null;
-  const consensusEstimate = allSame ? voted[0]?.vote || "" : "";
+  const avgDisp = showNum(avg);
+  const medianDisp = showNum(medianV);
   const chosenFinalEstimate = allSame ? consensusEstimate : finalEstimate;
   const requiresManualFinalEstimate = revealed && isObs && voted.length > 0 && !allSame;
   const nextItemButtonLabel = "Next item to Estimate";

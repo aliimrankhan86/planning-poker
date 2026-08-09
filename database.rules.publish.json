@@ -1,12 +1,15 @@
 {
   "rules": {
     "rooms": {
+      ".indexOn": [
+        "createdAt"
+      ],
       "$roomId": {
         ".read": true,
         ".write": true,
         ".validate": "newData.hasChildren(['createdAt', 'revealed', 'round', 'plan', 'deck', 'players', 'timer'])",
         "plan": {
-          ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro') && (!data.exists() || newData.val() === data.val()) && (newData.val() === 'free' || data.val() === 'pro' || $roomId === 'rpa-build-team' || $roomId === 'rpa-discovery-team' || (auth != null && root.child('users/' + auth.uid + '/plan').val() === 'pro' && root.child('users/' + auth.uid + '/billingStatus').val() === 'active'))"
+          ".validate": "newData.isString() && newData.val() === 'free'"
         },
         "deck": {
           ".validate": "newData.isString() && (newData.val() === 'fibonacci' || newData.val() === 'tshirt' || newData.val() === 'powers') && (!data.exists() || newData.val() === data.val())"
@@ -135,7 +138,7 @@
         "$date": {
           "$event": {
             ".write": true,
-            ".validate": "newData.isNumber() && newData.val() >= 0"
+            ".validate": "$date.matches(/^20[2-9][0-9]-[0-1][0-9]-[0-3][0-9]$/) && $event.matches(/^[a-z][a-z0-9_]{2,39}$/) && newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1))"
           }
         }
       }
@@ -144,7 +147,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
-        ".validate": "newData.hasChildren(['email', 'displayName', 'teamRoomName', 'plan', 'billingStatus', 'createdAt', 'lastLoginAt']) && (!newData.child('teamRooms').exists() || (newData.child('teamRooms').child('primary').val() === newData.child('teamRoomName').val() && newData.child('teamRooms').child('secondary').val() !== newData.child('teamRooms').child('primary').val())) && ((newData.child('plan').val() === 'free' && (newData.child('billingStatus').val() === 'inactive' || newData.child('billingStatus').val() === 'checkout_started') && !newData.child('proKey').exists() && !newData.child('proActivatedAt').exists()) || (newData.child('plan').val() === 'pro' && newData.child('billingStatus').val() === 'active' && newData.child('proKey').isString() && newData.child('proActivatedAt').isNumber() && root.child('licenses/' + newData.child('proKey').val() + '/active').val() === true && root.child('licenses/' + newData.child('proKey').val() + '/claimedBy').val() === $uid))",
+        ".validate": "newData.hasChildren(['email', 'displayName', 'teamRoomName', 'createdAt', 'lastLoginAt']) && (!newData.child('teamRooms').exists() || (newData.child('teamRooms').child('primary').val() === newData.child('teamRoomName').val() && newData.child('teamRooms').child('secondary').val() !== newData.child('teamRooms').child('primary').val()))",
         "email": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
         },
@@ -167,10 +170,10 @@
           }
         },
         "plan": {
-          ".validate": "newData.isString() && (newData.val() === 'free' || newData.val() === 'pro')"
+          ".validate": "!newData.exists() || newData.isString()"
         },
         "billingStatus": {
-          ".validate": "newData.isString() && (newData.val() === 'inactive' || newData.val() === 'checkout_started' || newData.val() === 'active')"
+          ".validate": "!newData.exists() || newData.isString()"
         },
         "billingCycle": {
           ".validate": "!newData.exists() || (newData.isString() && (newData.val() === 'monthly' || newData.val() === 'annual'))"
@@ -192,24 +195,6 @@
         },
         "proActivatedAt": {
           ".validate": "!newData.exists() || newData.isNumber()"
-        },
-        "$other": {
-          ".validate": false
-        }
-      }
-    },
-    "licenses": {
-      "$licenseKey": {
-        ".read": "auth != null",
-        ".write": "auth != null && data.exists() && data.child('active').val() === true && (!data.child('claimedBy').exists() || data.child('claimedBy').val() === auth.uid)",
-        "active": {
-          ".validate": "newData.isBoolean() && (!data.exists() || newData.val() === data.val())"
-        },
-        "claimedBy": {
-          ".validate": "(!data.exists() && !newData.exists()) || (newData.isString() && newData.val() === auth.uid && (!data.exists() || data.val() === auth.uid))"
-        },
-        "claimedAt": {
-          ".validate": "(!data.exists() && !newData.exists()) || (newData.isNumber() && newData.parent().child('claimedBy').val() === auth.uid && (!data.exists() || data.val() === newData.val()))"
         },
         "$other": {
           ".validate": false
