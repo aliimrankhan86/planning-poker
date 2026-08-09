@@ -153,6 +153,27 @@ fails if the token layer, the button system or the no-emoji rule is broken.
 
 ## Things that will bite you
 
+**Never name a class after an advertisement.** The admin dashboard prefixed all
+41 of its classes `ad-`, short for admin. EasyList's generic cosmetic filters
+treat that as advertising, so uBlock Origin and friends hid every one of them:
+
+```
+.ad-wrap:not(#google_ads_iframe_checktag) { display: none !important }
+```
+
+Extensions inject those at **user origin**, which outranks author `!important`
+and even an inline style, so nothing the page does can win it back. The failure
+is silent and looks nothing like a CSS bug: Firebase reads succeed, the DOM is
+fully populated, no console error appears, and the screen is simply blank. A
+large share of this audience runs an ad blocker, so a class called `ad-anything`
+is invisible to the people most likely to use the product. The prefix is now
+`dash-` and `src/designsystem.test.js` fails on `ad-`, `ads-`, `advert`,
+`sponsor`, `popup-` or `promo-` appearing in any class name.
+
+Diagnosing this class of problem: compare an element's inline style against its
+computed style. If `display: block !important` inline still computes to `none`,
+the rule is user origin and an extension is responsible, not your CSS.
+
 **Search Console data from before 2026-08-09 measures a broken site, so do not use
 it as an SEO baseline.** Until the prerender fix shipped that day, every marketing
 route was a Vercel rewrite to `/`, which meant Googlebot read

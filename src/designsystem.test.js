@@ -91,6 +91,35 @@ describe("icons, not emoji", () => {
   });
 });
 
+describe("class names survive ad blockers", () => {
+  /* A large share of this audience runs uBlock Origin, and EasyList's generic
+     cosmetic filters hide anything whose class looks like advertising. The
+     admin dashboard originally prefixed all 38 of its classes "ad-", short for
+     admin, and the filter list hid every one of them with
+
+       .ad-wrap:not(#google_ads_iframe_checktag) { display: none !important }
+
+     Extensions inject that at USER origin, which outranks author !important
+     and even an inline style, so nothing on the page could win it back. The
+     failure is silent: the data loads, the DOM is complete, no error is
+     logged, and the screen is simply blank. Never name a class after an ad. */
+  const BAIT = /\b(?:ad|ads)-[a-z]|advert|sponsor|-ad\b|banner-ad|popup-|promo-/;
+
+  const sources = {
+    "App.js": app,
+    "AdminDashboard.js": readFileSync(join(__dirname, "AdminDashboard.js"), "utf8"),
+  };
+
+  test.each(Object.keys(sources))("%s uses no ad-blocker bait in a class name", (file) => {
+    const src = sources[file];
+    const classNames = [
+      ...[...src.matchAll(/className="([^"]+)"/g)].flatMap((m) => m[1].split(/\s+/)),
+      ...[...src.matchAll(/^\s*\.([a-z][a-z0-9-]*)/gm)].map((m) => m[1]),
+    ];
+    expect([...new Set(classNames.filter((c) => BAIT.test(c)))]).toEqual([]);
+  });
+});
+
 describe("room layout", () => {
   test("the facilitator has exactly one primary action", () => {
     const bar = app.slice(app.indexOf("function RoomActionBar"), app.indexOf("function GameScreen"));

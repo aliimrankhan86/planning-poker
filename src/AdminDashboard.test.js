@@ -49,7 +49,7 @@ test("headline KPIs sum every day in the window", () => {
     [today]: { visit_new: 10, room_created: 4, joined_voter: 12, joined_facilitator: 3, estimate_recorded: 20 },
     [yesterday]: { visit_new: 5, room_created: 2, joined_voter: 6, joined_facilitator: 2, estimate_recorded: 10 },
   });
-  const kpis = document.querySelectorAll(".ad-kpi-v");
+  const kpis = document.querySelectorAll(".dash-kpi-v");
   expect(kpis[0]).toHaveTextContent("15"); // visitors 10 + 5
   expect(kpis[1]).toHaveTextContent("6");  // sessions 4 + 2
   expect(kpis[2]).toHaveTextContent("23"); // seats (12+3) + (6+2)
@@ -58,7 +58,7 @@ test("headline KPIs sum every day in the window", () => {
 
 test("sessions count ad-hoc rooms, new team rooms, and team re-entries", () => {
   renderWith({ [today]: { room_created: 3, room_created_team: 2, team_room_reentered: 5 } });
-  expect(document.querySelectorAll(".ad-kpi-v")[1]).toHaveTextContent("10");
+  expect(document.querySelectorAll(".dash-kpi-v")[1]).toHaveTextContent("10");
 });
 
 test("ad ceiling multiplies monthly sessions by the blended RPM", () => {
@@ -109,7 +109,7 @@ test("rates divide by the right denominator", () => {
 
 test("an empty database renders zeroes rather than NaN or crashing", () => {
   renderWith(null);
-  document.querySelectorAll(".ad-kpi-v").forEach((el) => {
+  document.querySelectorAll(".dash-kpi-v").forEach((el) => {
     expect(el.textContent).not.toMatch(/NaN|Infinity|undefined/);
   });
   document.querySelectorAll(".ad-stats span, .ad-calc span").forEach((el) => {

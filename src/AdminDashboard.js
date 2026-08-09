@@ -76,10 +76,10 @@ const FEATURES = [
 
 function Kpi({ value, label, sub, tone }) {
   return (
-    <div className={`ad-kpi${tone ? ` ${tone}` : ""}`}>
-      <span className="ad-kpi-v">{value}</span>
-      <span className="ad-kpi-l">{label}</span>
-      {sub && <span className="ad-kpi-s">{sub}</span>}
+    <div className={`dash-kpi${tone ? ` ${tone}` : ""}`}>
+      <span className="dash-kpi-v">{value}</span>
+      <span className="dash-kpi-l">{label}</span>
+      {sub && <span className="dash-kpi-s">{sub}</span>}
     </div>
   );
 }
@@ -88,20 +88,20 @@ function Bars({ rows, unit = "" }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   const total = rows.reduce((a, r) => a + r.value, 0);
   return (
-    <div className="ad-bars">
+    <div className="dash-bars">
       {rows.map((r) => (
-        <div className="ad-bar-row" key={r.key || r.label}>
-          <span className="ad-bar-label">{r.label}</span>
-          <span className="ad-bar-track">
-            <span className="ad-bar-fill" style={{ width: `${(r.value / max) * 100}%` }} />
+        <div className="dash-bar-row" key={r.key || r.label}>
+          <span className="dash-bar-label">{r.label}</span>
+          <span className="dash-bar-track">
+            <span className="dash-bar-fill" style={{ width: `${(r.value / max) * 100}%` }} />
           </span>
-          <span className="ad-bar-value">
+          <span className="dash-bar-value">
             {fmt(r.value)}{unit}
             {total > 0 && <em>{pct(r.value, total)}%</em>}
           </span>
         </div>
       ))}
-      {total === 0 && <div className="ad-empty">No data in this window yet.</div>}
+      {total === 0 && <div className="dash-empty">No data in this window yet.</div>}
     </div>
   );
 }
@@ -109,22 +109,22 @@ function Bars({ rows, unit = "" }) {
 function Trend({ series, label }) {
   const max = Math.max(1, ...series.map((d) => d.value));
   return (
-    <div className="ad-trend">
-      <div className="ad-trend-head">
+    <div className="dash-trend">
+      <div className="dash-trend-head">
         <span>{label}</span>
-        <span className="ad-trend-max">peak {fmt(max)}</span>
+        <span className="dash-trend-max">peak {fmt(max)}</span>
       </div>
-      <div className="ad-trend-plot" role="img" aria-label={`${label} per day`}>
+      <div className="dash-trend-plot" role="img" aria-label={`${label} per day`}>
         {series.map((d) => (
           <span
             key={d.date}
-            className={`ad-trend-col${d.value === 0 ? " zero" : ""}`}
+            className={`dash-trend-col${d.value === 0 ? " zero" : ""}`}
             style={{ height: `${Math.max(2, (d.value / max) * 100)}%` }}
             title={`${d.date}: ${d.value}`}
           />
         ))}
       </div>
-      <div className="ad-trend-axis">
+      <div className="dash-trend-axis">
         <span>{series[0]?.date}</span>
         <span>{series[series.length - 1]?.date}</span>
       </div>
@@ -134,9 +134,9 @@ function Trend({ series, label }) {
 
 function Panel({ title, hint, children, wide }) {
   return (
-    <section className={`ad-panel${wide ? " wide" : ""}`}>
-      <h2 className="ad-panel-title">{title}</h2>
-      {hint && <p className="ad-panel-hint">{hint}</p>}
+    <section className={`dash-panel${wide ? " wide" : ""}`}>
+      <h2 className="dash-panel-title">{title}</h2>
+      {hint && <p className="dash-panel-hint">{hint}</p>}
       {children}
     </section>
   );
@@ -259,24 +259,24 @@ export default function AdminDashboard({ currentUser, onBack }) {
 
   if (state === "denied") {
     return (
-      <div className="ad-wrap">
-        <div className="ad-gate">
-          <h1 className="ad-gate-title">Dashboard is admin-only</h1>
-          <p className="ad-gate-copy">
+      <div className="dash-wrap">
+        <div className="dash-gate">
+          <h1 className="dash-gate-title">Dashboard is admin-only</h1>
+          <p className="dash-gate-copy">
             {currentUser
               ? <>Signed in as <strong>{currentUser.email}</strong>, but this account is not an admin.
                   Add its Firebase UID under <code>/admins/&lt;uid&gt;: true</code> in the Realtime
                   Database console, then reload.</>
               : <>Sign in with the owner account to view usage analytics.</>}
           </p>
-          <button className="ad-btn" onClick={onBack}>← Back to pointpoker</button>
+          <button className="dash-btn" onClick={onBack}>← Back to pointpoker</button>
         </div>
       </div>
     );
   }
 
   if (state === "loading") {
-    return <div className="ad-wrap"><div className="ad-gate"><p className="ad-gate-copy">Loading analytics…</p></div></div>;
+    return <div className="dash-wrap"><div className="dash-gate"><p className="dash-gate-copy">Loading analytics…</p></div></div>;
   }
 
   // Plain-English readout. The whole point of the dashboard is the sentence,
@@ -293,21 +293,21 @@ export default function AdminDashboard({ currentUser, onBack }) {
         text: `${pct(m.wtpPaying, m.wtpAnswers)}% of ${fmt(m.wtpAnswers)} facilitators say they would pay something. Blended stated value is about £${(m.wtpBlended ?? 0).toFixed(1)}/month per team.` };
 
   return (
-    <div className="ad-wrap">
-      <header className="ad-head">
+    <div className="dash-wrap">
+      <header className="dash-head">
         <div>
-          <button className="ad-back" onClick={onBack}>← pointpoker</button>
-          <h1 className="ad-title">Usage &amp; decisions</h1>
-          <p className="ad-sub">
+          <button className="dash-back" onClick={onBack}>← pointpoker</button>
+          <h1 className="dash-title">Usage &amp; decisions</h1>
+          <p className="dash-sub">
             Anonymous aggregate counters. No personal data is collected or shown here.
           </p>
         </div>
-        <div className="ad-head-actions">
-          <div className="ad-window" role="group" aria-label="Time window">
+        <div className="dash-head-actions">
+          <div className="dash-window" role="group" aria-label="Time window">
             {WINDOWS.map((w) => (
               <button
                 key={w.key}
-                className={`ad-window-btn${days === w.key ? " active" : ""}`}
+                className={`dash-window-btn${days === w.key ? " active" : ""}`}
                 aria-pressed={days === w.key}
                 onClick={() => setDays(w.key)}
               >
@@ -315,18 +315,18 @@ export default function AdminDashboard({ currentUser, onBack }) {
               </button>
             ))}
           </div>
-          <button className="ad-btn" onClick={downloadCsv}>⬇ Raw CSV</button>
+          <button className="dash-btn" onClick={downloadCsv}>⬇ Raw CSV</button>
         </div>
       </header>
 
-      <div className="ad-kpis">
+      <div className="dash-kpis">
         <Kpi value={fmt(m.visitsNew)} label="New visitors" sub={`${fmt(m.visitsReturn)} returning`} />
         <Kpi value={fmt(m.rooms)} label="Sessions run" sub={`${fmt(m.roomsReentered)} were a team coming back`} />
         <Kpi value={fmt(m.seats)} label="Seats filled" sub={`${fmt(m.facilitators)} facilitators · ${fmt(m.voters)} voters`} />
         <Kpi value={fmt(m.estimates)} label="Estimates recorded" sub={m.estimatesPerRoom ? `${m.estimatesPerRoom.toFixed(1)} per session` : "—"} />
       </div>
 
-      <div className="ad-grid">
+      <div className="dash-grid">
         <Panel
           title="Reach"
           hint="Is anyone using this? A flat line here means the SEO work has not landed yet, not that the product is wrong."
@@ -340,7 +340,7 @@ export default function AdminDashboard({ currentUser, onBack }) {
           title="Stickiness"
           hint="The number that decides whether this is a product or a novelty. A team that re-enters its Team Room has adopted it into a ritual."
         >
-          <div className="ad-stats">
+          <div className="dash-stats">
             <div><span>{m.returnRate == null ? "—" : `${m.returnRate}%`}</span><em>Visits that are a return</em></div>
             <div><span>{fmt(m.roomsReentered)}</span><em>Team Room re-entries</em></div>
             <div><span>{m.seatsPerRoom ? m.seatsPerRoom.toFixed(1) : "—"}</span><em>People per session</em></div>
@@ -378,7 +378,7 @@ export default function AdminDashboard({ currentUser, onBack }) {
           title="Account funnel"
           hint="Accounts are only needed for Team Rooms and history. A low completion rate means the value of an account is not landing."
         >
-          <div className="ad-stats">
+          <div className="dash-stats">
             <div><span>{fmt(m.pricingViews)}</span><em>Pricing page views</em></div>
             <div><span>{fmt(m.signupsStarted)}</span><em>Sign-up started</em></div>
             <div><span>{fmt(m.signupsDone)}</span><em>Sign-up completed</em></div>
@@ -390,7 +390,7 @@ export default function AdminDashboard({ currentUser, onBack }) {
           title="Estimation quality"
           hint="Share of estimates the whole table agreed on first vote. This is the product working, and it is the number worth putting in marketing once it is stable."
         >
-          <div className="ad-stats">
+          <div className="dash-stats">
             <div><span>{m.alignment == null ? "—" : `${m.alignment}%`}</span><em>First-vote agreement</em></div>
             <div><span>{fmt(m.firstVoteAgreements)}</span><em>Unanimous first votes</em></div>
           </div>
@@ -401,7 +401,7 @@ export default function AdminDashboard({ currentUser, onBack }) {
           hint="One impression per session is the honest assumption for a single-page tool. Adjust the RPMs to match a real network quote rather than trusting the defaults."
           wide
         >
-          <div className="ad-inputs">
+          <div className="dash-inputs">
             <label>
               Desktop RPM (£)
               <input type="number" min="0" step="0.5" value={rpmDesktop}
@@ -412,20 +412,20 @@ export default function AdminDashboard({ currentUser, onBack }) {
               <input type="number" min="0" step="0.5" value={rpmMobile}
                 onChange={(e) => setRpmMobile(Math.max(0, Number(e.target.value) || 0))} />
             </label>
-            <div className="ad-calc">
+            <div className="dash-calc">
               <span>{fmt(Math.round((m.rooms / days) * 30))}</span>
               <em>Sessions / month</em>
             </div>
-            <div className="ad-calc">
+            <div className="dash-calc">
               <span>£{m.blendedRpm.toFixed(2)}</span>
               <em>Blended RPM</em>
             </div>
-            <div className="ad-calc strong">
+            <div className="dash-calc strong">
               <span>£{m.adMonthly.toFixed(0)}</span>
               <em>Ceiling / month</em>
             </div>
           </div>
-          <div className={`ad-verdict ${verdictAds.tone}`}>{verdictAds.text}</div>
+          <div className={`dash-verdict ${verdictAds.tone}`}>{verdictAds.text}</div>
         </Panel>
 
         <Panel
@@ -434,14 +434,14 @@ export default function AdminDashboard({ currentUser, onBack }) {
           wide
         >
           <Bars rows={m.wtp.map((b) => ({ key: b.key, label: b.label, value: b.value }))} />
-          <div className="ad-verdict-row">
-            <span className="ad-dismissed">{fmt(m.wtpDismissed)} dismissed without answering</span>
+          <div className="dash-verdict-row">
+            <span className="dash-dismissed">{fmt(m.wtpDismissed)} dismissed without answering</span>
           </div>
-          <div className={`ad-verdict ${verdictWtp.tone}`}>{verdictWtp.text}</div>
+          <div className={`dash-verdict ${verdictWtp.tone}`}>{verdictWtp.text}</div>
         </Panel>
       </div>
 
-      <p className="ad-foot">
+      <p className="dash-foot">
         Counters are written client-side and can be under-counted by ad blockers or private browsing.
         Treat every figure as a floor, and trust week-on-week direction over any single day.
       </p>
