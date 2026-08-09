@@ -423,7 +423,6 @@ const CSS = `
   --scroll-thumb: linear-gradient(180deg, #ffe08f 0%, #f5c659 42%, #dd9c22 100%);
   --scroll-thumb-border: rgba(5,10,9,0.62);
   --radius:   20px;
-  --radius-sm:14px;
   --shadow:   0 28px 90px rgba(0,0,0,0.58);
   --shadow-soft: 0 20px 60px rgba(0,0,0,0.34);
 
@@ -1351,7 +1350,7 @@ body::before {
 .inp {
   width: 100%; padding: 13px 16px;
   background: rgba(255,255,255,.04); border: 1px solid rgba(158,234,196,.14);
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-md);
   font-family: 'Outfit', sans-serif; font-size: .95rem;
   color: var(--cream); outline: none; margin-bottom: 20px;
   transition: border-color .2s, box-shadow .2s, background .2s, transform .2s;
@@ -1759,7 +1758,7 @@ body::before {
 
 /* ══════════════════════ TIMER ══════════════════════ */
 .start-btn {
-  width: 100%; padding: 16px; border: none; border-radius: var(--radius-sm);
+  width: 100%; padding: 16px; border: none; border-radius: var(--r-md);
   background: linear-gradient(135deg, #f0b43f 0%, #ffd978 58%, #fff0b0 100%);
   color: var(--ink); font-family: 'Outfit', sans-serif;
   font-size: 1rem; font-weight: 700; cursor: pointer;
@@ -1934,7 +1933,7 @@ body::before {
   border-top: 1px solid var(--border);
 }
 .btn-reveal-primary {
-  width: 100%; padding: 16px 20px; border: none; border-radius: var(--radius-sm);
+  width: 100%; padding: 16px 20px; border: none; border-radius: var(--r-md);
   background: linear-gradient(135deg, var(--gold), var(--gold2));
   color: var(--ink); font-family: 'Outfit', sans-serif;
   font-size: 1rem; font-weight: 700; cursor: pointer;
@@ -1946,7 +1945,7 @@ body::before {
 .btn-reveal-primary:disabled { opacity: .3; cursor: not-allowed; transform: none; box-shadow: none; }
 .obs-secondary-row { display: flex; gap: 10px; }
 .btn-next-round {
-  flex: 1; padding: 13px 14px; border-radius: var(--radius-sm);
+  flex: 1; padding: 13px 14px; border-radius: var(--r-md);
   background: linear-gradient(180deg, rgba(75,216,137,.14), rgba(75,216,137,.07)); border: 1px solid rgba(75,216,137,.26);
   color: #7df0b3; font-family: 'Outfit', sans-serif; font-size: .86rem; font-weight: 600;
   cursor: pointer; transition: all .2s;
@@ -1954,7 +1953,7 @@ body::before {
 }
 .btn-next-round:hover { background: linear-gradient(180deg, rgba(75,216,137,.20), rgba(75,216,137,.10)); border-color: rgba(75,216,137,.42); }
 .btn-new-session {
-  padding: 13px 14px; border-radius: var(--radius-sm);
+  padding: 13px 14px; border-radius: var(--r-md);
   background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.10);
   color: rgba(239,242,247,.62); font-family: 'Outfit', sans-serif;
   font-size: .86rem; font-weight: 600; cursor: pointer; transition: all .2s;
@@ -1965,7 +1964,7 @@ body::before {
 .obs-secondary-row .btn-new-session:only-child { flex: 1; }
 .btn-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.66); text-align: center; margin-top: 1px; font-style: italic; }
 .btn-end-session {
-  width: 100%; padding: 12px 16px; border-radius: var(--radius-sm);
+  width: 100%; padding: 12px 16px; border-radius: var(--r-md);
   background: rgba(224,72,72,.03); border: 1px solid rgba(224,72,72,.18);
   color: rgba(231,76,60,.55); font-family: 'Outfit', sans-serif;
   font-size: .84rem; font-weight: 500; cursor: pointer; transition: all .2s;
@@ -1974,7 +1973,7 @@ body::before {
 .btn-end-session:hover { background: rgba(192,57,43,.1); border-color: rgba(192,57,43,.35); color: #e74c3c; }
 
 /* Story queue panel */
-.story-panel { background: rgba(255,255,255,.03); border: 1px solid rgba(158,234,196,.10); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px; }
+.story-panel { background: rgba(255,255,255,.03); border: 1px solid rgba(158,234,196,.10); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 10px; }
 .story-panel-title { font-size: var(--fs-1); font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
 .ptitle-optional, .story-panel-optional { font-size: var(--fs-1); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: rgba(201,145,42,.7); background: rgba(201,145,42,.1); border: 1px solid rgba(201,145,42,.2); border-radius: 20px; padding: 1px 7px; }
 .story-panel-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.64); margin-bottom: 10px; line-height: 1.5; font-style: italic; }
@@ -2056,7 +2055,7 @@ body::before {
 .summary-total { font-size: var(--fs-1); color: rgba(239,242,247,.7); margin-bottom: 10px; letter-spacing: .3px; }
 .summary-actions { display: flex; gap: 8px; }
 .summary-actions .btn-inv { flex: 1; }
-.btn-record-next { width: 100%; padding: 11px; border-radius: var(--radius-sm); border: none; background: linear-gradient(135deg, rgba(75,216,137,.80), rgba(44,176,112,.62)); color: #04100b; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: all .2s; margin-top: 4px; box-shadow: 0 12px 28px rgba(75,216,137,.18); }
+.btn-record-next { width: 100%; padding: 11px; border-radius: var(--r-md); border: none; background: linear-gradient(135deg, rgba(75,216,137,.80), rgba(44,176,112,.62)); color: #04100b; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: all .2s; margin-top: 4px; box-shadow: 0 12px 28px rgba(75,216,137,.18); }
 .btn-record-next:hover { background: linear-gradient(135deg, rgba(95,230,154,.88), rgba(52,194,123,.72)); }
 .btn-record-next:disabled { opacity: .3; cursor: not-allowed; }
 @keyframes recordGlow { 0%, 100% { box-shadow: 0 12px 28px rgba(75,216,137,.25); } 50% { box-shadow: 0 14px 40px rgba(75,216,137,.60), 0 0 0 5px rgba(75,216,137,.18); } }
@@ -2126,7 +2125,7 @@ body::before {
 }
 @media (max-width: 680px) {
 }
-.story-name-banner { background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06)); border: 1px solid rgba(126,230,255,.16); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px; }
+.story-name-banner { background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06)); border: 1px solid rgba(126,230,255,.16); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 12px; }
 .story-name-label { font-size: var(--fs-1); letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); display: block; margin-bottom: 3px; }
 .story-name-text { font-size: .9rem; font-weight: 600; color: var(--cream); line-height: 1.3; }
 
@@ -2202,7 +2201,7 @@ body::before {
 /* ══════════════════════ SESSION WARNING ══════════════════════ */
 .session-warn-banner {
   background: linear-gradient(135deg, rgba(230,126,34,.15), rgba(192,57,43,.1));
-  border: 1px solid rgba(230,126,34,.35); border-radius: var(--radius-sm);
+  border: 1px solid rgba(230,126,34,.35); border-radius: var(--r-md);
   padding: 12px 16px; display: flex; align-items: center; gap: 12px;
   animation: urgentBg 2s ease infinite; margin-bottom: 16px;
 }
@@ -2213,7 +2212,7 @@ body::before {
 .solo-invite-banner {
   display: flex; align-items: center; gap: 12px;
   background: linear-gradient(135deg, rgba(201,145,42,.14), rgba(201,145,42,.06));
-  border: 1px solid rgba(201,145,42,.32); border-radius: var(--radius-sm);
+  border: 1px solid rgba(201,145,42,.32); border-radius: var(--r-md);
   padding: 12px 16px; margin-bottom: 16px;
 }
 .solo-invite-icon { font-size: 1.15rem; flex-shrink: 0; }
@@ -8678,11 +8677,26 @@ function RoomActionBar({
   onAdvance,
   canAdvance,
   advanceLabel,
+  onInvite,
+  inviteCopied,
 }) {
   const everyoneVoted = voterCount > 0 && votedCount === voterCount;
   const pct = voterCount ? Math.round((votedCount / voterCount) * 100) : 0;
+  // Nobody has joined yet, so there is nothing to reveal and nothing to count.
+  const roomIsEmpty = !revealed && voterCount === 0;
 
-  const primary = revealed
+  const primary = roomIsEmpty
+    ? {
+        /* The room's job before anyone arrives is to get them in. This slot
+           used to hold a disabled "Reveal everyone's cards" — the loudest
+           control on the screen, doing nothing — while the action that
+           actually mattered sat in a dismissible banner below it. */
+        label: inviteCopied ? "Invite link copied" : "Copy the invite link",
+        icon: inviteCopied ? "check" : "link",
+        onClick: onInvite,
+        disabled: false,
+      }
+    : revealed
     ? {
         label: allSame && consensusEstimate
           ? `Record ${consensusEstimate} and continue`
@@ -8705,7 +8719,9 @@ function RoomActionBar({
       ? "Votes are split. Agree a number below, then record it."
       : "Round complete."
     : voterCount === 0
-      ? "Nobody can vote yet. Share the invite link to fill the table."
+      // The button above now says "Copy the invite link", so this says what
+      // happens after rather than repeating the instruction.
+      ? "Send it to your team. They join in one tap, no account needed."
       : votedCount === 0
         ? `Waiting for the first card from ${voterCount === 1 ? "your voter" : `your ${voterCount} voters`}.`
         : everyoneVoted
@@ -8716,18 +8732,24 @@ function RoomActionBar({
     <section className="action-bar" aria-label="Session controls">
       <div className="action-bar-head">
         <span className="action-bar-title">
-          {revealed ? "Cards are up" : "Round in progress"}
+          {revealed ? "Cards are up" : roomIsEmpty ? "Waiting for the table" : "Round in progress"}
         </span>
-        <span className="action-bar-count">
-          {votedCount} of {voterCount} voted
-        </span>
+        {/* "0 of 0 voted" over an empty bar is state that has not happened.
+            Zeroes read as data. Neither renders until someone can vote. */}
+        {voterCount > 0 && (
+          <span className="action-bar-count">
+            {votedCount} of {voterCount} voted
+          </span>
+        )}
       </div>
-      <div className="action-bar-track" aria-hidden="true">
-        <div
-          className={`action-bar-fill${everyoneVoted ? " is-complete" : ""}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      {voterCount > 0 && (
+        <div className="action-bar-track" aria-hidden="true">
+          <div
+            className={`action-bar-fill${everyoneVoted ? " is-complete" : ""}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
       <button
         type="button"
         className="btn btn--primary btn--lg btn--block"
@@ -9089,9 +9111,15 @@ function GameScreen({
           </div>
           <div className="hdr-c">
             <div className="badge">Round {round}</div>
-            <div className="badge badge-gold">
-              <Icon name="cards" size={16} /> {storiesDone} <span className="badge-long">{storiesDone === 1 ? estMode.singular : estMode.plural} </span>done
-            </div>
+            {/* Same rule as the action bar's count: a gold "0 stories done"
+                badge on a room that has not started reads as a score, and the
+                only score it can report is nothing. It appears once there is
+                something to report. */}
+            {storiesDone > 0 && (
+              <div className="badge badge-gold">
+                <Icon name="cards" size={16} /> {storiesDone} <span className="badge-long">{storiesDone === 1 ? estMode.singular : estMode.plural} </span>done
+              </div>
+            )}
             {code && (
               <div className="badge" style={{ fontFamily: "monospace", letterSpacing: ".12em", fontSize: "var(--fs-1)" }}>
                 {code}
@@ -9118,24 +9146,18 @@ function GameScreen({
       </header>
 
       <div className="game-body">
-        {/* Solo invite banner, shown when creator is alone, dismissed once copied or closed */}
-        {players.length === 1 && !solobannerDismissed && (
+        {/* The solo banner was a third copy of the same invite: the header
+            strip has one, the action bar's primary is now the other, and this
+            carried a dismiss button that could hide the only prompt telling a
+            new facilitator what to do. A Team Room still gets a line, because
+            "the link stays the same every sprint" is information the header
+            does not carry — but it is a note, not a competing button. */}
+        {players.length === 1 && isPersistentRoom && !solobannerDismissed && (
           <div className="solo-invite-banner" role="status">
             <span className="solo-invite-icon"><Icon name="users" size={20} /></span>
             <div className="solo-invite-body">
-              {isPersistentRoom ? (
-                <><strong>Team Room ready.</strong> Share the link once. It stays the same every sprint.</>
-              ) : (
-                <><strong>Room ready.</strong> Share the link to fill the table.</>
-              )}
+              <strong>Team Room ready.</strong> Share the link once. It stays the same every sprint.
             </div>
-            <button
-              type="button"
-              className="solo-invite-copy"
-              onClick={() => { handleCopyLink(); setSoloBannerDismissed(true); }}
-            >
-              Copy invite link
-            </button>
             <button
               type="button"
               className="solo-invite-dismiss"
@@ -9190,6 +9212,8 @@ function GameScreen({
                 onAdvance={handleAdvanceToNextItem}
                 canAdvance={!!chosenFinalEstimate}
                 advanceLabel={hasStories && !allStoriesDone ? nextItemButtonLabel : "Record and start next round"}
+                onInvite={handleCopyLink}
+                inviteCopied={headerLinkCopied}
               />
             )}
 

@@ -230,6 +230,26 @@ describe("irreversible choices say so", () => {
   });
 });
 
+describe("an empty room asks for the thing it needs", () => {
+  const bar = () => app.slice(app.indexOf("function RoomActionBar"), app.indexOf("function GameScreen"));
+
+  test("the primary action invites people when nobody can vote", () => {
+    /* A facilitator who has just made a room is alone in it. The primary slot
+       held "Reveal everyone's cards", disabled, because there are no votes to
+       reveal — the loudest control on the screen did nothing — while the one
+       action that matters, sharing the link, was a secondary button inside a
+       banner the user could dismiss. The slot now carries the invite. */
+    expect(bar()).toMatch(/voterCount === 0/);
+    expect(bar()).toMatch(/Copy the invite link|Copy invite link/);
+  });
+
+  test("it does not render a count of nothing", () => {
+    // "0 of 0 voted" and an empty progress bar are state that has not
+    // happened. The design system's own rule: zeroes read as data.
+    expect(bar()).toMatch(/voterCount > 0 &&/);
+  });
+});
+
 describe("revealed round", () => {
   test("vote cards are marked inoperable to assistive tech once revealed", () => {
     /* The click and keydown handlers already return early when revealed, and
