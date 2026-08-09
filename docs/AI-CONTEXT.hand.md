@@ -65,6 +65,40 @@ exports exist and carry `__endpoint` trigger metadata. It costs 300ms and it is
 the only thing standing between a dependency bump and a dead production trigger.
 Run it after touching anything in `functions/`.
 
+**An emulator "user" built the wrong way is silently an admin.** The rules tests
+now cover signed-in visitors, not just guests, because the threat to the
+dashboard is somebody with a real account rather than someone with none. Getting
+that wrong is very easy: the database emulator accepts three auth mechanisms and
+only one of them models a user.
+
+| mechanism | writes the admin allowlist | reads its own profile |
+|---|---|---|
+| `?auth=<jwt>` | no | yes |
+| `?access_token=<jwt>` | **yes** | yes |
+| `Authorization: Bearer <jwt>` | **yes** | yes |
+
+`access_token` and `Bearer` are admin credentials whatever token you hand them,
+so a test "user" built on either can read everything — and every negative
+assertion still passes, having proved nothing. Use `auth=` for users and keep
+admin credentials to the one seeding helper that needs them.
+
+The same section carries an allow case: the allowlisted owner *can* read
+analytics. That is the control, not a courtesy. If the emulator ever stopped
+honouring these tokens every request would fail auth, the whole section would
+read as DENY, and that is indistinguishable from perfect security. It also
+guards the opposite failure, where a broken allowlist leaves the owner staring
+at an empty dashboard.
+
+**A funnel is only a funnel if both halves count the same people.** The account
+funnel divided completed registrations by `signup_started`, which fired from the
+navbar Sign in button — so every returning user, and every reopen of the dialog,
+inflated the denominator, while the two paths that genuinely open the dialog to
+register never fired it at all. The live dashboard read 24 started, 0 completed,
+0%, which looks like a broken signup and was actually a broken metric. The event
+now fires from the dialog's own `mode`, which covers both opening straight into
+register and switching to it, and is ref-guarded against StrictMode's second
+effect pass. Historical counts stay polluted: compare from 2026-08-09 onwards.
+
 ## Deployment record
 
 **Rules published to production on 2026-08-09** and verified against the live
@@ -93,6 +127,34 @@ without failing anything. Confirmed live: a queued-story estimate is
 accepted, a wrong-deck value is rejected, a room claiming `plan:"pro"` is
 rejected, analytics is unreadable, a counter cannot be forged or reset, nobody
 can self-promote to admin, and `/rooms` cannot be enumerated.
+
+**Node 22 confirmed running in production on 2026-08-09, and the reaper proved
+it works rather than merely loads.** `reapStaleRooms` had never executed since
+deploy, so the migration off Node 20 was unverified: the risk was entirely in
+whether the modular `firebase-admin` rewrite survives a cold start, which no
+amount of local testing settles. Rather than wait for the 6-hourly schedule,
+force the job from Google Cloud console → Cloud Scheduler → select
+`firebase-schedule-reapStaleRooms-us-central1` → Force run. The result:
+
+```
+12:31:52.197Z  reapStaleRooms: Function execution started
+12:31:52.572Z  {"message":"reapStaleRooms: done.","reset":0,"deleted":1}
+12:31:52.575Z  took 377 ms, finished with status: 'ok'
+```
+
+One cold start proves the module for both functions, since they are the same
+`index.js`. Worth knowing for the next runtime bump: `functions:list` showing
+`nodejs22` only proves what was uploaded, not that it runs.
+
+**Recording an estimate is verified end to end on the live site**, which the
+rules tests alone could not settle — they run against the emulator, and the
+`.parent()` bug was a production-only failure. Facilitator joins, reveals,
+presses Record, and the round advances with Sprint Analytics populating. If that
+ever needs re-checking, one browser cannot do it: the room needs a Participant
+to cast a card and a Facilitator to record it, so it takes two tabs. Note the
+role picker defaults to Participant, so a solo tester who creates a room and
+never changes it reaches a revealed round with no way to record — the record
+controls are all `isObs`-gated and a voter cannot promote themselves.
 
 **`notifyOnProActivation` was deleted on 2026-08-09.** It fired on every write to
 `/users/{uid}`, which means every sign-in invoked it, and it existed only to email

@@ -20,17 +20,43 @@
 
 const HOST = process.env.FIREBASE_DATABASE_EMULATOR_HOST || "127.0.0.1:9000";
 const NS = process.env.RULES_TEST_NS || "demo-pointpoker-default-rtdb";
-const url = (path) => `http://${HOST}/${path}.json?ns=${NS}`;
+const url = (path, auth) => `http://${HOST}/${path}.json?ns=${NS}${auth ? `&auth=${auth}` : ""}`;
 
-const put = async (path, value) => {
-  const res = await fetch(url(path), { method: "PUT", body: JSON.stringify(value) });
+const put = async (path, value, auth) => {
+  const res = await fetch(url(path, auth), { method: "PUT", body: JSON.stringify(value) });
   return res.ok;
 };
-const patch = async (path, value) => {
-  const res = await fetch(url(path), { method: "PATCH", body: JSON.stringify(value) });
+const patch = async (path, value, auth) => {
+  const res = await fetch(url(path, auth), { method: "PATCH", body: JSON.stringify(value) });
   return res.ok;
 };
-const canRead = async (path) => (await fetch(url(path))).ok;
+const canRead = async (path, auth) => (await fetch(url(path, auth)).catch(() => ({ ok: false }))).ok;
+
+/* Omitting auth evaluates a request as an anonymous browser, which is most of
+   this file. The emulator also accepts an unsigned JWT as a genuine auth token,
+   and that is the only way to evaluate a rule as a *signed-in* user — the case
+   that matters for the dashboard, since the threat is a real account holder
+   rather than a guest.
+
+   Use the `auth=` query parameter and nothing else. The emulator treats
+   `access_token=` and `Authorization: Bearer` as ADMIN credentials whatever
+   token you hand them, so a "user" built on either of those can write the
+   admin allowlist and read everything. Every negative assertion below would
+   still pass, while proving nothing at all. Verified by probing all three:
+   `auth=<jwt>` is denied the allowlist and allowed its own profile, which is
+   exactly a signed-in visitor; the other two are allowed both. */
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+const asUser = (uid) =>
+  `${b64({ alg: "none", typ: "JWT" })}.${b64({
+    sub: uid,
+    user_id: uid,
+    iat: 0,
+    auth_time: 0,
+    exp: 9999999999,
+    aud: "demo-pointpoker",
+    iss: "https://securetoken.google.com/demo-pointpoker",
+    firebase: { sign_in_provider: "password", identities: {} },
+  })}.`;
 
 let passed = 0;
 const failures = [];
@@ -138,6 +164,58 @@ await deny("another user's profile is unreadable", canRead("users/someone-else")
 await deny("another user's profile is unwritable", patch("users/someone-else", { email: "x@y.z" }));
 await deny("another user's sprint history is unreadable", canRead("history/someone-else"));
 await deny("undeclared top-level paths are denied", put("anything-else", { hello: "world" }));
+
+/* ── SIGNED-IN USERS ────────────────────────────────────────────────────
+   Everything above ran as a guest. The real threat to the dashboard is not a
+   guest, it is somebody who has legitimately registered: they hold a token,
+   they can read their own profile, and they can run any SDK call they like
+   from the browser console. None of that may buy them the analytics.
+
+   The allow case below is not a courtesy — it is the control. If the emulator
+   ever stopped honouring these tokens, every request would fail auth and the
+   whole section would read as DENY, which is indistinguishable from perfect
+   security. Proving the allowlisted owner CAN read is what makes the denials
+   above it mean something. It also guards the opposite failure: a broken
+   allowlist would leave the owner staring at an empty dashboard. */
+
+const ADMIN_UID = "owner-uid";
+const owner = asUser(ADMIN_UID);
+const intruder = asUser("intruder-uid");
+
+// Seeding needs the emulator's admin bypass precisely because the rules let
+// nobody else write this node — which is the property being tested. This is
+// the one place admin credentials are used, and never to stand in for a user.
+const seedAsAdmin = async (path, value) => {
+  const res = await fetch(`http://${HOST}/${path}.json?ns=${NS}&access_token=owner`, {
+    method: "PUT",
+    body: JSON.stringify(value),
+  });
+  return res.ok;
+};
+await allow("the allowlist can be seeded with admin rights", seedAsAdmin(`admins/${ADMIN_UID}`, true));
+
+await deny("a signed-in visitor cannot read the analytics tree", canRead("analytics", intruder));
+await deny("  …nor the daily node the dashboard subscribes to", canRead("analytics/daily", intruder));
+await deny("  …nor a single day", canRead(`analytics/daily/${today}`, intruder));
+await deny("  …nor one counter within a day", canRead(`analytics/daily/${today}/room_created`, intruder));
+await deny("a signed-in visitor cannot grant themselves the admin flag", put("admins/intruder-uid", true, intruder));
+await deny("  …nor overwrite the real owner's flag", put(`admins/${ADMIN_UID}`, false, intruder));
+await deny("  …nor read the allowlist to find out who the owner is", canRead("admins", intruder));
+await deny("  …nor probe a specific uid for admin status", canRead(`admins/${ADMIN_UID}`, intruder));
+
+/* users/$uid/plan accepts any string, so a signed-in visitor can absolutely
+   write plan:"pro" onto their own profile. That must buy them nothing: there
+   is no paid tier, and no rule anywhere reads the field. */
+await allow("a signed-in visitor may write their own profile", put("users/intruder-uid", {
+  email: "intruder@example.com", displayName: "Intruder", teamRoomName: "Team",
+  createdAt: Date.now(), lastLoginAt: Date.now(), plan: "pro",
+}, intruder));
+await deny("  …but claiming plan:\"pro\" does not unlock analytics", canRead("analytics", intruder));
+await deny("  …and another account's profile stays unreadable", canRead(`users/${ADMIN_UID}`, intruder));
+await deny("  …and the room list stays unenumerable", canRead("rooms", intruder));
+
+await allow("the allowlisted owner can read the analytics tree", canRead("analytics", owner));
+await allow("  …and the daily node the dashboard actually subscribes to", canRead("analytics/daily", owner));
 
 /* ── REPORT ─────────────────────────────────────────────────────────── */
 
