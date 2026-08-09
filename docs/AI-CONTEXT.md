@@ -223,12 +223,22 @@ allowlist are all live. Verification method, worth repeating after any future
 publish, because the console will happily tell you it saved something broken:
 
 ```bash
-DB=<REACT_APP_FIREBASE_DATABASE_URL>
+DB=https://planning-poker-b6ac1-default-rtdb.firebaseio.com
 # An unauthenticated REST call is evaluated exactly like an anonymous browser.
 curl -s -o /dev/null -w '%{http_code}\n' -X PUT -d '"8"' $DB/rooms/<code>/stories/0/estimate.json
+# Read-only version, safe to run against production at any time. Every one of
+# these must answer 401; a 200 means something is publicly readable.
+for p in analytics rooms licenses users ops; do
+  curl -s -o /dev/null -w "$p %{http_code}\n" $DB/$p.json?shallow=true
+done
 ```
 
-200 means allowed, 401 means denied. Confirmed live: a queued-story estimate is
+200 means allowed, 401 means denied. **Use the `firebaseio.com` host.** The
+database is in the US multi-region, so a `europe-west1.firebasedatabase.app`
+URL answers 404 on every path with `{"error":"Database lives in a different
+region"}` — which reads exactly like a working lockdown if you are only
+checking status codes, and is how a wrong URL sat in `functions/index.test.js`
+without failing anything. Confirmed live: a queued-story estimate is
 accepted, a wrong-deck value is rejected, a room claiming `plan:"pro"` is
 rejected, analytics is unreadable, a counter cannot be forged or reset, nobody
 can self-promote to admin, and `/rooms` cannot be enumerated.

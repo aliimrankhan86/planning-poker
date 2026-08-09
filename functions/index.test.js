@@ -11,8 +11,11 @@
    admin.database() refuses to construct without a database URL, so the config
    the Cloud Functions runtime would normally inject is supplied here. Nothing
    in the module opens a connection at import time, so no network I/O happens. */
+/* The database is in the US multi-region, so its URL is on firebaseio.com.
+   Do not "correct" this to a europe-west1.firebasedatabase.app address: that
+   host answers 404 with {"error":"Database lives in a different region"}. */
 process.env.FIREBASE_CONFIG = JSON.stringify({
-  databaseURL: "https://planning-poker-b6ac1-default-rtdb.europe-west1.firebasedatabase.app",
+  databaseURL: "https://planning-poker-b6ac1-default-rtdb.firebaseio.com",
   projectId: "planning-poker-b6ac1",
 });
 process.env.GCLOUD_PROJECT = "planning-poker-b6ac1";
