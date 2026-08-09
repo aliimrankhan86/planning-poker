@@ -3962,6 +3962,20 @@ function LoginModal({
   const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
   const [dialogRef, closeDialog] = useDialog(onClose);
 
+  /* The account funnel divides completed registrations by this event, so it has
+     to count register intent and nothing else. It used to fire from the navbar
+     Sign in button, which counted every returning user and every reopen of the
+     dialog, while the two paths that open it to register never fired it at all.
+     Keying on the mode covers both ways in: opening straight into register, and
+     switching to it here. The ref stops StrictMode's second effect pass from
+     counting the same intent twice. */
+  const signupStartTracked = useRef(false);
+  useEffect(() => {
+    if (mode !== "register" || signupStartTracked.current) return;
+    signupStartTracked.current = true;
+    track("signup_started");
+  }, [mode]);
+
   const title = currentUser
     ? "Your account"
     : mode === "register"
@@ -5365,7 +5379,7 @@ export default function App() {
             if (screen !== "join") { navTo("/"); return; }
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          onLogin={()    => { openLoginModal("signin", "general"); track("signup_started"); }}
+          onLogin={()    => openLoginModal("signin", "general")}
           onStartFree={() => {
             if (screen !== "join") { navTo("/"); }
             setStartFocusToken((v) => v + 1);
@@ -9217,6 +9231,12 @@ function GameScreen({
                         style={{ animationDelay: `${i * 0.055}s` }}
                         type="button"
                         tabIndex={revealed ? -1 : 0}
+                        // The handlers below already refuse to act once the cards
+                        // are up, and tabIndex takes the card out of the tab
+                        // order. Neither is visible to a screen reader, which
+                        // would otherwise announce nine actionable vote buttons
+                        // that silently do nothing (WCAG 4.1.2).
+                        aria-disabled={revealed}
                         aria-pressed={sel}
                         aria-label={`Vote ${c.val}`}
                         onClick={() => {

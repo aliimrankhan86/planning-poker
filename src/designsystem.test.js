@@ -134,3 +134,13 @@ describe("room layout", () => {
     expect(css).toMatch(/\.action-bar-count[^{]*\{[^}]*tabular-nums/s);
   });
 });
+
+describe("revealed round", () => {
+  test("vote cards are marked inoperable to assistive tech once revealed", () => {
+    /* The click and keydown handlers already return early when revealed, and
+       the card drops out of the tab order. Neither fact reaches a screen
+       reader: without aria-disabled it announces nine actionable buttons that
+       do nothing when activated. */
+    expect(app).toMatch(/aria-disabled=\{revealed\}/);
+  });
+});

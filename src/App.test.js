@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import { ref as dbRef } from "firebase/database";
 import App from "./App";
 import {
   DEFAULT_META,
@@ -135,5 +136,49 @@ describe("login dialog focus management", () => {
     // visibility filter yields nothing and it declines to trap — assert the
     // dialog at least exposes a focusable set rather than a dead end.
     expect(focusable.length).toBeGreaterThan(1);
+  });
+});
+
+/* ── Account funnel ────────────────────────────────────────────────────
+   The dashboard divides completed registrations by "signup_started", which
+   only means anything if both halves count the same population. The event
+   used to fire from the navbar Sign in button, so every returning user and
+   every reopen of the dialog inflated the denominator, while the two paths
+   that genuinely open the dialog to register never fired it at all. Live
+   figures were 24 started, 0 completed, 0% — an artefact, not a product
+   failure. These tests pin both halves to register intent.
+──────────────────────────────────────────────────────────────────────── */
+describe("account funnel analytics", () => {
+  // track() writes to analytics/daily/<date>/<event>, so the mocked ref()
+  // call log is the record of which events fired.
+  const signupStarts = () =>
+    dbRef.mock.calls.filter(([, path]) => String(path).endsWith("/signup_started")).length;
+
+  const openDialog = () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }));
+    return screen.getByRole("dialog");
+  };
+
+  beforeEach(() => dbRef.mockClear());
+
+  test("opening the dialog to sign in is not a signup start", () => {
+    expect(openDialog()).toBeInTheDocument();
+    expect(signupStarts()).toBe(0);
+  });
+
+  test("switching to Create account counts exactly one signup start", () => {
+    const dialog = openDialog();
+    fireEvent.click(within(dialog).getByRole("button", { name: /^create account$/i }));
+    expect(signupStarts()).toBe(1);
+  });
+
+  test("re-selecting Create account does not count twice", () => {
+    const dialog = openDialog();
+    const toggle = within(dialog).getByRole("button", { name: /^create account$/i });
+    fireEvent.click(toggle);
+    fireEvent.click(within(dialog).getByRole("button", { name: /^sign in$/i }));
+    fireEvent.click(toggle);
+    expect(signupStarts()).toBe(1);
   });
 });
