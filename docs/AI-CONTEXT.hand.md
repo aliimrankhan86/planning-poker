@@ -196,6 +196,22 @@ carrying "Room" cannot fit one line at any size down to the 13px floor — 87px 
 label in 64px of column. The tab picks the mode and the primary action names the
 outcome, since it already reads "Create Room →". Do not add the noun back.
 
+**The nav's marketing links are hidden below 780px on purpose.** Brand, four
+links and the call to action need about 750px of bar. `.navbar-links` was a
+scroll strip, so nothing was ever unreachable, but what it actually rendered on
+a phone was "PRICING" and half of "SUPPORT" sliced down the middle at the
+container edge — which reads as broken, not as scrollable. Raising the type
+floor widened each link and made it obvious. Pricing, Support, Trust and
+Features are all in the footer, so nothing is lost. Do not "fix" the hidden
+links by re-showing them; the bar has no room and the footer already has them.
+
+**Numbers can pass while a screen looks broken.** That nav defect survived a
+clean five-width automated sweep — no horizontal overflow, no clipped element,
+nothing past the viewport — because a scroll container that slices its content
+is doing exactly what it was told to. It was caught by looking at a screenshot.
+Run both: the harness catches what the eye skims, the eye catches what the
+harness has no assertion for.
+
 ## Deployment record
 
 **Rules published to production on 2026-08-09** and verified against the live

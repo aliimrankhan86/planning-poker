@@ -3516,7 +3516,14 @@ body::before {
   .footer-inner { grid-template-columns: 1fr 1fr; }
   .footer-col-brand { grid-column: 1 / -1; }
   .navbar-brand { display: none; }
-  .navbar-links { margin-left: 0; }
+  /* Brand, four marketing links and the call to action need about 750px of bar
+     and there is less than that here. The strip was scrollable, so nothing was
+     unreachable, but what it rendered was "PRICING" plus half of "SUPPORT"
+     sliced down the middle at the container edge, which reads as broken rather
+     than as scrollable. Raising the type floor widened each link and made it
+     obvious. Every one of these destinations is also in the footer, so the bar
+     keeps the brand and the primary action and drops the rest. */
+  .navbar-links { display: none; }
   .nav-account-name { max-width: 140px; }
   .footer-plan-bar { gap: 14px; }
   .footer-plan-cta { margin-left: 0; }
@@ -3530,7 +3537,6 @@ body::before {
   .navbar.authenticated .nav-btn-login { display: inline-flex; padding: 7px 12px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
   .navbar.authenticated .nav-btn-history { display: inline-flex; padding: 7px 11px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
   .navbar:not(.authenticated) .nav-btn-login { display: none; }
-  .navbar-links { gap: 4px; }
   .nav-link-btn { padding: 6px 10px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
   .nav-btn-register { font-size: var(--fs-1); padding: 7px 13px; }
   .nav-upgrade-sub { display: none; }
