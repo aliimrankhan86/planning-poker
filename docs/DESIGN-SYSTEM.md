@@ -50,8 +50,8 @@ Eight steps, 16px base, roughly a 1.25 major third.
 
 | Token | Size | Use |
 |---|---|---|
-| `--fs-1` | 12px | Uppercase eyebrows, micro labels |
-| `--fs-2` | 14px | Helper text, secondary |
+| `--fs-1` | 13px | Uppercase eyebrows, micro labels. **The floor.** |
+| `--fs-2` | 15px | Helper text, secondary |
 | `--fs-3` | 16px | Body, and **every interactive label** |
 | `--fs-4` | 18px | Card titles |
 | `--fs-5` | 22px | Section headings |
@@ -61,6 +61,24 @@ Eight steps, 16px base, roughly a 1.25 major third.
 
 16px is a floor for anything a user types into. iOS silently zooms the viewport
 when a focused input is smaller, which then breaks the layout behind it.
+
+**Nothing is smaller than `--fs-1`, and `--fs-1` is 13px.** This is a tool for
+the general public, whose eyes are not all twenty-five. The scale used to bottom
+out at 12px and 150 declarations went under it anyway, down to `.52rem` — 8.3px.
+The smallest text actually rendered on the home page measured **9.3px**. Every
+one of those now resolves to a token, including the inline `style={{fontSize}}`
+values in the JSX that a CSS-only sweep would have missed.
+
+`src/designsystem.test.js` fails on any `font-size` written below the floor, so
+this cannot quietly come back.
+
+**Light text on a dark ground needs compensating.** Pale glyphs on a dark
+surface bloom optically: they spread, and read thinner and tighter than the same
+size on white. The correction is on three axes — a little more leading, a little
+more tracking, one step more weight. `--fs-1-tracking` and `--fs-2-tracking`
+carry the tracking part, applied to the 55 blocks that use the small roles and
+do not already set their own letter-spacing. Display sizes have enough mass to
+need none of this.
 
 Line height travels with size: `--lh-tight` (1.15) for display, `--lh-snug` (1.35)
 for UI, `--lh-body` (1.6) for prose. Weights are `--fw-regular` through
@@ -253,18 +271,17 @@ Done: tokens, button system, icon set, room layout, and the option controls —
 `.role-btn`, `.deck-btn`, `.estmode-btn` and `.tab-btn` are now `.choice`, and
 `.btn-primary`'s five call sites are now `.btn--primary`.
 
+Type is done too: every `font-size` in the CSS block and every inline
+`style={{fontSize}}` in the JSX now resolves to a token, and a test enforces it.
+
 Not done:
 
 - `.nav-btn-history`, `.nav-btn-login`, `.nav-btn-register`, `.btn-new-session`,
   `.btn-reveal-primary` and the marketing page buttons still carry their own
-  values.
-- **107 `font-size` declarations sit below `--fs-1` (12px)**, the smallest step
-  on the scale — down to `.52rem`, which is 8.3px. Two of the worst were removed
-  with the End session block. The rest are real, and they are the largest single
-  piece of remaining debt.
+  padding, radius and colour values. Their type is on the scale; the rest is not.
 - `--radius-sm` still has 17 uses; `--r-sm` is its replacement.
 
 Migrate opportunistically: when you touch a component, move it onto the tokens.
 Do not do it as one sweeping change, because there is no visual regression test
-to catch what it breaks. The 107 font sizes in particular are a sweep that
-wants a screenshot baseline first.
+to catch what it breaks — the type sweep was safe to do wholesale only because
+it was measured in a live browser at five widths before and after.

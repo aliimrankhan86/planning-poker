@@ -135,6 +135,36 @@ describe("room layout", () => {
   });
 });
 
+describe("type floor", () => {
+  /* This is a tool for the general public, which includes people who do not
+     have young eyes. The scale bottomed out at --fs-1 12px, but 104 font-size
+     declarations went under it anyway, down to .52rem — 8.3px. The smallest
+     text actually rendered on the home page measured 9.3px.
+
+     The floor is now 13px and it is the scale's own bottom step, so "smaller
+     than --fs-1" is not expressible without adding a raw value, which this
+     test forbids. */
+  const FLOOR_REM = 0.8125; // 13px at a 16px root
+
+  test("--fs-1 is the floor and is at least 13px", () => {
+    expect(css).toMatch(/--fs-1:\s*0?\.8125rem/);
+  });
+
+  test("no font-size is written below the floor", () => {
+    const offenders = [...css.matchAll(/font-size:\s*(0?\.\d+rem)/g)]
+      .map((m) => m[1])
+      .filter((v) => parseFloat(v) < FLOOR_REM);
+    expect([...new Set(offenders)]).toEqual([]);
+  });
+
+  test("small text on a dark surface gets its legibility compensation", () => {
+    /* Light type on a dark ground blooms and reads thinner than the same size
+       on white, so the small roles carry a little extra tracking rather than
+       being left to fend for themselves at the floor. */
+    expect(css).toMatch(/\.fs-1-compensation|--fs-1-tracking/);
+  });
+});
+
 describe("selectable options are one primitive", () => {
   /* .role-btn, .deck-btn, .estmode-btn and .tab-btn were four classes for one
      shape: an option in an exclusive group, carrying a label, an optional
