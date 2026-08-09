@@ -89,6 +89,21 @@ read as DENY, and that is indistinguishable from perfect security. It also
 guards the opposite failure, where a broken allowlist leaves the owner staring
 at an empty dashboard.
 
+**The role picker has no default, and six call sites depend on that.** It used
+to default to Participant, including for the person creating the room, so anyone
+who never changed it reached a revealed round with no way to record: every
+record control is `isObs`-gated and a voter cannot promote themselves. Only a
+facilitator can change someone else's role, which is no help when there is no
+facilitator.
+
+The catch when changing this: only three of the six entry points go through
+`go()`. The dedicated Team Room shortcuts (`Open Room 1/2`, `Create one-off
+room`) and the auto-enter effect for a signed-in owner landing on their own team
+URL all call `onCreate`/`onTeamRoom` directly, and would have written a blank
+role straight into the room. `requireRole()` exists so each one stops. The
+auto-enter effect already has `role` in its dependency list, so picking a role
+completes the entry rather than stranding the user on the form.
+
 **A funnel is only a funnel if both halves count the same people.** The account
 funnel divided completed registrations by `signup_started`, which fired from the
 navbar Sign in button — so every returning user, and every reopen of the dialog,

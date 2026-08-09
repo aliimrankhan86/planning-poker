@@ -7616,7 +7616,11 @@ function JoinScreen({
   const [tab, setTab] = useState(prefillTeam ? "team" : prefillCode ? "join" : (signedIn ? "team" : "create"));
   const [nameDraft, setNameDraft] = useState(signedIn ? defaultName : recallName());
   const [nameEdited, setNameEdited] = useState(false);
-  const [role, setRole] = useState("voter");
+  // No default. Defaulting to voter meant the person creating the room was
+  // silently a voter, and every record control is facilitator-only, so a solo
+  // creator reached a revealed round with no way to record and no way to
+  // promote themselves. One deliberate click removes that dead end.
+  const [role, setRole] = useState("");
   const [deck, setDeck] = useState(() => getFounderDefaultDeck(prefillTeam));
   const [estMode, setEstMode] = useState("stories");
   const [rc, setRc] = useState(prefillCode || "");
@@ -7662,6 +7666,16 @@ function JoinScreen({
   };
 
   const clearErr = () => setErr("");
+
+  /* Six call sites reach the room handlers and only three of them go through
+     go() — the dedicated Team Room shortcuts and the auto-enter effect call in
+     directly. Since the picker has no default, each one has to stop rather than
+     write a blank role into the room, which the rules would reject anyway. */
+  const requireRole = useCallback(() => {
+    if (role) return true;
+    setErr("Pick your role first. Participants vote, facilitators run the session.");
+    return false;
+  }, [role]);
   // Live preview of the room code a team name would produce
   const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
   const isOwnDedicatedTeamRoom = signedIn && !!previewCode && dedicatedTeamRooms.some((room) => room.code === previewCode);
@@ -7764,6 +7778,7 @@ function JoinScreen({
   const go = () => {
     const validatedName = validateEnteredName();
     if (!validatedName.ok) { setErr(validatedName.message); return; }
+    if (!requireRole()) return;
     const enteredName = validatedName.name;
     if (tab === "create") {
       onCreate(enteredName, role, deck, estMode);
@@ -7852,6 +7867,8 @@ function JoinScreen({
     if (!teamRouteMatch || !matchedDedicatedRoomFromRoute) return;
     const validatedName = validateEnteredName();
     if (!validatedName.ok) return;
+    // role is in this effect's deps, so picking one completes the entry.
+    if (!requireRole()) return;
     const nextName = validatedName.name;
     autoEnterOwnTeamRoomRef.current = true;
     onTeamRoom(nextName, role, matchedDedicatedRoomFromRoute.name, deck);
@@ -7861,6 +7878,7 @@ function JoinScreen({
     teamRouteMatch,
     matchedDedicatedRoomFromRoute,
     role,
+    requireRole,
     deck,
     onTeamRoom,
     validateEnteredName,
@@ -8002,6 +8020,7 @@ function JoinScreen({
                           onClick={() => {
                             const validatedName = validateEnteredName();
                             if (!validatedName.ok) { setErr(validatedName.message); setTab("team"); focusTeamEntry(); return; }
+                            if (!requireRole()) { setTab("team"); focusTeamEntry(); return; }
                             setSelectedDedicatedRoomKey(room.key);
                             onTeamRoom(validatedName.name, role, room.name, deck, estMode);
                           }}
@@ -8019,6 +8038,7 @@ function JoinScreen({
                     onClick={() => {
                       const validatedName = validateEnteredName();
                       if (!validatedName.ok) { setErr(validatedName.message); setTab("create"); return; }
+                      if (!requireRole()) { setTab("create"); return; }
                       onCreate(validatedName.name, role, deck, estMode);
                     }}
                   >
@@ -8179,7 +8199,9 @@ function JoinScreen({
               className={`role-btn${role === r ? (r === "voter" ? " rv" : " ro") : ""}`}
               aria-pressed={role === r}
               aria-label={`${l} role: ${s}`}
-              onClick={() => setRole(r)}
+              // Clear the prompt too: once a role is picked it is telling the
+              // user to do something they have just done.
+              onClick={() => { setRole(r); clearErr(); }}
             >
               <span className="ri"><Icon name={icon} size={22} /></span>
               <span className="rl">{l}</span>

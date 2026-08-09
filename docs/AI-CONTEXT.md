@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 438 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 440 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 18 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 8 KB |
@@ -111,7 +111,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 53 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 57 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -237,6 +237,21 @@ honouring these tokens every request would fail auth, the whole section would
 read as DENY, and that is indistinguishable from perfect security. It also
 guards the opposite failure, where a broken allowlist leaves the owner staring
 at an empty dashboard.
+
+**The role picker has no default, and six call sites depend on that.** It used
+to default to Participant, including for the person creating the room, so anyone
+who never changed it reached a revealed round with no way to record: every
+record control is `isObs`-gated and a voter cannot promote themselves. Only a
+facilitator can change someone else's role, which is no help when there is no
+facilitator.
+
+The catch when changing this: only three of the six entry points go through
+`go()`. The dedicated Team Room shortcuts (`Open Room 1/2`, `Create one-off
+room`) and the auto-enter effect for a signed-in owner landing on their own team
+URL all call `onCreate`/`onTeamRoom` directly, and would have written a blank
+role straight into the room. `requireRole()` exists so each one stops. The
+auto-enter effect already has `role` in its dependency list, so picking a role
+completes the entry rather than stranding the user on the form.
 
 **A funnel is only a funnel if both halves count the same people.** The account
 funnel divided completed registrations by `signup_started`, which fired from the

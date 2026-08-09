@@ -182,3 +182,47 @@ describe("account funnel analytics", () => {
     expect(signupStarts()).toBe(1);
   });
 });
+
+/* ── Role selection ────────────────────────────────────────────────────
+   The picker defaulted to Participant, including for the person creating
+   the room. Anyone who never changed it reached a revealed round with no
+   way to record the estimate: every record control is facilitator-only and
+   a voter cannot promote themselves. Making the choice explicit costs one
+   click and removes the dead end.
+──────────────────────────────────────────────────────────────────────── */
+describe("role selection", () => {
+  const roles = () => screen.getAllByRole("button", { name: /role:/i });
+  const pressed = () => roles().filter((b) => b.getAttribute("aria-pressed") === "true");
+  const nameField = () => screen.getByPlaceholderText(/alex johnson/i);
+
+  test("no role is preselected", () => {
+    render(<App />);
+    expect(roles().length).toBe(2);
+    expect(pressed()).toEqual([]);
+  });
+
+  test("a room cannot be created until a role is chosen", () => {
+    render(<App />);
+    fireEvent.change(nameField(), { target: { value: "Alex" } });
+    // "Create Room" alone also matches the tab; the submit carries the arrow.
+    fireEvent.click(screen.getByRole("button", { name: "Create Room →" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/role/i);
+  });
+
+  test("choosing a role records the choice", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /facilitator role:/i }));
+    expect(pressed().length).toBe(1);
+    expect(screen.getByRole("button", { name: /facilitator role:/i }))
+      .toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("picking a role clears the prompt that asked for one", () => {
+    render(<App />);
+    fireEvent.change(nameField(), { target: { value: "Alex" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Room \u2192" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/role/i);
+    fireEvent.click(screen.getByRole("button", { name: /facilitator role:/i }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
