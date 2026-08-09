@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 440 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 439 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 18 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 8 KB |
@@ -111,7 +111,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 57 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 65 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -133,9 +133,9 @@ one primary action per screen; icons from `ICON_PATHS`, never emoji.
 |---|---|---|
 | Design tokens in `:root` | 70 | Type, spacing, elevation, motion, semantic colour |
 | Icons in `ICON_PATHS` | 18 | One stroke family, `currentColor` |
-| Distinct font sizes in CSS | 65 | Target is the 8-step scale; the rest is unmigrated legacy |
-| Distinct padding pairs | 86 | Target is the 4px grid |
-| Legacy button classes | 18 | Migrate onto `.btn` when you touch one |
+| Distinct font sizes in CSS | 64 | Target is the 8-step scale; the rest is unmigrated legacy |
+| Distinct padding pairs | 83 | Target is the 4px grid |
+| Legacy button classes | 14 | Migrate onto `.btn` when you touch one |
 
 The last three are deliberately unflattering. They are the size of the remaining
 migration, and they should fall over time, never rise. `src/designsystem.test.js`
