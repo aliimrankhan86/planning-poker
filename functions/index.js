@@ -1,12 +1,15 @@
 const functions = require("firebase-functions/v1");
-const admin = require("firebase-admin");
+// firebase-admin v13 removed the namespaced `admin.apps` and `admin.database()`.
+// These are the modular equivalents; nothing else in this file used the old shape.
+const { getApps, initializeApp } = require("firebase-admin/app");
+const { getDatabase } = require("firebase-admin/database");
 const nodemailer = require("nodemailer");
 
-if (!admin.apps.length) {
-  admin.initializeApp();
+if (!getApps().length) {
+  initializeApp();
 }
 
-const db = admin.database();
+const db = getDatabase();
 
 function firstNonEmpty(...values) {
   for (const value of values) {

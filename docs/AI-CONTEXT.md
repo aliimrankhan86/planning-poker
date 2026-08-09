@@ -199,10 +199,20 @@ and can still exit before the function is created. After any functions deploy,
 confirm with `npx firebase-tools functions:list --project planning-poker-b6ac1`
 rather than trusting the command's own output.
 
-**Node 20 is decommissioned on 2026-10-30.** Both deployed functions run on it.
-After that date they cannot be redeployed without bumping `engines.node` in
-`functions/package.json` to 22 and upgrading `firebase-functions` past v5, which
-has breaking changes. This is a hard deadline, not a warning to dismiss.
+**A functions dependency bump can break the module at import time, which no
+amount of reading catches.** The Node 22 migration moved `firebase-admin` from
+v12 to v14, and v13 had removed the whole namespaced API: `admin.apps` and
+`admin.database()` are both gone in favour of `getApps()` from
+`firebase-admin/app` and `getDatabase()` from `firebase-admin/database`. Nothing
+about that is visible in a diff of `index.js`, because `index.js` did not change.
+The module would have uploaded, deployed "successfully", and then thrown
+`Cannot read properties of undefined (reading 'length')` on the first cold start,
+silently stopping signup emails and room reaping.
+
+`functions/npm test` now loads the module before any deploy and asserts the two
+exports exist and carry `__endpoint` trigger metadata. It costs 300ms and it is
+the only thing standing between a dependency bump and a dead production trigger.
+Run it after touching anything in `functions/`.
 
 ## Deployment record
 
