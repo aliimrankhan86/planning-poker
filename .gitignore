@@ -34,3 +34,6 @@ database-debug.log
 firebase-debug.log
 ui-debug.log
 .firebase/
+
+# Claude Code worktrees: local scratch, never part of the repo.
+.claude/worktrees/

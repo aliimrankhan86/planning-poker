@@ -4,6 +4,36 @@
 
 ## Things that will bite you
 
+**Search Console data from before 2026-08-09 measures a broken site, so do not use
+it as an SEO baseline.** Until the prerender fix shipped that day, every marketing
+route was a Vercel rewrite to `/`, which meant Googlebot read
+`<link rel="canonical" href="https://www.pointpoker.app/">` on all fourteen of
+them. That is an instruction to treat each page as a duplicate of the homepage and
+drop it. Google obeyed. The first ninety days show what that looks like:
+
+- `/planning-poker-online`, the page targeting the primary keyword, took **0
+  impressions in 90 days** while sitting in the sitemap the whole time.
+- `/scrum-poker` took 1,120 impressions (41% of the site total) at average
+  position 52 and earned nothing, because Google was ranking it with the
+  homepage's title and description.
+- Daily impressions fell from 54.7 in May to 9.5 in June, an 83% drop, while
+  average position *improved* from 62.9 to 29.8. Both numbers move that way when
+  a batch of pages is dropped as duplicate and only the brand query survives.
+
+Compare future months against **September 2026 onwards**, not against May to July.
+
+**Cloud Functions deploys fail silently-ish on a missing API.** `reapStaleRooms`
+appeared to deploy and did not, because `cloudscheduler.googleapis.com` was
+disabled on the project. The CLI reports `missing required API ... Enabling now`
+and can still exit before the function is created. After any functions deploy,
+confirm with `npx firebase-tools functions:list --project planning-poker-b6ac1`
+rather than trusting the command's own output.
+
+**Node 20 is decommissioned on 2026-10-30.** Both deployed functions run on it.
+After that date they cannot be redeployed without bumping `engines.node` in
+`functions/package.json` to 22 and upgrading `firebase-functions` past v5, which
+has breaking changes. This is a hard deadline, not a warning to dismiss.
+
 ## Deployment record
 
 **Rules published to production on 2026-08-09** and verified against the live
@@ -22,6 +52,15 @@ curl -s -o /dev/null -w '%{http_code}\n' -X PUT -d '"8"' $DB/rooms/<code>/storie
 accepted, a wrong-deck value is rejected, a room claiming `plan:"pro"` is
 rejected, analytics is unreadable, a counter cannot be forged or reset, nobody
 can self-promote to admin, and `/rooms` cannot be enumerated.
+
+**`notifyOnProActivation` was deleted on 2026-08-09.** It fired on every write to
+`/users/{uid}`, which means every sign-in invoked it, and it existed only to email
+about a Pro tier the product no longer has. The rules now accept any string for
+`users/$uid/plan`, so a signed-in user could have written `plan: "pro"` and
+`billingStatus: "active"` to their own profile and triggered a "Pro activated"
+email to the owner and a Pro welcome email to themselves. Deleting the code closed
+that off and took 201 lines of Pro-era email builders and team-room helpers with
+it. Do not reintroduce a plan-watching trigger without a plan to watch.
 
 **Two things in the live database that are not in the rules.** `/licenses` still
 holds data from before the product went free; the node has no rule any more so
