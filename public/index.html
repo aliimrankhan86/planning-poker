@@ -34,7 +34,10 @@
     <meta name="twitter:image:alt" content="Point Poker social preview showing a premium planning poker workspace, facilitator split-vote resolution, and dedicated Team Rooms." />
 
     <!-- ── Theme & PWA ───────────────────────────────────────────── -->
-    <meta name="theme-color" content="#0c1a0f" />
+    <!-- Dark first and unqualified: it is the default, and it is what a
+         browser that ignores the media variants should use. theme.js rewrites
+         the unqualified tag when the user switches. -->
+    <meta name="theme-color" content="#07110e" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -51,21 +54,52 @@
     <link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" />
 
     <!-- ── Critical inline styles (prevents flash before React loads) ── -->
+    <!-- ── Theme, before first paint ──────────────────────────────
+         Dark is the product default, so the CSS below and every token in
+         src/design-system/tokens.css already describe dark and this script
+         only ever has work to do for someone who has chosen light. It runs
+         synchronously in <head>, before the body exists, which is what stops
+         a light-theme user seeing a dark flash on every navigation.
+
+         The storage key is shared with src/design-system/theme.js — change it
+         in one place and you must change it in the other. -->
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem("pp-theme") === "light") {
+            document.documentElement.setAttribute("data-theme", "light");
+          }
+        } catch (e) {
+          /* Storage blocked. Dark is the default, so there is nothing to do. */
+        }
+      })();
+    </script>
+
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       html { font-size: 16px; }
+
+      /* Critical shell colours. These are the only place in the product that
+         repeats token values as literals: the stylesheet carrying the real
+         tokens has not loaded yet at this point, and the whole job of this
+         block is to paint the correct ground before it does. They mirror
+         --bg-page / --text-1 / --action in src/design-system/tokens.css. */
+      :root { --boot-bg: #07110e; --boot-fg: #f5fbf7; --boot-fg-2: rgba(245,251,247,.78); --boot-gold: #ffd978; --boot-gold-2: #f1b93f; --boot-rail: rgba(255,255,255,0.06); }
+      [data-theme="light"] { --boot-bg: #f6f3ea; --boot-fg: #06120e; --boot-fg-2: #384a42; --boot-gold: #8a6414; --boot-gold-2: #b8862b; --boot-rail: rgba(10,31,24,0.08); }
+
+      html { background: var(--boot-bg); }
       body {
-        background: #0c1a0f;
+        background: var(--boot-bg);
         font-family: 'Outfit', 'Segoe UI', sans-serif;
-        color: #eff2f7;
+        color: var(--boot-fg);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         overflow-x: hidden;
         scrollbar-width: thin;
-        scrollbar-color: #c9922a rgba(255,255,255,0.06);
+        scrollbar-color: #c9922a var(--boot-rail);
       }
       *::-webkit-scrollbar { width: 12px; height: 12px; }
-      *::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 999px; }
+      *::-webkit-scrollbar-track { background: var(--boot-rail); border-radius: 999px; }
       *::-webkit-scrollbar-thumb {
         background: linear-gradient(180deg, #f5d07a 0%, #e8b84b 45%, #c9922a 100%);
         border-radius: 999px;
@@ -76,15 +110,15 @@
          mounts. Themed so there is no white flash on a slow connection. */
       .prerender-shell {
         max-width: 760px; margin: 0 auto; padding: 48px 24px 64px;
-        color: #eff2f7; line-height: 1.65;
+        color: var(--boot-fg); line-height: 1.65;
       }
       .prerender-shell h1 { font-size: 2rem; line-height: 1.15; margin-bottom: 14px; letter-spacing: -.02em; }
-      .prerender-shell h2 { font-size: 1.25rem; margin: 28px 0 10px; color: #f5d07a; }
-      .prerender-shell h3 { font-size: 1rem; margin: 18px 0 6px; color: #e8b84b; }
-      .prerender-shell p  { margin-bottom: 14px; color: rgba(239,242,247,.78); }
-      .prerender-shell ul, .prerender-shell ol { margin: 0 0 14px 20px; color: rgba(239,242,247,.78); }
+      .prerender-shell h2 { font-size: 1.25rem; margin: 28px 0 10px; color: var(--boot-gold); }
+      .prerender-shell h3 { font-size: 1rem; margin: 18px 0 6px; color: var(--boot-gold-2); }
+      .prerender-shell p  { margin-bottom: 14px; color: var(--boot-fg-2); }
+      .prerender-shell ul, .prerender-shell ol { margin: 0 0 14px 20px; color: var(--boot-fg-2); }
       .prerender-shell li { margin-bottom: 6px; }
-      .prerender-shell a  { color: #e8b84b; }
+      .prerender-shell a  { color: var(--boot-gold-2); }
     </style>
 
     <!-- ── JSON-LD Structured Data ─────────────────────────────────

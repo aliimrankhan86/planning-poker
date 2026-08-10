@@ -15,6 +15,20 @@
    Lazy-loaded from App.js: none of this ships to normal users.
 ═══════════════════════════════════════════════════════════════════ */
 import { useState, useEffect, useMemo } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  EmptyState,
+  Grid,
+  Icon,
+  Progress,
+  Row,
+  SegmentedControl,
+  SectionHead,
+  StatTile,
+  TextField,
+} from "./design-system";
 import { db } from "./firebase";
 import { ref, onValue } from "firebase/database";
 
@@ -26,7 +40,7 @@ const fmt = (n) => (n == null ? "—" : n.toLocaleString("en-GB"));
 /* Ad-network reality check. Planning poker is a low-pageview product: roughly
    one page per session, no browsing. These RPMs are deliberately optimistic
    display-ad rates so the resulting number is a ceiling, not a forecast. */
-const DEFAULT_RPM = { desktop: 4.0, mobile: 2.0 }; // £ per 1000 impressions
+const DEFAULT_RPM = { desktop: 4.0, mobile: 2.0 }; // $ per 1000 impressions
 
 const WINDOWS = [
   { key: 7, label: "7 days" },
@@ -34,13 +48,13 @@ const WINDOWS = [
   { key: 90, label: "90 days" },
 ];
 
-// `gbp` is the midpoint of each band, used to blend a stated monthly value.
+// `usd` is the midpoint of each band, used to blend a stated monthly value.
 // Kept separate from `value` because `value` becomes the response count.
 const WTP_BANDS = [
-  { key: "wtp_zero", label: "£0 — free is the reason", gbp: 0 },
-  { key: "wtp_5", label: "Up to £5/mo", gbp: 5 },
-  { key: "wtp_15", label: "£6–15/mo", gbp: 12 },
-  { key: "wtp_30", label: "Over £15/mo", gbp: 22 },
+  { key: "wtp_zero", label: "$0 — free is the reason", usd: 0 },
+  { key: "wtp_5", label: "Up to $5/mo", usd: 5 },
+  { key: "wtp_15", label: "$6–15/mo", usd: 12 },
+  { key: "wtp_30", label: "Over $15/mo", usd: 22 },
 ];
 
 const TABLE_BANDS = [
@@ -74,34 +88,29 @@ const FEATURES = [
 
 /* ── small presentational pieces ─────────────────────────────────────── */
 
-function Kpi({ value, label, sub, tone }) {
-  return (
-    <div className={`dash-kpi${tone ? ` ${tone}` : ""}`}>
-      <span className="dash-kpi-v">{value}</span>
-      <span className="dash-kpi-l">{label}</span>
-      {sub && <span className="dash-kpi-s">{sub}</span>}
-    </div>
-  );
-}
-
 function Bars({ rows, unit = "" }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   const total = rows.reduce((a, r) => a + r.value, 0);
+  if (total === 0) {
+    return <EmptyState title="No data in this window yet">Counts appear here as sessions are run.</EmptyState>;
+  }
   return (
     <div className="dash-bars">
       {rows.map((r) => (
         <div className="dash-bar-row" key={r.key || r.label}>
           <span className="dash-bar-label">{r.label}</span>
-          <span className="dash-bar-track">
-            <span className="dash-bar-fill" style={{ width: `${(r.value / max) * 100}%` }} />
-          </span>
-          <span className="dash-bar-value">
+          <Progress
+            className="dash-bar-track"
+            value={r.value}
+            max={max}
+            label={`${r.label}: ${fmt(r.value)}${unit}`}
+          />
+          <span className="dash-bar-value" data-numeric>
             {fmt(r.value)}{unit}
-            {total > 0 && <em>{pct(r.value, total)}%</em>}
+            <em>{pct(r.value, total)}%</em>
           </span>
         </div>
       ))}
-      {total === 0 && <div className="dash-empty">No data in this window yet.</div>}
     </div>
   );
 }
@@ -134,11 +143,10 @@ function Trend({ series, label }) {
 
 function Panel({ title, hint, children, wide }) {
   return (
-    <section className={`dash-panel${wide ? " wide" : ""}`}>
-      <h2 className="dash-panel-title">{title}</h2>
-      {hint && <p className="dash-panel-hint">{hint}</p>}
+    <Card as="section" className={`dash-panel${wide ? " wide" : ""}`}>
+      <SectionHead align="start" title={title} subtitle={hint} />
       {children}
-    </section>
+    </Card>
   );
 }
 
@@ -201,7 +209,7 @@ export default function AdminDashboard({ currentUser, onBack }) {
       .reduce((a, b) => a + b.value, 0);
     // Blended monthly value across everyone who answered, zeros included.
     const wtpBlended = wtpAnswers
-      ? wtp.reduce((a, b) => a + b.value * b.gbp, 0) / wtpAnswers : null;
+      ? wtp.reduce((a, b) => a + b.value * b.usd, 0) / wtpAnswers : null;
 
     // Ad ceiling. One ad impression per session is the honest assumption for a
     // single-page app that people open, use, and close.
@@ -259,24 +267,29 @@ export default function AdminDashboard({ currentUser, onBack }) {
 
   if (state === "denied") {
     return (
-      <div className="dash-wrap">
-        <div className="dash-gate">
-          <h1 className="dash-gate-title">Dashboard is admin-only</h1>
-          <p className="dash-gate-copy">
-            {currentUser
-              ? <>Signed in as <strong>{currentUser.email}</strong>, but this account is not an admin.
-                  Add its Firebase UID under <code>/admins/&lt;uid&gt;: true</code> in the Realtime
-                  Database console, then reload.</>
-              : <>Sign in with the owner account to view usage analytics.</>}
-          </p>
-          <button className="dash-btn" onClick={onBack}>← Back to pointpoker</button>
-        </div>
+      <div className="dash-wrap pp-container">
+        <Alert
+          tone="danger"
+          title="Dashboard is admin-only"
+          className="dash-gate"
+          actions={<Button onClick={onBack}>← Back to pointpoker</Button>}
+        >
+          {currentUser
+            ? <>Signed in as <strong>{currentUser.email}</strong>, but this account is not an admin.
+                Add its Firebase UID under <code>/admins/&lt;uid&gt;: true</code> in the Realtime
+                Database console, then reload.</>
+            : <>Sign in with the owner account to view usage analytics.</>}
+        </Alert>
       </div>
     );
   }
 
   if (state === "loading") {
-    return <div className="dash-wrap"><div className="dash-gate"><p className="dash-gate-copy">Loading analytics…</p></div></div>;
+    return (
+      <div className="dash-wrap pp-container">
+        <EmptyState title="Loading analytics…">Reading the daily counters.</EmptyState>
+      </div>
+    );
   }
 
   // Plain-English readout. The whole point of the dashboard is the sentence,
@@ -284,49 +297,49 @@ export default function AdminDashboard({ currentUser, onBack }) {
   const verdictAds = m.rooms < 200
     ? { tone: "warn", text: `Not enough volume to judge. ${fmt(m.rooms)} sessions in ${days} days is far below what any ad network will meaningfully monetise. Revisit at 1,000+ sessions/month.` }
     : m.adMonthly < 50
-      ? { tone: "warn", text: `At current volume ads would return roughly £${m.adMonthly.toFixed(0)}/month. That does not cover the trust cost — your ad-supported competitors are exactly the ones users complain about.` }
-      : { tone: "good", text: `Ads could plausibly return around £${m.adMonthly.toFixed(0)}/month at current volume. Weigh against the churn risk before adding a tag.` };
+      ? { tone: "warn", text: `At current volume ads would return roughly $${m.adMonthly.toFixed(0)}/month. That does not cover the trust cost — your ad-supported competitors are exactly the ones users complain about.` }
+      : { tone: "good", text: `Ads could plausibly return around $${m.adMonthly.toFixed(0)}/month at current volume. Weigh against the churn risk before adding a tag.` };
 
   const verdictWtp = m.wtpAnswers < 20
     ? { tone: "warn", text: `Only ${fmt(m.wtpAnswers)} answers so far. Do not price on this yet — 30+ responses is the minimum before the shape means anything.` }
     : { tone: m.wtpPaying / m.wtpAnswers > 0.4 ? "good" : "warn",
-        text: `${pct(m.wtpPaying, m.wtpAnswers)}% of ${fmt(m.wtpAnswers)} facilitators say they would pay something. Blended stated value is about £${(m.wtpBlended ?? 0).toFixed(1)}/month per team.` };
+        text: `${pct(m.wtpPaying, m.wtpAnswers)}% of ${fmt(m.wtpAnswers)} facilitators say they would pay something. Blended stated value is about $${(m.wtpBlended ?? 0).toFixed(1)}/month per team.` };
 
   return (
-    <div className="dash-wrap">
+    <div className="dash-wrap pp-container">
       <header className="dash-head">
         <div>
-          <button className="dash-back" onClick={onBack}>← pointpoker</button>
-          <h1 className="dash-title">Usage &amp; decisions</h1>
-          <p className="dash-sub">
-            Anonymous aggregate counters. No personal data is collected or shown here.
-          </p>
+          <Button variant="ghost" size="sm" className="dash-back" onClick={onBack}>← pointpoker</Button>
+          <SectionHead
+            align="start"
+            as="h1"
+            title="Usage & decisions"
+            subtitle="Anonymous aggregate counters. No personal data is collected or shown here."
+          />
         </div>
-        <div className="dash-head-actions">
-          <div className="dash-window" role="group" aria-label="Time window">
-            {WINDOWS.map((w) => (
-              <button
-                key={w.key}
-                className={`dash-window-btn${days === w.key ? " active" : ""}`}
-                aria-pressed={days === w.key}
-                onClick={() => setDays(w.key)}
-              >
-                {w.label}
-              </button>
-            ))}
-          </div>
-          <button className="dash-btn" onClick={downloadCsv}>⬇ Raw CSV</button>
-        </div>
+        <Row className="dash-head-actions">
+          <SegmentedControl
+            ariaLabel="Time window"
+            value={days}
+            onChange={setDays}
+            options={WINDOWS.map((w) => ({ value: w.key, label: w.label }))}
+          />
+          <Button onClick={downloadCsv}><Icon name="copy" size={16} /> Raw CSV</Button>
+        </Row>
       </header>
 
-      <div className="dash-kpis">
-        <Kpi value={fmt(m.visitsNew)} label="New visitors" sub={`${fmt(m.visitsReturn)} returning`} />
-        <Kpi value={fmt(m.rooms)} label="Sessions run" sub={`${fmt(m.roomsReentered)} were a team coming back`} />
-        <Kpi value={fmt(m.seats)} label="Seats filled" sub={`${fmt(m.facilitators)} facilitators · ${fmt(m.voters)} voters`} />
-        <Kpi value={fmt(m.estimates)} label="Estimates recorded" sub={m.estimatesPerRoom ? `${m.estimatesPerRoom.toFixed(1)} per session` : "—"} />
-      </div>
+      <Grid min="200px" className="dash-kpis">
+        <StatTile label="New visitors" value={fmt(m.visitsNew)} meta={`${fmt(m.visitsReturn)} returning`} />
+        <StatTile label="Sessions run" value={fmt(m.rooms)} meta={`${fmt(m.roomsReentered)} were a team coming back`} />
+        <StatTile label="Seats filled" value={fmt(m.seats)} meta={`${fmt(m.facilitators)} facilitators · ${fmt(m.voters)} voters`} />
+        <StatTile
+          label="Estimates recorded"
+          value={fmt(m.estimates)}
+          meta={m.estimatesPerRoom ? `${m.estimatesPerRoom.toFixed(1)} per session` : undefined}
+        />
+      </Grid>
 
-      <div className="dash-grid">
+      <Grid min="340px" className="dash-grid">
         <Panel
           title="Reach"
           hint="Is anyone using this? A flat line here means the SEO work has not landed yet, not that the product is wrong."
@@ -340,12 +353,12 @@ export default function AdminDashboard({ currentUser, onBack }) {
           title="Stickiness"
           hint="The number that decides whether this is a product or a novelty. A team that re-enters its Team Room has adopted it into a ritual."
         >
-          <div className="dash-stats">
-            <div><span>{m.returnRate == null ? "—" : `${m.returnRate}%`}</span><em>Visits that are a return</em></div>
-            <div><span>{fmt(m.roomsReentered)}</span><em>Team Room re-entries</em></div>
-            <div><span>{m.seatsPerRoom ? m.seatsPerRoom.toFixed(1) : "—"}</span><em>People per session</em></div>
-            <div><span>{m.avgMinutes ? `${Math.round(m.avgMinutes)}m` : "—"}</span><em>Average session length</em></div>
-          </div>
+          <Grid min="140px" className="dash-stats">
+            <StatTile label="Visits that are a return" value={m.returnRate == null ? null : `${m.returnRate}%`} empty="No visits yet" />
+            <StatTile label="Team Room re-entries" value={fmt(m.roomsReentered)} />
+            <StatTile label="People per session" value={m.seatsPerRoom ? m.seatsPerRoom.toFixed(1) : null} empty="No sessions yet" />
+            <StatTile label="Average session length" value={m.avgMinutes ? `${Math.round(m.avgMinutes)}m` : null} empty="No sessions measured" />
+          </Grid>
           <Bars rows={m.sessionBands} />
         </Panel>
 
@@ -378,22 +391,22 @@ export default function AdminDashboard({ currentUser, onBack }) {
           title="Account funnel"
           hint="Accounts are only needed for Team Rooms and history. A low completion rate means the value of an account is not landing."
         >
-          <div className="dash-stats">
-            <div><span>{fmt(m.pricingViews)}</span><em>Pricing page views</em></div>
-            <div><span>{fmt(m.signupsStarted)}</span><em>Sign-up started</em></div>
-            <div><span>{fmt(m.signupsDone)}</span><em>Sign-up completed</em></div>
-            <div><span>{m.signupConversion == null ? "—" : `${m.signupConversion}%`}</span><em>Completion rate</em></div>
-          </div>
+          <Grid min="140px" className="dash-stats">
+            <StatTile label="Pricing page views" value={fmt(m.pricingViews)} />
+            <StatTile label="Sign-up started" value={fmt(m.signupsStarted)} />
+            <StatTile label="Sign-up completed" value={fmt(m.signupsDone)} />
+            <StatTile label="Completion rate" value={m.signupConversion == null ? null : `${m.signupConversion}%`} empty="No sign-ups started" />
+          </Grid>
         </Panel>
 
         <Panel
           title="Estimation quality"
           hint="Share of estimates the whole table agreed on first vote. This is the product working, and it is the number worth putting in marketing once it is stable."
         >
-          <div className="dash-stats">
-            <div><span>{m.alignment == null ? "—" : `${m.alignment}%`}</span><em>First-vote agreement</em></div>
-            <div><span>{fmt(m.firstVoteAgreements)}</span><em>Unanimous first votes</em></div>
-          </div>
+          <Grid min="140px" className="dash-stats">
+            <StatTile label="First-vote agreement" value={m.alignment == null ? null : `${m.alignment}%`} gold empty="No estimates recorded" />
+            <StatTile label="Unanimous first votes" value={fmt(m.firstVoteAgreements)} />
+          </Grid>
         </Panel>
 
         <Panel
@@ -401,31 +414,30 @@ export default function AdminDashboard({ currentUser, onBack }) {
           hint="One impression per session is the honest assumption for a single-page tool. Adjust the RPMs to match a real network quote rather than trusting the defaults."
           wide
         >
-          <div className="dash-inputs">
-            <label>
-              Desktop RPM (£)
-              <input type="number" min="0" step="0.5" value={rpmDesktop}
-                onChange={(e) => setRpmDesktop(Math.max(0, Number(e.target.value) || 0))} />
-            </label>
-            <label>
-              Mobile RPM (£)
-              <input type="number" min="0" step="0.5" value={rpmMobile}
-                onChange={(e) => setRpmMobile(Math.max(0, Number(e.target.value) || 0))} />
-            </label>
-            <div className="dash-calc">
-              <span>{fmt(Math.round((m.rooms / days) * 30))}</span>
-              <em>Sessions / month</em>
-            </div>
-            <div className="dash-calc">
-              <span>£{m.blendedRpm.toFixed(2)}</span>
-              <em>Blended RPM</em>
-            </div>
-            <div className="dash-calc strong">
-              <span>£{m.adMonthly.toFixed(0)}</span>
-              <em>Ceiling / month</em>
-            </div>
-          </div>
-          <div className={`dash-verdict ${verdictAds.tone}`}>{verdictAds.text}</div>
+          <Grid min="150px" className="dash-inputs">
+            <TextField
+              label="Desktop RPM ($)"
+              type="number"
+              min="0"
+              step="0.5"
+              value={rpmDesktop}
+              onChange={(e) => setRpmDesktop(Math.max(0, Number(e.target.value) || 0))}
+            />
+            <TextField
+              label="Mobile RPM ($)"
+              type="number"
+              min="0"
+              step="0.5"
+              value={rpmMobile}
+              onChange={(e) => setRpmMobile(Math.max(0, Number(e.target.value) || 0))}
+            />
+            <StatTile label="Sessions / month" value={fmt(Math.round((m.rooms / days) * 30))} />
+            <StatTile label="Blended RPM" value={`$${m.blendedRpm.toFixed(2)}`} />
+            <StatTile label="Ceiling / month" value={`$${m.adMonthly.toFixed(0)}`} gold />
+          </Grid>
+          <Alert tone={verdictAds.tone === "good" ? "success" : "warning"} className="dash-verdict">
+            {verdictAds.text}
+          </Alert>
         </Panel>
 
         <Panel
@@ -434,12 +446,12 @@ export default function AdminDashboard({ currentUser, onBack }) {
           wide
         >
           <Bars rows={m.wtp.map((b) => ({ key: b.key, label: b.label, value: b.value }))} />
-          <div className="dash-verdict-row">
-            <span className="dash-dismissed">{fmt(m.wtpDismissed)} dismissed without answering</span>
-          </div>
-          <div className={`dash-verdict ${verdictWtp.tone}`}>{verdictWtp.text}</div>
+          <p className="dash-dismissed">{fmt(m.wtpDismissed)} dismissed without answering</p>
+          <Alert tone={verdictWtp.tone === "good" ? "success" : "warning"} className="dash-verdict">
+            {verdictWtp.text}
+          </Alert>
         </Panel>
-      </div>
+      </Grid>
 
       <p className="dash-foot">
         Counters are written client-side and can be under-counted by ad blockers or private browsing.

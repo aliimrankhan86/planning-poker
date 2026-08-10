@@ -259,48 +259,27 @@ Treat this section as the fastest current-status read. Historical session notes 
 ---
 
 ## 🗓 Last Session
-- **Date:** 2 April 2026
+- **Date:** 10 August 2026
 - **Chat name:** planning-poker
-- **Worked on:** account lifecycle email flow, notification deployment, and live delivery infrastructure
+- **Worked on:** design-system spacing rhythm, button elevation, and the Sprint Analytics layout in the facilitator room
 - **Completed:**
-  - Added Firebase Auth verification-email sending to the registration flow so new users get an immediate account-confirmation email after signup.
-  - Updated auth-success messaging so sign-up completion explicitly tells the user to check their email for verification instead of looking identical to a normal sign-in.
-  - Added a `functions/` backend scaffold for SMTP-backed Firebase Functions notifications:
-    - owner notification when a new `/users/{uid}` profile is created
-    - owner notification when a user becomes active Pro
-    - user Pro-activation email including both dedicated Team Room URLs
-  - Added `firebase.json`, `functions/.env.example`, and `functions/README.md` so the deployment/config path is explicit for the next session.
-  - Upgraded the Firebase project to Blaze billing so Cloud Functions can deploy.
-  - Configured Zoho SMTP runtime env and successfully deployed both live functions:
-    - `notifyOwnerOnSignup`
-    - `notifyOnProActivation`
-  - Locked the functions to `planning-poker-b6ac1@appspot.gserviceaccount.com` so deploys no longer fail on the missing default Compute service account.
-  - Configured Artifact Registry cleanup to automatically delete old function images after 30 days.
-  - Fixed the signup success-state UI so account creation no longer flashes the signed-in password-reset controls or the misleading `Sending reset…` label before the verification prompt can be seen.
-  - Fixed the just-created-account Pro activation race by preserving `createdAt` during `validateAndSavePro()`, which removes the strict-rules failure on the first activation attempt.
-  - Reworked the signup-complete state so registration no longer auto-closes out from under the user: the auth modal now pauses on a clear verification step, exposes an explicit Continue action, and adds resend-verification actions for both just-created and later signed-in-but-unverified accounts.
-  - Verification-email sends now use an explicit continue URL and surface failures instead of swallowing them silently, making Auth configuration issues visible during QA.
-  - Hardened Pro activation recovery: if a key claim succeeds but the user profile does not finish upgrading, the app now retries the profile write and attempts a reconciliation on the next activation attempt before surfacing a more specific retry message.
-  - Tightened the Pro workspace Team Room card layout so the long dedicated-room URLs and copy button no longer overflow or clip at medium widths.
-  - Added a clear Pro-workspace rename flow for dedicated Team Rooms: the user chooses the shared room-name prefix and the app previews/saves the final room names as `<chosen name> <username>` and `<chosen name> 2 <username>`.
-  - Smoothed the free-to-Pro UX: signed-in free users now land in the account-linked activation path by default, the pricing modal explains the create/sign in → activate → name Team Rooms journey explicitly, and upgrade-intent signup resumes directly into the activation state.
-  - Added post-activation guidance in the Pro workspace so newly upgraded users are scrolled directly into the Team Room naming control and shown that this is the next setup step.
-  - Removed the remaining signed-in Pro upsell surfaces from the auth modal and pricing modal so existing Pro users see neutral account/support messaging instead of plan-comparison or checkout prompts.
-  - Added single-account activation-key binding in repo code and rules: `validateAndSavePro()` now claims `/licenses/{key}` to the activating UID, existing Pro users auto-claim legacy keys on sign-in, and reused keys now show a specific “already attached to another account” error.
-  - Tightened the owner Pro-notification subject template in `functions/index.js` to `Point Poker Pro activated for <user-email>`; this code change now needs a fresh Functions redeploy to become live.
-  - Repositioned and simplified the facilitator post-estimation CTA in `src/App.js`: reveals now show a large `Next item to Estimate` button immediately under `Who Picked What`, the old lower forward CTA was removed, and the revealed-state helper copy now points directly at the new button.
-  - Fixed the actual save path behind that CTA: `database.rules.json` / `database.rules.publish.json` now validate `rounds/{index}/estimate` against the room deck instead of the `rounds` collection node, and `src/App.js` now shows a toast if queue or no-queue estimate saves fail.
-  - Added explicit T-shirt sizing analytics in `src/App.js`: facilitators now get a visible per-size count grid plus more meaningful top-level KPIs for T-shirt sessions instead of point-based placeholders.
-  - Fixed the T-shirt analytics data source for no-queue sessions: non-numeric consensus rounds saved via `newRound()` are now included in the current-session breakdown and summary cards instead of being filtered out.
-  - Moved the mixed-estimate facilitator save flow inline in `src/App.js`: when votes differ, the facilitator now chooses the agreed deck value directly in the reveal area and can save + move to the next item immediately instead of waiting for a delayed modal.
-  - Verified the frontend build and Functions syntax locally (`npm run build`, `node --check functions/index.js`).
+  - **A panel now owns the gap between its children.** Every block inside a room `.panel` used to declare its own margin — 14px from three analytics sections, 0 from the timer's Start-countdown button, 24px from a `<Grid>` — so no two gaps in one panel matched. The visible symptom was the Countdown length hint sitting 8px under the select it describes and 0px above the button below it: the helper had detached from its own control and attached to the next one. Two rules (`.panel > * + *` and `.panel > .ptitle + *`) replaced five scattered margins, and the ladder is now monotone: 8 inside a field, 12 under the panel eyebrow, 16 between blocks, 20 to the edge. Measured identical across the Estimation timer, At the Table and Sprint Analytics panels.
+  - **Secondary buttons no longer blend into what they sit on.** `.pp-btn--secondary` was painted `--surface-1` — the exact value a `.panel` and a `.pp-card` paint themselves — so Re-vote, New sprint, Start countdown, Copy and CSV were the same colour as their container with a hairline as the only evidence they were pressable. They are `--surface-2` now (lighter on felt, darker on paper). That forced disabled down to `--tint-raise`, because disabled had been `--surface-2` and would otherwise have shared a fill with a live control.
+  - **Sprint Analytics KPIs are rows, not tiles.** The three-up `<Grid min="96px">` auto-fitted two-up in the 258px a 300px rail leaves and orphaned the third on its own row, and its 24px gap was wider than the 14px between the panel's own sections. Three columns is not the repair either — a `--fs-6` value has no room in an 80px column. `.a-kpis` is now a flex column of label-left / value-right rows sharing `.prow`'s geometry, so the analytics panel and the players list in the same rail read as one product and the tabular values line up in a column. Panel height dropped 608px → 564px.
+  - **One sub-heading treatment per panel.** Team Alignment was sentence case at 13px while Stories sized and Point distribution were tracked uppercase, so one panel announced three peer sections three ways. All three share `.a-section-title`'s treatment now.
+  - **Off-scale spacing swept onto the 4px grid** across the room CSS: 3, 5, 6, 7, 10, 11, 14 and 26px margins/gaps/paddings replaced with `--sp-*` tokens in the observer controls, story queue, players list, results hero, revealed grid and analytics panel. Dead `.tsel` CSS deleted (the design-system `Select` replaced it).
+  - **Documentation:** `docs/AI-CONTEXT.hand.md` gained three rules with their reasons; `src/design-system/README.md` gained "Elevation is what makes a button a button" with the four-state fill table.
+  - **Verified:** 262 tests pass (7 new source-reading guards in `designsystem.test.js`). `npm run build` compiles clean, 15 prerendered routes. Live three-tab room walked end to end — consensus and split-vote paths, record commits, mid-round fallback controls — in dark and light at 1440px and 390px, zero console errors, zero horizontal overflow.
+- **Known, not fixed (pre-existing, out of scope):**
+  - Sprint Analytics can show "Stories sized 0" while the list below it reads "Stories sized (1)" with an estimate. `onReset` clears `storiesDone` but leaves `stories[].estimate`, so a new sprint keeps the previous sprint's estimates in the list and the distribution chips.
+  - `src/design-system/` was untracked in git until this commit.
 
 ---
 
 ## 📍 Current Status
-**Phase:** 2/3 crossover — SEO growth is expanding and account/product capabilities are being refined
-**Active step:** re-run fresh-account signup email QA after the signup-state fix, monitor the re-requested `/pricing`, `/support`, and `/trust` indexing in Search Console, publish the updated Firebase rules for single-account activation-key binding, redeploy Functions for the owner-subject refinement, and continue additive trust/proof content while Stripe stays parked
-**Remaining:** trust/proof content, verify Search Console recrawl/indexing for `/pricing`, `/support`, and `/trust`, verify fresh-account signup verification email delivery, publish the updated Firebase rules so activation keys cannot be reused across multiple users, redeploy Functions so the owner Pro-notification subject improvement goes live, broader production E2E sweep if desired, then Stripe/payment work when resumed
+**Phase:** 2 — SEO growth, with the design system now the working surface for product polish
+**Active step:** monitor `/pricing`, `/support` and `/trust` indexing in Search Console; publish the current `database.rules.json` to the Firebase Console; continue additive trust/proof content
+**Remaining:** trust/proof content, Search Console recrawl verification, Firebase rules publish, a broader production E2E sweep if desired. Monetisation stays parked — the product is free for everyone.
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.

@@ -219,7 +219,7 @@ export const ROUTE_CONTENT = {
     intro:
       "There is no paid tier, no trial countdown, and no credit card field anywhere on pointpoker. Every feature is free for everyone while we grow the user base.",
     body: [
-      `One plan, £0: up to ${MAX_PARTICIPANTS} participants per room, unlimited voting rounds, unlimited stories, all card decks, the countdown timer, facilitator analytics, clipboard and CSV export, and two fixed Team Rooms with a free account.`,
+      `One plan, $0: up to ${MAX_PARTICIPANTS} participants per room, unlimited voting rounds, unlimited stories, all card decks, the countdown timer, facilitator analytics, clipboard and CSV export, and two fixed Team Rooms with a free account.`,
       "A planning poker tool is only useful if the whole team will actually open it, and paywalls kill that on the first invite. The plan is to keep every feature free, watch how many teams use it, and only look at paid add-ons once there is a real user base to serve. If that day comes, everything described here stays free.",
       "You are not the product either: no advertising, no third-party analytics scripts, no session recording, nothing sold on.",
     ],

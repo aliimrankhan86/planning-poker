@@ -1,0 +1,533 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   pointpoker design system — tokens
+   The single source of truth for every colour, size, radius, shadow and
+   duration in the product. Components reference SEMANTIC ROLES only
+   (--surface-1, --text-2, --action); they never touch the raw palette.
+   That indirection is the entire reason the second theme is free.
+
+   DARK IS THE DEFAULT. It lives on :root, so a browser with no stored
+   preference and no JavaScript still gets the room at night. Light is opt-in
+   via [data-theme="light"] on <html>. There is deliberately no
+   prefers-color-scheme block: the theme never changes under a user who did
+   not ask for it, and the toggle is the only thing that moves it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Raw palette ────────────────────────────────────────────────────────────
+   Fixed. Do not add hues here; add a semantic alias below instead.
+   Three families only: FELT (the baize), BRASS (the one accent), IVORY (paper
+   and card faces), plus state hues at two lightnesses so both themes sit on
+   the same hue. */
+:root {
+  /* Felt — the table */
+  --felt-950: #06120e;
+  --felt-900: #07110e;
+  --felt-850: #0a1f18;
+  --felt-800: #0d1d19;
+  --felt-700: #0f3328;
+  --felt-600: #14503c;
+  --felt-500: #1b6b50;
+  --felt-400: #2f8f6c;
+  --felt-300: #4bd889;
+  --felt-200: #72f0b4;
+  --felt-100: #bfffe2;
+
+  /* Brass — the gold edge. The single primary action and hairline trim. */
+  --brass-800: #6d4e0f;
+  --brass-700: #8a6414;
+  --brass-600: #b8862b;
+  --brass-500: #d99b1f;
+  --brass-400: #f1b93f;
+  --brass-300: #ffd978;
+  --brass-200: #fff2be;
+
+  /* Ivory — chips, card faces, paper */
+  --ivory-050: #fffefb;
+  --ivory-100: #fffdfa;
+  --ivory-200: #f6f3ea;
+  --ivory-300: #efeadd;
+  --ivory-400: #e2dccb;
+  --ivory-500: #b8d1c2;
+
+  /* State hues */
+  --red-600:   #b3241f;
+  --red-500:   #e04848;
+  --red-300:   #ff8a8a;
+  --green-600: #17734c;
+  --green-500: #4bd889;
+  --blue-600:  #17607f;
+  --blue-500:  #6ccff6;
+  --aqua-500:  #7ee6ff;
+  --amber-600: #8a5a08;
+  --amber-500: #e2a12b;
+}
+
+/* ── Type ───────────────────────────────────────────────────────────────────
+   Eight steps on a 16px base, roughly a 1.25 major third, plus two fluid
+   clamps for hero and section headings.
+
+   Cormorant Garamond ships OLD-STYLE figures: 3, 4, 7 and 9 drop below the
+   baseline and 1 sits short, so a column of them wobbles. Every NUMBER in the
+   product — card values, stat values, timers, table cells — is set in
+   --font-ui with tabular-nums. The display serif is for words. */
+:root {
+  --font-display: 'Cormorant Garamond', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --fs-1: 0.8125rem;  /* 13px  micro labels, uppercase eyebrows. THE FLOOR. */
+  --fs-2: 0.9375rem;  /* 15px  helper and secondary text */
+  --fs-3: 1rem;       /* 16px  body and EVERY interactive label */
+  --fs-4: 1.125rem;   /* 18px  card titles */
+  --fs-5: 1.375rem;   /* 22px  section headings */
+  --fs-6: 1.75rem;    /* 28px  page headings */
+  --fs-7: 2.25rem;    /* 36px  hero on mobile */
+  --fs-8: 3rem;       /* 48px  display numerals (the agreed estimate) */
+  --fs-9: 4rem;       /* 64px  marketing display */
+
+  /* Fluid display: one rule covers 360px to 1440px. */
+  --fs-hero:    clamp(2.25rem, 1.15rem + 4.4vw, 4rem);
+  --fs-section: clamp(1.75rem, 1.32rem + 1.7vw, 2.5rem);
+
+  /* Light type on a dark ground blooms — the glyphs spread optically and read
+     thinner and tighter. Only the two smallest roles need the correction. */
+  --fs-1-tracking: 0.012em;
+  --fs-2-tracking: 0.008em;
+  --tracking-eyebrow: 0.14em;
+  --tracking-display: -0.015em;
+
+  --lh-tight: 1.15;   /* display */
+  --lh-snug: 1.35;    /* UI */
+  --lh-body: 1.6;     /* prose */
+
+  --fw-light: 300;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semi: 600;
+  --fw-bold: 700;
+
+  --measure: 68ch;        /* prose line length cap */
+  --measure-tight: 46ch;  /* hero subtitles, card copy */
+}
+
+/* ── Spacing ───────────────────────────────────────────────────────────────
+   4px grid. Padding, margin and gap come from here and nowhere else. */
+:root {
+  --sp-0: 0;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+
+  /* Fluid, so a phone never gets 96px of nothing. */
+  --section-y: clamp(var(--sp-12), 4vw + 1rem, var(--sp-24));
+  --gutter: clamp(var(--sp-4), 3vw, var(--sp-8));
+
+  /* The three gaps a page is allowed to have, largest last. Every space
+     between two things resolves to one of them, which is what stops a page
+     drifting into 20px here and 26px there:
+       --gap      between tiles in a grid or a row of cards
+       --block-y  between blocks inside one band (heading, prose, grid)
+       --section-y between bands
+     A gap that is none of these is a bug, not a decision. */
+  --gap: var(--sp-6);
+  --block-y: var(--sp-10);
+}
+
+/* ── Shape ─────────────────────────────────────────────────────────────────
+   Radii and elevation. A shadow not on this scale is a bug. */
+:root {
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 999px;
+
+  --bw-hair: 1px;
+  --bw-thick: 2px;
+}
+
+/* ── Motion ────────────────────────────────────────────────────────────────
+   Exits run at roughly 65% of entrances: dismissals feel immediate, arrivals
+   feel calm. Animate transform and opacity only. Everything respects
+   prefers-reduced-motion (see base.css). */
+:root {
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --dur-flip: 420ms;   /* the card reveal — the one signature moment */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-flip: cubic-bezier(0.35, 1.25, 0.45, 1);
+}
+
+/* ── Layout ────────────────────────────────────────────────────────────────
+   Breakpoints as documentation, containers, the z-scale and the tap floor. */
+:root {
+  --bp-sm: 480px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+
+  /* One measure for the whole product. The header, the hero, every marketing
+     band, the room and the footer all resolve to this box, so their left and
+     right edges land on the same two lines however wide the screen gets.
+     Change it here; nothing else is allowed to declare a page width. */
+  --container-narrow: 720px;   /* prose and legal pages */
+  --container: 1160px;         /* everything else */
+  --container-wide: 1320px;    /* opt-in, for a table that genuinely needs it */
+
+  /* WCAG 2.2 AA (2.5.8) requires 24px; 44px is the Apple HIG figure and the
+     one that actually stops mis-taps on a phone. */
+  --tap-min: 44px;
+  --control-sm: 36px;
+  --control-md: 44px;
+  --control-lg: 52px;
+
+  --z-base: 0;
+  --z-sticky: 20;
+  --z-overlay: 40;
+  --z-modal: 100;
+  --z-toast: 1000;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SEMANTIC ROLES — DARK (the default)
+
+   The room at night. Lives on :root as well as [data-theme="dark"] so that a
+   first-time visitor, a crawler, and a browser with JavaScript disabled all
+   get dark without waiting for a script.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-page: var(--felt-900);
+  --bg-sunken: #050d0b;
+  --surface-1: rgba(15,32,27,0.76);
+  --surface-2: rgba(22,44,38,0.92);
+  --surface-3: rgba(10,24,20,0.96);
+  --surface-felt: var(--felt-850);
+  --surface-card-face: var(--ivory-100);
+
+  --border-subtle: rgba(134,198,166,0.14);
+  --border-strong: rgba(158,234,196,0.26);
+  --border-gold: rgba(241,185,63,0.42);
+  --divider: rgba(134,198,166,0.12);
+
+  --text-1: #f5fbf7;                      /* 15.8:1 */
+  --text-2: rgba(245,251,247,0.78);       /*  9.9:1 */
+  --text-3: rgba(245,251,247,0.62);       /*  6.7:1 — the floor */
+  --text-on-felt: #f5fbf7;
+  --text-on-felt-2: rgba(245,251,247,0.78);
+  --text-on-gold: var(--felt-900);        /*  9.4:1 on --brass-400 */
+  --text-link: var(--felt-200);
+  --text-link-hover: var(--brass-300);
+
+  /* --action is the brass gradient in BOTH themes: gold with ink text is its
+     own surface and clears 9.4:1 on any ground, so the one primary action on
+     a screen looks identical whichever theme you are in. */
+  --action: var(--brass-400);
+  --action-gradient: linear-gradient(135deg, var(--brass-300) 0%, var(--brass-400) 62%, var(--brass-500) 100%);
+  --action-gradient-hover: linear-gradient(135deg, var(--brass-200) 0%, var(--brass-300) 62%, var(--brass-400) 100%);
+  --action-fg: var(--text-on-gold);
+  --action-quiet: var(--brass-300);   /* gold used as TEXT, at the theme's contrast */
+  --focus: var(--brass-300);
+
+  --danger: var(--red-300);
+  --danger-surface: rgba(224,72,72,0.14);
+  --danger-border: rgba(224,72,72,0.42);
+  --success: var(--green-500);
+  --success-surface: rgba(75,216,137,0.13);
+  --success-border: rgba(75,216,137,0.38);
+  --info: var(--blue-500);
+  --info-surface: rgba(108,207,246,0.13);
+  --info-border: rgba(108,207,246,0.36);
+  --warning: var(--amber-500);
+  --warning-surface: rgba(226,161,43,0.14);
+  --warning-border: rgba(226,161,43,0.38);
+
+  --scrim: rgba(3,9,7,0.70);
+  --skeleton: linear-gradient(90deg, rgba(22,44,38,0.6) 0%, rgba(34,64,54,0.9) 50%, rgba(22,44,38,0.6) 100%);
+  --felt-texture: radial-gradient(120% 120% at 50% 0%, rgba(114,240,180,0.05), transparent 60%);
+
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(0,0,0,0.34);
+  --elev-2: 0 8px 24px rgba(0,0,0,0.40);
+  --elev-3: 0 24px 64px rgba(0,0,0,0.55);
+  /* The one decorative shadow: a playing card lifted off the felt. */
+  --elev-card-lift: 0 18px 38px rgba(0,0,0,0.52), 0 2px 0 rgba(255,255,255,0.5) inset;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SEMANTIC ROLES — LIGHT (opt-in)
+
+   The table under house lights: warm ivory paper, felt-green ink, brass still
+   reserved for the one action that finishes the job.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-page: var(--ivory-200);
+  --bg-sunken: var(--ivory-300);
+  --surface-1: var(--ivory-050);      /* cards, panels */
+  --surface-2: var(--ivory-300);      /* rails, inset rows */
+  --surface-3: #ffffff;               /* raised: modals, popovers */
+  --surface-felt: var(--felt-700);    /* inverse block: hero, footer, the table */
+  --surface-card-face: var(--ivory-100);
+
+  --border-subtle: rgba(10,31,24,0.12);
+  --border-strong: rgba(10,31,24,0.26);
+  --border-gold: rgba(184,134,43,0.55);
+  --divider: rgba(10,31,24,0.10);
+
+  --text-1: var(--felt-950);            /* 16.9:1 on --bg-page */
+  --text-2: #384a42;                    /*  8.4:1 */
+  /* 5.1:1 against --bg-page, but the floor has to hold on every surface the
+     role actually lands on. On a panel tinted with --tint-raise it measured
+     4.42:1, so the value moved one step darker; it now clears on the tinted
+     panel, the raised card and the page alike. */
+  --text-3: #4f6159;                    /*  5.9:1 on the page, 4.6:1 at worst */
+  --text-on-felt: #f5fbf7;
+  --text-on-felt-2: rgba(245,251,247,0.78);
+  --text-on-gold: var(--felt-950);
+  --text-link: #0f4a37;
+  --text-link-hover: var(--felt-950);
+
+  --action: var(--brass-400);
+  --action-gradient: linear-gradient(135deg, var(--brass-300) 0%, var(--brass-400) 62%, var(--brass-500) 100%);
+  --action-gradient-hover: linear-gradient(135deg, var(--brass-200) 0%, var(--brass-300) 62%, var(--brass-400) 100%);
+  --action-fg: var(--text-on-gold);
+  --action-quiet: var(--brass-800);   /* brass that clears 4.5:1 on a raised ivory card, not just on the page */
+  --focus: var(--brass-700);
+
+  --danger: var(--red-600);
+  --danger-surface: #fdeceb;
+  --danger-border: rgba(179,36,31,0.34);
+  --success: var(--green-600);
+  --success-surface: #e6f5ed;
+  --success-border: rgba(23,115,76,0.30);
+  --info: var(--blue-600);
+  --info-surface: #e7f2f8;
+  --info-border: rgba(23,96,127,0.30);
+  --warning: var(--amber-600);
+  --warning-surface: #fbf1dd;
+  --warning-border: rgba(138,90,8,0.30);
+
+  --scrim: rgba(6,18,14,0.48);
+  --skeleton: linear-gradient(90deg, var(--ivory-300) 0%, var(--ivory-400) 50%, var(--ivory-300) 100%);
+  --felt-texture: radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.06), transparent 60%);
+
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(6,18,14,0.10), 0 1px 1px rgba(6,18,14,0.06);
+  --elev-2: 0 8px 24px rgba(6,18,14,0.12), 0 2px 6px rgba(6,18,14,0.08);
+  --elev-3: 0 24px 64px rgba(6,18,14,0.18), 0 6px 16px rgba(6,18,14,0.10);
+  --elev-card-lift: 0 18px 38px rgba(6,18,14,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LEGACY BRIDGE
+
+   src/App.js is one 10,000-line component whose CSS is a template literal, and
+   it spends ~1,200 declarations on the names below. Rather than rewrite that
+   file, the old names are re-pointed at the semantic roles above, which is
+   what makes the whole existing app theme-aware in one edit instead of a
+   thousand.
+
+   The dark column reproduces the values the app shipped before this system
+   existed, so dark renders identically to the previous build. New work uses
+   the semantic roles directly; these aliases are a migration aid, not an API.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="dark"] {
+  --bg:       var(--bg-page);
+  --bg2:      var(--felt-800);
+  --surface:  var(--surface-1);
+  --surface2: var(--surface-2);
+  --surface3: var(--surface-3);
+  --border:   var(--divider);
+  --border2:  rgba(158,234,196,0.22);
+
+  --gold:  var(--brass-400);
+  --gold2: var(--brass-300);
+  --gold3: var(--brass-200);
+  --goldA: rgba(241,185,63,0.24);
+  --goldB: rgba(241,185,63,0.14);
+
+  /* Gold used as TEXT is a different role from gold used as a SURFACE: on
+     ivory a #ffd978 label is 1.5:1 and invisible. The -ink aliases carry the
+     text role and drop to --brass-700 in light; the plain names stay bright
+     because they paint the primary button, which is gold in both themes. */
+  --gold-ink:  var(--brass-400);
+  --gold-ink2: var(--brass-300);
+  --gold-ink3: var(--brass-200);
+  --mint-ink:  var(--felt-200);
+
+  --mint:   var(--felt-200);
+  --mint2:  var(--felt-100);
+  --aqua:   var(--aqua-500);
+  --cream:  var(--text-1);
+  --cream2: var(--ivory-500);
+  --red:    var(--red-500);
+  --green:  var(--green-500);
+  --blue:   var(--blue-500);
+  --ink:    #08110e;
+  --card-bg: var(--surface-card-face);
+
+  --scroll-track: rgba(7,17,14,0.94);
+  --scroll-thumb: linear-gradient(180deg, #ffe08f 0%, #f5c659 42%, #dd9c22 100%);
+  --scroll-thumb-border: rgba(5,10,9,0.62);
+
+  --radius: 20px;
+  --shadow: 0 28px 90px rgba(0,0,0,0.58);
+  --shadow-soft: 0 20px 60px rgba(0,0,0,0.34);
+
+  /* The page itself. App.js paints the ground on <body> with a three-stop
+     gradient and two radial washes, and lays a felt texture over it in
+     body::before. All five were literal values, which is why light mode still
+     came out dark green the first time it was switched on. */
+  --page-ground: linear-gradient(180deg, #091411 0%, #07110e 42%, #06100d 100%);
+  --page-wash-1: rgba(40,124,88,0.24);
+  --page-wash-2: rgba(126,230,255,0.08);
+  --felt-wash-1: rgba(34,120,78,0.30);
+  --felt-wash-2: rgba(241,185,63,0.11);
+
+  /* Sticky bars. Translucent so content stays legible scrolling under them —
+     one of only two places in the system allowed a backdrop blur. */
+  --surface-bar: rgba(6,16,13,0.84);
+  --surface-bar-solid: rgba(7,14,8,0.95);
+
+  /* Shadow COLOUR, for the handful of App.js panels that carry their own
+     geometry. Near-black is right on felt and muddy on paper, so the hue moves
+     with the theme even where the blur and offset do not. */
+  --shadow-cast: rgba(0,0,0,0.58);   /* panels, overlays, toasts */
+  --shadow-card: rgba(0,0,0,0.45);   /* a playing card lifted off the table */
+
+  /* "One step off the ground": the faint fill that gives an input or a quiet
+     button its shape. On felt that means adding light; on paper it means
+     adding ink. Written as white in App.js originally, which is why a light
+     secondary button first came out with no fill at all. */
+  --tint-raise: rgba(255,255,255,0.03);
+  --tint-raise-2: rgba(255,255,255,0.06);
+}
+
+[data-theme="light"] {
+  --bg:       var(--bg-page);
+  --bg2:      var(--ivory-300);
+  --surface:  var(--surface-1);
+  --surface2: var(--surface-2);
+  --surface3: var(--surface-3);
+  --border:   var(--divider);
+  --border2:  var(--border-strong);
+
+  /* Unchanged from dark on purpose: these three paint the primary button and
+     its gradient stops, and the primary action is brass in both themes. Only
+     the -ink aliases below move. */
+  --gold:  var(--brass-400);
+  --gold2: var(--brass-300);
+  --gold3: var(--brass-200);
+  --goldA: rgba(184,134,43,0.22);
+  --goldB: rgba(184,134,43,0.12);
+
+  /* brass-700 measures 4.85:1 on --bg-page but only 4.4:1 once the text sits on
+     a raised --surface-1, which is where most gold links actually are. The
+     three steps collapse to one in light: paper leaves no headroom above
+     brass-800 without going brown. */
+  --gold-ink:  var(--brass-800);
+  --gold-ink2: var(--brass-800);
+  --gold-ink3: var(--brass-800);
+  --mint-ink:  var(--felt-600);
+
+  --mint:   var(--felt-400);
+  --mint2:  var(--felt-600);
+  --aqua:   var(--blue-600);
+  --cream:  var(--text-1);
+  --cream2: var(--text-3);
+  --red:    var(--red-600);
+  --green:  var(--green-600);
+  --blue:   var(--blue-600);
+  --ink:    var(--felt-950);
+  --card-bg: var(--surface-card-face);
+
+  --scroll-track: rgba(10,31,24,0.08);
+  --scroll-thumb: linear-gradient(180deg, #d9a83f 0%, #c08f22 42%, #8a6414 100%);
+  --scroll-thumb-border: rgba(10,31,24,0.18);
+
+  --radius: 20px;
+  --shadow: 0 28px 90px rgba(6,18,14,0.16);
+  --shadow-soft: 0 20px 60px rgba(6,18,14,0.10);
+
+  /* Paper under house lights: warm at the top, settling a shade towards the
+     fold. The washes stay on the same hues as dark, an order of magnitude
+     weaker — enough to keep the ground from reading as flat white, not enough
+     to tint it green. */
+  --page-ground: linear-gradient(180deg, var(--ivory-100) 0%, var(--ivory-200) 46%, var(--ivory-300) 100%);
+  --page-wash-1: rgba(23,115,76,0.07);
+  --page-wash-2: rgba(23,96,127,0.04);
+  --felt-wash-1: rgba(23,115,76,0.05);
+  --felt-wash-2: rgba(184,134,43,0.06);
+
+  --surface-bar: rgba(255,254,251,0.84);
+  --surface-bar-solid: rgba(255,254,251,0.95);
+
+  --shadow-cast: rgba(6,18,14,0.14);
+  --shadow-card: rgba(6,18,14,0.22);
+
+  --tint-raise: rgba(6,18,14,0.035);
+  --tint-raise-2: rgba(6,18,14,0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INVERSE BLOCKS IN LIGHT
+
+   Some surfaces stay felt-green whichever theme is on, because they are the
+   edge of the table rather than paper laid on it: the site footer, the felt
+   hero, a felt card, and the scrim behind a modal. Their contents are written
+   against --text-1/2/3 like everything else, so rather than rewrite every
+   declaration inside them, the roles are re-pointed for the subtree. That is
+   what scoped custom properties are for.
+
+   Every role a component might reach for has to be in here. A role left out
+   does not fall back to something sensible — it keeps the light value, which
+   is how you get ink-on-felt at 1.2:1. --action-quiet was missing once and the
+   footer's $0 chip read as a dark smudge.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-theme="light"] .site-footer,
+[data-theme="light"] .pp-card--felt,
+[data-theme="light"] .pp-section--felt,
+[data-theme="light"] .pp-hero:not(.pp-hero--paper) {
+  --text-1: var(--text-on-felt);
+  --text-2: var(--text-on-felt-2);
+  --text-3: rgba(245,251,247,0.66);
+  --cream: var(--text-on-felt);
+  --mint2: var(--felt-200);
+  --gold-ink:  var(--brass-400);
+  --gold-ink2: var(--brass-300);
+  --gold-ink3: var(--brass-200);
+  --border: rgba(255,255,255,0.12);
+  --border2: rgba(255,255,255,0.22);
+  --surface: rgba(255,255,255,0.06);
+  --surface2: rgba(255,255,255,0.10);
+
+  /* The design system's own roles, for the pp- components that now live in
+     these subtrees. */
+  --action-quiet: var(--brass-300);
+  --surface-1: rgba(255,255,255,0.08);
+  --surface-2: rgba(255,255,255,0.12);
+  --surface-3: var(--felt-800);
+  --border-subtle: rgba(255,255,255,0.14);
+  --border-strong: rgba(255,255,255,0.28);
+  --border-gold: rgba(255,217,120,0.45);
+  --divider: rgba(255,255,255,0.12);
+  --focus: var(--brass-300);
+  --text-link: var(--brass-300);
+  --text-link-hover: var(--brass-200);
+}

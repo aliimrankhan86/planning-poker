@@ -9,6 +9,17 @@ import { join } from "node:path";
 const app = readFileSync(join(__dirname, "App.js"), "utf8");
 const css = app.slice(app.indexOf("const CSS = `"), app.indexOf("`;", app.indexOf("const CSS = `")));
 
+/* The tokens moved out of App.js's :root and into the design system, which now
+   defines them once for dark (the default) and once for light. App.js must NOT
+   redeclare them — its <style> tag renders from the body and would win over the
+   imported stylesheet, pinning the app to a single theme. So the token tests
+   read the design system, and a separate test below checks App.js stays out of
+   the way. */
+const tokens = readFileSync(join(__dirname, "design-system", "tokens.css"), "utf8");
+const dsIndex = readFileSync(join(__dirname, "design-system", "index.js"), "utf8");
+const dsIcons = readFileSync(join(__dirname, "design-system", "icons.js"), "utf8");
+const dsCss = readFileSync(join(__dirname, "design-system", "components.css"), "utf8");
+
 describe("design tokens exist", () => {
   const required = [
     // Type scale: eight steps, no more.
@@ -22,30 +33,68 @@ describe("design tokens exist", () => {
   ];
 
   test.each(required)("%s is defined", (token) => {
-    expect(css).toContain(`${token}:`);
+    expect(tokens).toContain(`${token}:`);
+  });
+
+  test("App.js does not redeclare a themed token in its own :root", () => {
+    expect(css).not.toMatch(/\n:root\s*\{/);
   });
 });
 
+/* The button system lives in the design system now. App.js had a second,
+   near-identical copy — .btn with the same four intents — and two
+   implementations of one control is how they drift. These tests moved with it.  */
 describe("button system", () => {
-  test("has one base class with four intents and three sizes", () => {
+  test("has one base class with five intents and three sizes", () => {
     for (const cls of [
-      ".btn {", ".btn--primary", ".btn--secondary", ".btn--ghost", ".btn--danger",
-      ".btn--sm", ".btn--lg", ".btn--block",
+      ".pp-btn {", ".pp-btn--primary", ".pp-btn--secondary", ".pp-btn--ghost",
+      ".pp-btn--danger", ".pp-btn--on-felt", ".pp-btn--sm", ".pp-btn--lg", ".pp-btn--block",
     ]) {
-      expect(css).toContain(cls);
+      expect(dsCss).toContain(cls);
     }
+  });
+
+  test("App.js keeps no second button system", () => {
+    expect(css).not.toMatch(/\n\.btn\s*[,{]/);
+    expect(css).not.toContain(".btn--primary");
   });
 
   test("every button clears the 44px touch target floor", () => {
     // Sizes may change padding and type; they may not shrink the tap area.
-    expect(css).toMatch(/\.btn\s*\{[^}]*min-height:\s*var\(--tap-min\)/s);
-    expect(css).toMatch(/--tap-min:\s*44px/);
+    expect(dsCss).toMatch(/\.pp-btn\s*\{[^}]*min-height:\s*var\(--control-md\)/s);
+    expect(tokens).toMatch(/--control-md:\s*44px/);
+    expect(tokens).toMatch(/--tap-min:\s*44px/);
   });
+
+  test("a small control still offers a 44px hit area", () => {
+    /* --control-sm is 36px by design, which is the handoff's density. The
+       painted box stays 36px and a pseudo-element grows the hit area to
+       --tap-min, so rule 6 holds without redrawing the bar. */
+    expect(dsCss).toMatch(/\.pp-btn--sm::after[^{]*\{[^}]*height:\s*var\(--tap-min\)/s);
+  });
+
+  /* Fill is the first thing read about a button, so no two states may share
+     one. The rule these three guard: a live secondary sits one rung ABOVE its
+     container, a dead control sits a whisper above it, and neither is the
+     container's own value. */
+  const fillOf = (selector) =>
+    dsCss.match(new RegExp(`${selector}[^{]*\\{[^}]*?(?:--btn-bg|background):\\s*([^;]+);`, "s"))?.[1].trim();
 
   test("a disabled primary is inert rather than a dimmed gradient", () => {
     // Fading gold over dark green produces a muddy olive that still reads as
     // clickable. This is the bug that made the old Reveal control look active.
-    expect(css).toMatch(/\.btn--primary:disabled[^{]*\{[^}]*opacity:\s*1/s);
+    expect(fillOf("\\.pp-btn:disabled")).toBe("var(--tint-raise)");
+  });
+
+  test("a secondary button is raised above the surface it sits on", () => {
+    // It was painted --surface-1, the same value a .panel and a .pp-card paint
+    // themselves, so the control was the exact colour of its own container and
+    // only a hairline said it was pressable.
+    expect(fillOf("\\.pp-btn--secondary")).toBe("var(--surface-2)");
+  });
+
+  test("a dead control is never painted like a live one", () => {
+    expect(fillOf("\\.pp-btn:disabled")).not.toBe(fillOf("\\.pp-btn--secondary"));
   });
 
   test("motion is disabled for users who ask for reduced motion", () => {
@@ -79,15 +128,22 @@ describe("icons, not emoji", () => {
     expect(found).toEqual([]);
   });
 
+  /* The icon set moved into the design system, so the family rules are checked
+     where they now live. App.js is checked for the opposite: that it did not
+     keep a second copy. */
   test("the icon set is one family with a single stroke width", () => {
-    expect(app).toContain("ICON_PATHS");
-    expect(app).toMatch(/strokeWidth="1\.75"/);
+    expect(dsIcons).toContain("ICON_PATHS");
+    expect(dsIndex).toMatch(/strokeWidth="1\.75"/);
     // currentColor is the whole point: icons dim with their button's state.
-    expect(app).toMatch(/stroke="currentColor"/);
+    expect(dsIndex).toMatch(/stroke=\{filled \? "none" : "currentColor"\}/);
+  });
+
+  test("App.js does not keep a second icon family", () => {
+    expect(app).not.toContain("const ICON_PATHS");
   });
 
   test("decorative icons are hidden from screen readers", () => {
-    expect(app).toMatch(/aria-hidden=\{title \? undefined : "true"\}/);
+    expect(dsIndex).toMatch(/aria-hidden=\{title \? undefined : true\}/);
   });
 });
 
@@ -123,7 +179,7 @@ describe("class names survive ad blockers", () => {
 describe("room layout", () => {
   test("the facilitator has exactly one primary action", () => {
     const bar = app.slice(app.indexOf("function RoomActionBar"), app.indexOf("function GameScreen"));
-    expect((bar.match(/btn--primary/g) || []).length).toBe(1);
+    expect((bar.match(/variant="primary"/g) || []).length).toBe(1);
   });
 
   test("the action bar clears the iOS home indicator on phones", () => {
@@ -131,7 +187,8 @@ describe("room layout", () => {
   });
 
   test("counts use tabular figures so they do not reflow as they climb", () => {
-    expect(css).toMatch(/\.action-bar-count[^{]*\{[^}]*tabular-nums/s);
+    // The count is a Chip now; the figures rule travelled with it.
+    expect(dsCss).toMatch(/\.pp-chip--count[^{]*\{[^}]*tabular-nums/s);
   });
 });
 
@@ -147,7 +204,7 @@ describe("type floor", () => {
   const FLOOR_REM = 0.8125; // 13px at a 16px root
 
   test("--fs-1 is the floor and is at least 13px", () => {
-    expect(css).toMatch(/--fs-1:\s*0?\.8125rem/);
+    expect(tokens).toMatch(/--fs-1:\s*0?\.8125rem/);
   });
 
   test("no font-size is written below the floor", () => {
@@ -468,7 +525,7 @@ describe("a label points at a field", () => {
   });
 
   test("a heading for a group of buttons is a group, not a label", () => {
-    expect(app).toMatch(/<span className="lbl" id="join-role-label">/);
+    expect(app).toMatch(/<span className="pp-label" id="join-role-label">/);
     expect(app).toMatch(/role="group" aria-labelledby="join-role-label"/);
   });
 });
@@ -493,5 +550,185 @@ describe("a control that promises something does it", () => {
        scrolling to the form and focusing its first field. */
     const join = app.slice(app.indexOf("function JoinScreen"), app.indexOf("function WtpPoll"));
     expect(join).toMatch(/\}, \[startFocusToken\]\);/);
+  });
+});
+
+/* The page used to measure itself in six places — .navbar-inner, .hdr-in,
+   .game-body, .footer-inner, .footer-bottom and .footer-plan-bar each carried
+   their own `max-width: 1160px; margin: 0 auto`, and the home page's SEO band
+   carried none at all, so its headline started 20px from the window while the
+   brand above it started 250px in. One container, declared once. */
+describe("one page measure", () => {
+  test("only the design system declares a container width", () => {
+    expect(tokens).toContain("--container:");
+    expect(dsCss).toContain("max-width: var(--container)");
+    // No page-width literal survives in App.js.
+    expect(css).not.toMatch(/max-width:\s*11\d\dpx/);
+  });
+
+  test("every band centres itself with .pp-container, not by hand", () => {
+    for (const shell of [
+      "navbar-inner pp-container",
+      "hdr-in pp-container",
+      "game-body pp-container",
+      "footer-inner pp-container",
+      "footer-bottom pp-container",
+      "footer-plan-bar pp-container",
+      "join-layout pp-container",
+    ]) {
+      expect(app).toContain(shell);
+    }
+    // …and none of them re-declares the centring the class already does.
+    expect(css).not.toMatch(/\.(navbar-inner|hdr-in|game-body|footer-inner|footer-bottom)[^{]*\{[^}]*margin:\s*0 auto/);
+  });
+
+  test("the home page's SEO band puts its content in a container", () => {
+    const band = app.slice(app.indexOf('<Section className="seo-section"'));
+    expect(band.slice(0, 600)).toContain("<Container flow>");
+  });
+
+  test("a container inside a container does not pad twice", () => {
+    expect(dsCss).toContain(".pp-container .pp-container");
+  });
+});
+
+/* Three gaps, largest last: --gap between tiles, --block-y between blocks in a
+   band, --section-y between bands. A page that invents a fourth is how 20px
+   here and 26px there gets in. */
+describe("one gap scale", () => {
+  test("the three gap tokens are defined", () => {
+    for (const t of ["--gap:", "--block-y:", "--section-y:"]) expect(tokens).toContain(t);
+  });
+
+  test("the grid and the room column come off the same token", () => {
+    expect(dsCss).toMatch(/\.pp-grid\s*\{[^}]*gap:\s*var\(--gap\)/);
+    expect(css).toMatch(/\.game-grid\s*\{[^}]*gap:\s*var\(--gap\)/);
+    expect(css).toMatch(/\.lcol, \.rcol\s*\{[^}]*gap:\s*var\(--gap\)/);
+  });
+
+  test("a flow gives every block in a band the same gap", () => {
+    expect(dsCss).toMatch(/\.pp-flow > \* \+ \*\s*\{\s*margin-top:\s*var\(--block-y\)/);
+    // The two children that would otherwise add a second gap on top of it.
+    expect(dsCss).toContain(".pp-flow > .pp-section-head { margin-bottom: 0; }");
+    expect(dsCss).toContain(".pp-flow > .pp-section { padding-block: 0; }");
+  });
+
+  /* The same law one level down. Every block inside a room panel used to bring
+     its own margin — 14px from three analytics sections, 0 from the timer's
+     button, 24px from a Grid — so the Countdown length hint sat 8px under the
+     select it describes and 0px above the button below it, and the panel's own
+     20px padding made the bottom look twice the top. */
+  test("a panel owns the gap between its children", () => {
+    expect(css).toMatch(/\.panel > \* \+ \*\s*\{\s*margin-top:\s*var\(--sp-4\)/);
+    expect(css).toMatch(/\.panel > \.ptitle \+ \*\s*\{\s*margin-top:\s*var\(--sp-3\)/);
+    // The eyebrow must not add a second gap under the one it just declared.
+    // Anchored: .workspace-panel is not a .panel and does carry its own.
+    expect(css).not.toMatch(/\n\.ptitle\s*\{[^}]*margin-bottom/s);
+  });
+
+  test("no panel child re-declares the gap the panel already gives it", () => {
+    for (const sel of ["a-align", "a-stories", "analytics-breakdown", "analytics-size-breakdown"]) {
+      expect(css).not.toMatch(new RegExp(`\\.${sel}\\s*\\{[^}]*margin-top`, "s"));
+    }
+  });
+});
+
+/* A 68ch cap is line length, not layout — but left-aligned inside a 1096px band
+   it left 382px hanging off the right, and a correct reading measure read as
+   "the text is narrow". The cap stays; the block centres. */
+describe("headings and reading measure", () => {
+  test("a band heading is centred, block and text", () => {
+    expect(dsCss).toMatch(/\.pp-section-head \{[^}]*margin-inline:\s*auto/);
+    expect(dsCss).toMatch(/\.pp-section-head \{[^}]*text-align:\s*center/);
+  });
+
+  test("a heading that shares a row with its content can take that axis", () => {
+    expect(dsCss).toContain(".pp-section-head--start");
+    expect(dsIndex).toContain('align === "start" && "pp-section-head--start"');
+    // The three that head a panel or a column rather than a band.
+    const admin = readFileSync(join(__dirname, "AdminDashboard.js"), "utf8");
+    expect(admin.match(/align="start"/g)).toHaveLength(2);
+    expect(app).toContain('align="start"\n              title="Your Team Rooms"');
+  });
+
+  test("prose keeps the reading cap and centres under it", () => {
+    expect(dsCss).toMatch(/\.pp-prose \{[^}]*max-width:\s*var\(--measure\)[^}]*margin-inline:\s*auto/);
+    // …and is never centred as text. Every line would start somewhere different.
+    expect(dsCss).not.toMatch(/\.pp-prose \{[^}]*text-align:\s*center/);
+  });
+});
+
+/* Priced in dollars: the audience is international, and a pound sign on a free
+   product reads as "this is a UK thing" before it reads as "this is free". */
+describe("currency", () => {
+  test("no pound sign survives in anything a user sees", () => {
+    for (const src of [app, readFileSync(join(__dirname, "AdminDashboard.js"), "utf8"),
+                       readFileSync(join(__dirname, "routeMeta.mjs"), "utf8")]) {
+      expect(src).not.toContain("£");
+    }
+    expect(app).not.toContain("POUNDS STERLING");
+  });
+});
+
+/* A round used to end in three places: the record button at the top of the
+   column above the timer, re-vote and new sprint below the story queue, and
+   end session below that. Deciding meant scrolling past the estimate to reach
+   the button that commits it. They are one row now, under the number. */
+describe("a finished round has one set of controls", () => {
+  const roundActions = app.slice(app.indexOf('className="round-actions"'),
+                                 app.indexOf('className="obs-controls"'));
+
+  test("record, re-vote, new sprint and end session are in the same row", () => {
+    for (const label of ["recordButtonLabel", "Re-vote", "New sprint", "End session"]) {
+      expect(roundActions).toContain(label);
+    }
+  });
+
+  test("the row sits under the estimate, not above it", () => {
+    // .avg-hero renders the agreed estimate; the actions must come after it in
+    // source order, which is the order they are read and painted in.
+    expect(app.indexOf('className="avg-hero"')).toBeLessThan(app.indexOf('className="round-actions"'));
+  });
+
+  test("the action bar above the estimate carries no button once revealed", () => {
+    // It is status only after the reveal — otherwise the number and the button
+    // that commits it are a scroll apart, which is what this replaced.
+    expect(app).toMatch(/const primary = revealed\s*\?\s*null/);
+  });
+
+  test("only one control commits the estimate", () => {
+    // The split-vote card had its own "Save selected estimate & …" button, so a
+    // facilitator saw two primaries doing the same write.
+    expect(app).not.toContain("Save selected estimate");
+    expect(app.match(/onClick=\{handleAdvanceToNextItem\}/g) || []).toHaveLength(1);
+  });
+
+  test("the confirm dialogs are written once each", () => {
+    // Three copies of the new-sprint confirm string drifted apart before.
+    expect(app.match(/Start a new sprint\? This clears/g) || []).toHaveLength(1);
+    expect(app.match(/End the session\? This disconnects/g) || []).toHaveLength(1);
+  });
+});
+
+/* The sprint snapshot is three numbers in a 300px rail. An auto-fit grid put
+   two on the first row and orphaned the third, and three columns is not the
+   answer either: a 28px value has no room in an 80px column, and shrinking the
+   number to fit repairs a layout problem with typography. */
+describe("the sprint snapshot is a stack, not a grid", () => {
+  test("the KPIs are not laid out by the auto-fit Grid", () => {
+    expect(app).not.toMatch(/<Grid[^>]*className="a-kpis"/);
+    expect(css).toMatch(/\.a-kpis\s*\{[^}]*flex-direction:\s*column/s);
+  });
+
+  test("each KPI reads label-left, value-right on one line", () => {
+    expect(css).toMatch(/\.a-kpis \.pp-stat\s*\{[^}]*justify-content:\s*space-between/s);
+  });
+
+  test("one sub-heading treatment for every section of the panel", () => {
+    // Team Alignment was sentence case while its two peers were tracked
+    // uppercase, so one panel announced three peer sections three ways.
+    const rule = css.match(/\.a-section-title,\s*\n\.a-align-title,\s*\n\.analytics-breakdown-title\s*\{[^}]*\}/s);
+    expect(rule).not.toBeNull();
+    expect(rule[0]).toContain("text-transform: uppercase");
   });
 });

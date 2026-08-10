@@ -1,4 +1,49 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+/* The design system. Importing it pulls in tokens.css, base.css and
+   components.css, which is what makes every --bg / --gold / --text-2 below
+   theme-aware: those names are now aliases of semantic roles defined once for
+   dark (the default) and once for light. See src/design-system/README.md.
+
+   The screens below are built from these components, not from a second set of
+   local ones. Where a class survives in the CSS block further down it is
+   layout that only this product has — the room grid, the playing-card face —
+   never a re-implementation of something in here. */
+import {
+  Accordion,
+  Alert,
+  Avatar,
+  Button,
+  Card,
+  Chip,
+  Choice,
+  ChoiceGrid,
+  ChoiceRow,
+  Container,
+  EmptyState,
+  Eyebrow,
+  Grid,
+  Hero,
+  Icon as DesignSystemIcon,
+  IconButton,
+  Modal,
+  Progress,
+  Prose,
+  rememberDialogOpener,
+  ResultsTable,
+  Row,
+  Section,
+  SectionHead,
+  SegmentedControl,
+  Select,
+  Stack,
+  StatTile,
+  TextField,
+  ThemeToggle,
+  Timer,
+  Toast,
+  ToastRegion,
+  VisuallyHidden,
+} from "./design-system";
 import { auth, db } from "./firebase";
 import {
   SITE_URL,
@@ -281,7 +326,6 @@ const ESTIMATION_MODES = {
 };
 const getEstMode = (mode) => ESTIMATION_MODES[mode] || ESTIMATION_MODES.stories;
 const INVALID_PLACEHOLDER_NAMES = new Set(["alex johnson", "e.g. alex johnson"]);
-const CIRC = 201.1;
 const uid = () => Math.random().toString(36).slice(2, 10);
 const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
 const homePath = () => "/";
@@ -297,62 +341,6 @@ const scrollBehavior = () =>
   window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 const revealElement = (el, block = "center") =>
   el?.scrollIntoView({ behavior: scrollBehavior(), block });
-// Modal plumbing every dialog needs and none of them had: Escape to close,
-// focus moved in on open, focus returned to the trigger on close, and Tab kept
-// inside the dialog (WCAG 2.1.2 — no keyboard trap means you can also get *out*
-// of the modal, which is exactly what returning focus achieves).
-// Set by whatever opens a dialog, read by useDialog. Capturing inside the
-// dialog's own effect is too late: React commits the re-render first, and an
-// autoFocus anywhere on the page behind it has already moved focus.
-let _dialogOpener = null;
-export function rememberDialogOpener() {
-  const el = document.activeElement;
-  _dialogOpener = el instanceof HTMLElement && el !== document.body ? el : null;
-}
-
-function useDialog(onClose) {
-  const ref = useRef(null);
-  // Captured once and never overwritten. StrictMode double-invokes effects in
-  // development, and re-capturing on the second mount would record the dialog's
-  // own close button as the thing to return focus to.
-  const openerRef = useRef(_dialogOpener);
-
-  // Restore focus BEFORE React unmounts the dialog. Doing it afterwards means
-  // racing the commit: the focused node gets removed, the browser resets focus
-  // to <body>, and any timer-based restore lands too late or not at all.
-  const close = useCallback(() => {
-    const opener = openerRef.current;
-    if (opener instanceof HTMLElement && document.body.contains(opener)) {
-      opener.focus();
-    }
-    onClose?.();
-  }, [onClose]);
-
-  useEffect(() => {
-    const node = ref.current;
-    node?.querySelector(
-      "[data-autofocus], input:not([type=hidden]), button, [href], select, textarea",
-    )?.focus?.();
-
-    const onKey = (e) => {
-      if (e.key === "Escape") { e.stopPropagation(); close(); return; }
-      if (e.key !== "Tab" || !node) return;
-      const focusable = [...node.querySelectorAll(
-        'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )].filter((el) => el.offsetParent !== null);
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
-    document.addEventListener("keydown", onKey, true);
-    return () => document.removeEventListener("keydown", onKey, true);
-  }, [close]);
-
-  return [ref, close];
-}
-
 // Clipboard writes fail on http origins, in some in-app browsers, and when the
 // user denies permission. Fall back to a hidden textarea, and always tell the
 // caller whether the copy actually happened so the UI never lies.
@@ -390,238 +378,18 @@ const rememberName = (name) => {
 const recallName = () => {
   try { return localStorage.getItem(NAME_STORAGE_KEY) || ""; } catch { return ""; }
 };
-const ini = (n = "") =>
-  n
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0] || "")
-    .join("")
-    .toUpperCase();
 
 /* ═══════════════════════════ CSS ═══════════════════════════ */
 const CSS = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --bg:       #07110e;
-  --bg2:      #0d1d19;
-  --surface:  rgba(15,32,27,0.76);
-  --surface2: rgba(22,44,38,0.92);
-  --surface3: rgba(10,24,20,0.96);
-  --border:   rgba(134,198,166,0.12);
-  --border2:  rgba(158,234,196,0.22);
-  --gold:     #f1b93f;
-  --gold2:    #ffd978;
-  --gold3:    #fff2be;
-  --goldA:    rgba(241,185,63,0.24);
-  --goldB:    rgba(241,185,63,0.14);
-  --mint:     #72f0b4;
-  --mint2:    #bfffe2;
-  --aqua:     #7ee6ff;
-  --cream:    #f5fbf7;
-  --cream2:   #b8d1c2;
-  --red:      #e04848;
-  --green:    #4bd889;
-  --blue:     #6ccff6;
-  --ink:      #08110e;
-  --card-bg:  #fffdfa;
-  --scroll-track: rgba(7,17,14,0.94);
-  --scroll-thumb: linear-gradient(180deg, #ffe08f 0%, #f5c659 42%, #dd9c22 100%);
-  --scroll-thumb-border: rgba(5,10,9,0.62);
-  --radius:   20px;
-  --shadow:   0 28px 90px rgba(0,0,0,0.58);
-  --shadow-soft: 0 20px 60px rgba(0,0,0,0.34);
-
-  /* ════════════════ DESIGN TOKENS ════════════════
-     The full rationale lives in docs/DESIGN-SYSTEM.md. The short version:
-     everything above this line is the brand palette and does not change.
-     Everything below is the system. New work uses these tokens, never a
-     raw px or hex value, because that is how a file ends up with 65
-     distinct font sizes and 86 distinct padding pairs, which is what this
-     one had before the tokens existed.
-     ═══════════════════════════════════════════════ */
-
-  /* Type scale — 16px base, ~1.25 major third. Eight steps, no more.
-     16px is the floor for anything a user types into: iOS silently zooms
-     the viewport when a focused input is below it. */
-  /* The floor is 13px, not 12px. This is a public tool and its audience is not
-     all twenty-five: the old scale bottomed out at 12px and 104 declarations
-     went under it anyway, the smallest rendered text on the home page measuring
-     9.3px. Nothing may be smaller than --fs-1, and --fs-1 is now legible. */
-  --fs-1: 0.8125rem;  /* 13px  micro labels, uppercase eyebrows. THE FLOOR. */
-  --fs-2: 0.9375rem;  /* 15px  helper and secondary text */
-  --fs-3: 1rem;       /* 16px  body and all interactive labels */
-  --fs-4: 1.125rem;   /* 18px  card titles, emphasised body */
-  --fs-5: 1.375rem;   /* 22px  section headings */
-  --fs-6: 1.75rem;    /* 28px  page headings */
-  --fs-7: 2.25rem;    /* 36px  hero */
-  --fs-8: 3rem;       /* 48px  display numerals (the agreed estimate) */
-
-  /* Light type on a dark ground blooms: the glyphs spread optically and read
-     thinner and tighter than the same size on white. The three-axis correction
-     is a little more leading, a little more tracking, and one step more weight.
-     Only the two small roles need it — display sizes have enough mass already. */
-  --fs-1-tracking: 0.012em;
-  --fs-2-tracking: 0.008em;
-
-  /* Line height travels with size: tight for display, loose for prose. */
-  --lh-tight: 1.15;
-  --lh-snug:  1.35;
-  --lh-body:  1.6;
-
-  --fw-regular: 400;
-  --fw-medium:  500;
-  --fw-semi:    600;
-  --fw-bold:    700;
-
-  /* Spacing — 4px base grid. Use these for padding, margin and gap. */
-  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
-  --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;
-  --sp-12: 48px; --sp-16: 64px;
-
-  --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-full: 999px;
-
-  /* Elevation — four steps. Anything not on this scale is a bug. */
-  --elev-0: none;
-  --elev-1: 0 1px 2px rgba(0,0,0,0.34);
-  --elev-2: 0 8px 24px rgba(0,0,0,0.40);
-  --elev-3: 0 24px 64px rgba(0,0,0,0.55);
-
-  /* Motion — exits run at ~65% of entrances so dismissals feel immediate. */
-  --dur-fast: 120ms;
-  --dur-base: 200ms;
-  --dur-slow: 320ms;
-  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
-  --ease-in:  cubic-bezier(0.4, 0.0, 1, 1);
-
-  /* Semantic text roles, mapped onto the brand palette. Opacities are
-     measured against --bg, not guessed: every one clears WCAG AA 4.5:1. */
-  --text-1: var(--cream);                 /* 15.8:1 primary */
-  --text-2: rgba(245,251,247,0.78);       /*  9.9:1 secondary */
-  --text-3: rgba(245,251,247,0.62);       /*  6.7:1 muted, the floor */
-  --text-on-gold: var(--ink);             /*  9.4:1 on --gold */
-
-  --action:  var(--gold);
-  --focus:   var(--gold2);
-  --danger:  var(--red);
-  --success: var(--green);
-  --info:    var(--blue);
-
-  /* Touch target floor. WCAG 2.2 AA (2.5.8) requires 24px; 44px is the
-     Apple HIG figure and the one that actually stops mis-taps on a phone. */
-  --tap-min: 44px;
-
-  /* Layering — a named scale so nothing gets a z-index of 99999 again. */
-  --z-base: 0; --z-sticky: 20; --z-overlay: 40; --z-modal: 100; --z-toast: 1000;
-}
-
-/* ════════════════ BUTTON SYSTEM ════════════════
-   One base class, four intents, three sizes. Intent is set through local
-   custom properties so a variant is three declarations rather than a new
-   class with its own padding, font and radius. This replaces the pattern
-   that produced 18 separate button classes.
-
-   Exactly one --primary per screen. If a screen needs two, the second one
-   is a --secondary; if that feels wrong, the screen is doing too much.
-   ═══════════════════════════════════════════════ */
-.btn {
-  --btn-bg: transparent;
-  --btn-fg: var(--text-1);
-  --btn-bd: var(--border2);
-  --btn-bg-hover: rgba(158,234,196,0.08);
-
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  min-height: var(--tap-min);
-  padding: var(--sp-2) var(--sp-5);
-  font-family: 'Outfit', system-ui, sans-serif;
-  font-size: var(--fs-3);
-  font-weight: var(--fw-semi);
-  line-height: var(--lh-tight);
-  letter-spacing: 0.01em;
-  text-align: center;
-  color: var(--btn-fg);
-  background: var(--btn-bg);
-  border: 1px solid var(--btn-bd);
-  border-radius: var(--r-md);
-  cursor: pointer;
-  /* Only transform and colour animate: never width, height or box-shadow
-     spread, which force layout on every frame. */
-  transition:
-    background-color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out);
-}
-.btn:hover:not(:disabled) { background-color: var(--btn-bg-hover); }
-.btn:active:not(:disabled) { transform: translateY(1px); }
-.btn:disabled,
-.btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
-
-/* A disabled primary must not read as a dimmer version of an enabled one.
-   Fading a gold gradient over dark green produces a muddy olive that looks
-   like a real, clickable button, which is precisely how the old Reveal
-   control ended up looking active while doing nothing. Disabled drops the
-   gradient entirely and becomes a flat, obviously inert surface. */
-.btn--primary:disabled,
-.btn--primary[aria-disabled="true"] {
-  background: var(--surface2);
-  color: var(--text-3);
-  border-color: var(--border);
-  box-shadow: none;
-  opacity: 1;
-}
-
-/* Icons inside buttons inherit colour and never shrink below their box. */
-.btn > svg { flex: none; width: 20px; height: 20px; }
-
-.btn--primary {
-  --btn-bg: linear-gradient(135deg, var(--gold2) 0%, var(--gold) 62%, #d99b1f 100%);
-  --btn-fg: var(--text-on-gold);
-  --btn-bd: transparent;
-  --btn-bg-hover: linear-gradient(135deg, var(--gold3) 0%, var(--gold2) 62%, var(--gold) 100%);
-  font-weight: var(--fw-bold);
-  box-shadow: var(--elev-2);
-}
-/* Gradients are not animatable, so the primary swaps its whole background. */
-.btn--primary:hover:not(:disabled) { background: var(--btn-bg-hover); }
-
-.btn--secondary {
-  --btn-bg: var(--surface2);
-  --btn-fg: var(--text-1);
-  --btn-bd: var(--border2);
-  --btn-bg-hover: rgba(34,64,54,0.96);
-}
-
-.btn--ghost {
-  --btn-bg: transparent;
-  --btn-fg: var(--text-2);
-  --btn-bd: transparent;
-}
-.btn--ghost:hover:not(:disabled) { --btn-fg: var(--text-1); }
-
-.btn--danger {
-  --btn-bg: transparent;
-  --btn-fg: #ff8a8a;
-  --btn-bd: rgba(224,72,72,0.42);
-  --btn-bg-hover: rgba(224,72,72,0.14);
-}
-
-/* Sizes change padding and type, never the 44px tap floor. */
-.btn--sm { padding: var(--sp-1) var(--sp-3); font-size: var(--fs-2); }
-.btn--lg { padding: var(--sp-4) var(--sp-6); font-size: var(--fs-4); border-radius: var(--r-lg); }
-.btn--block { width: 100%; }
-
-@media (prefers-reduced-motion: reduce) {
-  .btn { transition: none; }
-  .btn:active:not(:disabled) { transform: none; }
-}
-
-/* Icons sit on the text baseline and never scale with a parent's font-size,
-   so a 16px icon stays 16px next to a 22px heading. */
-.icon { flex: none; vertical-align: -0.18em; }
+/* The token block that used to live here now lives in
+   src/design-system/tokens.css, which App.js imports at the top of this file.
+   It defines the same names — plus the semantic roles the old palette is now
+   an alias of — once for dark (the default, on :root) and once for light
+   (opt-in, under [data-theme="light"]). Redeclaring any of them here would
+   pin the app to one theme, because this <style> tag is rendered from the
+   body and therefore wins over the imported stylesheet in <head>. */
 
 /* ════════════════ ROOM ACTION BAR ════════════════
    The single most important change to the room. Before this, the screen
@@ -640,23 +408,9 @@ const CSS = `
    which is where the hand already is.
    ═══════════════════════════════════════════════ */
 .action-bar {
-  position: sticky;
-  top: var(--sp-3);
-  z-index: var(--z-sticky);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-4);
-  background: var(--surface3);
-  border: 1px solid var(--border2);
-  border-radius: var(--r-lg);
-  box-shadow: var(--elev-2);
-}
-.action-bar-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-3);
+  /* The card is the design system's; what is local is that this one sticks to
+     the top of the column on a desktop and docks to the bottom on a phone. */
+  position: sticky; top: var(--sp-3); z-index: var(--z-sticky);
 }
 .action-bar-title {
   font-size: var(--fs-1);
@@ -665,41 +419,13 @@ const CSS = `
   text-transform: uppercase;
   color: var(--text-3);
 }
-/* Tabular figures so "3 of 12" does not reflow as the count climbs. */
-.action-bar-count {
-  font-size: var(--fs-2);
-  font-weight: var(--fw-semi);
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-}
 .action-bar-hint {
   font-size: var(--fs-2);
   line-height: var(--lh-snug);
   color: var(--text-3);
   text-align: center;
 }
-.action-bar-secondary {
-  display: flex;
-  gap: var(--sp-2);
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* Progress track. Doubles as the "are we waiting on anyone" signal, so the
-   facilitator does not have to count avatars in the sidebar. */
-.action-bar-track {
-  height: 4px;
-  border-radius: var(--r-full);
-  background: rgba(158,234,196,0.14);
-  overflow: hidden;
-}
-.action-bar-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--gold) 0%, var(--gold2) 100%);
-  transition: width var(--dur-base) var(--ease-out);
-}
-.action-bar-fill.is-complete {
+.pp-progress.is-complete .pp-progress__bar {
   background: linear-gradient(90deg, var(--mint) 0%, var(--success) 100%);
 }
 
@@ -715,9 +441,6 @@ const CSS = `
     padding-bottom: max(var(--sp-4), env(safe-area-inset-bottom));
     box-shadow: var(--elev-3);
   }
-}
-@media (prefers-reduced-motion: reduce) {
-  .action-bar-fill { transition: none; }
 }
 
 html { font-size: 16px; scroll-behavior: smooth; background-color: var(--bg); }
@@ -745,9 +468,9 @@ html, body, * {
 body {
   font-family: 'Outfit', sans-serif;
   background:
-    radial-gradient(circle at top, rgba(40,124,88,0.24), transparent 34%),
-    radial-gradient(circle at 82% 14%, rgba(126,230,255,0.08), transparent 22%),
-    linear-gradient(180deg, #091411 0%, #07110e 42%, #06100d 100%);
+    radial-gradient(circle at top, var(--page-wash-1), transparent 34%),
+    radial-gradient(circle at 82% 14%, var(--page-wash-2), transparent 22%),
+    var(--page-ground);
   min-height: 100vh;
   color: var(--cream);
   overflow-x: hidden;
@@ -768,8 +491,8 @@ body::before {
   content: '';
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    radial-gradient(ellipse 80% 55% at 50% 0%, rgba(34,120,78,0.30) 0%, transparent 62%),
-    radial-gradient(ellipse 46% 36% at 88% 92%, rgba(241,185,63,0.11) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 55% at 50% 0%, var(--felt-wash-1) 0%, transparent 62%),
+    radial-gradient(ellipse 46% 36% at 88% 92%, var(--felt-wash-2) 0%, transparent 58%),
     url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
   background-size: cover, cover, 200px 200px;
 }
@@ -811,154 +534,45 @@ body::before {
 .consensus-burst-emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
 .consensus-burst-text {
   font-family: 'Outfit', sans-serif;
-  font-size: 2.4rem; font-weight: 700; color: var(--gold2);
+  font-size: 2.4rem; font-weight: 700; color: var(--gold-ink2);
   letter-spacing: -0.02em;
   text-shadow: 0 0 40px rgba(201,145,42,.8), 0 4px 20px rgba(0,0,0,.8);
   line-height: 1.1;
 }
 .consensus-burst-sub {
-  font-size: .9rem; color: rgba(239,242,247,.90);
+  font-size: .9rem; color: var(--text-1);
   margin-top: 6px; font-weight: 300; letter-spacing: .5px;
   text-shadow: 0 2px 8px rgba(0,0,0,.9);
 }
-
-/* ══════════════════════ FACILITATOR RESOLUTION OVERLAY ══════════════════════ */
-.facilitator-overlay {
-  width: min(780px, 100%);
-  max-height: min(88vh, 760px);
-  overflow-y: auto;
-  border-radius: 28px;
-  border: 1px solid rgba(241,185,63,.28);
-  background:
-    radial-gradient(circle at top, rgba(241,185,63,.12), rgba(241,185,63,0) 48%),
-    linear-gradient(180deg, rgba(15,32,27,.98), rgba(8,18,15,.98));
-  box-shadow: 0 36px 100px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.05);
-  padding: 28px 28px 24px;
-  position: relative;
-}
-.facilitator-overlay-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(241,185,63,.22);
-  background: rgba(241,185,63,.10);
-  color: var(--gold2);
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-}
-.facilitator-overlay-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 18px;
-}
-.facilitator-overlay-summary-card {
-  padding: 14px 14px 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(158,234,196,.14);
-  background: rgba(255,255,255,.04);
-}
-.facilitator-overlay-summary-k {
-  display: block;
-  margin-bottom: 6px;
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-}
-.facilitator-overlay-summary-v {
-  display: block;
-  color: var(--cream);
-  font-size: .98rem;
-  font-weight: 600;
-  line-height: 1.35;
-}
-.facilitator-overlay-summary-v.gold { color: var(--gold2); }
-.facilitator-overlay-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.facilitator-overlay-chip {
-  min-width: 68px;
-  padding: 13px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(255,255,255,.04);
-  color: var(--cream);
-  font-family: 'Outfit', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all .18s ease;
-}
-.facilitator-overlay-chip:hover {
-  border-color: rgba(241,185,63,.34);
-  background: rgba(241,185,63,.10);
-  transform: translateY(-1px);
-}
+.facilitator-overlay-summary-v.gold { color: var(--gold-ink2); }
 .facilitator-overlay-chip.active {
   border-color: rgba(241,185,63,.56);
   background: linear-gradient(180deg, rgba(241,185,63,.22), rgba(241,185,63,.11));
-  color: var(--gold3);
+  color: var(--gold-ink3);
   box-shadow: 0 16px 34px rgba(241,185,63,.14), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.facilitator-overlay-actions {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
-}
-.facilitator-overlay-revote {
-  flex: 0 0 auto;
-  min-width: 180px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(158,234,196,.16);
-  background: rgba(255,255,255,.04);
-  color: rgba(239,242,247,.86);
-  font-family: 'Outfit', sans-serif;
-  font-size: .86rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .18s ease;
-}
-.facilitator-overlay-revote:hover {
-  background: rgba(255,255,255,.08);
-  border-color: rgba(158,234,196,.26);
-}
-@media (max-width: 680px) {
-  .facilitator-overlay { padding: 22px 18px 20px; }
-  .facilitator-overlay-summary { grid-template-columns: 1fr; }
-  .facilitator-overlay-actions { flex-direction: column; }
-  .facilitator-overlay-revote { width: 100%; min-width: 0; }
 }
 
 /* ══════════════════════ JOIN SCREEN ══════════════════════ */
+/* Edge to edge, like every band. The gutters belong to the containers inside
+   it — the form column and the SEO band each carry their own. */
 .join-wrap {
   flex: 1; display: flex; flex-direction: column; align-items: center;
-  padding: 40px 24px 80px; animation: fadeIn .4s ease; overflow-y: auto;
+  padding: var(--sp-10) 0 var(--sp-20); animation: fadeIn .4s ease; overflow-y: auto;
 }
 /* Single column by default — the hero reads first, then the form, which is
    the right order on a phone where they cannot share a row. */
-.join-layout { width: 100%; max-width: 440px; }
+.join-layout { max-width: calc(440px + var(--gutter) * 2); }
 .join-mark { display: flex; justify-content: center; margin-bottom: var(--sp-5); }
 
 .join-box {
   width: 100%; max-width: 440px;
   background:
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
-    linear-gradient(155deg, rgba(12,28,23,.95) 0%, rgba(7,15,13,.98) 58%, rgba(4,10,9,1) 100%);
-  border: 1px solid rgba(158,234,196,.16);
+    linear-gradient(155deg, var(--surface) 0%, var(--surface2) 58%, var(--surface3) 100%);
+  border: 1px solid var(--border);
   border-radius: 28px;
   padding: 48px 40px 44px;
-  box-shadow: 0 44px 110px rgba(0,0,0,.64), inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 0 1px rgba(126,230,255,.04);
+  box-shadow: 0 44px 110px var(--shadow-cast), inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 0 1px rgba(126,230,255,.04);
   position: relative; overflow: hidden;
   animation: fadeUp .45s ease;
   backdrop-filter: blur(24px) saturate(1.2);
@@ -969,12 +583,6 @@ body::before {
   background: linear-gradient(90deg, transparent, var(--mint), var(--gold2), var(--aqua), transparent);
   background-size: 300% auto; animation: shimmer 3s linear infinite;
 }
-.join-suits {
-  display: flex; justify-content: center; gap: 16px;
-  margin-bottom: 28px; font-size: 1.4rem;
-}
-.join-suits span { opacity: .12; }
-.join-suits span:nth-child(2), .join-suits span:nth-child(4) { color: var(--red); opacity: .18; }
 .join-title {
   font-family: 'Outfit', sans-serif;
   font-size: clamp(1.75rem, 4.4vw, 2.35rem); font-weight: 700;
@@ -983,7 +591,7 @@ body::before {
   text-shadow: 0 12px 32px rgba(0,0,0,.42);
 }
 .join-sub {
-  text-align: center; color: rgba(245,251,247,.76);
+  text-align: center; color: var(--text-2);
   font-size: .9rem; margin-bottom: 22px; font-weight: 300; letter-spacing: .5px;
   max-width: 44ch; margin-left: auto; margin-right: auto; line-height: 1.55;
 }
@@ -998,9 +606,9 @@ body::before {
 }
 .trust-strip li {
   font-size: var(--fs-1); font-weight: 500; letter-spacing: var(--fs-1-tracking);
-  color: rgba(239,242,247,.78);
+  color: var(--text-2);
   background: rgba(255,255,255,.045);
-  border: 1px solid rgba(158,234,196,.14);
+  border: 1px solid var(--border);
   border-radius: 999px; padding: 5px 11px;
   white-space: nowrap;
 }
@@ -1021,14 +629,16 @@ body::before {
    literal, so a backtick here ends the string and breaks the build. */
 @media (min-width: 1024px) {
   .join-layout {
-    max-width: 1080px;
+    /* The one page measure — the hero's first letter lands on the same line as
+       the brand in the header above it. */
+    max-width: var(--container);
     display: grid;
     /* 480px, not the old 440: raising the type floor widened every option
        label, and at 440 minus 80px of card padding "Powers of 2" and the
        "Create Room" tab both wrapped to two lines. Widen the container rather
        than shrink the type back — the horizontal space is free here. */
     grid-template-columns: minmax(0, 1fr) 480px;
-    gap: var(--sp-12);
+    gap: var(--block-y);
     align-items: center;
   }
   /* 48px of top padding was sized for a card that opened with a logo and a
@@ -1074,33 +684,10 @@ body::before {
   border: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
 }
-.workspace-panel .ptitle { margin-bottom: var(--sp-2); }
-.workspace-panel-sub {
-  margin: 0 0 var(--sp-4);
-  color: var(--text-3);
-  font-size: var(--fs-2);
-  letter-spacing: var(--fs-2-tracking);
-  line-height: var(--lh-body);
-}
-.workspace-room-list {
-  list-style: none;
-  display: grid;
-  gap: var(--sp-3);
-  margin: 0;
-  padding: 0;
-}
-.workspace-room-card {
-  min-width: 0;
-  padding: var(--sp-4);
-  border-radius: var(--r-md);
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,.025);
-}
-.workspace-room-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
+/* Not a .panel, so it carries its own gap — but the same eyebrow gets the same
+   gap under it wherever it appears. */
+.workspace-panel .ptitle { margin-bottom: var(--sp-3); }
+.workspace-room-card { min-width: 0;
 }
 .workspace-room-name {
   min-width: 0;
@@ -1111,22 +698,6 @@ body::before {
   letter-spacing: -.01em;
   color: var(--text-1);
   overflow-wrap: anywhere;
-}
-.workspace-room-chip {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-  padding: var(--sp-1) var(--sp-2);
-  border-radius: var(--r-full);
-  border: 1px solid rgba(241,185,63,.18);
-  background: rgba(241,185,63,.08);
-  color: var(--gold2);
-  font-size: var(--fs-1);
-  font-weight: var(--fw-bold);
-  letter-spacing: .1em;
-  line-height: var(--lh-tight);
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 .workspace-team-url {
   display: grid;
@@ -1154,15 +725,9 @@ body::before {
 }
 /* Wide enough for both labels, so confirming the copy does not shove the URL
    beside it sideways. */
-.workspace-team-url .btn { min-width: 112px; }
+.workspace-team-url .pp-btn { min-width: 112px; flex: none; }
 /* Confirmation is a colour change on the control that was pressed, so the
    label and the state cannot end up disagreeing. */
-.workspace-team-url .btn.copied {
-  --btn-fg: var(--gold2);
-  --btn-bd: rgba(241,185,63,.28);
-  --btn-bg: rgba(241,185,63,.10);
-}
-.workspace-room-open { margin-top: var(--sp-3); }
 
 /* Renaming both rooms happens once per account; opening one happens every
    sprint. A native <details> keeps the rare job on the page, keyboard
@@ -1197,39 +762,12 @@ body::before {
 .workspace-rename[open] .workspace-rename-summary::before { transform: rotate(45deg); }
 .workspace-rename-summary:hover { color: var(--text-1); }
 .workspace-rename-body { padding-bottom: var(--sp-2); }
-.workspace-rename-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--sp-2);
-}
-.workspace-rename-row input {
-  width: 100%;
-  min-width: 0;
-  min-height: var(--tap-min);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--r-md);
-  border: 1px solid var(--border);
-  background: rgba(7,17,14,.52);
-  color: var(--text-1);
-  font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-3);
-  outline: none;
-}
-.workspace-rename-hint {
-  margin-top: var(--sp-2);
-  color: var(--text-3);
-  font-size: var(--fs-1);
-  letter-spacing: var(--fs-1-tracking);
-  line-height: var(--lh-body);
-  overflow-wrap: anywhere;
-}
-.workspace-rename-hint strong { color: var(--text-2); font-weight: var(--fw-semi); }
 /* Reserved whether or not it has anything to say: the confirmation must not
    push the panel down as it arrives and pull it back up as it goes. */
 .workspace-rename-status {
   min-height: 1.4em;
   margin-top: var(--sp-1);
-  color: var(--mint);
+  color: var(--mint-ink);
   font-size: var(--fs-1);
   letter-spacing: var(--fs-1-tracking);
   line-height: var(--lh-snug);
@@ -1260,7 +798,6 @@ body::before {
     grid-template-columns: 1fr;
     padding: var(--sp-3);
   }
-  .workspace-rename-row { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 1024px) {
@@ -1269,26 +806,11 @@ body::before {
   .join-layout--workspace { align-items: start; }
   .join-side + .join-box { margin-top: 0; }
 }
-.lbl {
-  display: block; font-size: var(--fs-1); font-weight: 600;
-  letter-spacing: 1.8px; text-transform: uppercase;
-  color: rgba(239,242,247,.75); margin-bottom: 8px;
-}
-.inp {
-  width: 100%; padding: 13px 16px;
-  background: rgba(255,255,255,.04); border: 1px solid rgba(158,234,196,.14);
-  border-radius: var(--r-md);
-  font-family: 'Outfit', sans-serif; font-size: .95rem;
-  color: var(--cream); outline: none; margin-bottom: 20px;
-  transition: border-color .2s, box-shadow .2s, background .2s, transform .2s;
-}
-.inp:focus { border-color: rgba(126,230,255,.55); background: rgba(255,255,255,.07); box-shadow: 0 0 0 4px rgba(126,230,255,.10), 0 14px 32px rgba(0,0,0,.22); }
-.inp:hover:not(:focus) { background: rgba(255,255,255,.06); border-color: rgba(158,234,196,.22); }
-.inp::placeholder { color: rgba(239,242,247,.66); }
 /* ═══════════════════════════════════════════════
    CHOICE — a selectable option in an exclusive group
    ───────────────────────────────────────────────
-   The second primitive, after .btn. A .btn performs an action; a .choice
+   The second primitive, after the design system's Button. A button performs
+   an action; a .choice
    holds state. Role, deck, estimation mode and the join tabs are all the
    same shape — label, optional description, selected-or-not — and each had
    grown its own class with its own padding, type and hover treatment.
@@ -1329,33 +851,16 @@ body::before {
 .choice[aria-pressed="true"] {
   background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08));
   border-color: rgba(241,185,63,.34);
-  color: var(--gold2);
+  color: var(--gold-ink2);
 }
-.choice-label { font-size: var(--fs-3); font-weight: var(--fw-semi); line-height: var(--lh-snug); }
-.choice-desc  { font-size: var(--fs-2); font-weight: var(--fw-regular); line-height: var(--lh-snug); color: var(--text-3); }
-.choice[aria-pressed="true"] .choice-desc { color: rgba(255,217,120,.78); }
+.choice[aria-pressed="true"] .choice-desc { color: var(--gold-ink2); }
 .choice > svg { flex: none; }
 
-/* Label-only options (the join tabs) sit on one line and drop the stacking. */
-.choice--compact { flex-direction: row; padding: var(--sp-2) var(--sp-3); }
-.choice--compact .choice-label { font-size: var(--fs-2); }
-
-.choice-row  { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-5); }
-.choice-grid { display: grid; grid-template-columns: repeat(var(--choice-cols, 2), 1fr); gap: var(--sp-2); margin-bottom: var(--sp-5); }
-
-.err { color: #e74c3c; font-size: var(--fs-1); margin-bottom: 12px; text-align: center; }
-/* A message about one field sits under that field and reads left, like the
-   label above it. The field gives up its own bottom margin so the two read as
-   one unit rather than two loose lines. */
-.err--field { text-align: left; line-height: var(--lh-snug); margin-bottom: var(--sp-5); }
+.err { color: var(--danger); font-size: var(--fs-1); margin-bottom: 12px; text-align: center; }
 .inp:has(+ .err--field),
 .join-note:has(+ .err--field),
 .choice-row:has(+ .err--field),
 .workspace-room-list:has(+ .err--field) { margin-bottom: var(--sp-2); }
-
-/* Team Room preview chip */
-.team-code-preview { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(180deg, rgba(126,230,255,.10), rgba(241,185,63,.08)); border: 1px solid rgba(126,230,255,.18); border-radius: 12px; padding: 10px 12px; margin-bottom: 18px; width: 100%; }
-.tcp-label { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.65); white-space: nowrap; }
 .tcp-code { font-family: monospace; font-size: .9rem; font-weight: 700; color: var(--mint2); letter-spacing: .1em; flex: 1; }
 
 /* Deck and estimation-mode pickers use .choice-grid; see the CHOICE block. */
@@ -1393,182 +898,71 @@ body::before {
   .session-grid { grid-template-columns: 1fr; gap: var(--sp-2); }
 }
 
-/* Label-only option, one line, no description underneath. */
-.choice--tight { flex-direction: row; padding: var(--sp-2) var(--sp-2); }
-.choice--tight .choice-label { font-size: var(--fs-2); }
-
 /* ══════════════════════ SEO CONTENT SECTION ══════════════════════ */
-.seo-section {
-  width: 100%; max-width: 860px; margin-top: 56px;
-  color: rgba(239,242,247,.82); font-family: 'Outfit', sans-serif;
-}
-.seo-section h2.seo-h2 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.85rem; font-weight: 700;
-  color: var(--gold2); text-align: center;
-  margin-bottom: 16px; letter-spacing: -0.02em; line-height: 1.25;
-}
-.seo-intro {
-  text-align: center; font-size: .95rem; line-height: 1.7;
-  color: rgba(239,242,247,.72); max-width: 640px;
-  margin: 0 auto 48px; font-weight: 300;
-}
-.seo-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 44px;
-}
-.seo-card {
-  background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.10);
-  border-radius: 16px; padding: 28px 24px;
-}
-.seo-section h3.seo-h3 {
-  font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700;
-  color: var(--gold3); margin-bottom: 12px; letter-spacing: .3px;
-}
-.seo-section h4.seo-h4 {
-  font-family: 'Outfit', sans-serif; font-size: .9rem; font-weight: 600;
-  color: rgba(239,242,247,.90); margin-bottom: 8px;
-}
-.seo-p {
-  font-size: .875rem; line-height: 1.75; color: rgba(239,242,247,.68);
-  margin-bottom: 0; font-weight: 300;
-}
+/* A band: full width, its own vertical rhythm from .pp-section, its content
+   centred by the .pp-container inside it. It sets no width of its own. */
+.seo-section { width: 100%; }
 .seo-ol, .seo-ul {
-  font-size: .875rem; line-height: 1.8; color: rgba(239,242,247,.68);
+  line-height: var(--lh-body); color: var(--text-2);
   margin: 0; padding-left: 1.3em; font-weight: 300;
 }
-.seo-ul { list-style: none; padding-left: 0; }
-.seo-ul li { padding-left: 1.4em; position: relative; margin-bottom: 6px; }
-.seo-ul li::before { content: "♦"; position: absolute; left: 0; color: var(--gold); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); top: .35em; opacity: .7; }
-.seo-ul strong { color: rgba(239,242,247,.88); font-weight: 600; }
+/* Inside a Card, so it takes the card body's size. */
+.seo-ol { font-size: var(--fs-2); }
+/* A list of sentences is prose: same size, same reading cap, same centred block
+   as the paragraph and the heading around it — at 14px its own 68ch resolved
+   89px narrower than theirs and the list sat visibly inset between them. Only
+   the card grid gets the full band. */
+.seo-ul {
+  list-style: none; padding-left: 0; font-size: var(--fs-3);
+  max-width: var(--measure); margin-inline: auto;
+}
+.seo-ul li { padding-left: 1.4em; position: relative; margin-bottom: var(--sp-2); }
+.seo-ul li::before { content: "♦"; position: absolute; left: 0; color: var(--gold-ink); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); top: .35em; opacity: .7; }
+.seo-ul strong { color: var(--text-1); font-weight: 600; }
 .seo-inline-link {
-  color: var(--gold2);
+  color: var(--gold-ink2);
   text-decoration: none;
   font-weight: 600;
 }
-.seo-inline-link:hover { color: var(--gold3); text-decoration: underline; }
+.seo-inline-link:hover { color: var(--gold-ink3); text-decoration: underline; }
 .scroll-target { scroll-margin-top: 92px; }
 #plans.scroll-target { scroll-margin-top: 72px; }
-.seo-plan-section {
-  background: rgba(255,255,255,.045);
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 16px;
-  padding: 28px 24px;
-  margin-bottom: 44px;
-}
-.seo-plan-intro {
-  text-align: center;
-  max-width: 640px;
-  margin: 0 auto 20px;
-}
-.seo-plan-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.seo-plan-card {
-  padding: 20px;
-  border-radius: 16px;
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.08);
-}
 .seo-plan-card.pro {
   background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(241,185,63,.04));
   border-color: rgba(241,185,63,.22);
 }
-.seo-plan-topline {
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.66);
-  margin-bottom: 10px;
-}
-.seo-plan-card.pro .seo-plan-topline { color: var(--gold2); }
-.seo-plan-price {
-  font-size: 1.8rem;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  color: var(--cream);
-  margin-bottom: 12px;
-}
-.seo-plan-card.pro .seo-plan-price { color: var(--gold2); }
+.seo-plan-card.pro .seo-plan-topline { color: var(--gold-ink2); }
+.seo-plan-card.pro .seo-plan-price { color: var(--gold-ink2); }
 .seo-plan-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  color: rgba(239,242,247,.78);
+  color: var(--text-2);
   font-size: .86rem;
   line-height: 1.55;
 }
 .seo-plan-list li::before {
   content: "✓";
-  color: var(--gold2);
+  color: var(--gold-ink2);
   margin-right: 10px;
 }
-.seo-plan-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 18px;
-}
-.seo-plan-cta { min-width: 220px; }
-.seo-features {
-  background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.10);
-  border-radius: 16px; padding: 28px 24px; margin-bottom: 44px;
-}
-.seo-faq { margin-top: 0; }
-.seo-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-.seo-faq-item {
-  background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 12px; padding: 20px 18px;
-}
-.seo-faq-item .seo-p { margin-top: 4px; }
-.seo-divider {
-  width: 60px; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  margin: 44px auto;
-}
-@media (max-width: 680px) {
-  .seo-grid, .seo-faq-grid, .seo-plan-grid { grid-template-columns: 1fr; }
-  .seo-section h2.seo-h2 { font-size: 1.5rem; }
-  .seo-section { margin-top: 40px; }
-}
-
+.seo-plan-actions { justify-content: center; }
 /* ══════════════════════ ROOM HEADER (game view) ══════════════════════
    Sits below the global NavBar — top: 64px keeps it stacked correctly.
    Full .hdr override is in the new CSS block appended at end of CSS string. */
 .hdr {
-  background: rgba(7,14,8,.95);
+  background: var(--surface-bar-solid);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(20px);
-  position: sticky; top: 64px; z-index: 100; padding: 0 24px;
+  position: sticky; top: 64px; z-index: 100;
 }
 .hdr-in {
-  max-width: 1160px; margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;
-  min-height: 60px; gap: 12px; flex-wrap: wrap; padding: 10px 0;
+  min-height: 60px; gap: var(--sp-3); flex-wrap: wrap; padding-block: var(--sp-3);
 }
 .hdr-l { display: flex; align-items: center; gap: 12px; }
-.btn-back {
-  display: flex; align-items: center; gap: 5px;
-  padding: 8px 14px; border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.14); background: rgba(255,255,255,.025);
-  color: rgba(245,251,247,.76); font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-1); cursor: pointer; transition: all .2s;
-}
-.btn-back:hover { background: rgba(255,255,255,.07); color: var(--cream); border-color: rgba(158,234,196,.24); }
-.logo-txt {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.3rem; font-weight: 700; color: var(--cream); letter-spacing: -.02em;
-}
 .hdr-c { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
-.badge {
-  background: rgba(255,255,255,.045); border: 1px solid rgba(158,234,196,.15);
-  border-radius: 100px; padding: 5px 12px;
-  font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase;
-  color: rgba(245,251,247,.82);
-}
-.badge-gold { background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); border-color: rgba(241,185,63,.28); color: rgba(255,217,120,.88); }
 .hdr-r { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .hdr-invite {
   display: flex;
@@ -1591,11 +985,11 @@ body::before {
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: rgba(239,242,247,.66);
+  color: var(--text-3);
 }
 .hdr-invite-helper {
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
-  color: rgba(239,242,247,.62);
+  color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1609,81 +1003,52 @@ body::before {
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
   color: var(--mint2);
 }
-.btn-sm {
-  display: flex; align-items: center; gap: 5px;
-  padding: 8px 13px; border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.14); background: rgba(255,255,255,.03);
-  color: rgba(245,251,247,.82); font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-1); cursor: pointer; transition: all .2s;
-}
-.btn-sm:hover { background: rgba(255,255,255,.08); color: var(--cream); }
 
 /* ══════════════════════ LAYOUT ══════════════════════ */
-.game-body { max-width: 1160px; margin: 0 auto; padding: 24px 24px 80px; width: 100%; }
-.game-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
-.lcol, .rcol { display: flex; flex-direction: column; gap: 16px; }
+.game-body { padding-block: var(--sp-6) var(--sp-20); }
+.game-grid { display: grid; grid-template-columns: 1fr 300px; gap: var(--gap); align-items: start; }
+.lcol, .rcol { display: flex; flex-direction: column; gap: var(--gap); }
 
 /* ══════════════════════ PANEL ══════════════════════ */
 .panel {
   background:
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
-    linear-gradient(180deg, rgba(15,32,27,.84), rgba(9,21,18,.96));
-  border: 1px solid rgba(158,234,196,.12); border-radius: var(--radius);
-  padding: 20px; backdrop-filter: blur(10px);
+    linear-gradient(180deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--sp-5); backdrop-filter: blur(10px);
   box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,.04);
 }
 .panel-gold { border-color: rgba(241,185,63,.24); box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(241,185,63,.04); }
+/* A panel owns its vertical rhythm; its children do not bring their own.
+   Every block inside one used to declare a margin of its own — 14px from three
+   analytics sections, 0 from the timer's button, 24px from a Grid — so the gap
+   above a control and the gap below it were never the same number, and the
+   Countdown length hint ended up 8px from the select it describes and 0px from
+   the button underneath. Three numbers now, largest last: 12 under the panel's
+   own eyebrow, 16 between blocks, 20 to the edge. A block that needs more says
+   so after this rule (.round-actions). */
+.panel > * + * { margin-top: var(--sp-4); }
+.panel > .ptitle + * { margin-top: var(--sp-3); }
 .ptitle {
   font-size: var(--fs-1); font-weight: 600; letter-spacing: 2.5px;
-  text-transform: uppercase; color: rgba(239,242,247,.62);
-  margin-bottom: 14px; display: block;
+  text-transform: uppercase; color: var(--text-3);
+  display: block;
 }
-
-/* ══════════════════════ TIMER ══════════════════════ */
-.start-btn {
-  width: 100%; padding: 16px; border: none; border-radius: var(--r-md);
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 58%, #fff0b0 100%);
-  color: var(--ink); font-family: 'Outfit', sans-serif;
-  font-size: 1rem; font-weight: 700; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  box-shadow: 0 16px 36px rgba(241,185,63,.28), inset 0 1px 0 rgba(255,255,255,.48);
-  transition: all .2s; animation: glow 3s ease infinite; letter-spacing: .3px;
-}
-.start-btn:hover { transform: translateY(-2px); box-shadow: 0 22px 44px rgba(241,185,63,.34), inset 0 1px 0 rgba(255,255,255,.56); }
-.tsel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.tsel-wrap { position: relative; }
-.tsel-wrap::after { content: '▾'; position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--gold); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); pointer-events: none; }
-.tsel {
-  appearance: none; padding: 9px 30px 9px 13px;
-  background: rgba(255,255,255,.07); border: 1px solid rgba(201,146,42,.35);
-  color: var(--gold2); border-radius: 8px;
-  font-family: 'Outfit', sans-serif; font-size: .85rem;
-  cursor: pointer; outline: none; transition: border-color .2s, background .2s;
-}
-.tsel:hover { background: rgba(255,255,255,.10); border-color: rgba(201,146,42,.55); }
-.tsel option { background: #122018; }
 .ring-area {
-  display: flex; align-items: center; gap: 16px;
-  padding: 14px; background: rgba(255,255,255,.03);
-  border-radius: 16px; border: 1px solid rgba(158,234,196,.10);
+  display: flex; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-4); background: var(--tint-raise);
+  border-radius: var(--r-md); border: 1px solid var(--border);
 }
 .ring-area.urgent { animation: urgentBg 1s ease infinite; }
-.ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
-.rsv { transform: rotate(-90deg); }
-.rt { fill: none; stroke: rgba(255,255,255,.05); stroke-width: 6; }
-.rp { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke .3s; }
-.rnum { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Outfit', sans-serif; font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; color: var(--cream); }
-.rnum.urgent { color: #e74c3c; }
+.rnum.urgent { color: var(--danger); }
 .rtxt { flex: 1; }
-.rstatus { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 3px; color: rgba(245,251,247,.74); }
-.rstatus.warn { color: #e67e22; } .rstatus.danger { color: #e74c3c; }
-.rhint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.68); margin-top: 3px; }
-.btn-stop { margin-top: 8px; padding: 7px 12px; border-radius: 10px; border: 1px solid rgba(158,234,196,.14); background: rgba(255,255,255,.03); color: rgba(245,251,247,.75); font-family: 'Outfit', sans-serif; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); cursor: pointer; transition: all .2s; }
-.btn-stop:hover { background: rgba(255,255,255,.08); color: var(--cream); }
-.waiting-hint { font-size: var(--fs-1); color: rgba(239,242,247,.62); font-style: italic; text-align: center; padding: 8px 0; }
+.rstatus { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: var(--sp-1); color: var(--text-2); }
+.rstatus.warn { color: var(--warning); } .rstatus.danger { color: var(--danger); }
+.rhint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); }
+.waiting-hint { font-size: var(--fs-1); color: var(--text-3); font-style: italic; text-align: center; padding: var(--sp-2) 0; }
 
 /* ══════════════════════ PLAYING CARDS ══════════════════════ */
-.cards-grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 4px 0; }
+.cards-grid { display: flex; flex-wrap: wrap; gap: var(--sp-3); padding: var(--sp-1) 0; }
 .pcard {
   width: 96px; height: 136px; position: relative;
   display: block;
@@ -1706,7 +1071,7 @@ body::before {
   width: 100%; height: 100%;
   background: linear-gradient(160deg, #ffffff 0%, #fdf6e8 100%);
   border-radius: 12px; border: 1px solid rgba(0,0,0,.12);
-  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px rgba(0,0,0,.45);
+  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px var(--shadow-card);
   position: relative; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   transition: background .15s;
@@ -1714,7 +1079,7 @@ body::before {
 .pcard.sel .pcard-inner {
   background: linear-gradient(160deg, #fffde8 0%, #fff6c0 100%);
   border-color: rgba(201,145,42,.65);
-  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px rgba(0,0,0,.5), 0 0 0 2.5px rgba(201,145,42,.9);
+  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px var(--shadow-card), 0 0 0 2.5px rgba(201,145,42,.9);
 }
 /* Corner pip — top-left */
 .pcard-tl {
@@ -1727,82 +1092,79 @@ body::before {
   display: flex; flex-direction: column; align-items: center; line-height: 1;
   transform: rotate(180deg);
 }
-.pcard-num      { font-family: 'Outfit', sans-serif; font-size: .95rem; font-weight: 700; color: #1a1208; line-height: 1; letter-spacing: -0.02em; }
+.pcard-num      { font-family: 'Outfit', sans-serif; font-size: .95rem; font-weight: 700; color: var(--text-on-gold); line-height: 1; letter-spacing: -0.02em; }
 .pcard-suit-sm  { font-size: var(--fs-1); line-height: 1; margin-top: 2px; }
 .pcard-center   { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
-.pcard-bignum   { font-family: 'Outfit', sans-serif; font-size: 2.6rem; font-weight: 700; line-height: 1; color: #1a1208; letter-spacing: -0.04em; }
+.pcard-bignum   { font-family: 'Outfit', sans-serif; font-size: 2.6rem; font-weight: 700; line-height: 1; color: var(--text-on-gold); letter-spacing: -0.04em; }
 .pcard-bigsuit  { font-size: 1.3rem; line-height: 1; margin-top: 2px; }
 /* Colour variants */
 .pcard.red .pcard-num,     .pcard.red .pcard-bignum   { color: #b01020; }
 .pcard.red .pcard-suit-sm, .pcard.red .pcard-bigsuit  { color: #b01020; }
-.pcard:not(.red) .pcard-suit-sm, .pcard:not(.red) .pcard-bigsuit { color: #1a1208; }
+.pcard:not(.red) .pcard-suit-sm, .pcard:not(.red) .pcard-bigsuit { color: var(--text-on-gold); }
 /* Wild (?) card */
 .pcard.wild .pcard-bignum  { font-size: 2.2rem; color: #6b3fa0; }
 .pcard.wild .pcard-bigsuit { color: #6b3fa0; font-size: 1.1rem; }
 .pcard.wild .pcard-num     { color: #6b3fa0; }
 .pcard.wild .pcard-suit-sm { color: #6b3fa0; }
 .pcard.wild .pcard-inner   { background: linear-gradient(160deg, #fdfaff 0%, #f0e8ff 100%); }
-.obs-box { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: rgba(41,128,185,.08); border: 1px solid rgba(41,128,185,.2); border-radius: 10px; color: #5dade2; font-size: .86rem; }
-.vstatus { text-align: center; font-size: .82rem; padding: 8px 0; }
-.vstatus.voted { color: rgba(201,145,42,.7); }
-.vstatus.wait  { color: rgba(239,242,247,.68); font-style: italic; }
+.vstatus { text-align: center; font-size: .82rem; padding: var(--sp-2) 0; }
+.vstatus.voted { color: var(--gold-ink); }
+.vstatus.wait  { color: var(--text-3); font-style: italic; }
 
 /* ══════════════════════ RESULTS HERO ══════════════════════ */
 .avg-hero {
-  text-align: center; padding: 32px 24px 26px;
+  text-align: center; padding: var(--sp-8) var(--sp-6);
   background: linear-gradient(135deg, rgba(201,145,42,.14), rgba(201,145,42,.04));
-  border: 1.5px solid rgba(201,145,42,.4); border-radius: 18px;
-  margin-bottom: 20px; animation: heroIn .45s ease;
+  border: 1.5px solid rgba(201,145,42,.4); border-radius: var(--r-lg);
+  margin-bottom: var(--sp-5); animation: heroIn .45s ease;
   box-shadow: 0 0 50px rgba(201,145,42,.12), 0 8px 32px rgba(0,0,0,.35);
 }
 .avg-hero-label {
   font-size: var(--fs-1); font-weight: 600; letter-spacing: 2.5px;
-  text-transform: uppercase; color: rgba(239,242,247,.73); margin-bottom: 10px;
+  text-transform: uppercase; color: var(--text-2); margin-bottom: var(--sp-3);
 }
 .avg-hero-num {
   font-family: 'Outfit', sans-serif;
-  font-size: 5.5rem; color: var(--gold2); font-weight: 700;
+  font-size: 5.5rem; color: var(--gold-ink2); font-weight: 700;
   line-height: 1; letter-spacing: -0.05em; text-shadow: 0 0 50px rgba(201,145,42,.45);
   animation: heroIn .5s ease;
 }
-.avg-hero-sub { font-size: var(--fs-1); color: rgba(239,242,247,.75); margin-top: 10px; }
+.avg-hero-sub { font-size: var(--fs-1); color: var(--text-2); margin-top: var(--sp-3); }
 .avg-hero-consensus {
-  display: inline-block; margin-top: 14px;
+  display: inline-block; margin-top: var(--sp-4);
   background: rgba(201,145,42,.18); border: 1px solid rgba(201,145,42,.38);
-  border-radius: 100px; padding: 6px 20px;
-  font-size: .82rem; font-weight: 600; color: var(--gold2);
+  border-radius: var(--r-full); padding: var(--sp-2) var(--sp-5);
+  font-size: .82rem; font-weight: 600; color: var(--gold-ink2);
   animation: badgePop .4s .2s ease both;
 }
-.avg-hero-range { display: flex; justify-content: center; gap: 32px; margin-top: 18px; }
-.avg-hero-stat { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .avg-hero-stat .v { font-family: 'Outfit', sans-serif; font-size: 1.5rem; color: var(--cream); font-weight: 700; letter-spacing: -0.03em; }
-.avg-hero-stat .l { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.62); }
+.avg-hero-stat .l { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); }
 
 /* ══════════════════════ WHO PICKED WHAT ══════════════════════ */
-.who-section { margin-bottom: 8px; }
-.revealed-grid { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; padding: 4px 0 16px; }
-.rv-card { display: flex; flex-direction: column; align-items: center; gap: 7px; animation: dealIn .4s ease both; }
+.who-section { margin-bottom: var(--sp-2); }
+.revealed-grid { display: flex; flex-wrap: wrap; gap: var(--sp-4); justify-content: center; padding: var(--sp-1) 0 var(--sp-4); }
+.rv-card { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); animation: dealIn .4s ease both; }
 .rv-card-face {
   width: 70px; height: 96px;
   background: linear-gradient(160deg, #fff 0%, #fdf8ee 100%);
   border-radius: 10px; border: 1px solid rgba(0,0,0,.1);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 18px rgba(0,0,0,.4), 0 2px 0 rgba(255,255,255,.9) inset;
+  box-shadow: 0 6px 18px var(--shadow-card), 0 2px 0 rgba(255,255,255,.9) inset;
 }
 .rv-card-face.outlier-high { border: 2px solid #e74c3c; box-shadow: 0 6px 18px rgba(231,76,60,.3); }
 .rv-card-face.outlier-low  { border: 2px solid #3498db; box-shadow: 0 6px 18px rgba(52,152,219,.3); }
 .rv-card-face.consensus    { border: 2px solid var(--gold); box-shadow: 0 6px 18px rgba(201,145,42,.4); }
 .rv-val { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; color: var(--ink); letter-spacing: -0.04em; }
 .rv-val.red { color: #b01020; }
-.rv-name { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.84); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.rv-you-tag { font-size: var(--fs-1); color: var(--gold2); font-weight: 700; letter-spacing: .3px; }
+.rv-name { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.rv-you-tag { font-size: var(--fs-1); color: var(--gold-ink2); font-weight: 700; letter-spacing: .3px; }
 .outlier-tag { font-size: var(--fs-1); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
-.outlier-tag.high { background: rgba(231,76,60,.18); color: #e74c3c; }
+.outlier-tag.high { background: rgba(231,76,60,.18); color: var(--danger); }
 .outlier-tag.low  { background: rgba(52,152,219,.18); color: #3498db; }
-.no-vote { text-align: center; color: rgba(239,242,247,.67); font-size: var(--fs-1); padding: 6px 0; }
+.no-vote { text-align: center; color: var(--text-3); font-size: var(--fs-1); padding: var(--sp-2) 0; }
 
 /* ══════════════════════ OBSERVER CONTROLS ══════════════════════ */
-.obs-controls { display: flex; flex-direction: column; gap: 10px; }
+.obs-controls { display: flex; flex-direction: column; gap: var(--sp-3); }
 /* End session sits apart from the session controls but does not announce
    itself with a divider and a caption. Right-aligned and sized down, it reads
    as the exit it is: findable when wanted, not in the way while running a
@@ -1815,436 +1177,166 @@ body::before {
   padding-top: var(--sp-3);
   border-top: 1px solid var(--border);
 }
-/* .btn-reveal-primary lived here. The room's Reveal control moved into
-   RoomActionBar and onto .btn--primary; the rule outlived its last call site
+/* The room's Reveal control moved into RoomActionBar and onto the design
+   system's primary Button; the rule that skinned it outlived its call site
    and was carrying a fourth gold gradient nothing rendered. */
-.obs-secondary-row { display: flex; gap: 10px; }
-.btn-next-round {
-  flex: 1; padding: 13px 14px; border-radius: var(--r-md);
-  background: linear-gradient(180deg, rgba(75,216,137,.14), rgba(75,216,137,.07)); border: 1px solid rgba(75,216,137,.26);
-  color: #7df0b3; font-family: 'Outfit', sans-serif; font-size: .86rem; font-weight: 600;
-  cursor: pointer; transition: all .2s;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
-}
-.btn-next-round:hover { background: linear-gradient(180deg, rgba(75,216,137,.20), rgba(75,216,137,.10)); border-color: rgba(75,216,137,.42); }
-.btn-new-session {
-  padding: 13px 14px; border-radius: var(--r-md);
-  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.10);
-  color: rgba(239,242,247,.62); font-family: 'Outfit', sans-serif;
-  font-size: .86rem; font-weight: 600; cursor: pointer; transition: all .2s;
-  display: flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap;
-}
-.btn-new-session:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); color: var(--cream); }
+.obs-secondary-row { display: flex; gap: var(--sp-2); }
 /* When New Sprint is the only button in the row, stretch it full-width */
-.obs-secondary-row .btn-new-session:only-child { flex: 1; }
-.btn-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.66); text-align: center; margin-top: 1px; font-style: italic; }
-.btn-end-session {
-  width: 100%; padding: 12px 16px; border-radius: var(--r-md);
-  background: rgba(224,72,72,.03); border: 1px solid rgba(224,72,72,.18);
-  color: rgba(231,76,60,.55); font-family: 'Outfit', sans-serif;
-  font-size: .84rem; font-weight: 500; cursor: pointer; transition: all .2s;
-  display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px;
-}
-.btn-end-session:hover { background: rgba(192,57,43,.1); border-color: rgba(192,57,43,.35); color: #e74c3c; }
 
 /* Story queue panel */
-.story-panel { background: rgba(255,255,255,.03); border: 1px solid rgba(158,234,196,.10); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 10px; }
-.story-panel-title { font-size: var(--fs-1); font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
-.ptitle-optional, .story-panel-optional { font-size: var(--fs-1); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: rgba(201,145,42,.7); background: rgba(201,145,42,.1); border: 1px solid rgba(201,145,42,.2); border-radius: 20px; padding: 1px 7px; }
-.story-panel-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.64); margin-bottom: 10px; line-height: 1.5; font-style: italic; }
-.story-active { font-size: .92rem; font-weight: 600; color: var(--cream); margin-bottom: 6px; line-height: 1.35; }
-.story-progress { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.65); margin-bottom: 10px; }
-.story-add-row { display: flex; gap: 6px; margin-bottom: 8px; }
-.story-inp { flex: 1; min-width: 0; padding: 8px 10px; background: rgba(255,255,255,.05); border: 1px solid rgba(158,234,196,.16); border-radius: 10px; color: var(--cream); font-family: 'Outfit', sans-serif; font-size: var(--fs-1); transition: border-color .2s, background .2s; resize: vertical; min-height: 38px; max-height: 160px; line-height: 1.4; }
-.story-inp::placeholder { color: rgba(239,242,247,.66); }
-.story-inp:focus { outline: none; border-color: var(--gold2); background: rgba(255,255,255,.10); }
-.btn-story-add { padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(241,185,63,.26); background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: var(--fs-1); font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .2s; }
-.btn-story-add:hover { background: linear-gradient(180deg, rgba(241,185,63,.22), rgba(241,185,63,.11)); }
-.story-list { max-height: 168px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
-.story-item { font-size: var(--fs-1); padding: 4px 8px; border-radius: 6px; display: flex; gap: 8px; justify-content: space-between; align-items: center; }
-.story-item.done { color: rgba(239,242,247,.62); text-decoration: line-through; }
-.story-item.active { background: var(--goldB); color: var(--gold2); font-weight: 600; }
-.story-item.queued { color: rgba(239,242,247,.75); }
+.story-panel { background: var(--tint-raise); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3); }
+.story-panel-title { font-size: var(--fs-1); font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text-3); margin-bottom: var(--sp-1); display: flex; align-items: center; gap: var(--sp-2); }
+.ptitle-optional, .story-panel-optional { font-size: var(--fs-1); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--gold-ink3); background: rgba(201,145,42,.1); border: 1px solid rgba(201,145,42,.2); border-radius: 20px; padding: 1px 7px; }
+.story-panel-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-3); line-height: 1.5; font-style: italic; }
+.story-progress { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-3); }
+.story-add-row { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.story-list { max-height: 168px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--sp-1); }
+.story-item { font-size: var(--fs-1); padding: var(--sp-1) var(--sp-2); border-radius: var(--r-xs); display: flex; gap: var(--sp-2); justify-content: space-between; align-items: center; }
+.story-item.done { color: var(--text-3); text-decoration: line-through; }
+.story-item.active { background: var(--goldB); color: var(--gold-ink2); font-weight: 600; }
+.story-item.queued { color: var(--text-2); }
 .story-item-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .story-est { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); opacity: .7; flex-shrink: 0; }
 .story-item-remove {
   flex-shrink: 0; width: 24px; height: 24px; line-height: 1; /* WCAG 2.5.8 */
   border-radius: 6px; border: 1px solid transparent;
-  background: none; color: rgba(239,242,247,.62); cursor: pointer;
+  background: none; color: var(--text-3); cursor: pointer;
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); transition: color .15s, background .15s, border-color .15s;
 }
 .story-item-remove:hover { color: var(--red); background: rgba(214,72,72,.12); border-color: rgba(214,72,72,.28); }
 /* Willingness-to-pay poll */
-.wtp-panel {
-  position: relative; margin-top: 14px; padding: 14px 15px;
-  border: 1px solid rgba(201,145,42,.24); border-radius: 12px;
-  background: rgba(201,145,42,.05);
+.wtp-panel { margin-top: var(--sp-4);
 }
-.wtp-dismiss {
-  position: absolute; top: 8px; right: 8px;
-  width: 26px; height: 26px; border-radius: 7px;
-  background: none; border: 1px solid transparent; cursor: pointer;
-  color: rgba(239,242,247,.62); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); line-height: 1;
-}
-.wtp-dismiss:hover { color: var(--cream); background: rgba(255,255,255,.06); border-color: rgba(158,234,196,.18); }
-.wtp-kicker {
-  font-size: var(--fs-1); font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase;
-  color: rgba(232,184,75,.85); margin-bottom: 6px;
-}
-.wtp-q { font-size: .84rem; color: var(--cream); line-height: 1.45; margin-bottom: 11px; padding-right: 26px; }
-.wtp-options { display: flex; flex-direction: column; gap: 6px; }
-.wtp-option {
-  text-align: left; padding: 9px 11px; min-height: 36px;
-  border-radius: 9px; border: 1px solid rgba(158,234,196,.16);
-  background: rgba(255,255,255,.035); color: rgba(239,242,247,.88);
-  font-family: 'Outfit', sans-serif; font-size: var(--fs-1); cursor: pointer;
-  transition: background .15s, border-color .15s, transform .15s;
-}
-.wtp-option:hover { background: rgba(201,145,42,.12); border-color: rgba(201,145,42,.4); transform: translateX(2px); }
-.wtp-note { margin-top: 9px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.66); }
-.wtp-thanks { font-size: .82rem; color: var(--gold2); font-weight: 600; }
+.wtp-q { font-size: .84rem; color: var(--cream); line-height: 1.45; margin-bottom: var(--sp-3); padding-right: var(--sp-6); }
 
 .kbd-hint {
-  margin-top: 10px; font-size: var(--fs-1); color: rgba(239,242,247,.64);
+  margin-top: var(--sp-3); font-size: var(--fs-1); color: var(--text-3);
   text-align: center; letter-spacing: .2px;
 }
 .kbd-hint kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); padding: 1px 5px; border-radius: 4px;
-  background: rgba(255,255,255,.06); border: 1px solid rgba(158,234,196,.18);
-  color: rgba(239,242,247,.72);
+  background: var(--tint-raise-2); border: 1px solid var(--border2);
+  color: var(--text-2);
 }
-.story-paste-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); margin: -2px 0 10px; line-height: 1.5; }
 /* Sprint summary */
-.summary-rows { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; }
-.summary-row {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
-  padding: 6px 10px; border-radius: 8px;
-  background: rgba(255,255,255,.02); border: 1px solid var(--border);
-}
 .summary-row.sized { background: rgba(201,145,42,.06); border-color: rgba(201,145,42,.14); }
-.summary-row-name { font-size: var(--fs-1); color: rgba(239,242,247,.65); flex: 1; line-height: 1.3; overflow-wrap: anywhere; }
 .summary-row.sized .summary-row-name { color: var(--cream); }
-.summary-row-est { font-size: .88rem; font-weight: 700; color: rgba(239,242,247,.68); white-space: nowrap; }
-.summary-row.sized .summary-row-est { color: var(--gold2); }
-.summary-total { font-size: var(--fs-1); color: rgba(239,242,247,.7); margin-bottom: 10px; letter-spacing: .3px; }
-.summary-actions { display: flex; gap: 8px; }
-.summary-actions .btn-inv { flex: 1; }
-.btn-record-next { width: 100%; padding: 11px; border-radius: var(--r-md); border: none; background: linear-gradient(135deg, rgba(75,216,137,.80), rgba(44,176,112,.62)); color: #04100b; font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 700; cursor: pointer; transition: all .2s; margin-top: 4px; box-shadow: 0 12px 28px rgba(75,216,137,.18); }
-.btn-record-next:hover { background: linear-gradient(135deg, rgba(95,230,154,.88), rgba(52,194,123,.72)); }
-.btn-record-next:disabled { opacity: .3; cursor: not-allowed; }
+.summary-row.sized .summary-row-est { color: var(--gold-ink2); }
 @keyframes recordGlow { 0%, 100% { box-shadow: 0 12px 28px rgba(75,216,137,.25); } 50% { box-shadow: 0 14px 40px rgba(75,216,137,.60), 0 0 0 5px rgba(75,216,137,.18); } }
-.btn-record-next.consensus { padding: 15px 11px; font-size: .94rem; letter-spacing: .01em; background: linear-gradient(135deg, rgba(75,216,137,.95), rgba(44,176,112,.85)); animation: recordGlow 2s ease-in-out infinite; margin-top: 8px; }
-.btn-record-next.consensus:hover { background: linear-gradient(135deg, #5fe69a, #34c27b); animation: none; box-shadow: 0 14px 40px rgba(75,216,137,.55); }
-.btn-record-next.btn-next-item-cta { margin-top: 18px; padding: 18px 20px; border-radius: 18px; font-size: 1.08rem; font-weight: 800; letter-spacing: -.01em; box-shadow: 0 18px 42px rgba(75,216,137,.28); }
-.btn-record-next.btn-next-item-cta:hover { transform: translateY(-1px); box-shadow: 0 20px 46px rgba(95,230,154,.34); }
-.btn-record-next.btn-next-item-cta.consensus { padding: 20px 20px; font-size: 1.14rem; margin-top: 18px; }
-.final-estimate-panel {
-  margin: 4px 0 2px;
-  padding: 18px 18px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(241,185,63,.26);
-  background:
-    radial-gradient(circle at top, rgba(241,185,63,.10), rgba(241,185,63,0) 58%),
-    linear-gradient(180deg, rgba(241,185,63,.11), rgba(255,255,255,.025));
-  box-shadow: 0 18px 38px rgba(241,185,63,.10), inset 0 1px 0 rgba(255,255,255,.05);
+/* The one thing the primary button cannot say for itself: the whole table
+   agreed, so this is the obvious next press. Glow only — the button keeps its
+   own geometry, colour and type. */
+.btn-record-next.consensus { animation: recordGlow 2s ease-in-out infinite; }
+/* One row, under the estimate, holding every decision a finished round has:
+   record, re-vote, new sprint, end session. */
+.round-actions {
+  --row-gap: var(--sp-2);
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
 }
-.final-estimate-kicker {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: var(--fs-1); font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase;
-  color: var(--gold2);
-  padding: 5px 10px; border-radius: 999px;
-  background: rgba(241,185,63,.10);
-  border: 1px solid rgba(241,185,63,.18);
-  margin-bottom: 10px;
-}
-.final-estimate-title {
-  font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em;
-  color: var(--cream); margin-bottom: 8px;
-}
-.final-estimate-copy {
-  font-size: .82rem; line-height: 1.65; color: rgba(239,242,247,.78); margin-bottom: 14px;
-}
-.final-estimate-copy strong { color: rgba(239,242,247,.92); font-weight: 600; }
-.inline-final-decision {
-  margin-top: 18px;
-  padding: 18px 18px 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(241,185,63,.24);
-  background:
-    radial-gradient(circle at top, rgba(241,185,63,.10), rgba(241,185,63,0) 58%),
-    linear-gradient(180deg, rgba(241,185,63,.10), rgba(255,255,255,.025));
-  box-shadow: 0 18px 38px rgba(241,185,63,.10), inset 0 1px 0 rgba(255,255,255,.05);
-}
-.inline-final-decision-kicker {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: var(--fs-1); font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase;
-  color: var(--gold2);
-  padding: 5px 10px; border-radius: 999px;
-  background: rgba(241,185,63,.10);
-  border: 1px solid rgba(241,185,63,.18);
-  margin-bottom: 10px;
-}
-.inline-final-decision-title {
-  font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em;
-  color: var(--cream); margin-bottom: 8px;
-}
-.inline-final-decision-copy {
-  font-size: .82rem; line-height: 1.65; color: rgba(239,242,247,.78); margin-bottom: 14px;
+/* Record is the decision; the other three are ways out of it. It takes the
+   row's slack so the weight matches, and its 15rem basis is what makes the
+   row wrap to record-on-its-own-line before the labels start truncating. */
+.round-actions .btn-record-next { flex: 1 1 15rem; }
+.inline-final-decision { margin-top: var(--sp-5);
 }
 .inline-final-summary {
-  margin-bottom: 14px;
+  margin-bottom: var(--sp-4);
 }
-.inline-final-actions {
-  margin-top: 4px;
+.story-name-banner { margin-bottom: var(--sp-3);
 }
-@media (max-width: 680px) {
-}
-.story-name-banner { background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06)); border: 1px solid rgba(126,230,255,.16); border-radius: var(--r-md); padding: 10px 14px; margin-bottom: 12px; }
-.story-name-label { font-size: var(--fs-1); letter-spacing: 2px; text-transform: uppercase; color: rgba(239,242,247,.65); display: block; margin-bottom: 3px; }
 .story-name-text { font-size: .9rem; font-weight: 600; color: var(--cream); line-height: 1.3; }
 
 /* ══════════════════════ PLAYERS PANEL ══════════════════════ */
-.vp-head { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.65); margin-bottom: 8px; }
-.vp-bar { background: rgba(255,255,255,.05); border-radius: 100px; height: 4px; overflow: hidden; margin-bottom: 14px; }
-.vp-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--gold), var(--gold2)); transition: width .5s ease; }
-.plist { display: flex; flex-direction: column; gap: 6px; }
+.vp-head { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-2); }
+.vp-bar { margin-bottom: var(--sp-3);
+}
+.plist { display: flex; flex-direction: column; gap: var(--sp-2); }
 .prow {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: 11px;
-  background: rgba(255,255,255,.05); border: 1px solid var(--border);
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3); border-radius: var(--r-sm);
+  background: var(--tint-raise-2); border: 1px solid var(--border);
   transition: all .3s;
 }
 .prow.voted { background: var(--goldB); border-color: rgba(201,145,42,.15); }
 .prow.obs   { background: rgba(41,128,185,.07); border-color: rgba(41,128,185,.12); }
 .prow.not-voted-yet { border-color: rgba(255,255,255,.04); opacity: .75; }
-.prow.not-voted-yet .pav { background: rgba(255,255,255,.10); color: rgba(239,242,247,.80); }
-.pav {
-  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); background: #2e6640; color: var(--cream);
-}
+.prow.not-voted-yet .pav { background: rgba(255,255,255,.10); color: var(--text-2); }
 .prow.voted .pav { background: var(--gold); color: var(--ink); }
 .prow.obs   .pav { background: rgba(41,128,185,.4); }
-.pname { font-size: .84rem; font-weight: 500; color: var(--cream2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prole { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.60); margin-top: 1px; }
-.prow.obs .prole { color: rgba(93,173,226,.5); }
-.prow-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.pdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.pname { font-size: .84rem; font-weight: 500; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prole { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: 1px; }
+.prow.obs .prole { color: var(--info); }
+.prow-actions { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
 .pdot.v { background: var(--gold); }
 .pdot.w { background: rgba(255,255,255,.12); animation: pulse 2s ease infinite; }
 .pdot.o { background: rgba(93,173,226,.35); }
-.vchip {
-  background: var(--card-bg); color: var(--ink);
-  font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .95rem;
-  border-radius: 6px; padding: 3px 10px;
-  border: 1px solid var(--gold); min-width: 32px; text-align: center;
-  animation: flip .3s ease both;
-}
-.voted-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(201,145,42,.7); font-weight: 600; }
-.waiting-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(231,76,60,.5); font-style: italic; }
-.btn-remove-player {
-  padding: 7px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(224,72,72,.18);
-  background: rgba(224,72,72,.05);
-  color: rgba(231,76,60,.82);
-  font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .18s ease;
-}
-.btn-remove-player:hover {
-  background: rgba(224,72,72,.12);
-  border-color: rgba(224,72,72,.32);
-  color: #ff8a7d;
-}
-.sep { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
-.nobody { font-size: var(--fs-1); color: rgba(239,242,247,.66); font-style: italic; text-align: center; padding: 10px 0; }
-
-/* ══════════════════════ SESSION STATS ══════════════════════ */
-.ss-grid { display: flex; gap: 8px; }
-.ss-chip {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 12px 8px; background: rgba(255,255,255,.05);
-  border: 1px solid var(--border2); border-radius: 10px;
-}
-.ss-v { font-family: 'Outfit', sans-serif; font-size: 1.5rem; color: var(--gold2); font-weight: 700; letter-spacing: -0.03em; }
-.ss-l { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; color: rgba(239,242,247,.60); text-align: center; }
+.voted-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--gold-ink); font-weight: 600; }
+.waiting-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--danger); font-style: italic; }
+.nobody { font-size: var(--fs-1); color: var(--text-3); font-style: italic; text-align: center; padding: var(--sp-3) 0; }
 
 /* ══════════════════════ SESSION WARNING ══════════════════════ */
-.session-warn-banner {
-  background: linear-gradient(135deg, rgba(230,126,34,.15), rgba(192,57,43,.1));
-  border: 1px solid rgba(230,126,34,.35); border-radius: var(--r-md);
-  padding: 12px 16px; display: flex; align-items: center; gap: 12px;
-  animation: urgentBg 2s ease infinite; margin-bottom: 16px;
+.session-warn-banner { margin-bottom: var(--sp-3);
 }
-.session-warn-text { flex: 1; font-size: var(--fs-1); color: rgba(239,242,247,.93); }
-.session-warn-text strong { color: #e67e22; }
 
 /* ══════════════════════ SOLO INVITE BANNER ══════════════════════ */
-.solo-invite-banner {
-  display: flex; align-items: center; gap: 12px;
-  background: linear-gradient(135deg, rgba(201,145,42,.14), rgba(201,145,42,.06));
-  border: 1px solid rgba(201,145,42,.32); border-radius: var(--r-md);
-  padding: 12px 16px; margin-bottom: 16px;
+.solo-invite-banner { margin-bottom: var(--sp-3);
 }
-.solo-invite-icon { font-size: 1.15rem; flex-shrink: 0; }
-.solo-invite-body { flex: 1; font-size: var(--fs-1); color: rgba(239,242,247,.9); line-height: 1.4; }
-.solo-invite-body strong { color: var(--cream); }
-.solo-invite-copy {
-  padding: 7px 14px; border-radius: 9px;
-  background: rgba(201,145,42,.18); border: 1px solid rgba(201,145,42,.36);
-  color: var(--gold2); font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-1); font-weight: 600; cursor: pointer; white-space: nowrap;
-  transition: all .18s;
-}
-.solo-invite-copy:hover { background: rgba(201,145,42,.28); }
-.solo-invite-dismiss {
-  padding: 4px 8px; background: none; border: none;
-  color: rgba(239,242,247,.62); font-size: var(--fs-1); cursor: pointer;
-  flex-shrink: 0; transition: color .15s;
-}
-.solo-invite-dismiss:hover { color: rgba(239,242,247,.7); }
-
-/* ══════════════════════ TEAM PRO GATE ══════════════════════ */
-.team-pro-gate {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 10px 14px; border-radius: 10px; margin-bottom: 18px;
-  background: rgba(201,145,42,.06); border: 1px solid rgba(201,145,42,.20);
-}
-.team-pro-gate-text {
-  flex: 1; font-size: var(--fs-1); color: rgba(239,242,247,.70); line-height: 1.45;
-}
-.team-pro-gate-link {
-  padding: 5px 12px; border-radius: 8px;
-  background: rgba(201,145,42,.12); border: 1px solid rgba(201,145,42,.28);
-  color: var(--gold2); font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-1); font-weight: 600; cursor: pointer; white-space: nowrap;
-  transition: all .18s;
-}
-.team-pro-gate-link:hover { background: rgba(201,145,42,.22); }
-
-/* ══════════════════════ INVITE ══════════════════════ */
-.inv-panel { border-style: dashed; border-color: rgba(255,255,255,.07); }
-.inv-url { background: rgba(255,255,255,.06); border-radius: 8px; padding: 9px 12px; font-family: monospace; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.78); word-break: break-all; margin-bottom: 10px; border: 1px solid var(--border2); }
-.btn-inv { width: 100%; padding: 10px; background: var(--goldB); border: 1px solid rgba(201,145,42,.2); border-radius: 9px; color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .2s; }
-.btn-inv:hover { background: rgba(201,145,42,.14); }
 
 /* ══════════════════════ SESSION ANALYTICS ══════════════════════ */
-/* Sprint Snapshot — 3-column KPI row */
-.a-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-top: 4px; }
-.a-kpi {
-  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 10px; padding: 9px 10px;
+/* Sprint Snapshot — three numbers in a 258px rail.
+   As auto-fit tiles they came out two-up with the third orphaned on a row of
+   its own, and the 24px grid gap was wider than the 14px gap between the
+   panel's sections, so one reading unit sat further apart than the units did.
+   Three columns is not the answer either: a 28px value has no room in an 80px
+   column, and shrinking the number to fit would be repairing a layout problem
+   with typography. Rows, then — the geometry the players list in this same
+   rail already uses, so the two panels read as one product. Right-aligned
+   tabular values line up in a column, which is the only reason to group three
+   KPIs in the first place. */
+.a-kpis { display: flex; flex-direction: column; gap: var(--sp-2); }
+.a-kpis .pp-stat {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
+  padding: var(--sp-3); border-radius: var(--r-sm);
+  background: var(--tint-raise-2); border-color: var(--border);
 }
-.a-kpi-v { font-size: 1.22rem; font-weight: 700; color: var(--gold2); line-height: 1.1; display: block; }
-.a-kpi-l {
-  font-size: var(--fs-1); color: rgba(239,242,247,.66); margin-top: 3px; display: block;
-  font-weight: 400; text-transform: uppercase; letter-spacing: .05em;
-}
+.a-kpis .pp-stat__label { letter-spacing: .08em; }
+.a-kpis .pp-stat__meta { text-align: right; }
+/* One step down from the tile default: the hero number on this screen is the
+   agreed estimate, and a 28px KPI in the rail competes with it. */
+.a-kpis .pp-stat__value { font-size: var(--fs-5); }
+
 /* Team Alignment */
-.a-align { margin-top: 14px; }
-.a-align-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
-.a-align-title { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); font-weight: 500; color: rgba(239,242,247,.72); }
-.a-align-score { font-size: 1.08rem; font-weight: 700; }
-.a-align-score.good    { color: #2ecc71; }
-.a-align-score.ok      { color: var(--gold); }
-.a-align-score.low     { color: rgba(230,126,34,.90); }   /* amber — coaching signal, not an error */
-.a-align-score.neutral { color: rgba(239,242,247,.62); }  /* muted — not enough data yet */
-.a-align-bar-track { height: 5px; border-radius: 3px; background: rgba(255,255,255,.09); overflow: hidden; }
-.a-align-bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
-.a-align-bar-fill.good    { background: linear-gradient(90deg,#2ecc71,#27ae60); }
-.a-align-bar-fill.ok      { background: linear-gradient(90deg,var(--gold),var(--gold2)); }
-.a-align-bar-fill.low     { background: linear-gradient(90deg,#e67e22,#d35400); }  /* amber, not red */
-.a-align-bar-fill.neutral { background: rgba(255,255,255,.07); }
-.a-align-sub  { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.66); margin-top: 5px; line-height: 1.4; }
-.a-align-note { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); margin-top: 3px; font-style: italic; }
-/* Per-story breakdown */
-.a-stories { margin-top: 14px; }
-.a-section-title {
-  font-size: var(--fs-1); font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
-  color: rgba(239,242,247,.62); margin-bottom: 4px;
-}
-.a-story-list { max-height: 180px; overflow-y: auto; }
-.a-story-row { display: flex; align-items: center; padding: 5px 0; border-top: 1px solid rgba(255,255,255,.05); }
-.a-story-row:first-child { border-top: none; }
-.a-story-idx { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); width: 16px; flex-shrink: 0; font-weight: 400; text-align: right; }
-.a-story-name { flex: 1; font-size: var(--fs-1); color: rgba(239,242,247,.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0 8px; }
-.a-story-est {
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); font-weight: 600; color: var(--gold2);
-  background: rgba(232,184,75,.10); border: 1px solid rgba(232,184,75,.22);
-  border-radius: 12px; padding: 2px 9px; flex-shrink: 0;
-}
-.a-empty { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); font-style: italic; padding: 6px 0; }
-/* Estimate distribution chips */
-.analytics-breakdown { margin-top: 14px; }
+.a-align-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sp-2); }
+.a-align-score.good    { color: var(--success); }
+.a-align-score.ok      { color: var(--gold-ink); }
+.a-align-score.low     { color: var(--warning); }   /* amber — coaching signal, not an error */
+.a-align-score.neutral { color: var(--text-3); }
+.a-align-bar.good .pp-progress__bar    { background: linear-gradient(90deg,#2ecc71,#27ae60); }
+.a-align-bar.ok .pp-progress__bar      { background: linear-gradient(90deg,var(--gold),var(--gold2)); }
+.a-align-bar.low .pp-progress__bar     { background: linear-gradient(90deg,#e67e22,#d35400); }  /* amber, not red */
+.a-align-bar.neutral .pp-progress__bar { background: var(--tint-raise-2); }
+.a-align-sub  { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); line-height: 1.4; }
+.a-align-note { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); font-style: italic; }
+/* One sub-heading treatment for every section inside the analytics panel.
+   Team Alignment was sentence case at 13px while the two below it were tracked
+   uppercase, so a panel with three peer sections announced them three ways. */
+.a-section-title,
+.a-align-title,
 .analytics-breakdown-title {
-  font-size: var(--fs-1); font-weight: 500; letter-spacing: .08em;
-  text-transform: uppercase; color: rgba(239,242,247,.62); margin-bottom: 7px;
+  font-size: var(--fs-1); font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-3);
 }
-.analytics-size-breakdown { margin-top: 14px; }
-.analytics-size-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-.analytics-size-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(241,185,63,.14);
-  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-}
-.analytics-size-label {
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-}
-.analytics-size-count {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.55rem;
-  font-weight: 700;
-  letter-spacing: -.04em;
-  color: var(--gold2);
-  line-height: 1;
-}
-.analytics-size-copy {
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
-  color: rgba(239,242,247,.68);
-}
-.analytics-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.analytics-chip {
-  display: flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px;
-  background: rgba(255,255,255,.05); border: 1px solid var(--border);
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); line-height: var(--lh-snug);
-}
-.analytics-chip-val { font-weight: 600; color: var(--gold2); }
-.analytics-chip-cnt { color: rgba(239,242,247,.66); font-weight: 300; }
+/* Alignment's title sits in a row with the score chip, and that row carries the
+   gap for both of them. */
+.a-section-title, .analytics-breakdown-title { margin-bottom: var(--sp-2); }
+.a-story-list { max-height: 180px; overflow-y: auto; }
+.analytics-chip-cnt { color: var(--text-3); font-weight: 300; }
 
 /* ══════════════════════ STREAK / ESTIMATION SPREE ══════════════════════ */
-.streak-panel {
-  background: linear-gradient(135deg, rgba(201,145,42,.09) 0%, rgba(201,145,42,.04) 100%);
-  border: 1px solid rgba(201,145,42,.28);
-  border-radius: var(--radius);
-  padding: 13px 16px;
-  display: flex; align-items: center; gap: 12px;
-  animation: fadeUp .35s ease;
-}
-.streak-panel.streak-hot {
-  border-color: rgba(230,126,34,.40);
-  background: linear-gradient(135deg, rgba(230,126,34,.12) 0%, rgba(201,145,42,.05) 100%);
-}
 .streak-fire  { font-size: 1.45rem; flex-shrink: 0; line-height: 1; }
-.streak-body  { flex: 1; min-width: 0; }
-.streak-count { font-size: .88rem; font-weight: 700; color: var(--gold2); letter-spacing: .2px; }
-.streak-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); margin-top: 2px; font-weight: 300; }
 
 /* ══════════════════════ TOAST ══════════════════════ */
 .toast {
@@ -2253,7 +1345,7 @@ body::before {
   background: linear-gradient(135deg, rgba(255,244,202,.98), rgba(255,223,128,.96)); color: var(--ink);
   border-radius: 16px; padding: 12px 22px;
   font-size: .86rem; font-weight: 600;
-  box-shadow: 0 20px 50px rgba(0,0,0,.42);
+  box-shadow: 0 20px 50px var(--shadow-cast);
   border: 1px solid rgba(255,255,255,.35);
   z-index: 500; white-space: nowrap;
   transition: transform .32s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity: 0;
@@ -2266,72 +1358,22 @@ body::before {
 .cookie-banner {
   position: fixed; bottom: 14px; right: 14px; z-index: 600;
   max-width: 340px;
-  background: rgba(6,16,13,.94); backdrop-filter: blur(18px) saturate(1.2);
-  border: 1px solid rgba(158,234,196,.14);
+  background: var(--surface3); backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 13px 15px;
-  box-shadow: 0 18px 42px rgba(0,0,0,.45);
+  box-shadow: 0 18px 42px var(--shadow-card);
   animation: fadeIn .3s ease;
 }
-.cookie-inner {
-  display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap;
-}
-.cookie-text {
-  flex: 1 1 100%; min-width: 0;
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); line-height: 1.55;
-  color: rgba(239,242,247,.68); font-weight: 300;
-}
-.cookie-text strong { color: rgba(239,242,247,.90); font-weight: 600; }
-.cookie-actions {
-  display: flex; align-items: center; gap: 10px; flex: 1 1 100%; justify-content: flex-end;
-}
-.cookie-link {
-  font-size: var(--fs-1); min-height: 24px; display: inline-flex; align-items: center; color: var(--gold2); text-decoration: underline;
-  text-decoration-color: rgba(232,184,75,.4); white-space: nowrap;
-  font-family: 'Outfit', sans-serif; cursor: pointer; background: none; border: none;
-}
-.cookie-link:hover { color: var(--gold3); }
-.cookie-accept {
-  padding: 7px 16px; border: none; border-radius: 10px;
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 58%, #fff0b0 100%);
-  color: var(--ink); font-family: 'Outfit', sans-serif;
-  font-size: .82rem; font-weight: 700; cursor: pointer;
-  white-space: nowrap; transition: all .2s;
-  box-shadow: 0 10px 24px rgba(241,185,63,.22);
-}
-.cookie-accept:hover { transform: translateY(-1px); box-shadow: 0 14px 28px rgba(241,185,63,.28); }
 @media (max-width: 600px) {
   .cookie-banner { left: 10px; right: 10px; bottom: 10px; max-width: none; }
   .kbd-hint { display: none; }
-  .cookie-actions { justify-content: space-between; }
 }
 
 /* ══════════════════════ LOADING ══════════════════════ */
 .loading { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
 .spinner { width: 34px; height: 34px; border: 3px solid rgba(201,145,42,.18); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
-
-/* ══════════════════════ PRICING MODAL ══════════════════════ */
-/* Billing toggle */
-/* Currency switcher */
-/* Pricing cards */
-.pf-icon { font-size: .85rem; flex-shrink: 0; margin-top: 1px; }
-.pf-icon.yes { color: var(--green); }
-.pf-icon.no  { color: rgba(239,242,247,.62); }
-/* Billing note below price */
-/* Trial note below CTA */
-/* Account status pill */
-/* Pricing button on join screen */
-.btn-pricing {
-  display: block; margin: 0 auto 20px;
-  padding: 8px 20px; border-radius: 100px;
-  border: 1px solid rgba(201,146,42,.3); background: var(--goldB);
-  color: var(--gold2); font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-1); font-weight: 600; cursor: pointer;
-  transition: all .2s; letter-spacing: .3px;
-}
-.btn-pricing:hover { background: var(--goldA); border-color: rgba(201,146,42,.5); }
-@media (max-width: 600px) {
-}
+.pf-icon.no  { color: var(--text-3); }
 
 /* ══════════════════════ RESPONSIVE ══════════════════════ */
 @media (max-width: 780px) {
@@ -2347,20 +1389,21 @@ body::before {
      marketing navbar on top of it cost 65px of a 812px screen for nothing. */
   .in-room .navbar { display: none; }
   .in-room .hdr { top: 0; }
-  .hdr { padding: 0 14px; }
-  .hdr-in { min-height: 52px; padding: 7px 0; gap: 8px; flex-wrap: nowrap; }
+  .hdr-in { min-height: 52px; padding-block: var(--sp-2); gap: var(--sp-2); flex-wrap: nowrap; }
   .hdr-l .chip-logo { display: none; }
   .hdr-c { order: 0; flex: 1; justify-content: center; gap: 6px; }
-  .hdr-c .badge:first-child { display: none; }
+  .hdr-c .pp-chip:first-child { display: none; }
   .badge-long { display: none; }
   .hdr-r { order: 0; }
   .hdr-invite { padding: 0; border: none; background: none; gap: 0; }
   .hdr-invite-copy { display: none; }
+  .hdr-copy-label { display: none; }
+  .hdr-copy { padding-inline: var(--sp-3); }
   .cards-grid { justify-content: center; }
   .pcard { width: 82px; height: 118px; }
   .pcard-bignum { font-size: 2.2rem; }
   .pcard-bigsuit { font-size: 1.1rem; }
-  .game-body { padding: 16px 16px 60px; }
+  .game-body { padding-block: var(--sp-4) var(--sp-16); }
   .obs-secondary-row { flex-direction: column; }
   .join-box { padding: 36px 24px 32px; }
   .solo-invite-banner { flex-wrap: wrap; }
@@ -2376,18 +1419,11 @@ body::before {
 /* ══════════════════════ PAGE SHELL ══════════════════════ */
 .page-shell { min-height: 100vh; display: flex; flex-direction: column; }
 .app { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
-
-/* ══════════════════════ GLOBAL NAVBAR ══════════════════════ */
-/* Screen-reader-only text: present in the accessibility tree, invisible on screen. */
-.visually-hidden {
-  position: absolute; width: 1px; height: 1px;
-  padding: 0; margin: -1px; overflow: hidden;
-  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-}
 /* WCAG 2.4.11 — a focused element must not be hidden behind the sticky bars. */
 :focus-visible { scroll-margin-top: 132px; scroll-margin-bottom: 24px; }
 .skip-link {
   position: absolute; left: 12px; top: -60px; z-index: 900;
+  display: inline-flex; align-items: center; min-height: var(--tap-min);
   padding: 10px 16px; border-radius: 0 0 10px 10px;
   background: var(--gold2); color: var(--ink);
   font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .82rem;
@@ -2395,17 +1431,17 @@ body::before {
 }
 .skip-link:focus { top: 0; }
 .navbar {
-  background: rgba(6,16,13,.84);
-  border-bottom: 1px solid rgba(158,234,196,.08);
+  background: var(--surface-bar);
+  border-bottom: 1px solid var(--border);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   position: sticky; top: 0; z-index: 200;
-  padding: 0 24px;
 }
+/* Width and gutters come from .pp-container on the inner element — this is the
+   band the rest of the product aligns to, so it must not measure itself. */
 .navbar-inner {
-  max-width: 1160px; margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;
-  height: 64px; gap: 16px;
+  height: 64px; gap: var(--sp-4);
 }
 .navbar-left  { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
 .navbar-right { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 0 auto; }
@@ -2445,15 +1481,15 @@ body::before {
   letter-spacing: inherit;
 }
 .brand-wordmark-point { color: var(--cream); }
-.brand-wordmark-poker { color: var(--gold2); }
+.brand-wordmark-poker { color: var(--gold-ink2); }
 .navbar-brand:hover .brand-wordmark-point { color: var(--mint2); }
-.navbar-brand:hover .brand-wordmark-poker { color: var(--gold3); }
+.navbar-brand:hover .brand-wordmark-poker { color: var(--gold-ink3); }
 .nav-link-btn {
   padding: 7px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(158,234,196,.08);
-  background: rgba(255,255,255,.02);
-  color: rgba(239,242,247,.62);
+  border: 1px solid var(--border);
+  background: var(--tint-raise);
+  color: var(--text-3);
   font-family: 'Outfit', sans-serif;
   font-size: var(--fs-1);
   font-weight: 600;
@@ -2464,16 +1500,31 @@ body::before {
 }
 .nav-link-btn:hover {
   color: var(--cream);
-  background: rgba(255,255,255,.06);
-  border-color: rgba(158,234,196,.22);
+  background: var(--tint-raise-2);
+  border-color: var(--border2);
+}
+/* Rule 6. Same trick the design system uses on its own small controls: the
+   pill keeps its size, the hit area reaches --tap-min. Vertical only, because
+   these sit in a row and horizontal growth would overlap the neighbour. */
+.nav-link-btn, .navbar-brand { position: relative; }
+.nav-link-btn::after, .navbar-brand::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%;
+  height: var(--tap-min); transform: translateY(-50%);
 }
 
 /* Casino chip button */
 .chip-logo {
+  position: relative;
   background: none; border: none; padding: 0;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; flex-shrink: 0;
   transition: transform .22s ease, filter .22s ease, opacity .22s ease;
+}
+/* The room header draws the mark at 34px to fit its bar. Rule 6 still applies,
+   so the hit area is grown back to the floor without moving the artwork. */
+.chip-logo::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  width: var(--tap-min); height: var(--tap-min); transform: translate(-50%, -50%);
 }
 .chip-logo img {
   width: 100%; height: 100%; object-fit: contain; display: block;
@@ -2486,8 +1537,8 @@ body::before {
 /* .nav-btn-login and .nav-btn-register were a parallel button implementation:
    their own padding, their own 12px radius (off the 10/14/20 scale), their own
    .83rem type (a fourth size within 0.3px of --fs-1), their own gold gradient
-   distinct from the one .btn--primary uses, and a 33px height against the
-   system's 44px floor. The visual now comes from .btn; these class names
+   distinct from the one the primary Button uses, and a 33px height against
+   the system's 44px floor. The visual comes from pp-btn now; these class names
    survive only as hooks for the responsive show/hide rules below, which are
    about navbar layout rather than how a button looks. */
 
@@ -2495,15 +1546,14 @@ body::before {
 
 /* ══════════════════════ SITE FOOTER ══════════════════════ */
 .site-footer {
-  background: linear-gradient(180deg, rgba(6,16,13,.94), rgba(4,10,9,.98));
-  border-top: 1px solid rgba(158,234,196,.08);
-  padding: 44px 24px 0;
+  background: linear-gradient(180deg, var(--surface-felt), var(--surface-felt));
+  border-top: 1px solid var(--border);
+  padding: var(--sp-12) 0 0;
   flex-shrink: 0;
 }
 .footer-inner {
-  max-width: 1160px; margin: 0 auto;
   display: grid; grid-template-columns: 1.6fr 1fr 1fr;
-  gap: 40px; padding-bottom: 36px;
+  gap: var(--block-y); padding-bottom: var(--sp-8);
 }
 .footer-col-brand { display: flex; flex-direction: column; gap: 12px; }
 .footer-brand-row { display: flex; align-items: center; gap: 10px; }
@@ -2513,60 +1563,42 @@ body::before {
   letter-spacing: -.02em;
 }
 .footer-brand-desc {
-  font-size: var(--fs-1); color: rgba(239,242,247,.64); line-height: 1.65;
+  font-size: var(--fs-1); color: var(--text-3); line-height: 1.65;
   font-weight: 300; max-width: 280px;
 }
 .footer-col-links { display: flex; flex-direction: column; gap: 2px; }
 .footer-col-title {
   font-size: var(--fs-1); font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: rgba(239,242,247,.62);
+  text-transform: uppercase; color: var(--text-3);
   margin-bottom: 10px;
 }
 .footer-link {
-  color: rgba(239,242,247,.7); font-size: .83rem; text-decoration: none;
+  color: var(--text-2); font-size: .83rem; text-decoration: none;
   padding: 5px 0; transition: color .15s;
   background: none; border: none; cursor: pointer;
   font-family: 'Outfit', sans-serif; text-align: left;
   display: inline-block;
 }
 .footer-link:hover { color: var(--mint2); }
+/* Two footer links that are not links: one is a statement of fact, the other
+   sits mid-sentence in the legal note. */
+.footer-link--static { color: var(--text-3); cursor: default; }
+.footer-link--inline { display: inline; padding: 0; text-decoration: underline; font: inherit; }
+/* The room code is data, not prose: it wants figures that line up. */
+.room-code-chip { font-family: ui-monospace, Menlo, monospace; letter-spacing: .12em; }
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,.06);
-  padding: 18px 0 20px;
-  max-width: 1160px; margin: 0 auto;
+  padding-block: var(--sp-5);
   display: flex; align-items: flex-start; justify-content: space-between;
-  flex-wrap: wrap; gap: 12px;
+  flex-wrap: wrap; gap: var(--sp-3);
 }
 .footer-copy {
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); font-weight: 300;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-weight: 300;
   line-height: 1.5;
 }
 .footer-legal-note {
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); line-height: 1.6;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); line-height: 1.6;
   max-width: 480px; text-align: right;
-}
-
-/* ══════════════════════ LOGIN MODAL ══════════════════════ */
-.login-modal-backdrop {
-  position: fixed; inset: 0; z-index: 900;
-  background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px; animation: fadeIn .2s ease;
-}
-.login-modal {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
-    linear-gradient(155deg, rgba(12,28,23,.96) 0%, rgba(7,15,13,.98) 58%, rgba(4,10,9,1) 100%);
-  border: 1px solid rgba(158,234,196,.14); border-radius: 24px;
-  padding: 38px 34px 32px; width: 100%; max-width: 476px;
-  box-shadow: 0 44px 110px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.06);
-  position: relative; animation: fadeUp .3s ease;
-  max-height: min(820px, calc(100vh - 48px));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: var(--gold) var(--scroll-track);
 }
 .login-modal::-webkit-scrollbar { width: 10px; }
 .login-modal::-webkit-scrollbar-track {
@@ -2586,191 +1618,74 @@ body::before {
   background: linear-gradient(90deg, transparent, var(--mint), var(--gold2), var(--aqua), transparent);
   background-size: 300% auto; animation: shimmer 3s linear infinite;
 }
-.login-modal-close {
-  position: absolute; top: 14px; right: 16px;
-  background: none; border: none; color: rgba(239,242,247,.64);
-  font-size: 1.3rem; cursor: pointer; padding: 4px 8px; border-radius: 6px;
-  transition: color .2s, background .2s;
-}
-.login-modal-close:hover { color: var(--cream); background: var(--surface2); }
 .login-modal-chip { display: flex; justify-content: center; margin-bottom: 20px; }
-.login-modal-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.86rem; font-weight: 700; color: var(--cream);
-  letter-spacing: -0.03em; text-align: center; margin-bottom: 6px;
-}
-.login-modal-sub {
-  font-size: .84rem; color: rgba(239,242,247,.60); text-align: center;
-  margin-bottom: 20px; font-weight: 300; line-height: 1.55;
-}
-.account-status-card {
-  margin-bottom: 14px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(158,234,196,.12);
-  border-radius: 14px;
-  padding: 13px 16px;
-}
-.account-status-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: .82rem;
-  color: rgba(239,242,247,.78);
-}
-.account-status-row + .account-status-row { margin-top: 10px; }
 .account-status-label {
-  color: rgba(239,242,247,.68);
+  color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: .08em;
   font-size: var(--fs-1);
   font-weight: 700;
-}
-.account-status-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.10);
-  color: rgba(239,242,247,.72);
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
 }
 .account-status-pill.pro {
-  color: var(--gold2);
+  color: var(--gold-ink2);
   border-color: rgba(241,185,63,.30);
   background: rgba(241,185,63,.10);
 }
 .account-status-copy {
   font-size: var(--fs-1);
   line-height: 1.6;
-  color: rgba(239,242,247,.68);
+  color: var(--text-3);
 }
 .login-mode-hint {
   margin: -2px 0 16px;
   text-align: center;
   font-size: var(--fs-1);
   line-height: 1.5;
-  color: rgba(255,217,120,.82);
-}
-.login-upgrade-card {
-  margin-top: 18px;
-  padding: 16px 18px 18px;
-  border-radius: 16px;
-  border: 1px solid rgba(158,234,196,.12);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),
-    rgba(255,255,255,.02);
-}
-.login-upgrade-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-}
-.login-upgrade-title {
-  color: var(--cream);
-  font-size: .92rem;
-  font-weight: 600;
-  letter-spacing: -.01em;
-}
-.login-upgrade-sub {
-  margin: 5px 0 0;
-  color: rgba(239,242,247,.62);
-  font-size: var(--fs-1);
-  line-height: 1.5;
+  color: var(--gold-ink2);
 }
 .login-upgrade-note {
   margin-top: 12px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.10);
-  background: rgba(255,255,255,.02);
-  color: rgba(239,242,247,.60);
+  border: 1px solid var(--border);
+  background: var(--tint-raise);
+  color: var(--text-3);
   font-size: var(--fs-1);
   line-height: 1.55;
 }
 .login-upgrade-note strong {
-  color: rgba(255,217,120,.92);
+  color: var(--gold-ink2);
   font-weight: 600;
 }
-.login-modal-divider {
-  display: flex; align-items: center; gap: 12px;
-  margin: 20px 0; color: rgba(239,242,247,.62); font-size: var(--fs-1);
-  letter-spacing: 1px; text-transform: uppercase;
-}
-.login-modal-divider::before, .login-modal-divider::after {
-  content: ''; flex: 1; height: 1px; background: var(--border);
-}
-.login-modal-coming {
-  background: rgba(255,255,255,.04); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px; text-align: center;
-  font-size: .82rem; color: rgba(239,242,247,.64); line-height: 1.55;
-}
-.login-modal-coming strong { color: rgba(239,242,247,.70); font-weight: 600; }
 .login-modal-upgrade {
   margin-top: 20px; text-align: center;
-  font-size: .82rem; color: rgba(239,242,247,.64);
+  font-size: .82rem; color: var(--text-3);
 }
 .login-modal-upgrade a {
-  color: var(--gold2); text-decoration: none; font-weight: 600;
+  color: var(--gold-ink2); text-decoration: none; font-weight: 600;
   border-bottom: 1px solid rgba(201,145,42,.3); transition: border-color .2s;
 }
 .login-modal-upgrade a:hover { border-bottom-color: var(--gold2); }
-.login-secondary-btn {
-  width: 100%;
-  margin-top: 12px;
-  margin-bottom: 8px;
-  padding: 11px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(158,234,196,.14);
-  background: rgba(255,255,255,.03);
-  color: var(--cream);
-  font-family: 'Outfit', sans-serif;
-  font-size: .84rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .18s ease;
-}
-.login-secondary-btn:hover {
-  background: rgba(255,255,255,.06);
-  border-color: rgba(158,234,196,.24);
-}
-.auth-mode-row {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;
-}
-.auth-mode-btn {
-  appearance: none; border: 1px solid rgba(158,234,196,.12); background: rgba(255,255,255,.03);
-  color: rgba(239,242,247,.72); border-radius: 999px; padding: 10px 12px; font: inherit;
-  font-size: var(--fs-1); letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
-  transition: all .2s ease;
-}
 .auth-mode-btn.active {
-  border-color: rgba(241,185,63,.42); background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); color: var(--gold2);
+  border-color: rgba(241,185,63,.42); background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); color: var(--gold-ink2);
 }
-.auth-status {
-  font-size: .82rem; margin-top: 10px; text-align: center; padding: 9px 10px; border-radius: 10px;
-}
-.auth-status.success { color: #2ecc71; background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.18); }
-.auth-status.error   { color: #e74c3c; background: rgba(231,76,60,.06); border: 1px solid rgba(231,76,60,.15); }
+.auth-status.success { color: var(--success); background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.18); }
+.auth-status.error   { color: var(--danger); background: rgba(231,76,60,.06); border: 1px solid rgba(231,76,60,.15); }
 .nav-account {
   display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-right: 12px;
   min-width: 0;
 }
 .nav-account-name {
   max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: rgba(239,242,247,.86); font-size: .84rem; font-weight: 500;
+  color: var(--text-1); font-size: .84rem; font-weight: 500;
 }
 .nav-account-plan {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05);
-  color: rgba(239,242,247,.62); font-size: var(--fs-1); letter-spacing: .12em; text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,.12); background: var(--tint-raise-2);
+  color: var(--text-3); font-size: var(--fs-1); letter-spacing: .12em; text-transform: uppercase;
 }
 .nav-account-plan.pro {
-  color: var(--gold2); border-color: rgba(201,145,42,.32); background: rgba(201,145,42,.12);
+  color: var(--gold-ink2); border-color: rgba(201,145,42,.32); background: rgba(201,145,42,.12);
 }
 
 /* The navbar CTA used to carry a caption — "No sign-up · No card · No limits"
@@ -2788,250 +1703,61 @@ body::before {
 
 /* ─── Footer plan comparison bar ─── */
 .footer-plan-bar {
-  max-width: 1160px; margin: 0 auto;
-  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: var(--sp-5); flex-wrap: wrap;
   border-bottom: 1px solid rgba(255,255,255,.06);
-  padding: 16px 0 18px;
+  padding-block: var(--sp-4);
 }
 .footer-plan-item { display: flex; align-items: center; gap: 8px; }
-.footer-plan-badge {
-  padding: 3px 9px; border-radius: 999px;
-  font-size: var(--fs-1); font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase;
-  white-space: nowrap;
-}
 .footer-plan-badge.free {
-  background: rgba(255,255,255,.07); color: rgba(239,242,247,.66);
+  background: var(--tint-raise-2); color: var(--text-3);
   border: 1px solid rgba(255,255,255,.10);
 }
 .footer-plan-badge.pro {
-  background: rgba(201,145,42,.14); color: var(--gold2);
+  background: rgba(201,145,42,.14); color: var(--gold-ink2);
   border: 1px solid rgba(201,145,42,.28);
 }
-.footer-plan-text { font-size: var(--fs-1); color: rgba(239,242,247,.62); }
+.footer-plan-text { font-size: var(--fs-1); color: var(--text-3); }
 .footer-plan-divider {
-  width: 1px; height: 18px; background: rgba(255,255,255,.08); flex-shrink: 0;
+  width: 1px; height: 18px; background: var(--tint-raise-2); flex-shrink: 0;
 }
-.footer-plan-cta {
-  margin-left: auto; padding: 7px 18px; border-radius: 10px; border: none;
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
-  color: #1a1208; font-family: 'Outfit', sans-serif;
-  font-size: var(--fs-1); font-weight: 700; cursor: pointer;
-  transition: all .2s; white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(241,185,63,.18);
-}
-.footer-plan-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(241,185,63,.28); }
 
 /* ══════════════════════ LEGAL PAGES ══════════════════════ */
-.legal-page {
-  width: 100%; padding: 48px 24px 80px;
-  display: flex; justify-content: center;
-}
-.legal-inner {
-  max-width: 760px; width: 100%;
+.legal-page { width: 100%;
 }
 .legal-back {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: 10px;
-  border: 1px solid rgba(158,234,196,.18); background: rgba(255,255,255,.04);
-  color: rgba(239,242,247,.72); font-family: 'Outfit', sans-serif;
+  border: 1px solid var(--border2); background: var(--tint-raise);
+  color: var(--text-2); font-family: 'Outfit', sans-serif;
   font-size: .84rem; font-weight: 500; cursor: pointer;
   transition: all .2s; margin-bottom: 32px;
 }
-.legal-back:hover { background: rgba(255,255,255,.08); color: var(--cream); }
-.legal-h1 {
-  font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700;
-  color: var(--cream); letter-spacing: -0.03em; margin: 0 0 8px;
-}
-.legal-updated {
-  font-size: var(--fs-1); color: rgba(239,242,247,.62); margin: 0 0 40px;
-}
+.legal-back:hover { background: var(--tint-raise-2); color: var(--cream); }
 .legal-body h2 {
   font-family: 'Outfit', sans-serif; font-size: 1.08rem; font-weight: 600;
   color: var(--cream); letter-spacing: -0.01em; margin: 36px 0 12px;
   padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.07);
 }
 .legal-body p, .legal-body li {
-  font-size: .88rem; line-height: 1.75; color: rgba(239,242,247,.74);
+  font-size: .88rem; line-height: 1.75; color: var(--text-2);
   margin: 0 0 12px;
 }
 .legal-body ul {
   padding-left: 20px; margin: 0 0 12px;
 }
 .legal-body li { margin-bottom: 6px; }
-.legal-body strong { color: rgba(239,242,247,.90); font-weight: 600; }
-.legal-body a { color: var(--gold2); text-decoration: underline; }
-.legal-body a:hover { color: var(--gold3); }
+.legal-body strong { color: var(--text-1); font-weight: 600; }
+.legal-body a { color: var(--gold-ink2); text-decoration: underline; }
+.legal-body a:hover { color: var(--gold-ink3); }
 .legal-body code {
-  font-family: 'Courier New', monospace; font-size: .82em;
-  background: rgba(255,255,255,.07); padding: 1px 6px; border-radius: 4px;
+  /* .82em of 14px landed at 11.5px, under the 13px floor. A monospace face
+     already reads smaller at the same size, so it takes the floor directly. */
+  font-family: 'Courier New', monospace; font-size: var(--fs-1);
+  background: var(--tint-raise-2); padding: 1px 6px; border-radius: 4px;
 }
 
 /* ══════════════════════ MARKETING PAGES ══════════════════════ */
-.marketing-page {
-  width: 100%;
-  padding: 48px 24px 88px;
-  display: flex;
-  justify-content: center;
-}
-.marketing-inner {
-  width: 100%;
-  max-width: 1040px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-.marketing-hero {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
-    linear-gradient(155deg, rgba(12,28,23,.96) 0%, rgba(7,15,13,.98) 58%, rgba(4,10,9,1) 100%);
-  border: 1px solid rgba(158,234,196,.14);
-  border-radius: 28px;
-  padding: 34px 32px 30px;
-  box-shadow: 0 30px 80px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.05);
-}
-.marketing-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(241,185,63,.24);
-  background: rgba(241,185,63,.08);
-  color: var(--gold2);
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-}
-.marketing-title {
-  margin-top: 18px;
-  font-family: 'Outfit', sans-serif;
-  font-size: clamp(2.1rem, 4.6vw, 3.3rem);
-  line-height: 1.02;
-  letter-spacing: -0.05em;
-  color: var(--cream);
-  max-width: 820px;
-}
-.marketing-intro {
-  margin-top: 16px;
-  max-width: 760px;
-  font-size: 1rem;
-  line-height: 1.78;
-  color: rgba(239,242,247,.72);
-  font-weight: 300;
-}
-.marketing-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 24px;
-}
-.marketing-btn-primary,
-.marketing-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-  padding: 0 18px;
-  border-radius: 14px;
-  text-decoration: none;
-  font-family: 'Outfit', sans-serif;
-  font-size: .9rem;
-  font-weight: 700;
-  letter-spacing: .01em;
-  transition: all .2s ease;
-}
-.marketing-btn-primary {
-  border: none;
-  background: linear-gradient(135deg, #f0b43f 0%, #ffd978 55%, #fff0b0 100%);
-  color: var(--ink);
-  box-shadow: 0 16px 36px rgba(241,185,63,.22), inset 0 1px 0 rgba(255,255,255,.5);
-}
-.marketing-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 20px 42px rgba(241,185,63,.28), inset 0 1px 0 rgba(255,255,255,.58);
-}
-.marketing-btn-secondary {
-  border: 1px solid rgba(158,234,196,.16);
-  background: rgba(255,255,255,.04);
-  color: rgba(239,242,247,.84);
-}
-.marketing-btn-secondary:hover {
-  background: rgba(255,255,255,.08);
-  color: var(--cream);
-  border-color: rgba(158,234,196,.28);
-}
-.marketing-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 28px;
-}
-.marketing-stat {
-  background: rgba(255,255,255,.045);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 18px;
-  padding: 18px 18px 16px;
-}
-.marketing-stat-value {
-  display: block;
-  font-size: 1.65rem;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  color: var(--cream);
-}
-.marketing-stat-label {
-  display: block;
-  margin-top: 6px;
-  font-size: var(--fs-1);
-  line-height: 1.55;
-  color: rgba(239,242,247,.62);
-}
-.marketing-section {
-  background: rgba(255,255,255,.035);
-  border: 1px solid rgba(255,255,255,.09);
-  border-radius: 24px;
-  padding: 28px;
-}
-.marketing-section-head {
-  margin-bottom: 18px;
-  max-width: 760px;
-}
-.marketing-section-title {
-  font-size: 1.32rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--cream);
-}
-.marketing-section-intro {
-  margin-top: 8px;
-  font-size: .93rem;
-  line-height: 1.75;
-  color: rgba(239,242,247,.66);
-}
-.marketing-card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-.marketing-card {
-  background: rgba(255,255,255,.028);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 18px;
-  padding: 20px 18px;
-}
-.marketing-card-title {
-  font-size: .98rem;
-  font-weight: 700;
-  color: var(--gold3);
-}
-.marketing-card-copy {
-  margin-top: 10px;
-  font-size: .88rem;
-  line-height: 1.7;
-  color: rgba(239,242,247,.68);
+.marketing-page { width: 100%;
 }
 .marketing-list {
   list-style: none;
@@ -3045,319 +1771,51 @@ body::before {
   padding-left: 18px;
   font-size: .86rem;
   line-height: 1.6;
-  color: rgba(239,242,247,.76);
+  color: var(--text-2);
 }
 .marketing-list li::before {
   content: "♦";
   position: absolute;
   left: 0;
   top: .22rem;
-  color: var(--gold2);
+  color: var(--gold-ink2);
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
 }
 .marketing-list strong {
-  color: rgba(239,242,247,.92);
+  color: var(--text-1);
   font-weight: 600;
-}
-.marketing-steps {
-  display: grid;
-  gap: 14px;
-  margin-top: 18px;
-}
-.marketing-step {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 14px;
-  align-items: start;
-  padding: 16px 16px 15px;
-  border-radius: 18px;
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.08);
-}
-.marketing-step-num {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(241,185,63,.12);
-  border: 1px solid rgba(241,185,63,.22);
-  color: var(--gold2);
-  font-weight: 700;
-  font-size: .88rem;
-}
-.marketing-step-title {
-  font-size: .94rem;
-  font-weight: 700;
-  color: var(--cream);
-}
-.marketing-step-copy {
-  margin-top: 4px;
-  font-size: .86rem;
-  line-height: 1.65;
-  color: rgba(239,242,247,.68);
-}
-.marketing-plan-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-.marketing-plan-card {
-  padding: 22px 20px;
-  border-radius: 20px;
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.08);
 }
 .marketing-plan-card.pro {
   background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(241,185,63,.04));
   border-color: rgba(241,185,63,.22);
 }
-.marketing-plan-topline {
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.66);
-  margin-bottom: 10px;
-}
-.marketing-plan-card.pro .marketing-plan-topline { color: var(--gold2); }
-.marketing-plan-price {
-  font-size: 1.95rem;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  color: var(--cream);
-}
-.marketing-plan-card.pro .marketing-plan-price { color: var(--gold2); }
+.marketing-plan-card.pro .marketing-plan-topline { color: var(--gold-ink2); }
+.marketing-plan-card.pro .marketing-plan-price { color: var(--gold-ink2); }
 .marketing-plan-sub {
   margin-top: 6px;
   font-size: .82rem;
-  color: rgba(239,242,247,.62);
+  color: var(--text-3);
   line-height: 1.6;
 }
-.marketing-note-panel {
-  margin-top: 18px;
-  padding: 16px 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(126,230,255,.16);
-  background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.05));
-  color: rgba(239,242,247,.78);
-  font-size: .86rem;
-  line-height: 1.65;
-}
-.marketing-related-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-.marketing-link-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 100%;
-  padding: 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.08);
-  background: rgba(255,255,255,.03);
-  text-decoration: none;
-  transition: all .18s ease;
-}
-.marketing-link-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(158,234,196,.22);
-  background: rgba(255,255,255,.05);
-}
-.marketing-link-kicker {
-  font-size: var(--fs-1);
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-}
-.marketing-link-title {
-  font-size: .96rem;
-  font-weight: 700;
-  color: var(--cream);
-  letter-spacing: -0.02em;
-}
-.marketing-link-copy {
-  font-size: .83rem;
-  line-height: 1.65;
-  color: rgba(239,242,247,.66);
-}
-.marketing-cta-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
-  padding: 24px 26px;
-  border-radius: 24px;
-  border: 1px solid rgba(241,185,63,.18);
-  background: linear-gradient(135deg, rgba(241,185,63,.10), rgba(126,230,255,.05));
-}
-.marketing-cta-title {
-  font-size: 1.08rem;
-  font-weight: 700;
-  color: var(--cream);
-}
-.marketing-cta-copy {
-  margin-top: 6px;
-  max-width: 620px;
-  font-size: .88rem;
-  line-height: 1.68;
-  color: rgba(239,242,247,.68);
-}
-@media (max-width: 900px) {
-  .marketing-card-grid,
-  .marketing-related-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
 @media (max-width: 680px) {
-  .marketing-page { padding: 34px 16px 72px; }
   .marketing-hero,
-  .marketing-section { padding: 24px 20px; }
   .marketing-actions,
-  .marketing-cta-strip { align-items: stretch; }
-  .marketing-btn-primary,
-  .marketing-btn-secondary { width: 100%; }
   .marketing-stat-grid,
   .marketing-card-grid,
   .marketing-related-grid,
   .marketing-plan-grid { grid-template-columns: 1fr; }
-  .marketing-title { font-size: 2rem; }
 }
-
-/* ══════════════════════ HISTORY MODAL ══════════════════════ */
-.history-overlay {
-  position: fixed; inset: 0; z-index: 950;
-  background: rgba(0,0,0,.74); backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px; animation: fadeIn .2s ease;
-}
-.history-modal {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0)),
-    linear-gradient(155deg, rgba(10,24,20,.97) 0%, rgba(6,14,12,.99) 100%);
-  border: 1px solid rgba(158,234,196,.14); border-radius: 24px;
-  padding: 36px 32px 32px; width: 100%; max-width: 640px;
-  max-height: 88vh; overflow-y: auto;
-  box-shadow: 0 44px 110px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.06);
-  position: relative; animation: fadeUp .28s ease;
-}
-.history-header {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 16px; margin-bottom: 22px;
-}
-.history-close {
-  position: absolute; top: 18px; right: 18px;
-  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10);
-  color: rgba(239,242,247,.7); width: 32px; height: 32px;
-  border-radius: 10px; cursor: pointer; font-size: .85rem;
-  display: flex; align-items: center; justify-content: center;
-  transition: all .18s;
-}
-.history-close:hover { color: var(--cream); background: rgba(255,255,255,.10); }
-.history-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.7rem; font-weight: 700; color: var(--cream);
-  letter-spacing: -0.03em; margin-bottom: 4px;
-}
-.history-sub {
-  font-size: .82rem; color: rgba(239,242,247,.66); margin: 0;
-}
-.history-insights {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 10px; margin-bottom: 24px;
-}
-.hi-card {
-  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
-  border-radius: 16px; padding: 14px 12px; text-align: center;
-  display: flex; flex-direction: column; gap: 6px; min-height: 108px;
-  justify-content: center;
-}
-.hi-label {
-  font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-}
-.hi-v {
-  font-size: 1.8rem; font-weight: 700; color: var(--gold2);
-  letter-spacing: -0.04em; line-height: 1;
-}
-.hi-unit {
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); line-height: 1.35;
-}
-.hi-trend-up   { color: #4bd889; }
-.hi-trend-down { color: #e74c3c; }
-.hi-trend-flat { color: rgba(239,242,247,.7); }
-.history-list { display: flex; flex-direction: column; gap: 10px; }
-.history-item {
-  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
-  border-radius: 14px; padding: 16px 18px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  transition: border-color .18s;
-}
-.history-item:hover { border-color: rgba(158,234,196,.18); }
-.hi-item-left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.hi-sprint-label {
-  font-size: var(--fs-1); font-weight: 700; letter-spacing: 1.2px;
-  text-transform: uppercase; color: rgba(239,242,247,.62);
-}
-.hi-sprint-date { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); }
-.hi-item-stats { display: flex; gap: 20px; flex-shrink: 0; }
-.hi-stat {
-  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
-  min-width: 58px;
-}
-.hi-stat-val {
-  font-size: 1.2rem; font-weight: 700; color: var(--cream);
-  letter-spacing: -0.03em; line-height: 1;
-}
-.hi-stat-val.gold { color: var(--gold2); }
-.hi-stat-key {
-  font-size: var(--fs-1); letter-spacing: 1.2px; text-transform: uppercase;
-  color: rgba(239,242,247,.62);
-}
-.history-empty {
-  text-align: center; padding: 52px 28px 46px; color: rgba(239,242,247,.64);
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-}
-.history-empty-icon {
-  width: 68px; height: 68px; border-radius: 20px;
-  display: inline-flex; align-items: center; justify-content: center;
-  margin-bottom: 16px;
-  background: radial-gradient(circle at 30% 20%, rgba(241,185,63,.16), rgba(241,185,63,.04));
-  border: 1px solid rgba(241,185,63,.12);
-  color: var(--gold2); font-size: 1.8rem;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-}
-.history-empty-title {
-  font-size: 1.12rem; line-height: 1.3; color: rgba(239,242,247,.86);
-  margin: 0 0 8px;
-}
-.history-empty-copy {
-  font-size: .92rem; line-height: 1.7; color: rgba(239,242,247,.62);
-  max-width: 520px; margin: 0 auto;
-}
-.history-empty-copy strong {
-  color: rgba(239,242,247,.84);
-  font-weight: 600;
-}
+.hi-stat-val.gold { color: var(--gold-ink2); }
 
 /* NavBar history button */
-/* .nav-btn-history: see the note by .nav-btn-login. Visual comes from .btn;
+/* .nav-btn-history: see the note by .nav-btn-login. Visual comes from pp-btn;
    the name is kept for the authenticated-only display rules. */
 
 @media (max-width: 780px) {
   .history-insights { grid-template-columns: repeat(2, 1fr); }
-  .history-modal { padding: 28px 20px 24px; }
 }
 @media (max-width: 520px) {
   .navbar:not(.authenticated) .nav-btn-history { display: none; }
-  .hi-item-stats { gap: 12px; }
 }
 
 /* ══════════════════════ RESPONSIVE — FOOTER + NAV ══════════════════════ */
@@ -3380,11 +1838,10 @@ body::before {
 @media (max-width: 520px) {
   .footer-inner { grid-template-columns: 1fr; }
   .footer-legal-note { text-align: left; max-width: 100%; }
-  .navbar { padding: 0 14px; }
-  .navbar-inner { gap: 10px; }
+  .navbar-inner { gap: var(--sp-2); }
   .navbar-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   /* Narrow bars buy width by tightening horizontal padding and dropping to the
-     small type role. The 44px tap floor from .btn is deliberately untouched:
+     small type role. The 44px tap floor from pp-btn is deliberately untouched:
      a phone is where it matters most. */
   .navbar.authenticated .nav-btn-login,
   .navbar.authenticated .nav-btn-history { display: inline-flex; }
@@ -3397,9 +1854,6 @@ body::before {
     letter-spacing: var(--fs-1-tracking);
   }
   .nav-link-btn { padding: 6px 10px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
-  .login-modal { padding: 34px 22px 26px; max-width: 100%; }
-  .auth-mode-row { grid-template-columns: 1fr; }
-  .login-upgrade-head { flex-direction: column; align-items: stretch; }
   .navbar.authenticated .nav-account {
     display: flex;
     margin-right: 0;
@@ -3426,74 +1880,37 @@ body::before {
 }
 
 /* ══════════════════════ ADMIN DASHBOARD ══════════════════════ */
-.dash-wrap { max-width: 1180px; margin: 0 auto; padding: 28px 22px 72px; width: 100%; }
+.dash-wrap { padding-block: var(--sp-8) var(--sp-20); }
 .dash-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
-.dash-back { background: none; border: none; color: var(--gold2); font-family: 'Outfit', sans-serif; font-size: var(--fs-1); cursor: pointer; padding: 0 0 8px; }
-.dash-title { font-size: 1.7rem; font-weight: 700; color: var(--cream); letter-spacing: -.02em; }
-.dash-sub { font-size: var(--fs-1); color: rgba(239,242,247,.6); margin-top: 4px; }
+.dash-back { background: none; border: none; color: var(--gold-ink2); font-family: 'Outfit', sans-serif; font-size: var(--fs-1); cursor: pointer; padding: 0 0 8px; }
 .dash-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.dash-window { display: flex; gap: 4px; background: rgba(255,255,255,.04); border: 1px solid rgba(158,234,196,.14); border-radius: 10px; padding: 3px; }
-.dash-window-btn { min-height: 32px; padding: 5px 12px; border-radius: 8px; border: none; background: none; color: rgba(239,242,247,.68); font-family: 'Outfit', sans-serif; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); cursor: pointer; }
-.dash-window-btn.active { background: var(--goldB); color: var(--gold2); font-weight: 600; }
-.dash-btn { min-height: 34px; padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(158,234,196,.2); background: rgba(255,255,255,.05); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: var(--fs-1); cursor: pointer; }
-.dash-btn:hover { background: rgba(255,255,255,.09); }
-.dash-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-.dash-kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 3px; }
-.dash-kpi-v { font-size: 1.9rem; font-weight: 700; color: var(--gold2); line-height: 1.05; }
-.dash-kpi-l { font-size: var(--fs-1); letter-spacing: .8px; text-transform: uppercase; color: rgba(239,242,247,.62); }
-.dash-kpi-s { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.64); margin-top: 2px; }
-.dash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.dash-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+.dash-window-btn.active { background: var(--goldB); color: var(--gold-ink2); font-weight: 600; }
+.dash-panel { min-width: 0;
+}
 .dash-panel.wide { grid-column: 1 / -1; }
-.dash-panel-title { font-size: .95rem; font-weight: 700; color: var(--cream); margin-bottom: 4px; }
-.dash-panel-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.7); line-height: 1.5; margin-bottom: 14px; }
-.dash-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 12px; }
-.dash-stats > div { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; display: flex; flex-direction: column; gap: 2px; }
-.dash-stats span { font-size: 1.15rem; font-weight: 700; color: var(--cream); }
-.dash-stats em { font-style: normal; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.7); line-height: 1.35; }
 .dash-bars { display: flex; flex-direction: column; gap: 7px; }
 .dash-bar-row { display: grid; grid-template-columns: minmax(84px, 1.1fr) 3fr minmax(74px, auto); align-items: center; gap: 10px; }
-.dash-bar-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.78); }
-.dash-bar-track { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; }
-.dash-bar-fill { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--gold) 0%, var(--gold3) 100%); }
+.dash-bar-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); }
 .dash-bar-value { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--cream); text-align: right; font-variant-numeric: tabular-nums; }
-.dash-bar-value em { font-style: normal; color: rgba(239,242,247,.64); margin-left: 6px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
-.dash-empty { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.64); font-style: italic; padding: 6px 0; }
+.dash-bar-value em { font-style: normal; color: var(--text-3); margin-left: 6px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
 .dash-trend { margin-bottom: 16px; }
-.dash-trend-head { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); margin-bottom: 7px; }
-.dash-trend-max { color: rgba(239,242,247,.62); }
+.dash-trend-head { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: 7px; }
+.dash-trend-max { color: var(--text-3); }
 .dash-trend-plot { display: flex; align-items: flex-end; gap: 2px; height: 76px; padding: 0 1px; }
 .dash-trend-col { flex: 1; min-width: 2px; border-radius: 2px 2px 0 0; background: linear-gradient(180deg, var(--gold3) 0%, var(--gold) 100%); }
-.dash-trend-col.zero { background: rgba(255,255,255,.07); }
-.dash-trend-axis { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); margin-top: 5px; }
-.dash-inputs { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 14px; }
-.dash-inputs label { display: flex; flex-direction: column; gap: 5px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.62); }
-.dash-inputs input { width: 108px; min-height: 34px; padding: 7px 10px; border-radius: 9px; border: 1px solid rgba(158,234,196,.18); background: rgba(255,255,255,.05); color: var(--cream); font-family: 'Outfit', sans-serif; font-size: .82rem; }
-.dash-calc { display: flex; flex-direction: column; gap: 2px; padding: 7px 14px; border-left: 1px solid var(--border); }
-.dash-calc span { font-size: 1.15rem; font-weight: 700; color: var(--cream); }
-.dash-calc.strong span { color: var(--gold2); font-size: 1.5rem; }
-.dash-calc em { font-style: normal; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.7); }
-.dash-verdict { border-radius: 11px; padding: 12px 14px; font-size: var(--fs-1); line-height: 1.55; border: 1px solid; }
-.dash-verdict.good { background: rgba(39,174,96,.07); border-color: rgba(39,174,96,.28); color: rgba(239,242,247,.9); }
-.dash-verdict.warn { background: rgba(201,145,42,.07); border-color: rgba(201,145,42,.3); color: rgba(239,242,247,.9); }
-.dash-verdict-row { margin: 10px 0; }
-.dash-dismissed { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.64); }
-.dash-foot { margin-top: 22px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: rgba(239,242,247,.64); line-height: 1.6; }
-.dash-gate { max-width: 520px; margin: 60px auto; background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 30px; text-align: center; }
-.dash-gate-title { font-size: 1.25rem; color: var(--cream); margin-bottom: 10px; }
-.dash-gate-copy { font-size: .84rem; color: rgba(239,242,247,.7); line-height: 1.65; margin-bottom: 18px; }
-.dash-gate-copy code { font-family: ui-monospace, Menlo, monospace; font-size: var(--fs-1); color: var(--gold2); }
+.dash-trend-col.zero { background: var(--tint-raise-2); }
+.dash-trend-axis { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: 5px; }
+.dash-calc.strong span { color: var(--gold-ink2); font-size: 1.5rem; }
+.dash-dismissed { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); }
+.dash-foot { margin-top: 22px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); line-height: 1.6; }
+.dash-gate { max-width: 520px; margin: 60px auto;
+}
 @media (max-width: 900px) {
-  .dash-kpis { grid-template-columns: repeat(2, 1fr); }
-  .dash-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
-  .dash-wrap { padding: 20px 14px 60px; }
-  .dash-kpis { grid-template-columns: 1fr; }
+  .dash-wrap { padding-block: var(--sp-5) var(--sp-16); }
   .dash-bar-row { grid-template-columns: minmax(70px, 1fr) 2fr auto; gap: 8px; }
-  .dash-calc { border-left: none; padding-left: 0; }
 }
-
 `;
 
 /* ═══════════════════════ ROOM CONFIG ═══════════════════════ */
@@ -3573,74 +1990,10 @@ const getFounderRoomConfig = (code = "") => {
 const isFounderRoom = (code) => !!getFounderRoomConfig(code);
 const getFounderDefaultDeck = (code) => getFounderRoomConfig(code)?.defaultDeck || "fibonacci";
 
-/* ═══════════════════════ ICON SET ═══════════════════════
-   One stroke-based family: 24px grid, 1.75 stroke, round caps and joins,
-   currentColor. Replaces the emoji that used to label controls.
-
-   Emoji were removed from structural UI for four reasons, not taste:
-     • They cannot inherit currentColor, so a disabled or muted control
-       kept a full-saturation glyph and looked enabled.
-     • They render from a different font on every OS (Apple Color Emoji,
-       Segoe UI Emoji, Noto), so the brand could not control them.
-     • Screen readers read their CLDR name aloud: a die glyph before
-       was announced as "game die, 0 stories estimated".
-       "0 stories estimated" was announced as "game die, 0 stories estimated".
-     • They are always full colour, which fights a restrained dark palette.
-
-   Card suit glyphs (♦ ♠ ♥ ♣) are kept. They are typographic characters
-   that render from the text font, they carry the casino theme, and they
-   are decorative inside cards that already have a text value.
-════════════════════════════════════════════════════════════ */
-const ICON_PATHS = {
-  link: "M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5",
-  users: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
-  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2",
-  eye: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
-  cards: "M8 6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2zM5 7v11a2 2 0 0 0 2 2h9",
-  list: "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01",
-  chart: "M3 3v16a2 2 0 0 0 2 2h16M7 15l3.5-4 3 2.5L18 8",
-  check: "M20 6 9 17l-5-5",
-  close: "M18 6 6 18M6 6l12 12",
-  alert: "M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0",
-  play: "M6 4.5v15l13-7.5z",
-  stop: "M7 7h10v10H7z",
-  copy: "M9 9h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10a1 1 0 0 1 1-1M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1",
-  arrowRight: "M5 12h14M13 6l6 6-6 6",
-  arrowLeft: "M19 12H5M11 18l-6-6 6-6",
-  plus: "M12 5v14M5 12h14",
-  refresh: "M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5",
-  broadcast: "M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19A10 10 0 0 1 5 5",
-};
-
-/**
- * Inline SVG icon. Decorative by default: pass `title` only when the icon
- * is the sole label for a control, which should be rare, because an icon
- * without a text label is a guess the user has to make.
- */
-function Icon({ name, size = 20, title, className = "" }) {
-  const d = ICON_PATHS[name];
-  if (!d) return null;
-  return (
-    <svg
-      className={`icon ${className}`}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      role={title ? "img" : undefined}
-      aria-label={title || undefined}
-      aria-hidden={title ? undefined : "true"}
-      focusable="false"
-    >
-      {title ? <title>{title}</title> : null}
-      <path d={d} />
-    </svg>
-  );
-}
+/* The icon set lives in the design system — one stroke family, one file. This
+   wrapper exists only to keep the `.icon` inline-alignment rule the legacy
+   containers in this file still rely on; it is not a second Icon. */
+const Icon = (props) => <DesignSystemIcon className="icon" {...props} />;
 
 /* ═══════════════════════ CASINO CHIP LOGO ═══════════════════════
    SVG casino chip, 8-segment outer ring, gold inner border, "PP" text.
@@ -3730,7 +2083,7 @@ function NavBar({
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="navbar-inner">
+      <div className="navbar-inner pp-container">
         <div className="navbar-left">
           <BrandMark
             onClick={onLogoClick}
@@ -3758,34 +2111,42 @@ function NavBar({
           )}
         </div>
         <div className="navbar-right">
+          {/* Dark is the default and stays the default; this is the only way to
+              leave it, and the choice is remembered. It sits before the account
+              controls so it never competes with the one primary action. */}
+          <ThemeToggle size="sm" />
           {currentUser ? (
             <>
-              <button
-                className="btn btn--secondary btn--sm nav-btn-history"
+              <Button
+                variant="secondary"
+                size="sm"
+                className="nav-btn-history"
                 onClick={onHistory}
                 aria-label="View sprint history"
               >
                 <Icon name="chart" /> History
-              </button>
+              </Button>
               <div className="nav-account" aria-label="Signed-in account">
                 <span className="nav-account-name">{accountLabel}</span>
                 <span className="nav-account-plan">Free</span>
               </div>
               {onAdmin && (
-                <button className="btn btn--ghost btn--sm nav-btn-login" onClick={onAdmin} aria-label="Usage dashboard"><Icon name="chart" size={18} /></button>
+                <IconButton icon="chart" size="sm" label="Usage dashboard" onClick={onAdmin} />
               )}
-              <button className="btn btn--ghost btn--sm nav-btn-login" onClick={onLogout}>Sign out</button>
+              <Button variant="ghost" size="sm" className="nav-btn-login" onClick={onLogout}>Sign out</Button>
             </>
           ) : (
             <>
-              <button className="btn btn--ghost btn--sm nav-btn-login" onClick={onLogin}>Sign in</button>
+              <Button variant="ghost" size="sm" className="nav-btn-login" onClick={onLogin}>Sign in</Button>
               {!inRoom && (
-                <button
-                  className={`btn btn--${onJoinScreen ? "secondary" : "primary"} btn--sm nav-btn-register`}
+                <Button
+                  variant={onJoinScreen ? "secondary" : "primary"}
+                  size="sm"
+                  className="nav-btn-register"
                   onClick={onStartFree}
                 >
                   Start a free room
-                </button>
+                </Button>
               )}
             </>
           )}
@@ -3808,23 +2169,23 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
     <footer className="site-footer" aria-label="Site footer">
 
       {/* ── Free-for-everyone bar ── */}
-      <div className="footer-plan-bar">
+      <div className="footer-plan-bar pp-container">
         <div className="footer-plan-item">
-          <span className="footer-plan-badge free">£0</span>
+          <Chip tone="gold">$0</Chip>
           <span className="footer-plan-text">
             Every feature, every team, no card. Up to {MAX_PARTICIPANTS} people per room, unlimited rounds, unlimited stories, no ads.
           </span>
         </div>
         <div className="footer-plan-divider" aria-hidden="true" />
         <div className="footer-plan-item">
-          <span className="footer-plan-badge pro">Later</span>
+          <Chip tone="on-felt">Later</Chip>
           <span className="footer-plan-text">
             Paid add-ons may arrive once the tool has a real user base. Everything listed here stays free.
           </span>
         </div>
       </div>
 
-      <div className="footer-inner">
+      <div className="footer-inner pp-container">
 
         {/* Column 1, Brand */}
         <div className="footer-col-brand">
@@ -3859,9 +2220,7 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
           <div className="footer-col-title">{signedIn ? "Account" : "Product"}</div>
           {signedIn ? (
             <>
-              <span className="footer-link" style={{ color: "rgba(239,242,247,.62)", cursor: "default" }}>
-                Workspace active · Free
-              </span>
+              <span className="footer-link footer-link--static">Workspace active · Free</span>
               <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>Features</RouteLink>
               <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>Support</RouteLink>
               <a href={`mailto:${support}`} className="footer-link">Email support</a>
@@ -3881,7 +2240,7 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
       </div>
 
       {/* Bottom bar, copyright + legal note */}
-      <div className="footer-bottom">
+      <div className="footer-bottom pp-container">
         <div className="footer-copy">
           © {year} pointpoker. All rights reserved.
           Registered in England &amp; Wales.
@@ -3889,12 +2248,7 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
         <div className="footer-legal-note">
           pointpoker is provided "as-is" without warranty of any kind.
           Use is subject to our{" "}
-          <button
-            onClick={onNavTerms}
-            style={{ color: "rgba(239,242,247,.62)", textDecoration: "underline", background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
-          >
-            Terms of Service
-          </button>
+          <button className="footer-link footer-link--inline" onClick={onNavTerms}>Terms of Service</button>
           . Firebase and Vercel are third-party services and
           are not affiliated with pointpoker.
         </div>
@@ -3927,7 +2281,6 @@ function LoginModal({
   // "teamroom" = the user tried to host a Team Room, which needs an owner identity.
   const teamRoomIntent = entryIntent === "teamroom";
   const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
-  const [dialogRef, closeDialog] = useDialog(onClose);
 
   /* The account funnel divides completed registrations by this event, so it has
      to count register intent and nothing else. It used to fire from the navbar
@@ -4114,247 +2467,192 @@ function LoginModal({
     }
   };
 
-  return (
-    <div className="login-modal-backdrop" onClick={(e) => e.target === e.currentTarget && closeDialog()}>
-      <div className="login-modal" role="dialog" aria-modal="true" aria-label={title} ref={dialogRef}>
-        <button className="login-modal-close" onClick={closeDialog} aria-label="Close">×</button>
+  /* Every one of these used to be a bare coloured line of text on the modal
+     ground. Rule 5: a message needs a surface of its own, or it is the first
+     thing the eye skips. */
+  const statusAlert = authError
+    ? { tone: "danger", text: authError }
+    : authStatus === "ok" && mode !== "register"
+      ? { tone: "success", text: "Signed in." }
+      : authStatus === "verify"
+        ? { tone: "success", text: `Account created. Check ${registerSuccess?.email || "your email"} to verify your address.` }
+        : authStatus === "verify_resent"
+          ? { tone: "success", text: `Verification email resent to ${registerSuccess?.email || "your inbox"}.` }
+          : authStatus === "verify_error"
+            ? { tone: "warning", text: "Account created, but we could not send the verification email yet. Use resend below." }
+            : authStatus === "reset"
+              ? { tone: "success", text: "Password reset email sent." }
+              : null;
 
-        {/* Chip */}
+  return (
+    <Modal open title={title} subtitle={subtitle} onClose={onClose} className="login-modal">
+      <Stack>
         <div className="login-modal-chip">
-          <BrandMark size={52} label="pointpoker"/>
+          <BrandMark size={52} label="pointpoker" />
         </div>
 
-        <h2 className="login-modal-title">{title}</h2>
-        <p className="login-modal-sub">{subtitle}</p>
-
-        <div className="account-status-card">
+        <Card variant="flat" pad="sm">
           {currentUser ? (
-            <>
-              <div className="account-status-row">
+            <Stack gap="sm">
+              <Row between>
                 <span className="account-status-label">Signed in as</span>
                 <strong>{currentUser.displayName || currentUser.email || "Current account"}</strong>
-              </div>
-              <div className="account-status-row">
+              </Row>
+              <Row between>
                 <span className="account-status-label">Plan</span>
-                <span className="account-status-pill">Free, everything unlocked</span>
-              </div>
-            </>
+                <Chip tone="gold">Free, everything unlocked</Chip>
+              </Row>
+            </Stack>
           ) : (
             <p className="account-status-copy">
               You never need an account to run a room. Create one if you want two permanent Team Room links and sprint history that follows you across devices.
             </p>
           )}
-        </div>
+        </Card>
         <p className="login-mode-hint">{modeHint}</p>
 
         {showAuthForm && (
           <>
-            <div className="auth-mode-row">
-              <button
-                type="button"
-                className={`auth-mode-btn${mode === "signin" ? " active" : ""}`}
-                aria-pressed={mode === "signin"}
-                onClick={() => { setMode("signin"); resetMessages(); }}
-              >
-                Sign in
-              </button>
-              <button
-                type="button"
-                className={`auth-mode-btn${mode === "register" ? " active" : ""}`}
-                aria-pressed={mode === "register"}
-                onClick={() => { setMode("register"); resetMessages(); }}
-              >
-                Create account
-              </button>
-              <button
-                type="button"
-                className={`auth-mode-btn${mode === "reset" ? " active" : ""}`}
-                aria-pressed={mode === "reset"}
-                onClick={() => { setMode("reset"); resetMessages(); }}
-              >
-                Reset password
-              </button>
-            </div>
+            <SegmentedControl
+              block
+              ariaLabel="What you want to do"
+              value={mode}
+              onChange={(next) => { setMode(next); resetMessages(); }}
+              options={[
+                { value: "signin", label: "Sign in" },
+                { value: "register", label: "Create account" },
+                { value: "reset", label: "Reset password" },
+              ]}
+            />
 
             {mode === "register" && (
-              <>
-                <label className="lbl" htmlFor="auth-name">Full Name</label>
-                <input
-                  id="auth-name"
-                  className="inp"
-                  placeholder="Alex Johnson"
-                  value={nameInput}
-                  onChange={(e) => { setNameInput(e.target.value); resetMessages(); }}
-                  maxLength={40}
-                  autoFocus
-                />
-              </>
+              <TextField
+                id="auth-name"
+                label="Full name"
+                placeholder="Alex Johnson"
+                value={nameInput}
+                onChange={(e) => { setNameInput(e.target.value); resetMessages(); }}
+                maxLength={40}
+                autoComplete="name"
+                data-autofocus
+              />
             )}
 
-            <label className="lbl" htmlFor="auth-email">{mode === "reset" ? "Account Email" : "Email"}</label>
-            <input
+            <TextField
               id="auth-email"
-              className="inp"
+              label={mode === "reset" ? "Account email" : "Email"}
               type="email"
               placeholder="you@company.com"
               value={emailInput}
               onChange={(e) => { setEmailInput(e.target.value); resetMessages(); }}
-              autoFocus={mode !== "register"}
+              autoComplete="email"
+              {...(mode !== "register" ? { "data-autofocus": true } : {})}
             />
 
             {mode !== "reset" && (
-              <>
-                <label className="lbl" htmlFor="auth-password">Password</label>
-                <input
-                  id="auth-password"
-                  className="inp"
-                  type="password"
-                  placeholder={mode === "register" ? "Minimum 6 characters" : "Your password"}
-                  value={passInput}
-                  onChange={(e) => { setPassInput(e.target.value); resetMessages(); }}
-                  onKeyDown={(e) => e.key === "Enter" && (mode === "register" ? handleRegister() : handleSignIn())}
-                />
-              </>
+              <TextField
+                id="auth-password"
+                label="Password"
+                type="password"
+                placeholder={mode === "register" ? "Minimum 6 characters" : "Your password"}
+                value={passInput}
+                onChange={(e) => { setPassInput(e.target.value); resetMessages(); }}
+                onKeyDown={(e) => e.key === "Enter" && (mode === "register" ? handleRegister() : handleSignIn())}
+                autoComplete={mode === "register" ? "new-password" : "current-password"}
+              />
             )}
 
-            {authError && <div className="auth-status error">{authError}</div>}
-            {authStatus === "ok" && mode !== "register" && (
-              <div className="auth-status success">
-                {mode === "register" ? "✓ Account created." : "✓ Signed in."}
-              </div>
-            )}
-            {authStatus === "verify" && (
-              <div className="auth-status success">
-                ✓ Account created. Check {registerSuccess?.email || "your email"} to verify your address.
-              </div>
-            )}
-            {authStatus === "verify_resent" && (
-              <div className="auth-status success">
-                ✓ Verification email resent to {registerSuccess?.email || "your inbox"}.
-              </div>
-            )}
-            {authStatus === "verify_error" && (
-              <div className="auth-status error">
-                ✓ Account created, but we could not send the verification email yet. Use resend below.
-              </div>
-            )}
-            {authStatus === "reset" && (
-              <div className="auth-status success">✓ Password reset email sent.</div>
-            )}
+            {statusAlert && <Alert tone={statusAlert.tone}>{statusAlert.text}</Alert>}
 
             {mode === "signin" && (
-              <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={handleSignIn} disabled={authStatus === "loading"}>
+              <Button variant="primary" block onClick={handleSignIn} disabled={authStatus === "loading"}>
                 {authStatus === "loading" ? "Signing in…" : "Sign in"}
-              </button>
+              </Button>
             )}
             {mode === "register" && !registerComplete && (
-              <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={handleRegister} disabled={authStatus === "loading"}>
+              <Button variant="primary" block onClick={handleRegister} disabled={authStatus === "loading"}>
                 {authStatus === "loading" ? "Creating account…" : teamRoomIntent ? "Create account & claim my Team Rooms" : "Create free account"}
-              </button>
+              </Button>
             )}
             {mode === "register" && registerComplete && (
               <>
-                <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={handleRegisterContinue}>
+                <Button variant="primary" block onClick={handleRegisterContinue}>
                   {teamRoomIntent ? "Continue to my Team Rooms" : "Continue to workspace"}
-                </button>
-                <button
-                  type="button"
-                  className="login-secondary-btn"
-                  style={{ marginTop: 12 }}
+                </Button>
+                <Button
+                  variant="ghost"
+                  block
                   onClick={handleResendVerification}
                   disabled={authStatus === "verify_resending"}
                 >
                   {authStatus === "verify_resending" ? "Sending verification…" : "Resend verification email"}
-                </button>
+                </Button>
               </>
             )}
             {mode === "reset" && (
-              <button className="btn btn--primary btn--block" style={{ marginTop: 12 }} onClick={handleReset} disabled={authStatus === "loading"}>
+              <Button variant="primary" block onClick={handleReset} disabled={authStatus === "loading"}>
                 {authStatus === "loading" ? "Sending reset…" : "Send reset link"}
-              </button>
+              </Button>
             )}
           </>
         )}
 
         {showSignedInAccount && (
-          <div className="login-modal-coming">
-            <strong>{currentUser.displayName || "Signed in"}</strong><br />
-            {currentUser.email}
-          </div>
-        )}
-
-        {showSignedInAccount && authStatus === "reset" && (
-          <div className="auth-status success">✓ Password reset email sent.</div>
-        )}
-        {showSignedInAccount && authError && (
-          <div className="auth-status error">{authError}</div>
-        )}
-
-        {showSignedInAccount && !currentUser?.emailVerified && (
           <>
-            <div className="auth-status error">
-              Your email address is not verified yet. Resend the verification email if you still need it.
-            </div>
-            <button
-              type="button"
-              className="login-secondary-btn"
-              onClick={handleResendVerification}
-              disabled={authStatus === "verify_resending"}
-            >
-              {authStatus === "verify_resending" ? "Sending verification…" : "Resend verification email"}
-            </button>
+            <Card variant="flat" pad="sm">
+              <strong>{currentUser.displayName || "Signed in"}</strong>
+              <span className="account-status-copy">{currentUser.email}</span>
+            </Card>
+
+            {statusAlert && <Alert tone={statusAlert.tone}>{statusAlert.text}</Alert>}
+
+            {!currentUser?.emailVerified && (
+              <Alert
+                tone="warning"
+                title="Your email address is not verified yet"
+                actions={
+                  <Button
+                    size="sm"
+                    onClick={handleResendVerification}
+                    disabled={authStatus === "verify_resending"}
+                  >
+                    {authStatus === "verify_resending" ? "Sending verification…" : "Resend verification email"}
+                  </Button>
+                }
+              >
+                Resend the verification email if you still need it.
+              </Alert>
+            )}
+
+            <Button block onClick={handleSignedInReset} disabled={authStatus === "loading"}>
+              {authStatus === "loading" ? "Sending reset…" : "Send password reset email"}
+            </Button>
           </>
         )}
 
-        {showSignedInAccount && (
-          <button
-            type="button"
-            className="login-secondary-btn"
-            onClick={handleSignedInReset}
-            disabled={authStatus === "loading"}
-          >
-            {authStatus === "loading" ? "Sending reset…" : "Send password reset email"}
-          </button>
-        )}
+        <Card
+          variant="gold"
+          pad="sm"
+          title={currentUser ? "What this account gives you" : "What an account adds"}
+          footer={
+            currentUser ? null : (
+              <span className="login-upgrade-note">
+                <strong>Everything else is already free without an account.</strong> Rooms, all card decks,{" "}
+                {MAX_PARTICIPANTS} participants, the queue, timer, analytics, and export work for anyone with the link.
+              </span>
+            )
+          }
+        >
+          {currentUser
+            ? "Two permanent Team Room links and your sprint history, both already active on this account."
+            : "Two permanent Team Room links that never change, plus sprint history so you can see velocity and alignment over time. Both free."}
+        </Card>
 
-        {currentUser ? (
-          <div className="login-upgrade-card">
-            <div className="login-upgrade-head">
-              <div>
-                <div className="login-upgrade-title">What this account gives you</div>
-                <p className="login-upgrade-sub">
-                  Two permanent Team Room links and your sprint history, both already active on this account.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="login-upgrade-card">
-            <div className="login-upgrade-head">
-              <div>
-                <div className="login-upgrade-title">What an account adds</div>
-                <p className="login-upgrade-sub">
-                  Two permanent Team Room links that never change, plus sprint history so you can see velocity and alignment over time. Both free.
-                </p>
-              </div>
-            </div>
-            <div className="login-upgrade-note">
-              <strong>Everything else is already free without an account.</strong> Rooms, all card decks, {MAX_PARTICIPANTS} participants, the queue, timer, analytics, and export work for anyone with the link.
-            </div>
-          </div>
-        )}
-
-        <div className="login-modal-upgrade">
-          Something not working?{" "}
-          <a
-            href={`mailto:${support}`}
-            style={{ color: "var(--gold2)", textDecoration: "none", fontWeight: 600 }}
-          >
-            Email support ↗
-          </a>
-        </div>
-      </div>
-    </div>
+        <p className="login-modal-upgrade">
+          Something not working? <a href={`mailto:${support}`}>Email support ↗</a>
+        </p>
+      </Stack>
+    </Modal>
   );
 }
 
@@ -4368,18 +2666,21 @@ function CookieBanner({ onAccept }) {
   }, [onAccept]);
   return (
     <div className="cookie-banner" role="note" aria-label="Storage notice">
-      <div className="cookie-inner">
-        <p className="cookie-text">
-          <strong>Essential browser storage only.</strong>{" "}
-          Firebase keeps your session; your display name and this notice are remembered locally.
-          No advertising, tracking, or third-party analytics cookies, nothing to opt out of.
-        </p>
-        <div className="cookie-actions">
-          <a href="/privacy" className="cookie-link" target="_blank" rel="noopener noreferrer">Privacy</a>
-          <a href="/terms" className="cookie-link" target="_blank" rel="noopener noreferrer">Terms</a>
-          <button className="cookie-accept" onClick={onAccept}>Got it</button>
-        </div>
-      </div>
+      <Alert
+        tone="info"
+        title="Essential browser storage only"
+        className="cookie-inner"
+        actions={
+          <>
+            <Button size="sm" href="/privacy" target="_blank" rel="noopener noreferrer">Privacy</Button>
+            <Button size="sm" href="/terms" target="_blank" rel="noopener noreferrer">Terms</Button>
+            <Button variant="primary" size="sm" onClick={onAccept}>Got it</Button>
+          </>
+        }
+      >
+        Firebase keeps your session; your display name and this notice are remembered locally.
+        No advertising, tracking, or third-party analytics cookies, nothing to opt out of.
+      </Alert>
     </div>
   );
 }
@@ -5462,11 +3763,11 @@ export default function App() {
               toast={showToast}
             />
           )}
-          {/* Toasts carry the only confirmation of several actions, so they are
-              announced rather than being a purely visual flash. */}
-          <div className={`toast${toastOn ? " show" : ""}`} role="status" aria-live="polite">
-            {toastOn ? toast : ""}
-          </div>
+          {/* Toasts carry the only confirmation of several actions, so the
+              region is announced rather than being a purely visual flash. */}
+          <ToastRegion>
+            {toastOn && <Toast text={toast} />}
+          </ToastRegion>
         </main>
 
         {screen !== "game" && <SiteFooter
@@ -5642,35 +3943,37 @@ function Confetti({ onDone, big }) {
   );
 }
 
+/* The eleven marketing routes are all one shape, so they are all one set of
+   design-system components: a Hero, then Sections whose heads are SectionHead
+   and whose bodies are a Grid of Cards. Nothing below styles itself. */
 function MarketingSection({ title, intro, children }) {
   return (
-    <section className="marketing-section">
-      <div className="marketing-section-head">
-        <h2 className="marketing-section-title">{title}</h2>
-        {intro && <p className="marketing-section-intro">{intro}</p>}
-      </div>
+    <Section tight className="marketing-section">
+      <SectionHead title={title} subtitle={intro} />
       {children}
-    </section>
+    </Section>
   );
 }
 
 function MarketingRelatedLinks({ title, intro, links, onNavigate }) {
   return (
     <MarketingSection title={title} intro={intro}>
-      <div className="marketing-related-grid">
+      <Grid min="280px">
         {links.map((link) => (
-          <RouteLink
+          <Card
             key={link.href}
+            interactive
+            as={RouteLink}
             href={link.href}
             onNavigate={onNavigate}
             className="marketing-link-card"
+            eyebrow={link.kicker}
+            title={link.title}
           >
-            <span className="marketing-link-kicker">{link.kicker}</span>
-            <span className="marketing-link-title">{link.title}</span>
-            <span className="marketing-link-copy">{link.copy}</span>
-          </RouteLink>
+            {link.copy}
+          </Card>
         ))}
-      </div>
+      </Grid>
     </MarketingSection>
   );
 }
@@ -5689,33 +3992,37 @@ function MarketingPageShell({
 }) {
   return (
     <div className="marketing-page">
-      <div className="marketing-inner">
-        <section className="marketing-hero">
-          <button className="legal-back" onClick={() => onNavigate("/")}>
-            ← Back to home
-          </button>
-          <span className="marketing-eyebrow">{eyebrow}</span>
-          <h1 className="marketing-title">{title}</h1>
-          <p className="marketing-intro">{intro}</p>
-          <div className="marketing-actions">
-            <RouteLink href={primaryHref} onNavigate={onNavigate} className="marketing-btn-primary">
+      <Hero
+        paper
+        eyebrow={eyebrow}
+        title={title}
+        subtitle={intro}
+        actions={
+          <>
+            {/* Rule 2: one primary per screen. It is the one that opens a room —
+                the reason the page exists. */}
+            <Button variant="primary" as={RouteLink} href={primaryHref} onNavigate={onNavigate}>
               {primaryLabel}
-            </RouteLink>
-            <RouteLink href={secondaryHref} onNavigate={onNavigate} className="marketing-btn-secondary">
+            </Button>
+            <Button as={RouteLink} href={secondaryHref} onNavigate={onNavigate}>
               {secondaryLabel}
-            </RouteLink>
-          </div>
-          <div className="marketing-stat-grid">
+            </Button>
+          </>
+        }
+        aside={
+          <Grid min="180px" className="marketing-stat-grid">
             {highlights.map((item) => (
-              <div className="marketing-stat" key={item.label}>
-                <span className="marketing-stat-value">{item.value}</span>
-                <span className="marketing-stat-label">{item.label}</span>
-              </div>
+              <StatTile key={item.label} label={item.label} value={item.value} gold />
             ))}
-          </div>
-        </section>
+          </Grid>
+        }
+      />
+      <Container>
+        <Button variant="ghost" size="sm" className="legal-back" onClick={() => onNavigate("/")}>
+          ← Back to home
+        </Button>
         {children}
-      </div>
+      </Container>
     </div>
   );
 }
@@ -5727,7 +4034,7 @@ function PricingPage({ onNavigate }) {
       title="Planning poker pricing: everything is free, for every team"
       intro="There is no paid tier, no trial countdown and no credit card field anywhere on pointpoker. All three card decks, the countdown timer, facilitator analytics, story queues, CSV export and two fixed Team Rooms are free for everyone while we grow the user base."
       highlights={[
-        { value: "£0", label: "Every feature, every team, no card" },
+        { value: "$0", label: "Every feature, every team, no card" },
         { value: `${MAX_PARTICIPANTS}`, label: "Participants per room, facilitators included" },
         { value: "0", label: "Ads, trackers, and usage caps" },
       ]}
@@ -5741,10 +4048,8 @@ function PricingPage({ onNavigate }) {
         title="One plan. It costs nothing."
         intro="Most planning poker tools give away a stripped-down room and charge for the parts that make the ceremony work. We did the opposite. Ship the whole thing, free, and find out how many teams actually want it."
       >
-        <div className="marketing-plan-grid">
-          <article className="marketing-plan-card pro">
-            <div className="marketing-plan-topline">Everyone</div>
-            <div className="marketing-plan-price">£0</div>
+        <Grid min="300px">
+          <Card variant="gold" eyebrow="Everyone" title="$0">
             <p className="marketing-plan-sub">
               You do not need an account to run or join a room. A free account reserves your two permanent Team Room URLs and stores your sprint history. That is all it does.
             </p>
@@ -5758,10 +4063,8 @@ function PricingPage({ onNavigate }) {
               <li>Two fixed Team Rooms and sprint history with a free account</li>
               <li>No ads, no third-party tracking cookies, no data resale</li>
             </ul>
-          </article>
-          <article className="marketing-plan-card">
-            <div className="marketing-plan-topline">What others charge</div>
-            <div className="marketing-plan-price">£20–30/mo</div>
+          </Card>
+          <Card eyebrow="What others charge" title="$20–30/mo">
             <p className="marketing-plan-sub">
               For context, not as a swipe. These are the limits teams most often run into on other free tiers.
             </p>
@@ -5772,46 +4075,36 @@ function PricingPage({ onNavigate }) {
               <li>Ad-supported free rooms</li>
               <li>Per-facilitator pricing for one ceremony a fortnight</li>
             </ul>
-          </article>
-        </div>
-        <div className="marketing-note-panel">
-          <strong>Why free, and for how long.</strong> A planning poker tool is only useful if the whole team
+          </Card>
+        </Grid>
+        <Alert tone="gold" title="Why free, and for how long"> A planning poker tool is only useful if the whole team
           will actually open it, and a paywall kills that on the first invite. So the plan is to keep every
           feature free, watch how many teams use it, and only look at paid add-ons once there is a real user
           base to serve. If that day comes, everything on this page stays free. Anything paid would be new
           work on top of it, and we would say so clearly and well in advance.
-        </div>
+        </Alert>
       </MarketingSection>
 
       <MarketingSection
         title="What free does and does not mean here"
         intro="Free products usually have a catch. Here is exactly where ours sits, so you can decide with your eyes open."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">You are not the product</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="You are not the product">
               No advertising, no third-party analytics scripts, no session recording, nothing sold on. The only
               usage data collected is an anonymous daily count of events such as "a room was created". No names,
               no room contents, no identifiers of any kind.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Rooms are deliberately temporary</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Rooms are deliberately temporary">
               A room and its votes are deleted when everyone leaves, and idle rooms get swept automatically.
               That keeps the running cost low enough to stay free, and it means old estimates are not sitting
               somewhere you had forgotten about.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Support is best-effort, and honest about it</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Support is best-effort, and honest about it">
               This is a small, independently run product. Email gets answered by a person, usually quickly, but
               there is no SLA behind it. If you work somewhere that needs one, factor that in before you commit.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingRelatedLinks
@@ -5825,18 +4118,16 @@ function PricingPage({ onNavigate }) {
         ]}
       />
 
-      <section className="marketing-cta-strip">
-        <div>
-          <h2 className="marketing-cta-title">Open a room and try it on a real story</h2>
-          <p className="marketing-cta-copy">
-            Nothing to sign up for and nothing to compare. Create a room, paste the link into your team chat, and size something you actually have to estimate this sprint.
-          </p>
-        </div>
-        <div className="marketing-actions">
-          <RouteLink href="/" onNavigate={onNavigate} className="marketing-btn-primary">Create a free room</RouteLink>
-          <RouteLink href="/features" onNavigate={onNavigate} className="marketing-btn-secondary">See feature detail</RouteLink>
-        </div>
-      </section>
+      <Card variant="felt" pad="lg" className="marketing-cta-strip">
+        <SectionHead
+          title="Open a room and try it on a real story"
+          subtitle="Nothing to sign up for and nothing to compare. Create a room, paste the link into your team chat, and size something you actually have to estimate this sprint."
+        />
+        <Row>
+          <Button variant="primary" as={RouteLink} href="/" onNavigate={onNavigate}>Create a free room</Button>
+          <Button className="pp-btn--on-felt" as={RouteLink} href="/features" onNavigate={onNavigate}>See feature detail</Button>
+        </Row>
+      </Card>
     </MarketingPageShell>
   );
 }
@@ -5862,26 +4153,17 @@ function AboutPage({ onNavigate }) {
         title="Why pointpoker was built"
         intro="A lot of planning poker tools feel like generic whiteboards or overbuilt agile suites. pointpoker takes the opposite approach: make the estimation ceremony faster, clearer, and easier to repeat."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Less friction to start</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Less friction to start">
               Free rooms do not force account creation for normal participation, so a facilitator can drop a link into Slack or Teams and start estimating without turning setup into a ceremony of its own.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Better structure once the team is inside</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Better structure once the team is inside">
               Simultaneous reveal, queue-based flow, split-vote resolution, and facilitator-only controls make the session feel purposeful instead of improvised.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">A clean upgrade path when repeatability matters</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="A clean upgrade path when repeatability matters">
               Nothing is locked behind billing. Every feature, decks, timer, queue, analytics, export, Team Rooms, is free for every team while we find out how many teams this is genuinely useful to.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
@@ -5901,26 +4183,17 @@ function AboutPage({ onNavigate }) {
         title="Trust and product signals"
         intro="pointpoker is still growing, but the product already exposes the practical signals teams expect before using a lightweight SaaS tool in real ceremonies."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Public legal and privacy pages</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Public legal and privacy pages">
               Terms of Service and Privacy Policy are available on the live domain, with UK GDPR-aware privacy language and clear third-party processor disclosure.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Live support route</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Live support route">
               Support is reachable through a dedicated support page and the published support email, so teams are not left guessing how to get help.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Focused product scope</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Focused product scope">
               The product is deliberately narrow: run planning poker well, keep the room flow clean, and add only what improves repeat use rather than piling on complexity nobody asked for.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingRelatedLinks
@@ -5949,7 +4222,7 @@ function SupportPage({ onNavigate }) {
       highlights={[
         { value: "Email", label: support },
         { value: "Free", label: "Normal room participation without account setup" },
-        { value: "£0", label: "Every feature, including Team Rooms and history" },
+        { value: "$0", label: "Every feature, including Team Rooms and history" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
@@ -5961,39 +4234,27 @@ function SupportPage({ onNavigate }) {
         title="Best place to start when something feels unclear"
         intro="Most support questions fall into one of a few buckets. Starting with the right explanation usually resolves things fast."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Room join questions</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Room join questions">
               Free participation does not require an account. Guests can join a shared room with a real name and the correct role, then vote or facilitate straight away.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Account questions</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Account questions">
               A free account exists for one reason: it reserves your two Team Room URLs so no other team can land in your room, and it keeps sprint history tied to you across devices. Everything else works without one.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Workflow questions</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Workflow questions">
               When votes split, the facilitator can either run another vote or choose the final agreed estimate from the active deck. Averages are shown for discussion only and are not saved automatically.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
         title="Contact support"
         intro="If the product behaves unexpectedly or you need help with account access, Team Rooms, or sprint history, contact support directly."
       >
-        <div className="marketing-note-panel">
-          <strong>Support email:</strong>{" "}
-          <a href={`mailto:${support}`} className="seo-inline-link">{support}</a>
-          <div style={{ marginTop: 10, color: "rgba(239,242,247,.72)" }}>
-            Include the room code or Team Room URL, what you expected to happen, and what you saw instead. That makes it much easier to reproduce and fix the issue quickly.
-          </div>
-        </div>
+        <Alert tone="info" title={<>Support email: <a href={`mailto:${support}`} className="seo-inline-link">{support}</a></>}>
+          Include the room code or Team Room URL, what you expected to happen, and what you saw instead. That
+          makes it much easier to reproduce and fix the issue quickly.
+        </Alert>
       </MarketingSection>
 
       <MarketingSection
@@ -6046,26 +4307,17 @@ function TrustPage({ onNavigate }) {
         title="What teams should expect before they rely on a lightweight SaaS tool"
         intro="Trust is not about pretending a planning poker tool is an enterprise suite. It is about getting the operating basics right so teams understand what they are using and how it behaves."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Public support and legal routes</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Public support and legal routes">
               pointpoker publishes its support, privacy, and terms surfaces on the live domain so teams can see how the product is operated instead of hunting through a hidden help centre.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Authenticated support email</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Authenticated support email">
               Outbound mail from <a href={`mailto:${support}`} className="seo-inline-link">{support}</a> now passes SPF, DKIM, and DMARC, which improves deliverability and makes support contact look less improvised.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Clear account boundaries</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Clear account boundaries">
               Participation stays friction-light and needs no account at all. Team Room ownership is tied to an authenticated account so a room URL stays with the right team.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
@@ -6085,26 +4337,17 @@ function TrustPage({ onNavigate }) {
         title="Operational signals already in place"
         intro="These are the concrete signs that the product is moving beyond a throwaway demo toward something teams can actually use every sprint."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Stable production domain and crawlable support surface</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Stable production domain and crawlable support surface">
               The live product, support routes, and educational pages all sit on the production domain with Search Console connected, sitemap submitted, and key routes requested for indexing.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Account-linked Team Rooms</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Account-linked Team Rooms">
               Your two fixed Team Room URLs and your sprint history follow your account across devices instead of floating in anonymous browser state that a cleared cache can wipe.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Published data and rules posture</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Published data and rules posture">
               Firebase rules validate room shape and deck-safe estimates, while the product exposes its legal, privacy, and support posture publicly rather than hiding it behind a signup wall.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingRelatedLinks
@@ -6142,33 +4385,24 @@ function WhatIsPlanningPokerPage({ onNavigate }) {
         title="What planning poker actually does"
         intro="The method is simple, but the impact comes from what it prevents: anchoring, hidden uncertainty, and fake consensus."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Everyone estimates independently first</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Everyone estimates independently first">
               Each voter picks a card before seeing anyone else’s choice. That keeps stronger personalities and senior voices from steering the estimate too early.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">The reveal makes uncertainty visible</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="The reveal makes uncertainty visible">
               When one person picks 3 and another picks 8, the disagreement is useful. It usually means the team sees different risk, scope, or implementation effort.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Discussion focuses on the gap, not the whole story</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Discussion focuses on the gap, not the whole story">
               Teams do not need to debate every item equally. Planning poker helps them spend energy where the spread tells them understanding is still uneven.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
         title="How the process normally works"
         intro="A good planning poker session has a clear rhythm, especially when the facilitator keeps the room moving."
       >
-        <div className="marketing-steps">
+        <Grid min="260px" className="marketing-steps">
           {[
             ["Read the story together", "Make sure everyone understands the scope, acceptance criteria, and what 'done' means before anyone votes."],
             ["Vote privately", "Each voter chooses a card independently so the first visible estimate does not bias everyone else."],
@@ -6176,15 +4410,11 @@ function WhatIsPlanningPokerPage({ onNavigate }) {
             ["Discuss the difference", "Talk about why the estimates diverged: hidden complexity, dependencies, ambiguity, or assumptions."],
             ["Either re-vote or agree a final estimate", "A facilitator can run another round or record the final agreed deck value once the team is aligned."],
           ].map(([stepTitle, stepCopy], index) => (
-            <article className="marketing-step" key={stepTitle}>
-              <span className="marketing-step-num">{index + 1}</span>
-              <div>
-                <h3 className="marketing-step-title">{stepTitle}</h3>
-                <p className="marketing-step-copy">{stepCopy}</p>
-              </div>
-            </article>
+            <Card key={stepTitle} eyebrow={`Step ${index + 1}`} title={stepTitle}>
+              {stepCopy}
+            </Card>
           ))}
-        </div>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
@@ -6234,26 +4464,17 @@ function FibonacciStoryPointsPage({ onNavigate }) {
         title="Why Fibonacci is used for story points"
         intro="The sequence is useful because it reminds the team that uncertainty increases with scale. A 13-point story is not just a slightly bigger 8. It often means the team knows less, expects more variation, or sees more delivery risk."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Small differences matter less as work grows</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Small differences matter less as work grows">
               Teams usually do not need to debate whether something is an 11 or a 12. Fibonacci keeps the choices coarse enough to focus on useful differences rather than false precision.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">The numbers represent relative effort</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="The numbers represent relative effort">
               Story points are not hours. They reflect a mix of effort, complexity, risk, and uncertainty, compared against the rest of the backlog.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Agreement matters more than arithmetic</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Agreement matters more than arithmetic">
               If the team splits between 3 and 5, the final answer should be the agreed Fibonacci card, not an invalid middle number like 4.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
@@ -6272,26 +4493,17 @@ function FibonacciStoryPointsPage({ onNavigate }) {
         title="How pointpoker handles Fibonacci estimation"
         intro="The product is designed to reinforce good estimation habits rather than bypass them."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Fibonacci is the default deck</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Fibonacci is the default deck">
               Teams can start with the familiar sequence immediately, while still having T-shirt and Powers of 2 available for different estimation styles.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Averages stay contextual</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Averages stay contextual">
               The app can show average and median after reveal, but those numbers are there to guide discussion rather than silently becoming the recorded estimate.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Final estimate must stay deck-valid</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Final estimate must stay deck-valid">
               When votes differ, the facilitator records the final agreed Fibonacci value or runs another vote. That keeps sprint history and analytics trustworthy.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingRelatedLinks
@@ -6329,26 +4541,17 @@ function AgileEstimationToolPage({ onNavigate }) {
         title="What teams usually expect from an agile estimation tool"
         intro="The tool does not need to be a giant agile suite. It needs to remove the friction around the specific estimation conversation the team is trying to have."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Fast setup</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Fast setup">
               Teams should be able to open a room and invite everyone from a browser link, especially when estimation is only one part of a larger planning session.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Unbiased initial estimates</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Unbiased initial estimates">
               Independent first votes and simultaneous reveal help the team see genuine spread before stronger opinions steer the discussion.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Clear facilitator controls</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Clear facilitator controls">
               Reveal, re-vote, moderation, timer control, and final estimate capture should all be obvious to the facilitator when the room is live.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
@@ -6367,26 +4570,17 @@ function AgileEstimationToolPage({ onNavigate }) {
         title="Why this tool works for real estimation conversations"
         intro="A good agile estimation tool should reinforce healthy team behaviour rather than flatten everything into a silent number picker."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">It supports discussion after reveal</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="It supports discussion after reveal">
               Split votes do not get averaged into misleading answers. The team can discuss the difference and the facilitator records the final agreed deck value explicitly.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">It keeps the room understandable</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="It keeps the room understandable">
               Real names are required, roles are explicit, and the invite flow stays visible so the meeting does not become confusing for late joiners or mixed-discipline teams.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">It creates reusable context over time</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="It creates reusable context over time">
               Sprint history and two fixed Team Rooms help the same team come back to a consistent estimation workflow instead of starting from scratch every sprint.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingRelatedLinks
@@ -6412,7 +4606,7 @@ function FeaturesPage({ onNavigate }) {
       highlights={[
         { value: "3", label: "Card decks: Fibonacci, T-Shirt, Powers of 2" },
         { value: "Live", label: "Realtime reveal, votes, and participant sync" },
-        { value: "£0", label: "Team Rooms and sprint history included free" },
+        { value: "$0", label: "Team Rooms and sprint history included free" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
@@ -6424,52 +4618,34 @@ function FeaturesPage({ onNavigate }) {
         title="Core estimation workflow"
         intro="The product is designed around what teams actually do in planning poker: create a room, add items to estimate, stories or tasks, vote simultaneously, discuss differences, and move on without resetting the whole session."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Simultaneous reveal</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Simultaneous reveal">
               Everyone votes independently first, then cards reveal together. That keeps louder voices from anchoring the team before the conversation has started.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Estimate stories or tasks, your choice</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Estimate stories or tasks, your choice">
               Choose whether you are sizing user stories as a whole or individual tasks within them. Add items as you go or preload the queue, record the agreed estimate, and move straight to the next item without rebuilding the room.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Facilitator controls</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Facilitator controls">
               Facilitators can reveal cards, run another vote, record the agreed estimate, moderate participants, manage the timer, and keep the session moving.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
         title="Designed for discussion, not just number collection"
         intro="A good planning poker tool helps teams think better. pointpoker adds the structure that makes disagreement productive instead of noisy."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Split-vote resolution</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Split-vote resolution">
               When estimates differ, the app keeps averages visible for context but requires the facilitator to record only a valid agreed deck value or run another vote.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Team Alignment analytics</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Team Alignment analytics">
               Facilitators can see consensus rate, total points, item throughput, and how often the team agrees on the first vote, helping uncover backlog clarity problems early.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Built for remote teams</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Built for remote teams">
               Browser-first join flow, frictionless invite links, and compact facilitator controls make it practical for Slack, Teams, Zoom, and hybrid sprint ceremonies.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
@@ -6519,33 +4695,24 @@ function PlanningPokerOnlinePage({ onNavigate }) {
         title="Why teams look for planning poker online"
         intro="Most teams are trying to solve the same problem: they want unbiased estimates, a simple remote join flow, and enough structure that the sprint planning meeting does not drift."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">No install barrier</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="No install barrier">
               Everyone joins from a browser link. That makes it easy to drop a room into Slack, Teams, Zoom chat, or a calendar invite and start estimating immediately.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Clear reveal flow</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Clear reveal flow">
               The room supports true simultaneous reveal, so estimates stay independent until the team is ready to discuss them.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Room stays focused</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Room stays focused">
               Story queue, timer, facilitator controls, and explicit next-step prompts keep the team in one workflow instead of juggling notes, chat, and spreadsheets.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
         title="How a typical online planning poker session runs"
         intro="The product flow stays intentionally simple so the team spends time discussing the backlog, not learning the tool."
       >
-        <div className="marketing-steps">
+        <Grid min="260px" className="marketing-steps">
           {[
             ["Create or join the room", "Start a free room instantly or join from a shared link with your name and role."],
             ["Add the story you are estimating", "Work from a backlog queue or estimate one story at a time during refinement."],
@@ -6553,15 +4720,11 @@ function PlanningPokerOnlinePage({ onNavigate }) {
             ["Discuss only when the spread matters", "Facilitators can reveal, time-box discussion, and either re-vote or record the agreed estimate."],
             ["Move straight to the next item", "The room keeps momentum without forcing the team to rebuild context for every story."],
           ].map(([stepTitle, stepCopy], index) => (
-            <article className="marketing-step" key={stepTitle}>
-              <span className="marketing-step-num">{index + 1}</span>
-              <div>
-                <h3 className="marketing-step-title">{stepTitle}</h3>
-                <p className="marketing-step-copy">{stepCopy}</p>
-              </div>
-            </article>
+            <Card key={stepTitle} eyebrow={`Step ${index + 1}`} title={stepTitle}>
+              {stepCopy}
+            </Card>
           ))}
-        </div>
+        </Grid>
       </MarketingSection>
 
       <MarketingRelatedLinks
@@ -6599,26 +4762,17 @@ function ScrumPokerPage({ onNavigate }) {
         title="Where scrum poker fits best"
         intro="The tool is most useful in the ceremonies where the team needs shared understanding before committing to sprint scope."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Sprint planning</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Sprint planning">
               Use the queue, vote through the backlog, and leave the session with a cleaner sense of the sprint’s scope and the stories that still need clarification.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Backlog refinement</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Backlog refinement">
               Smaller estimation sessions still benefit from the same reveal-and-discuss pattern, especially when stories are unclear or acceptance criteria are thin.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Cross-functional alignment</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Cross-functional alignment">
               Scrum poker surfaces differences between engineering, product, and delivery expectations before those differences become sprint risk.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
@@ -6668,48 +4822,35 @@ function StoryPointEstimationPage({ onNavigate }) {
         title="Why teams use story points instead of hours"
         intro="Story points help teams compare relative effort and uncertainty without pretending the work is already perfectly understood."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Relative sizing beats fake precision</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Relative sizing beats fake precision">
               Teams can usually agree faster on whether something feels closer to a 3 or an 8 than on whether it will take exactly 9.5 hours.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Fibonacci highlights uncertainty</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Fibonacci highlights uncertainty">
               Wider gaps at larger values push the team to acknowledge risk and complexity instead of compressing everything into tiny numeric differences.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Consensus matters more than average</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Consensus matters more than average">
               The product keeps discussion analytics visible, but it only saves final agreed deck values so sprint history stays trustworthy.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
         title="Best-practice estimation flow"
         intro="Good estimation is structured. The app is designed to make the next decision obvious at every stage."
       >
-        <div className="marketing-steps">
+        <Grid min="260px" className="marketing-steps">
           {[
             ["Let everyone vote independently", "Private voting reduces anchoring and produces a more honest first signal."],
             ["Reveal the cards together", "Use the spread, average, and median to guide discussion, not as an automatic answer."],
             ["Discuss the differences", "The stories with the widest spread are usually where acceptance criteria or scope still need work."],
             ["Either re-vote or record the agreed estimate", "Facilitators can capture only valid deck values, keeping the estimate aligned with the team’s chosen method."],
           ].map(([stepTitle, stepCopy], index) => (
-            <article className="marketing-step" key={stepTitle}>
-              <span className="marketing-step-num">{index + 1}</span>
-              <div>
-                <h3 className="marketing-step-title">{stepTitle}</h3>
-                <p className="marketing-step-copy">{stepCopy}</p>
-              </div>
-            </article>
+            <Card key={stepTitle} eyebrow={`Step ${index + 1}`} title={stepTitle}>
+              {stepCopy}
+            </Card>
           ))}
-        </div>
+        </Grid>
       </MarketingSection>
 
       <MarketingRelatedLinks
@@ -6747,26 +4888,17 @@ function RemoteSprintPlanningPage({ onNavigate }) {
         title="What remote teams usually need"
         intro="The biggest friction in remote sprint planning is not estimation itself. It is getting everyone into the same place quickly and keeping the meeting moving."
       >
-        <div className="marketing-card-grid">
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Fast join flow</h3>
-            <p className="marketing-card-copy">
+        <Grid min="280px">
+          <Card title="Fast join flow">
               Participants can join free rooms or shared Team Rooms with a name and role, so the facilitator is not blocked by account setup.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Clear facilitator workflow</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Clear facilitator workflow">
               Reveal, re-vote, timer control, participant moderation, and final estimate capture all sit inside one flow built for the person running the ceremony.
-            </p>
-          </article>
-          <article className="marketing-card">
-            <h3 className="marketing-card-title">Persistent room when the team is ready</h3>
-            <p className="marketing-card-copy">
+              </Card>
+          <Card title="Persistent room when the team is ready">
               Team Rooms give recurring squads two fixed URLs so nobody recreates and re-shares the same room every sprint.
-            </p>
-          </article>
-        </div>
+              </Card>
+        </Grid>
       </MarketingSection>
 
       <MarketingSection
@@ -6957,18 +5089,17 @@ async function saveUserProfile(user, profile = {}) {
 ═══════════════════════════════════════════════════════════════ */
 function LegalPage({ title, lastUpdated, onBack, children }) {
   return (
-    <div className="legal-page">
-      <div className="legal-inner">
-        <button className="legal-back" onClick={onBack} aria-label="Back to home">
+    <Section className="legal-page">
+      <Container size="narrow">
+        <Button variant="ghost" size="sm" className="legal-back" onClick={onBack} aria-label="Back to home">
           ← Back
-        </button>
-        <h1 className="legal-h1">{title}</h1>
-        <p className="legal-updated">Last updated: {lastUpdated}</p>
-        <div className="legal-body">
-          {children}
-        </div>
-      </div>
-    </div>
+        </Button>
+        <SectionHead as="h1" eyebrow={`Last updated: ${lastUpdated}`} title={title} />
+        {/* Prose is the only place in the system that styles bare h2/p/li, and
+            these two documents are nothing but bare h2/p/li. */}
+        <Prose className="legal-body">{children}</Prose>
+      </Container>
+    </Section>
   );
 }
 
@@ -7091,7 +5222,7 @@ function TermsPage({ onBack }) {
       <p>
         OUR TOTAL CUMULATIVE LIABILITY TO YOU FOR ALL CLAIMS ARISING FROM OR RELATING TO THESE TERMS
         OR THE SERVICE SHALL NOT EXCEED THE GREATER OF (A) THE AMOUNT YOU PAID US IN THE TWELVE MONTHS
-        PRECEDING THE CLAIM, OR (B) £100 (ONE HUNDRED POUNDS STERLING).
+        PRECEDING THE CLAIM, OR (B) $100 (ONE HUNDRED US DOLLARS).
       </p>
       <p>
         Nothing in these Terms excludes or limits our liability for death or personal injury caused by
@@ -7404,7 +5535,6 @@ function PrivacyPage({ onBack }) {
 }
 
 function HistoryModal({ onClose, history }) {
-  const [dialogRef, closeDialog] = useDialog(onClose);
   const totalSprints = history.length;
 
   // Compute insights from numeric-point sessions only
@@ -7427,9 +5557,11 @@ function HistoryModal({ onClose, history }) {
     const older  = pointSessions.slice(half);
     const recentAvg = recent.reduce((s, h) => s + h.totalPoints, 0) / recent.length;
     const olderAvg  = older.reduce((s, h)  => s + h.totalPoints, 0)  / older.length;
-    if (recentAvg > olderAvg * 1.05)      trend = { icon: "↑", label: "Improving", col: "#4ade80" };
-    else if (recentAvg < olderAvg * 0.95) trend = { icon: "↓", label: "Declining", col: "#f87171" };
-    else                                   trend = { icon: "→", label: "Steady",    col: "var(--gold2)" };
+    /* Rule 5: an arrow alone is a colour-coded glyph. The word beside it is
+       what a screen reader and a colour-blind reader actually get. */
+    if (recentAvg > olderAvg * 1.05)      trend = { icon: "↑", label: "Improving", tone: "success" };
+    else if (recentAvg < olderAvg * 0.95) trend = { icon: "↓", label: "Declining", tone: "danger" };
+    else                                   trend = { icon: "→", label: "Steady",    tone: "gold" };
   }
 
   const fmtDate = (ts) => {
@@ -7444,94 +5576,69 @@ function HistoryModal({ onClose, history }) {
   };
 
   return (
-    <div className="history-overlay" role="dialog" aria-modal="true" aria-label="Sprint history" ref={dialogRef}>
-      <div className="history-modal">
-        <div className="history-header">
-          <div>
-            <h2 className="history-title">Sprint History</h2>
-            <p className="history-sub">
-              {totalSprints === 0
-                ? "No sprint sessions recorded yet"
-                : `${totalSprints} session${totalSprints !== 1 ? "s" : ""} recorded`}
-            </p>
-          </div>
-          <button className="history-close" onClick={closeDialog} aria-label="Close history">✕</button>
-        </div>
+    <Modal
+      open
+      wide
+      title="Sprint history"
+      subtitle={totalSprints === 0
+        ? "No sprint sessions recorded yet"
+        : `${totalSprints} session${totalSprints !== 1 ? "s" : ""} recorded`}
+      onClose={onClose}
+    >
+      {totalSprints === 0 ? (
+        <EmptyState title="Your sprint archive is ready">
+          Finish a session while signed in and it will appear here automatically. Sprint history is saved when
+          you end a session, or when a room auto-expires after five hours.
+        </EmptyState>
+      ) : (
+        <Stack gap="lg">
+          {/* Rule 9: a sprint with no numeric points has no velocity, so the
+              tile says what would appear there instead of printing a nought. */}
+          <Grid min="150px">
+            <StatTile
+              label="Avg velocity"
+              value={avgVelocity > 0 ? avgVelocity : null}
+              meta="pts / sprint"
+              empty="Appears once a sprint records points"
+            />
+            <StatTile
+              label="Best sprint"
+              value={bestSprint > 0 ? bestSprint : null}
+              meta="story pts"
+              empty="Appears once a sprint records points"
+            />
+            <StatTile label="Team alignment" value={`${avgConsensus}%`} meta="avg consensus" gold />
+            <StatTile
+              label="Velocity trend"
+              value={trend ? `${trend.icon} ${trend.label}` : null}
+              meta={trend ? "recent half vs earlier half" : undefined}
+              empty="Needs two or more sprints"
+            />
+          </Grid>
 
-        {totalSprints === 0 ? (
-          <div className="history-empty">
-            <div className="history-empty-icon" aria-hidden="true"><Icon name="list" size={28} /></div>
-            <p className="history-empty-title">Your sprint archive is ready</p>
-            <p className="history-empty-copy">
-              Finish a session while signed in and it will appear here automatically. Sprint history is saved when you
-              <strong>end a session</strong> or when a room auto-expires after <strong>5 hours</strong>.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="history-insights">
-              <div className="hi-card">
-                <span className="hi-label">Avg velocity</span>
-                <span className="hi-v">{avgVelocity > 0 ? avgVelocity : "—"}</span>
-                <span className="hi-unit">pts / sprint</span>
-              </div>
-              <div className="hi-card">
-                <span className="hi-label">Best sprint</span>
-                <span className="hi-v">{bestSprint > 0 ? bestSprint : "—"}</span>
-                <span className="hi-unit">story pts</span>
-              </div>
-              <div className="hi-card">
-                <span className="hi-label">Team alignment</span>
-                <span className="hi-v">{avgConsensus}%</span>
-                <span className="hi-unit">avg consensus</span>
-              </div>
-              <div className="hi-card">
-                <span className="hi-label">Velocity trend</span>
-                <span className="hi-v" style={trend ? { color: trend.col } : {}}>
-                  {trend ? trend.icon : "—"}
-                </span>
-                <span className="hi-unit">{trend ? trend.label : "need 2+ sprints"}</span>
-              </div>
-            </div>
-
-            <div className="history-list">
-              {history.map((h, i) => {
-                const sprintNum = totalSprints - i;
-                const label = h.teamName ? h.teamName : `Sprint ${sprintNum}`;
-                return (
-                  <div className="history-item" key={h.id || i}>
-                    <div className="hi-item-left">
-                      <span className="hi-sprint-label">{label}</span>
-                      <span className="hi-sprint-date">{fmtDate(h.endedAt)}</span>
-                    </div>
-                    <div className="hi-item-stats">
-                      <div className="hi-stat">
-                        <span className="hi-stat-val">{h.totalPoints}</span>
-                        <span className="hi-stat-key">pts</span>
-                      </div>
-                      <div className="hi-stat">
-                        <span className="hi-stat-val">{h.storiesDone}</span>
-                        <span className="hi-stat-key">stories</span>
-                      </div>
-                      <div className="hi-stat">
-                        <span className="hi-stat-val">{h.consensusRate ?? "—"}%</span>
-                        <span className="hi-stat-key">consensus</span>
-                      </div>
-                      {h.startedAt && h.endedAt && (
-                        <div className="hi-stat">
-                          <span className="hi-stat-val">{fmtDuration(h.startedAt, h.endedAt)}</span>
-                          <span className="hi-stat-key">duration</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+          <ResultsTable
+            caption="Most recent session first."
+            columns={[
+              { key: "sprint", label: "Sprint" },
+              { key: "date", label: "Ended" },
+              { key: "points", label: "Points", numeric: true },
+              { key: "stories", label: "Stories", numeric: true },
+              { key: "consensus", label: "Consensus", numeric: true },
+              { key: "duration", label: "Duration", numeric: true },
+            ]}
+            rows={history.map((h, i) => ({
+              id: h.id || i,
+              sprint: h.teamName ? h.teamName : `Sprint ${totalSprints - i}`,
+              date: fmtDate(h.endedAt),
+              points: h.totalPoints,
+              stories: h.storiesDone,
+              consensus: h.consensusRate == null ? "—" : `${h.consensusRate}%`,
+              duration: fmtDuration(h.startedAt, h.endedAt) || "—",
+            }))}
+          />
+        </Stack>
+      )}
+    </Modal>
   );
 }
 
@@ -7668,7 +5775,7 @@ function JoinScreen({
   // to action for anything that is not about one specific field.
   const fieldError = (field) =>
     err && errField === field
-      ? <div className="err err--field" id="join-error" role="alert">{err}</div>
+      ? <span className="pp-error" id="join-error" role="alert">{err}</span>
       : null;
 
   /* Six call sites reach the room handlers and only three of them go through
@@ -7932,7 +6039,7 @@ function JoinScreen({
           put 397px of marketing above the control people came to use and left
           829px of empty width either side. From 1024px up the two sit side by
           side instead: nothing is removed, the space was already there. */}
-      <div className={`join-layout${signedIn ? " join-layout--workspace" : ""}`}>
+      <div className={`join-layout pp-container${signedIn ? " join-layout--workspace" : ""}`}>
         <div className="join-side">
         <header className="join-hero">
           {!signedIn && (
@@ -7967,42 +6074,39 @@ function JoinScreen({
             two Team Rooms are what a returning user came for, so they take the
             space, and the form keeps the column it already had. */}
         {signedIn && (
-          <section className="workspace-panel" aria-labelledby="team-rooms-heading">
-            {/* .ptitle is the section header the room view already uses for
-                "At the table" and "Sprint Analytics" — the same kind of thing
-                deserves the same treatment, not a second heading style. */}
-            <h2 className="ptitle" id="team-rooms-heading">Your Team Rooms</h2>
-            <p className="workspace-panel-sub">
-              Two fixed URLs tied to your account. Share them once and reuse them every sprint.
-            </p>
+          <Section as="section" tight className="workspace-panel" aria-labelledby="team-rooms-heading">
+            <SectionHead
+              align="start"
+              title="Your Team Rooms"
+              subtitle="Two fixed URLs tied to your account. Share them once and reuse them every sprint."
+            />
 
-            <ul className="workspace-room-list">
+            <Stack>
               {dedicatedTeamRooms.map((room) => (
-                <li className="workspace-room-card" key={room.key}>
-                  <div className="workspace-room-top">
+                <Card
+                  key={room.key}
+                  variant="raised"
+                  pad="sm"
+                  className="workspace-room-card"
+                  footer={
+                    <Button block onClick={() => openDedicatedRoom(room)}>
+                      Open {room.shortLabel} →
+                    </Button>
+                  }
+                >
+                  <Row between nowrap>
                     <h3 className="workspace-room-name">{room.name}</h3>
-                    <span className="workspace-room-chip">{room.shortLabel}</span>
-                  </div>
+                    <Chip tone="gold">{room.shortLabel}</Chip>
+                  </Row>
                   <div className="workspace-team-url">
                     <code title={room.url}>{room.url}</code>
-                    <button
-                      type="button"
-                      className={`btn btn--secondary btn--sm${copiedDedicatedRoomKey === room.key ? " copied" : ""}`}
-                      onClick={() => copyTeamUrl(room)}
-                    >
+                    <Button size="sm" onClick={() => copyTeamUrl(room)}>
                       {copiedDedicatedRoomKey === room.key ? "Link copied" : "Copy link"}
-                    </button>
+                    </Button>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn--secondary btn--block workspace-room-open"
-                    onClick={() => openDedicatedRoom(room)}
-                  >
-                    Open {room.shortLabel} →
-                  </button>
-                </li>
+                </Card>
               ))}
-            </ul>
+            </Stack>
             {fieldError("copy")}
 
             <details
@@ -8012,82 +6116,73 @@ function JoinScreen({
               onToggle={(e) => setRenameOpen(e.currentTarget.open)}
             >
               <summary className="workspace-rename-summary">Rename both rooms</summary>
-              <div className="workspace-rename-body">
-                <label className="lbl" htmlFor="workspace-rename-input">Shared room name</label>
-                <div className="workspace-rename-row">
-                  <input
-                    id="workspace-rename-input"
-                    ref={workspaceRoomEditorInputRef}
-                    type="text"
-                    value={dedicatedRoomLabel}
-                    onChange={(e) => {
-                      setDedicatedRoomLabel(e.target.value);
-                      setDedicatedRoomLabelDirty(true);
-                      setDedicatedRoomLabelStatus("");
-                      clearErr();
-                    }}
-                    maxLength={60}
-                    placeholder="e.g. Product Planning"
-                    aria-describedby="workspace-rename-hint"
-                  />
-                  <button
-                    type="button"
-                    className="btn btn--secondary"
+              <Stack gap="sm" className="workspace-rename-body">
+                <TextField
+                  id="workspace-rename-input"
+                  ref={workspaceRoomEditorInputRef}
+                  label="Shared room name"
+                  type="text"
+                  value={dedicatedRoomLabel}
+                  onChange={(e) => {
+                    setDedicatedRoomLabel(e.target.value);
+                    setDedicatedRoomLabelDirty(true);
+                    setDedicatedRoomLabelStatus("");
+                    clearErr();
+                  }}
+                  maxLength={60}
+                  placeholder="e.g. Product Planning"
+                  error={err && errField === "rename" ? err : undefined}
+                  hint={
+                    <>
+                      We add <strong>{dedicatedRoomOwnerSuffix}</strong> so both URLs stay unique to you.
+                      Saving renames them to <strong>{dedicatedRoomPreview.primary}</strong> and{" "}
+                      <strong>{dedicatedRoomPreview.secondary}</strong>.
+                    </>
+                  }
+                >
+                  <Button
                     onClick={saveDedicatedRoomLabel}
                     disabled={savingDedicatedRoomLabel || !dedicatedRoomLabelDirty}
                   >
                     {savingDedicatedRoomLabel ? "Saving…" : "Save"}
-                  </button>
-                </div>
-                <p className="workspace-rename-hint" id="workspace-rename-hint">
-                  We add <strong>{dedicatedRoomOwnerSuffix}</strong> so both URLs stay unique to you.
-                  Saving renames them to <strong>{dedicatedRoomPreview.primary}</strong> and{" "}
-                  <strong>{dedicatedRoomPreview.secondary}</strong>.
-                </p>
-                {fieldError("rename")}
+                  </Button>
+                </TextField>
                 <p className="workspace-rename-status" role="status">
                   {dedicatedRoomLabelStatus === "saved" ? "Saved. Share the new links with your team." : ""}
                 </p>
-              </div>
+              </Stack>
             </details>
-          </section>
+          </Section>
         )}
         </div>
 
-      <div className="join-box">
+      <Stack className="join-box">
 
-        {/* Mode tabs */}
-        <div className="choice-row" role="group" aria-label="What you want to do">
-          {/* "Create Room / Join Room / Team Room" put "Room" in all three
-              tabs and could not fit one line on a phone: 87px of label in 64px
-              of column, at any size down to the 13px floor. The tab picks the
-              mode and the primary action names the outcome — it already reads
-              "Create Room →" — so the noun does not need saying twice. */}
-          {TABS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              className="choice choice--compact"
-              aria-pressed={activeTab === key}
-              onClick={() => { setTab(key); clearErr(); }}
-            >
-              <span className="choice-label">{label}</span>
-            </button>
-          ))}
-        </div>
+        {/* "Create Room / Join Room / Team Room" put "Room" in all three tabs
+            and could not fit one line on a phone: 87px of label in 64px of
+            column, at any size down to the 13px floor. The control picks the
+            mode and the primary action names the outcome — it already reads
+            "Create Room →" — so the noun does not need saying twice. */}
+        <SegmentedControl
+          block
+          ariaLabel="What you want to do"
+          value={activeTab}
+          onChange={(key) => { setTab(key); clearErr(); }}
+          options={TABS.map(({ key, label }) => ({ value: key, label }))}
+        />
 
-        {/* Your Name, always shown */}
-        {/* These labels were bare <label> elements with no htmlFor and no id on
-            the field, so the only accessible name any of them had was the
-            placeholder — which disappears the moment you type. */}
-        <label className="lbl" htmlFor="join-name">Your Name</label>
-        <input
+        {/* Every field is a TextField, so the label, the control and the error
+            are one unit: the label always points at the control, and a refusal
+            prints beside the field it is about rather than in one slot above
+            the call to action. */}
+        <TextField
           id="join-name"
           key={`name-${nameSeedKey}`}
           ref={nameInputRef}
-          className="inp"
+          label="Your name"
           placeholder="e.g. Alex Johnson"
           defaultValue={nameDraft}
+          autoComplete="name"
           onInput={(e) => syncEnteredName(e.currentTarget.value)}
           onChange={(e) => syncEnteredName(e.target.value)}
           onBlur={(e) => {
@@ -8095,157 +6190,129 @@ function JoinScreen({
             if (liveValue !== nameValueRef.current) syncEnteredName(liveValue);
           }}
           onKeyDown={(e) => e.key === "Enter" && go()}
-          aria-invalid={errField === "name" ? "true" : undefined}
-          aria-describedby={errField === "name" ? "join-error" : undefined}
+          error={err && errField === "name" ? err : undefined}
+          hint={signedIn ? "The name the rest of the table sees. Changing it here does not change your account." : undefined}
         />
-        {signedIn && (
-          <p className="join-note">
-            The name the rest of the table sees. Changing it here does not change your account.
-          </p>
-        )}
-        {fieldError("name")}
 
-        {/* Join Room: room code input */}
         {activeTab === "join" && (
-          <>
-            <label className="lbl" htmlFor="join-room-code">Room Code</label>
-            <input
-              id="join-room-code"
-              className="inp"
-              placeholder="e.g. A1B2C"
-              value={rc}
-              onChange={(e) => { setRc(e.target.value.toUpperCase()); clearErr(); }}
-              onKeyDown={(e) => e.key === "Enter" && go()}
-              maxLength={12}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              inputMode="text"
-              aria-invalid={errField === "code" ? "true" : undefined}
-              aria-describedby={errField === "code" ? "join-error" : undefined}
-              style={{ letterSpacing: "0.12em", fontWeight: 600 }}
-            />
-            {fieldError("code")}
-          </>
+          <TextField
+            id="join-room-code"
+            label="Room code"
+            placeholder="e.g. A1B2C"
+            value={rc}
+            onChange={(e) => { setRc(e.target.value.toUpperCase()); clearErr(); }}
+            onKeyDown={(e) => e.key === "Enter" && go()}
+            maxLength={12}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            inputMode="text"
+            error={err && errField === "code" ? err : undefined}
+            style={{ letterSpacing: "0.12em", fontWeight: 600 }}
+          />
         )}
 
-        {/* Team Room: team name input + live code preview */}
         {activeTab === "team" && (
-          <div>
-            <label className="lbl" htmlFor="join-team-name">Team Name</label>
-            <input
+          <Stack gap="sm">
+            <TextField
               id="join-team-name"
-              className="inp"
+              label="Team name"
               placeholder="e.g. Product Team"
               value={teamName}
               onChange={(e) => { setTeamName(e.target.value); clearErr(); }}
               onKeyDown={(e) => e.key === "Enter" && go()}
-              readOnly={isSharedTeamRoomEntry || (signedIn)}
-              aria-invalid={errField === "team" ? "true" : undefined}
-              aria-describedby={errField === "team" ? "join-error" : undefined}
+              readOnly={isSharedTeamRoomEntry || signedIn}
+              error={err && errField === "team" ? err : undefined}
+              hint={previewCode ? <>Room code <code className="tcp-code">{previewCode}</code></> : undefined}
             />
-            {fieldError("team")}
-            {previewCode && (
-              <div className="team-code-preview">
-                <span className="tcp-label">Room code</span>
-                <span className="tcp-code">{previewCode}</span>
-              </div>
-            )}
             {!canEnterTeamRoom ? (
-              <div className="team-pro-gate">
-                <span className="team-pro-gate-text">
-                  Team Rooms are free. They need a free account so that nobody else can claim your room URL, which takes about thirty seconds.
-                </span>
-                <button type="button" className="team-pro-gate-link" onClick={() => onRequireAccount?.()}>
-                  Create a free account →
-                </button>
-              </div>
+              <Alert
+                tone="gold"
+                title="Team Rooms are free"
+                actions={
+                  <Button size="sm" onClick={() => onRequireAccount?.()}>Create a free account →</Button>
+                }
+              >
+                They need a free account so that nobody else can claim your room URL, which takes about thirty seconds.
+              </Alert>
             ) : (
               <p className="join-note">
                 This team's room is ready. Add your name, choose your role, and join the live session
                 {signedIn ? "." : ", no account needed."}
               </p>
             )}
-          </div>
+          </Stack>
         )}
 
-        {/* Role picker, always shown. A group of buttons is not a form control,
-            so its heading is a span with role="group" on the row, not a <label>
+        {/* Role picker. A group of buttons is not a form control, so its
+            heading is a span with role="group" on the row, not a <label>
             pointing at nothing. */}
-        <span className="lbl" id="join-role-label">Your Role</span>
-        <div className="choice-row" ref={roleGroupRef} role="group" aria-labelledby="join-role-label">
-          {ROLES.map(({ r, icon, l, s }) => (
-            <button
-              key={r}
-              type="button"
-              className="choice"
-              aria-pressed={role === r}
-              aria-label={`${l} role: ${s}`}
-              // Clear the prompt too: once a role is picked it is telling the
-              // user to do something they have just done.
-              onClick={() => chooseRole(r)}
-            >
-              <Icon name={icon} size={22} />
-              <span className="choice-label">{l}</span>
-              <span className="choice-desc">{s}</span>
-            </button>
-          ))}
-        </div>
-        {fieldError("role")}
+        <Stack gap="sm">
+          <span className="pp-label" id="join-role-label">Your role</span>
+          <ChoiceRow ref={roleGroupRef} role="group" aria-labelledby="join-role-label">
+            {ROLES.map(({ r, icon, l, s }) => (
+              <Choice
+                key={r}
+                icon={icon}
+                label={l}
+                description={s}
+                selected={role === r}
+                aria-label={`${l} role: ${s}`}
+                // Clear the prompt too: once a role is picked it is telling the
+                // user to do something they have just done.
+                onSelect={() => chooseRole(r)}
+              />
+            ))}
+          </ChoiceRow>
+          {fieldError("role")}
+        </Stack>
 
-        {/* Deck picker, shown on Create and Team tabs */}
         {(activeTab === "create" || activeTab === "team") && (
           <>
-            {/* Variation B — density rather than disclosure. Both choices are
-                irreversible for the life of the room, so neither is hidden.
-                They sit side by side as label-only options, and the per-option
-                descriptions collapse into one line that shows the selected
-                deck's actual cards — more useful than "1, 2, 3, 5, 8…" printed
-                three times, once under every deck the user did not pick. */}
+            {/* Density rather than disclosure. Both choices are irreversible
+                for the life of the room, so neither is hidden. They sit side by
+                side as label-only options, and the per-option descriptions
+                collapse into the one line below that names the selected deck's
+                actual cards — more useful than "1, 2, 3, 5, 8…" printed three
+                times, once under every deck the user did not pick. */}
             <div className="session-grid">
-              <div className="session-field">
-                <span className="lbl" id="join-deck-label">Card Deck</span>
-                <div className="choice-grid" style={{ "--choice-cols": 3 }} role="group" aria-labelledby="join-deck-label">
+              <Stack gap="sm" className="session-field">
+                <span className="pp-label" id="join-deck-label">Card deck</span>
+                <ChoiceGrid cols={3} role="group" aria-labelledby="join-deck-label">
                   {DECK_KEYS.map((k) => {
                     const d = DECK_DEFINITIONS[k];
                     return (
-                      <button
+                      <Choice
                         key={k}
-                        type="button"
-                        className="choice choice--tight"
-                        aria-pressed={deck === k}
+                        compact
+                        label={d.label}
+                        selected={deck === k}
                         aria-label={`${d.label} deck: ${d.desc}`}
-                        onClick={() => setDeck(k)}
-                      >
-                        <span className="choice-label">{d.label}</span>
-                      </button>
+                        onSelect={() => setDeck(k)}
+                      />
                     );
                   })}
-                </div>
-              </div>
+                </ChoiceGrid>
+              </Stack>
 
-              <div className="session-field">
-                <span className="lbl" id="join-estmode-label">Estimating</span>
-                <div className="choice-grid" role="group" aria-labelledby="join-estmode-label">
+              <Stack gap="sm" className="session-field">
+                <span className="pp-label" id="join-estmode-label">Estimating</span>
+                <ChoiceGrid role="group" aria-labelledby="join-estmode-label">
                   {Object.values(ESTIMATION_MODES).map((m) => (
-                    <button
+                    <Choice
                       key={m.key}
-                      type="button"
-                      className="choice choice--tight"
-                      aria-pressed={estMode === m.key}
+                      compact
+                      label={m.label}
+                      selected={estMode === m.key}
                       aria-label={`${m.label}: ${m.desc}`}
-                      onClick={() => setEstMode(m.key)}
-                    >
-                      <span className="choice-label">{m.label}</span>
-                    </button>
+                      onSelect={() => setEstMode(m.key)}
+                    />
                   ))}
-                </div>
-              </div>
+                </ChoiceGrid>
+              </Stack>
             </div>
 
-            {/* One line carrying what the two selections actually mean, plus
-                the fact that neither can be changed once the room exists. */}
             <p className="choice-permanence">
               <Icon name="alert" size={15} />
               <span>
@@ -8257,12 +6324,12 @@ function JoinScreen({
           </>
         )}
 
-        {err && !errField && <div className="err" id="join-error" role="alert">{err}</div>}
-        <button className="btn btn--primary btn--lg btn--block" onClick={go}>
+        {err && !errField && <Alert tone="danger" id="join-error">{err}</Alert>}
+        <Button variant="primary" size="lg" block onClick={go}>
           {activeTab === "create" ? "Create Room →"
             : activeTab === "join" ? "Join Room →"
             : teamPrimaryLabel}
-        </button>
+        </Button>
         {!signedIn && activeTab === "create" && (
           <p className="join-note join-note--centred">
             Free · Up to {MAX_PARTICIPANTS} at the table · Live in ten seconds
@@ -8278,37 +6345,38 @@ function JoinScreen({
             Two fixed Team Rooms per account. Same links, every sprint, free.
           </p>
         )}
-      </div>
+      </Stack>
       </div>
 
       {!signedIn && (
-      <section className="seo-section" aria-label="About pointpoker">
-        <h2 className="seo-h2">Free Online Planning Poker for Sprint Planning, Scrum Poker, and Remote Estimation</h2>
-        <p className="seo-intro">
-          pointpoker gives agile teams a fast, low-friction way to run planning poker online. Create a room,
-          share one link in Slack, Teams, or Zoom, and let everyone vote at the same time. No install,
-          no training, no ads, and no account needed to play.
-        </p>
-        <p className="seo-intro">
-          <strong>Everything is free right now, every feature, for every team.</strong> Other planning poker
-          tools cap your free sessions at a handful of votes, seven participants, or hide the timer and averages
-          behind a paid plan. Here you get {MAX_PARTICIPANTS} people per room, unlimited voting rounds,
-          unlimited stories, all three card decks, the timer, full analytics, and export, for £0. We are
-          focused on being genuinely useful to as many teams as possible first. If paid add-ons ever arrive,
-          everything listed on this page stays free.
-        </p>
+      <Section className="seo-section" aria-label="About pointpoker">
+      {/* The band runs edge to edge; its content sits in the same container the
+          header uses, so the headline below starts on the brand's left edge
+          rather than 20px off the window. `flow` puts one gap between every
+          block in it — heading, prose, card grid, subsection. */}
+      <Container flow>
+        <SectionHead
+          title="Free Online Planning Poker for Sprint Planning, Scrum Poker, and Remote Estimation"
+          subtitle="pointpoker gives agile teams a fast, low-friction way to run planning poker online. Create a room, share one link in Slack, Teams, or Zoom, and let everyone vote at the same time. No install, no training, no ads, and no account needed to play."
+        />
+        <Prose>
+          <p>
+            <strong>Everything is free right now, every feature, for every team.</strong> Other planning poker
+            tools cap your free sessions at a handful of votes, seven participants, or hide the timer and averages
+            behind a paid plan. Here you get {MAX_PARTICIPANTS} people per room, unlimited voting rounds,
+            unlimited stories, all three card decks, the timer, full analytics, and export, for $0. We are
+            focused on being genuinely useful to as many teams as possible first. If paid add-ons ever arrive,
+            everything listed on this page stays free.
+          </p>
+        </Prose>
 
-        <div className="seo-grid">
-          <div className="seo-card">
-            <h3 className="seo-h3">Why Simultaneous Reveal Matters</h3>
-            <p className="seo-p">
-              Every team member votes independently before estimates are shown. Cards reveal all at once,
-              which reduces anchoring bias and leads to better story-point conversations. You get clearer
-              estimates, faster discussions, and fewer meetings dominated by the loudest voice.
-            </p>
-          </div>
-          <div className="seo-card">
-            <h3 className="seo-h3">How It Works</h3>
+        <Grid min="300px" className="seo-grid">
+          <Card title="Why simultaneous reveal matters">
+            Every team member votes independently before estimates are shown. Cards reveal all at once,
+            which reduces anchoring bias and leads to better story-point conversations. You get clearer
+            estimates, faster discussions, and fewer meetings dominated by the loudest voice.
+          </Card>
+          <Card title="How it works">
             <ol className="seo-ol">
               <li>Create a room or join one from a shared link</li>
               <li>Add the item you are estimating, a user story or a specific task within one</li>
@@ -8317,18 +6385,17 @@ function JoinScreen({
               <li>Let the facilitator record the final agreed estimate or run another vote</li>
               <li>Move straight to the next item without resetting the room</li>
             </ol>
-          </div>
-        </div>
+          </Card>
+        </Grid>
 
-        <div className="seo-plan-section scroll-target" id="plans" tabIndex="-1" aria-label="Pricing overview">
-          <h3 className="seo-h3">What it costs: nothing</h3>
-          <p className="seo-p seo-plan-intro">
-            One product, free for every team, while we find out how many of you there are. No tiers, no trial clock, no card.
-          </p>
-          <div className="seo-plan-grid">
-            <article className="seo-plan-card pro">
-              <div className="seo-plan-topline">Everyone</div>
-              <div className="seo-plan-price">£0</div>
+        <Section flow className="scroll-target" id="plans" tabIndex="-1" aria-label="Pricing overview">
+          <SectionHead
+            as="h3"
+            title="What it costs: nothing"
+            subtitle="One product, free for every team, while we find out how many of you there are. No tiers, no trial clock, no card."
+          />
+          <Grid min="280px">
+            <Card variant="gold" eyebrow="Everyone" title="$0">
               <ul className="seo-plan-list">
                 <li>Up to {MAX_PARTICIPANTS} participants including facilitators</li>
                 <li>Unlimited rounds and unlimited stories per session</li>
@@ -8336,27 +6403,25 @@ function JoinScreen({
                 <li>Facilitator mode, live analytics, clipboard and CSV export</li>
                 <li>Two fixed Team Rooms and sprint history with a free account</li>
               </ul>
-            </article>
-            <article className="seo-plan-card">
-              <div className="seo-plan-topline">Compared with</div>
-              <div className="seo-plan-price">£20–30/mo</div>
+            </Card>
+            <Card eyebrow="Compared with" title="$20–30/mo">
               <ul className="seo-plan-list">
                 <li>Common free caps elsewhere: 7 participants, or 9 votes per game</li>
                 <li>Timers and averages often sit behind a paid tier</li>
                 <li>Some free tools are ad-supported</li>
                 <li>Per-facilitator pricing adds up fast for one ceremony a sprint</li>
               </ul>
-            </article>
-          </div>
-          <div className="seo-plan-actions">
-            <RouteLink href="/pricing" onNavigate={onNavigate} className="btn-pricing seo-plan-cta">
+            </Card>
+          </Grid>
+          <Row className="seo-plan-actions">
+            <Button as={RouteLink} href="/pricing" onNavigate={onNavigate}>
               Read the full pricing promise
-            </RouteLink>
-          </div>
-        </div>
+            </Button>
+          </Row>
+        </Section>
 
-          <div className="seo-features">
-          <h3 className="seo-h3">What Makes This Planning Poker Tool Different</h3>
+        <Section flow className="seo-features">
+          <SectionHead as="h3" title="What makes this planning poker tool different" />
           <ul className="seo-ul">
             <li><strong>Zero setup, every time:</strong> create a room and share the link in under 10 seconds, no account needed</li>
             <li><strong>Simultaneous vote reveal:</strong> prevents anchoring bias so every estimate is honest and independent</li>
@@ -8372,110 +6437,136 @@ function JoinScreen({
             <li><strong>Keyboard shortcuts:</strong> press 1–9 to vote, R to reveal, N for the next item; the whole ceremony without touching the mouse</li>
             <li><strong>No ads and no tracking cookies:</strong> nothing to block, nothing sold, nothing following your team around</li>
           </ul>
-          <p className="seo-p" style={{ marginTop: 16 }}>
-            Explore the dedicated pages for{" "}
-            <RouteLink href="/features" onNavigate={onNavigate} className="seo-inline-link">features</RouteLink>
-            {", "}
-            <RouteLink href="/planning-poker-online" onNavigate={onNavigate} className="seo-inline-link">planning poker online</RouteLink>
-            {", "}
-            <RouteLink href="/scrum-poker" onNavigate={onNavigate} className="seo-inline-link">Scrum poker</RouteLink>
-            {", "}
-            <RouteLink href="/story-point-estimation" onNavigate={onNavigate} className="seo-inline-link">story point estimation</RouteLink>
-            {", "}
-            <RouteLink href="/what-is-planning-poker" onNavigate={onNavigate} className="seo-inline-link">what planning poker is</RouteLink>
-            {", "}
-            <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">Fibonacci story points</RouteLink>
-            {", "}
-            <RouteLink href="/agile-estimation-tool" onNavigate={onNavigate} className="seo-inline-link">agile estimation tools</RouteLink>
-            {", and "}
-            <RouteLink href="/trust" onNavigate={onNavigate} className="seo-inline-link">trust and reliability</RouteLink>
-            {" to learn how the workflow fits your team."}
-          </p>
-        </div>
+          <Prose>
+            <p>
+              Explore the dedicated pages for{" "}
+              <RouteLink href="/features" onNavigate={onNavigate} className="seo-inline-link">features</RouteLink>
+              {", "}
+              <RouteLink href="/planning-poker-online" onNavigate={onNavigate} className="seo-inline-link">planning poker online</RouteLink>
+              {", "}
+              <RouteLink href="/scrum-poker" onNavigate={onNavigate} className="seo-inline-link">Scrum poker</RouteLink>
+              {", "}
+              <RouteLink href="/story-point-estimation" onNavigate={onNavigate} className="seo-inline-link">story point estimation</RouteLink>
+              {", "}
+              <RouteLink href="/what-is-planning-poker" onNavigate={onNavigate} className="seo-inline-link">what planning poker is</RouteLink>
+              {", "}
+              <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">Fibonacci story points</RouteLink>
+              {", "}
+              <RouteLink href="/agile-estimation-tool" onNavigate={onNavigate} className="seo-inline-link">agile estimation tools</RouteLink>
+              {", and "}
+              <RouteLink href="/trust" onNavigate={onNavigate} className="seo-inline-link">trust and reliability</RouteLink>
+              {" to learn how the workflow fits your team."}
+            </p>
+          </Prose>
+        </Section>
 
-        <div className="seo-divider" role="separator"></div>
-
-        <div className="seo-faq scroll-target" id="faq" tabIndex="-1">
-          <h3 className="seo-h3" style={{ textAlign: "center", marginBottom: "20px" }}>Frequently Asked Questions</h3>
-          <div className="seo-faq-grid">
-            <div className="seo-faq-item">
-              <h4 className="seo-h4">Is this planning poker tool actually free?</h4>
-              <p className="seo-p">
-                Yes, everything, for everyone, right now. Up to {MAX_PARTICIPANTS} participants, unlimited
-                voting rounds, unlimited stories, all three card decks, the queue, the countdown timer,
-                facilitator analytics, CSV and clipboard export, and two fixed Team Rooms. No credit card,
-                no trial clock, no ads. We are concentrating on growing a real user base first; if paid
-                add-ons arrive later, everything described here stays free.
-              </p>
-            </div>
-            <div className="seo-faq-item">
-              <h4 className="seo-h4">Do I need to create an account?</h4>
-              <p className="seo-p">
-                No. Enter your name, create a room, share the link, that is the whole flow. A free account
-                only exists so we can reserve two permanent Team Room URLs to you (so no other team can land
-                in your room) and keep your sprint history across devices.
-              </p>
-            </div>
-            <div className="seo-faq-item">
-              <h4 className="seo-h4">Why use Fibonacci numbers for story points?</h4>
-              <p className="seo-p">
-                Fibonacci (1, 2, 3, 5, 8, 13, 21, 34) reflects how estimation uncertainty grows with
-                complexity. The widening gaps between numbers make it easy for teams to distinguish
-                small, medium, and large effort without false precision, and force a real conversation
-                when two people are far apart. See the{" "}
-                <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">full Fibonacci guide</RouteLink>
-                {" "}for the reasoning in more depth.
-              </p>
-            </div>
-            <div className="seo-faq-item">
-              <h4 className="seo-h4">Does this work for remote and distributed teams?</h4>
-              <p className="seo-p">
-                Yes. Paste the room link into Slack, Teams, or Zoom and everyone joins from any browser in seconds.
-                It works across desktop and mobile, and the facilitator can keep the room moving without asking the team to install anything.
-              </p>
-            </div>
-            <div className="seo-faq-item">
-              <h4 className="seo-h4">What is the Team Alignment score?</h4>
-              <p className="seo-p">
-                The Team Alignment score (visible to facilitators) tracks the percentage of stories
-                that reached first-round consensus, where every voter picked the same card.
-                A high score means your backlog is well-defined. A low score flags stories that
-                need more acceptance criteria before the sprint begins.
-              </p>
-            </div>
-            <div className="seo-faq-item">
-              <h4 className="seo-h4">How many people can join a planning poker session?</h4>
-              <p className="seo-p">
-                Up to {MAX_PARTICIPANTS} people per room, counting facilitators as well as voters. That covers
-                a large scrum team plus product, design, and QA in the same session. Bigger group? Run two rooms
-                in parallel and merge the results.
-              </p>
-            </div>
-            <div className="seo-faq-item">
-              <h4 className="seo-h4">How is this different from other free planning poker tools?</h4>
-              <p className="seo-p">
-                Most free planning poker apps cap something that matters: seven participants, nine votes per
-                game, five issues per session, or they show ads and hide the timer and averages behind a paid
-                tier. Nothing here is capped or ad-supported. You also get facilitator analytics —
-                consensus rate, spread, outlier highlighting, and re-vote tracking, that normally only
-                appears in paid tiers.
-              </p>
-            </div>
-            <div className="seo-faq-item">
-              <h4 className="seo-h4">What happens to my session data?</h4>
-              <p className="seo-p">
-                Rooms are temporary. When everyone leaves, the room and its votes are deleted, and any room
-                left idle is swept automatically. No advertising or third-party analytics cookies are used.
-                Sprint history is only stored if you are signed in, and only for you.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+        <Section flow className="seo-faq scroll-target" id="faq" tabIndex="-1">
+          <SectionHead as="h3" title="Frequently asked questions" />
+          {/* Accordion, not eight open blocks: the answers stay in the DOM
+              (hidden, never unmounted) so a crawler still reads every word,
+              while the page stops being a wall of text on a phone. */}
+          <Accordion items={FAQ_ITEMS(onNavigate)} />
+        </Section>
+      </Container>
+      </Section>
       )}
     </div>
   );
 }
+
+/* The home FAQ. Kept beside the screen that renders it, and shaped for
+   <Accordion> so the answers are one list rather than eight hand-built blocks
+   whose headings had drifted apart. */
+const FAQ_ITEMS = (onNavigate) => [
+  {
+    question: "Is this planning poker tool actually free?",
+    answer: (
+      <p>
+        Yes, everything, for everyone, right now. Up to {MAX_PARTICIPANTS} participants, unlimited
+        voting rounds, unlimited stories, all three card decks, the queue, the countdown timer,
+        facilitator analytics, CSV and clipboard export, and two fixed Team Rooms. No credit card,
+        no trial clock, no ads. We are concentrating on growing a real user base first; if paid
+        add-ons arrive later, everything described here stays free.
+      </p>
+    ),
+  },
+  {
+    question: "Do I need to create an account?",
+    answer: (
+      <p>
+        No. Enter your name, create a room, share the link, that is the whole flow. A free account
+        only exists so we can reserve two permanent Team Room URLs to you (so no other team can land
+        in your room) and keep your sprint history across devices.
+      </p>
+    ),
+  },
+  {
+    question: "Why use Fibonacci numbers for story points?",
+    answer: (
+      <p>
+        Fibonacci (1, 2, 3, 5, 8, 13, 21, 34) reflects how estimation uncertainty grows with
+        complexity. The widening gaps between numbers make it easy for teams to distinguish
+        small, medium, and large effort without false precision, and force a real conversation
+        when two people are far apart. See the{" "}
+        <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">full Fibonacci guide</RouteLink>
+        {" "}for the reasoning in more depth.
+      </p>
+    ),
+  },
+  {
+    question: "Does this work for remote and distributed teams?",
+    answer: (
+      <p>
+        Yes. Paste the room link into Slack, Teams, or Zoom and everyone joins from any browser in seconds.
+        It works across desktop and mobile, and the facilitator can keep the room moving without asking the
+        team to install anything.
+      </p>
+    ),
+  },
+  {
+    question: "What is the Team Alignment score?",
+    answer: (
+      <p>
+        The Team Alignment score (visible to facilitators) tracks the percentage of stories
+        that reached first-round consensus, where every voter picked the same card.
+        A high score means your backlog is well-defined. A low score flags stories that
+        need more acceptance criteria before the sprint begins.
+      </p>
+    ),
+  },
+  {
+    question: "How many people can join a planning poker session?",
+    answer: (
+      <p>
+        Up to {MAX_PARTICIPANTS} people per room, counting facilitators as well as voters. That covers
+        a large scrum team plus product, design, and QA in the same session. Bigger group? Run two rooms
+        in parallel and merge the results.
+      </p>
+    ),
+  },
+  {
+    question: "How is this different from other free planning poker tools?",
+    answer: (
+      <p>
+        Most free planning poker apps cap something that matters: seven participants, nine votes per
+        game, five issues per session, or they show ads and hide the timer and averages behind a paid
+        tier. Nothing here is capped or ad-supported. You also get facilitator analytics —
+        consensus rate, spread, outlier highlighting, and re-vote tracking, that normally only
+        appears in paid tiers.
+      </p>
+    ),
+  },
+  {
+    question: "What happens to my session data?",
+    answer: (
+      <p>
+        Rooms are temporary. When everyone leaves, the room and its votes are deleted, and any room
+        left idle is swept automatically. No advertising or third-party analytics cookies are used.
+        Sprint history is only stored if you are signed in, and only for you.
+      </p>
+    ),
+  },
+];
 
 /* ═══════════════════════ WILLINGNESS-TO-PAY POLL ═══════════════════════
    Usage counters can tell you how much a free product is used. They cannot
@@ -8491,9 +6582,9 @@ function JoinScreen({
 const WTP_STORAGE_KEY = "pp_wtp_answered";
 const WTP_OPTIONS = [
   { key: "wtp_zero",  label: "Nothing, free is the reason we use it" },
-  { key: "wtp_5",     label: "Up to £5 a month for the team" },
-  { key: "wtp_15",    label: "£6–15 a month for the team" },
-  { key: "wtp_30",    label: "More than £15 a month for the team" },
+  { key: "wtp_5",     label: "Up to $5 a month for the team" },
+  { key: "wtp_15",    label: "$6–15 a month for the team" },
+  { key: "wtp_30",    label: "More than $15 a month for the team" },
 ];
 
 function WtpPoll({ onDone }) {
@@ -8512,27 +6603,27 @@ function WtpPoll({ onDone }) {
 
   if (answered) {
     return (
-      <div className="wtp-panel" role="status">
-        <div className="wtp-thanks">Thank you, that genuinely shapes what gets built next.</div>
-      </div>
+      <Alert tone="success" role="status" className="wtp-panel">
+        Thank you, that genuinely shapes what gets built next.
+      </Alert>
     );
   }
   return (
-    <div className="wtp-panel" role="group" aria-labelledby="wtp-q">
-      <button type="button" className="wtp-dismiss" onClick={dismiss} aria-label="Dismiss this question">✕</button>
-      <div className="wtp-kicker">One question, then never again</div>
-      <div className="wtp-q" id="wtp-q">
+    <Card variant="flat" pad="sm" className="wtp-panel" role="group" aria-labelledby="wtp-q">
+      <Row between nowrap>
+        <Eyebrow>One question, then never again</Eyebrow>
+        <IconButton icon="close" size="sm" label="Dismiss this question" onClick={dismiss} />
+      </Row>
+      <p className="wtp-q" id="wtp-q">
         pointpoker is free and staying free. If it were paid, what would this be worth to your team?
-      </div>
-      <div className="wtp-options">
+      </p>
+      <Stack gap="sm">
         {WTP_OPTIONS.map((o) => (
-          <button key={o.key} type="button" className="wtp-option" onClick={() => answer(o.key)}>
-            {o.label}
-          </button>
+          <Choice key={o.key} label={o.label} onSelect={() => answer(o.key)} />
         ))}
-      </div>
-      <div className="wtp-note">Anonymous. No email, no follow-up, no change to your access.</div>
-    </div>
+      </Stack>
+      <span className="pp-hint">Anonymous. No email, no follow-up, no change to your access.</span>
+    </Card>
   );
 }
 
@@ -8551,22 +6642,23 @@ function RoomActionBar({
   revealed,
   votedCount,
   voterCount,
-  allSame,
-  consensusEstimate,
   needsManualEstimate,
   onReveal,
-  onAdvance,
-  canAdvance,
-  advanceLabel,
   onInvite,
   inviteCopied,
 }) {
   const everyoneVoted = voterCount > 0 && votedCount === voterCount;
-  const pct = voterCount ? Math.round((votedCount / voterCount) * 100) : 0;
   // Nobody has joined yet, so there is nothing to reveal and nothing to count.
   const roomIsEmpty = !revealed && voterCount === 0;
 
-  const primary = roomIsEmpty
+  /* Once the cards are up this card is status only. Every decision left in the
+     round — record, re-vote, new sprint, end session — sits in one row under
+     the estimate itself, which is what the facilitator is already reading. A
+     "Record 13 and continue" up here meant the number and the button that
+     commits it were a scroll apart. */
+  const primary = revealed
+    ? null
+    : roomIsEmpty
     ? {
         /* The room's job before anyone arrives is to get them in. This slot
            used to hold a disabled "Reveal everyone's cards" — the loudest
@@ -8576,15 +6668,6 @@ function RoomActionBar({
         icon: inviteCopied ? "check" : "link",
         onClick: onInvite,
         disabled: false,
-      }
-    : revealed
-    ? {
-        label: allSame && consensusEstimate
-          ? `Record ${consensusEstimate} and continue`
-          : advanceLabel,
-        icon: "arrowRight",
-        onClick: onAdvance,
-        disabled: !canAdvance,
       }
     : {
         label: "Reveal everyone's cards",
@@ -8598,7 +6681,7 @@ function RoomActionBar({
   const hint = revealed
     ? needsManualEstimate
       ? "Votes are split. Agree a number below, then record it."
-      : "Round complete."
+      : "Round complete. The round's actions are under the estimate below."
     : voterCount === 0
       // The button above now says "Copy the invite link", so this says what
       // happens after rather than repeating the instruction.
@@ -8610,40 +6693,37 @@ function RoomActionBar({
           : "Reveal early if the room has stopped thinking.";
 
   return (
-    <section className="action-bar" aria-label="Session controls">
-      <div className="action-bar-head">
+    <Card variant="raised" as="section" className="action-bar" aria-label="Session controls">
+      <Row between nowrap>
         <span className="action-bar-title">
           {revealed ? "Cards are up" : roomIsEmpty ? "Waiting for the table" : "Round in progress"}
         </span>
         {/* "0 of 0 voted" over an empty bar is state that has not happened.
             Zeroes read as data. Neither renders until someone can vote. */}
         {voterCount > 0 && (
-          <span className="action-bar-count">
+          <Chip tone={everyoneVoted ? "success" : undefined} count>
             {votedCount} of {voterCount} voted
-          </span>
+          </Chip>
         )}
-      </div>
+      </Row>
       {voterCount > 0 && (
-        <div className="action-bar-track" aria-hidden="true">
-          <div
-            className={`action-bar-fill${everyoneVoted ? " is-complete" : ""}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+        <Progress
+          value={votedCount}
+          max={voterCount}
+          label={`${votedCount} of ${voterCount} voters have played a card`}
+          className={everyoneVoted ? "is-complete" : undefined}
+        />
       )}
-      <button
-        type="button"
-        className="btn btn--primary btn--lg btn--block"
-        onClick={primary.onClick}
-        disabled={primary.disabled}
-      >
-        <Icon name={primary.icon} />
-        {primary.label}
-      </button>
+      {primary && (
+        <Button variant="primary" size="lg" block onClick={primary.onClick} disabled={primary.disabled}>
+          <Icon name={primary.icon} />
+          {primary.label}
+        </Button>
+      )}
       <p className="action-bar-hint" role="status" aria-live="polite">
         {hint}
       </p>
-    </section>
+    </Card>
   );
 }
 
@@ -8736,7 +6816,13 @@ function GameScreen({
   const medianDisp = showNum(medianV);
   const chosenFinalEstimate = allSame ? consensusEstimate : finalEstimate;
   const requiresManualFinalEstimate = revealed && isObs && voted.length > 0 && !allSame;
-  const nextItemButtonLabel = "Next item to Estimate";
+  // Four controls in one row, so each label is the verb and its object, not a
+  // sentence. The estimate is in the label because the button commits it.
+  const recordButtonLabel = !chosenFinalEstimate
+    ? "Pick the agreed estimate"
+    : hasStories && !allStoriesDone
+      ? `Record ${chosenFinalEstimate} & next item`
+      : `Record ${chosenFinalEstimate} & next round`;
   const revealedVotesSummary = voted.map((p) => p.vote).join(" • ");
   const revealHeroLabel = allSame ? "Agreed estimate" : "Average vote";
   const revealHeroHelper = allSame
@@ -8745,12 +6831,9 @@ function GameScreen({
       ? "Everyone played ?. Nobody has enough to size this yet, clarify the item, then re-vote."
       : "Use the range below to guide the discussion. The facilitator records the final agreed estimate next.";
 
-  const saveFinalEstimateAndContinue = useCallback(() => {
-    if (!chosenFinalEstimate) return;
-    if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, false);
-    else onNewRound(chosenFinalEstimate, false);
-  }, [chosenFinalEstimate, hasStories, allStoriesDone, onRecordStory, onNewRound]);
-
+  /* One record path, not two. The split-vote path had its own copy that hard-
+     coded `false` for the consensus flag — which is what `isFullTableAgreement`
+     already is when the votes are split. */
   const handleAdvanceToNextItem = useCallback(() => {
     if (!chosenFinalEstimate) return;
     if (hasStories && !allStoriesDone) onRecordStory(chosenFinalEstimate, isFullTableAgreement);
@@ -8760,6 +6843,14 @@ function GameScreen({
   const handleRevoteStory = useCallback(() => {
     onNewRound(null, false);
   }, [onNewRound]);
+
+  const confirmNewSprint = useCallback(() => {
+    if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
+  }, [onReset]);
+
+  const confirmEndSession = useCallback(() => {
+    if (window.confirm("End the session? This disconnects everyone and permanently deletes all session data.")) onEndSession();
+  }, [onEndSession]);
 
   useEffect(() => {
     if (!revealed) {
@@ -8960,11 +7051,8 @@ function GameScreen({
     return () => window.removeEventListener("keydown", onKey);
   }, [isObs, revealed, cards, numericDeck, onCard, onReveal, hasVotes, chosenFinalEstimate, handleAdvanceToNextItem]);
 
-  const prog = timer.running ? timer.remaining / timer.duration : 1;
-  const offset = CIRC * (1 - prog);
   const urgent = timer.remaining <= 5;
   const warn = timer.remaining <= 10 && !urgent;
-  const ringClr = urgent ? "#e74c3c" : warn ? "#e67e22" : "var(--gold)";
 
   return (
     <>
@@ -8983,50 +7071,56 @@ function GameScreen({
         </div>
       )}
       <header className="hdr" role="banner">
-        <div className="hdr-in">
+        <div className="hdr-in pp-container">
           <div className="hdr-l">
-            <button className="btn-back" onClick={onBack} aria-label="Leave room and return to home">
+            <Button variant="ghost" size="sm" className="btn-back" onClick={onBack} aria-label="Leave room and return to home">
               ← Leave
-            </button>
+            </Button>
             <BrandMark size={34} onClick={onBack} label="Return to home"/>
           </div>
           <div className="hdr-c">
-            <div className="badge">Round {round}</div>
+            {/* The room had no heading at all, so a screen reader's heading
+                list came back empty and there was nothing to jump to. The
+                badges beside it are the visual version of the same fact. */}
+            <VisuallyHidden as="h1">
+              Planning poker room {code}, round {round}
+            </VisuallyHidden>
+            <Chip>Round {round}</Chip>
             {/* Same rule as the action bar's count: a gold "0 stories done"
-                badge on a room that has not started reads as a score, and the
+                chip on a room that has not started reads as a score, and the
                 only score it can report is nothing. It appears once there is
                 something to report. */}
             {storiesDone > 0 && (
-              <div className="badge badge-gold">
+              <Chip tone="gold">
                 <Icon name="cards" size={16} /> {storiesDone} <span className="badge-long">{storiesDone === 1 ? estMode.singular : estMode.plural} </span>done
-              </div>
+              </Chip>
             )}
-            {code && (
-              <div className="badge" style={{ fontFamily: "monospace", letterSpacing: ".12em", fontSize: "var(--fs-1)" }}>
-                {code}
-              </div>
-            )}
+            {code && <Chip className="room-code-chip">{code}</Chip>}
           </div>
           <div className="hdr-r">
+            <ThemeToggle size="sm" />
             <div className="hdr-invite" aria-label="Invite team">
               <div className="hdr-invite-copy">
                 <span className="hdr-invite-label">{inviteLabel}</span>
                 <span className="hdr-invite-helper">{inviteHelper}</span>
                 <span className="hdr-invite-url">{shareUrl}</span>
               </div>
-              <button
-                className="btn-sm"
-                onClick={handleCopyLink}
-                aria-label="Copy invite link to clipboard"
-              >
-                {headerLinkCopied ? <>Invite link copied</> : <><Icon name="link" size={16} /> Copy invite link</>}
-              </button>
+              {/* The label collapses on a phone — the button is beside the room
+                  code, the icon says "link", and 160px of nowrap label was
+                  pushing the header 24px off a 375px screen. The accessible
+                  name is on the button either way. */}
+              <Button size="sm" className="hdr-copy" onClick={handleCopyLink} aria-label="Copy invite link to clipboard">
+                <Icon name={headerLinkCopied ? "check" : "link"} size={16} />
+                <span className="hdr-copy-label">
+                  {headerLinkCopied ? "Invite link copied" : "Copy invite link"}
+                </span>
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="game-body">
+      <div className="game-body pp-container">
         {/* The solo banner was a third copy of the same invite: the header
             strip has one, the action bar's primary is now the other, and this
             carried a dismiss button that could hide the only prompt telling a
@@ -9034,45 +7128,34 @@ function GameScreen({
             "the link stays the same every sprint" is information the header
             does not carry — but it is a note, not a competing button. */}
         {players.length === 1 && isPersistentRoom && !solobannerDismissed && (
-          <div className="solo-invite-banner" role="status">
-            <span className="solo-invite-icon"><Icon name="users" size={20} /></span>
-            <div className="solo-invite-body">
-              <strong>Team Room ready.</strong> Share the link once. It stays the same every sprint.
-            </div>
-            <button
-              type="button"
-              className="solo-invite-dismiss"
-              aria-label="Dismiss"
-              onClick={() => setSoloBannerDismissed(true)}
-            >
-              ✕
-            </button>
-          </div>
+          <Alert
+            tone="gold"
+            title="Team Room ready"
+            className="solo-invite-banner"
+            actions={
+              <Button variant="ghost" size="sm" onClick={() => setSoloBannerDismissed(true)}>Dismiss</Button>
+            }
+          >
+            Share the link once. It stays the same every sprint.
+          </Alert>
         )}
         {sessionWarning && (
-          <div className="session-warn-banner">
-            <span><Icon name="alert" size={18} /></span>
-            <div className="session-warn-text">
-              <strong>Session ends soon.</strong> This room closes in about 10
-              minutes. Finish the story you are on.
-            </div>
-          </div>
+          <Alert tone="warning" title="Session ends soon" className="session-warn-banner">
+            This room closes in about 10 minutes. Finish the story you are on.
+          </Alert>
         )}
 
         {/* Current item banner, visible to all players */}
         {activeStory && !allStoriesDone && (
-          <div className="story-name-banner">
-            <span className="story-name-label">
-              Now estimating · {estMode.progressLabel} {activeStoryIdx + 1} of {stories.length}
-            </span>
-            <div className="story-name-text">{activeStory.name}</div>
-          </div>
+          <Card variant="gold" pad="sm" className="story-name-banner">
+            <Eyebrow>Now estimating · {estMode.progressLabel} {activeStoryIdx + 1} of {stories.length}</Eyebrow>
+            <p className="story-name-text">{activeStory.name}</p>
+          </Card>
         )}
         {allStoriesDone && (
-          <div className="story-name-banner" style={{ borderColor: "rgba(39,174,96,.3)", background: "rgba(39,174,96,.06)" }}>
-            <span className="story-name-label" style={{ color: "rgba(39,174,96,.5)" }}>{estMode.backlogLabel}</span>
-            <div className="story-name-text" style={{ color: "#2ecc71" }}>All {stories.length} {estMode.plural} estimated ✓</div>
-          </div>
+          <Alert tone="success" title={estMode.backlogLabel} className="story-name-banner">
+            All {stories.length} {estMode.plural} estimated.
+          </Alert>
         )}
 
         <div className={`game-grid ${isObs ? "as-facilitator" : "as-voter"}`}>
@@ -9086,13 +7169,8 @@ function GameScreen({
                 revealed={revealed}
                 votedCount={votedCount}
                 voterCount={voters.length}
-                allSame={allSame}
-                consensusEstimate={consensusEstimate}
                 needsManualEstimate={requiresManualFinalEstimate}
                 onReveal={onReveal}
-                onAdvance={handleAdvanceToNextItem}
-                canAdvance={!!chosenFinalEstimate}
-                advanceLabel={hasStories && !allStoriesDone ? nextItemButtonLabel : "Record and start next round"}
                 onInvite={handleCopyLink}
                 inviteCopied={headerLinkCopied}
               />
@@ -9112,82 +7190,40 @@ function GameScreen({
                 <>
                   {!timer.running && !revealed && (
                     <>
-                      <div className="tsel-row">
-                        <div className="tsel-wrap">
-                          <select
-                            className="tsel"
-                            value={tsel}
-                            onChange={(e) => setTsel(+e.target.value)}
-                          >
-                            <option value={30}>30 seconds</option>
-                            <option value={45}>45 seconds</option>
-                            <option value={60}>1 minute</option>
-                          </select>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn--secondary btn--block"
-                        onClick={() => onStart(tsel)}
-                      >
+                      {/* A placeholder is not a label and neither is the panel
+                          heading above it: a screen reader used to land on this
+                          control announcing only "30 seconds". */}
+                      <Select
+                        label="Countdown length"
+                        value={tsel}
+                        onChange={(e) => setTsel(+e.target.value)}
+                        options={[
+                          { value: 30, label: "30 seconds" },
+                          { value: 45, label: "45 seconds" },
+                          { value: 60, label: "1 minute" },
+                        ]}
+                        hint="The team can vote without this. Use it if you want to time-box the round."
+                      />
+                      <Button block onClick={() => onStart(tsel)}>
                         <Icon name="play" size={18} /> Start {tsel === 60 ? "1 min" : `${tsel}s`} countdown
-                      </button>
-                      <div className="btn-hint">
-                        The team can vote without this. Use it if you want to time-box the round.
-                      </div>
+                      </Button>
                     </>
                   )}
                   {timer.running && (
                     <div className={`ring-area${urgent ? " urgent" : ""}`}>
-                      <div className="ring-wrap">
-                        <svg
-                          className="rsv"
-                          width="80"
-                          height="80"
-                          viewBox="0 0 80 80"
-                        >
-                          <circle className="rt" cx="40" cy="40" r="32" />
-                          <circle
-                            className="rp"
-                            cx="40"
-                            cy="40"
-                            r="32"
-                            strokeDasharray={CIRC}
-                            strokeDashoffset={offset}
-                            style={{ stroke: ringClr }}
-                          />
-                        </svg>
-                        <div
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <span className={`rnum${urgent ? " urgent" : ""}`} aria-hidden="true">
-                            {timer.remaining}
-                          </span>
-                          <span className="visually-hidden">
-                            {urgent ? `${timer.remaining} seconds left` : ""}
-                          </span>
-                        </div>
-                      </div>
+                      {/* One Timer, not a hand-rolled SVG ring per role. It
+                          carries the single role="timer" node; announcing every
+                          tick in a live region makes a room unusable on a
+                          screen reader. */}
+                      <Timer secondsLeft={timer.remaining} total={timer.duration} urgent={urgent} />
                       <div className="rtxt">
-                        <div
-                          className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}
-                        >
-                          {urgent
-                            ? "Time's almost up!"
-                            : warn
-                              ? "Wrapping up…"
-                              : "Estimating…"}
+                        <div className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}>
+                          {urgent ? "Time's almost up!" : warn ? "Wrapping up…" : "Estimating…"}
                         </div>
                         <div className="rhint">Cards auto-reveal on zero</div>
-                        <button className="btn-stop" onClick={onStop}>
+                        <Button variant="ghost" size="sm" className="btn-stop" onClick={onStop}>
                           <Icon name="stop" size={16} /> Stop timer
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -9195,7 +7231,7 @@ function GameScreen({
                     <div className="waiting-hint">
                       {requiresManualFinalEstimate
                         ? "Votes are split, discuss briefly, then confirm the agreed estimate."
-                        : "Round complete, use the Next item to Estimate button below when you are ready to continue."}
+                        : "Round complete, record it from the row under the estimate when you are ready to continue."}
                     </div>
                   )}
                 </>
@@ -9203,54 +7239,12 @@ function GameScreen({
                 <>
                   {timer.running ? (
                     <div className={`ring-area${urgent ? " urgent" : ""}`}>
-                      <div className="ring-wrap">
-                        <svg
-                          className="rsv"
-                          width="80"
-                          height="80"
-                          viewBox="0 0 80 80"
-                        >
-                          <circle className="rt" cx="40" cy="40" r="32" />
-                          <circle
-                            className="rp"
-                            cx="40"
-                            cy="40"
-                            r="32"
-                            strokeDasharray={CIRC}
-                            strokeDashoffset={offset}
-                            style={{ stroke: ringClr }}
-                          />
-                        </svg>
-                        <div
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <span className={`rnum${urgent ? " urgent" : ""}`} aria-hidden="true">
-                            {timer.remaining}
-                          </span>
-                          <span className="visually-hidden">
-                            {urgent ? `${timer.remaining} seconds left` : ""}
-                          </span>
-                        </div>
-                      </div>
+                      <Timer secondsLeft={timer.remaining} total={timer.duration} urgent={urgent} />
                       <div className="rtxt">
-                        <div
-                          className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}
-                        >
-                          {urgent
-                            ? "Pick a card, NOW!"
-                            : warn
-                              ? "Last few seconds!"
-                              : "Pick your card!"}
+                        <div className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}>
+                          {urgent ? "Pick a card, NOW!" : warn ? "Last few seconds!" : "Pick your card!"}
                         </div>
-                        <div className="rhint">
-                          Facilitator reveals the cards
-                        </div>
+                        <div className="rhint">Facilitator reveals the cards</div>
                       </div>
                     </div>
                   ) : (
@@ -9368,32 +7362,16 @@ function GameScreen({
                       )}
                       {!allSame && minV !== null && (
                         <>
-                          <div className="avg-hero-range">
-                            <div className="avg-hero-stat">
-                              <span className="v">{minV}</span>
-                              <span className="l">Min</span>
-                            </div>
-                            <div className="avg-hero-stat">
-                              <span className="v" style={{ color: "rgba(239,242,247,.88)", fontSize: "1.4rem" }}>
-                                {medianDisp}
-                              </span>
-                              <span className="l">Median</span>
-                            </div>
-                            <div className="avg-hero-stat">
-                              <span className="v" style={{ color: "var(--gold2)", fontSize: "1.8rem" }}>
-                                {avgDisp}
-                              </span>
-                              <span className="l">Average</span>
-                            </div>
-                            <div className="avg-hero-stat">
-                              <span className="v">{maxV}</span>
-                              <span className="l">Max</span>
-                            </div>
-                          </div>
+                          <Grid min="110px" className="avg-hero-range">
+                            <StatTile label="Min" value={minV} />
+                            <StatTile label="Median" value={medianDisp} />
+                            <StatTile label="Average" value={avgDisp} gold />
+                            <StatTile label="Max" value={maxV} />
+                          </Grid>
                           {spread > 0 && (
-                            <div style={{ textAlign: "center", marginTop: "10px", fontSize: "var(--fs-1)", color: "rgba(239,242,247,.65)", letterSpacing: ".5px" }}>
+                            <p className="avg-hero-sub">
                               Spread: {spread} point{spread !== 1 ? "s" : ""} — discuss, then record one final deck value
-                            </div>
+                            </p>
                           )}
                         </>
                       )}
@@ -9438,88 +7416,55 @@ function GameScreen({
                             {isLow && (
                               <span className="outlier-tag low">Lowest</span>
                             )}
-                            {allSame && (
-                              <span
-                                style={{
-                                  fontSize: "var(--fs-1)",
-                                  color: "var(--gold2)",
-                                }}
-                              >
-                                ✓
-                              </span>
-                            )}
+                            {/* Rule 5 again: the tick is a second signal beside
+                                the card's gold border, and it says the word too
+                                rather than leaving a bare glyph to carry it. */}
+                            {allSame && <Chip tone="gold">Agreed</Chip>}
                           </div>
                         );
                       })}
                     </div>
                     {isObs && requiresManualFinalEstimate && (
-                      <div className="inline-final-decision" role="group" aria-label="Facilitator choose final estimate">
-                        <div className="inline-final-decision-kicker">Facilitator decision</div>
-                        <div className="inline-final-decision-title">
-                          {unanimousUnknown
-                            ? "Nobody could size this one"
-                            : "Choose the agreed estimate for this item"}
-                        </div>
-                        <div className="inline-final-decision-copy">
+                      <Card
+                        variant="gold"
+                        className="inline-final-decision"
+                        role="group"
+                        aria-label="Facilitator choose final estimate"
+                        eyebrow="Facilitator decision"
+                        title={unanimousUnknown
+                          ? "Nobody could size this one"
+                          : "Choose the agreed estimate for this item"}
+                      >
+                        <p>
                           {unanimousUnknown
                             ? "Every voter played ?. That is a signal the item needs clearer acceptance criteria, not a number. Clarify it and re-vote, or record a placeholder and come back to it."
                             : "The votes are mixed. Select the estimate your team agrees to record, then move straight to the next item. The summary above is only for discussion."}
-                        </div>
-                        <div className="facilitator-overlay-summary inline-final-summary">
-                          <div className="facilitator-overlay-summary-card">
-                            <span className="facilitator-overlay-summary-k">Votes shown</span>
-                            <span className="facilitator-overlay-summary-v">{revealedVotesSummary || "—"}</span>
-                          </div>
-                          <div className="facilitator-overlay-summary-card">
-                            <span className="facilitator-overlay-summary-k">Average</span>
-                            <span className="facilitator-overlay-summary-v gold">{avgDisp}</span>
-                          </div>
-                          <div className="facilitator-overlay-summary-card">
-                            <span className="facilitator-overlay-summary-k">Spread</span>
-                            <span className="facilitator-overlay-summary-v">
-                              {spread !== null ? `${spread} point${spread !== 1 ? "s" : ""}` : "Different votes"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="facilitator-overlay-grid" role="group" aria-label="Choose final estimate">
+                        </p>
+                        <Grid min="130px" className="inline-final-summary">
+                          <StatTile label="Votes shown" value={revealedVotesSummary || null} empty="Nobody has voted yet" />
+                          <StatTile label="Average" value={avgDisp} gold />
+                          <StatTile
+                            label="Spread"
+                            value={spread !== null ? `${spread} point${spread !== 1 ? "s" : ""}` : "Different votes"}
+                          />
+                        </Grid>
+                        {/* Selection is aria-pressed on a Choice, not an .active
+                            class: a class lets the visual state and the state a
+                            screen reader announces disagree. */}
+                        <ChoiceGrid cols={5} role="group" aria-label="Choose final estimate">
                           {finalEstimateOptions.map((val) => (
-                            <button
+                            <Choice
                               key={val}
-                              type="button"
-                              className={`facilitator-overlay-chip${finalEstimate === val ? " active" : ""}`}
-                              aria-pressed={finalEstimate === val}
-                              onClick={() => setFinalEstimate(val)}
-                            >
-                              {val}
-                            </button>
+                              compact
+                              label={val}
+                              selected={finalEstimate === val}
+                              aria-label={`Record ${val} as the agreed estimate`}
+                              onSelect={() => setFinalEstimate(val)}
+                            />
                           ))}
-                        </div>
-                        <div className="facilitator-overlay-actions inline-final-actions">
-                          <button
-                            className="btn-record-next btn-next-item-cta"
-                            disabled={!chosenFinalEstimate}
-                            onClick={saveFinalEstimateAndContinue}
-                          >
-                            {chosenFinalEstimate
-                              ? `Save selected estimate & ${nextItemButtonLabel}`
-                              : "Select the agreed estimate to continue"}
-                          </button>
-                          <button className="facilitator-overlay-revote" type="button" onClick={handleRevoteStory}>
-                            ↺ Re-vote this {estMode.singular}
-                          </button>
-                        </div>
-                      </div>
+                        </ChoiceGrid>
+                      </Card>
                     )}
-                    {isObs && !requiresManualFinalEstimate && (
-                      <button
-                        className={`btn-record-next btn-next-item-cta${isRealConsensus ? " consensus" : ""}`}
-                        disabled={!chosenFinalEstimate}
-                        onClick={handleAdvanceToNextItem}
-                      >
-                        {nextItemButtonLabel}
-                      </button>
-                    )}
-
                     {notVoted.length > 0 && (
                       <div className="no-vote">
                         <Icon name="alert" size={16} /> Did not vote: {notVoted.map((p) => p.name).join(", ")}
@@ -9527,61 +7472,77 @@ function GameScreen({
                     )}
                   </>
                 )}
+
+                {/* Every way out of a finished round, in one row, under the
+                    number it acts on. These four used to be in three places:
+                    record at the top of the column above the timer, re-vote
+                    and new sprint below the story queue, end session below
+                    that — so deciding meant scrolling past the estimate to
+                    find the button that commits it. */}
+                {isObs && (
+                  <Row className="round-actions" role="group" aria-label="Round actions">
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      className={`btn-record-next${isRealConsensus ? " consensus" : ""}`}
+                      disabled={!chosenFinalEstimate}
+                      onClick={handleAdvanceToNextItem}
+                    >
+                      <Icon name="arrowRight" size={18} /> {recordButtonLabel}
+                    </Button>
+                    <Button onClick={handleRevoteStory}>
+                      <Icon name="refresh" size={16} /> Re-vote
+                    </Button>
+                    <Button onClick={confirmNewSprint}>
+                      <Icon name="refresh" size={16} /> New sprint
+                    </Button>
+                    <Button variant="danger" onClick={confirmEndSession}>
+                      <Icon name="close" size={16} /> End session
+                    </Button>
+                  </Row>
+                )}
               </div>
             )}
 
             {/* Facilitator Controls */}
             {isObs && (
               <div className="obs-controls">
-                {revealed && requiresManualFinalEstimate && (
-                  <div className="final-estimate-panel">
-                    <div className="final-estimate-kicker">Decision required</div>
-                    <div className="final-estimate-title">Pick the agreed estimate in the reveal panel, then move to the next item.</div>
-                    <div className="final-estimate-copy">
-                      The facilitator controls now sit directly under <strong>Who Picked What:</strong> so you can record the team decision without waiting for a popup.
-                    </div>
-                  </div>
-                )}
-
                 {/* Item queue manager */}
                 <div className="story-panel">
-                  <div className="story-panel-title"><Icon name="list" size={16} /> {estMode.queueTitle} <span className="story-panel-optional">optional</span></div>
-                  <p className="story-panel-hint">
+                  <div className="story-panel-title" id="story-panel-title"><Icon name="list" size={16} /> {estMode.queueTitle} <span className="story-panel-optional">optional</span></div>
+                  <p className="story-panel-hint" id="story-panel-hint">
                     {estMode.hintText}
                   </p>
-                  <div className="story-add-row">
-                    <textarea
-                      className="story-inp"
-                      placeholder={estMode.placeholder}
-                      value={storyInput}
-                      rows={1}
-                      onChange={(e) => setStoryInput(e.target.value)}
-                      onPaste={(e) => {
-                        // Paste a whole backlog: one item per line, straight from
-                        // Jira, Linear, a spreadsheet column, or a doc.
-                        const text = e.clipboardData?.getData("text") || "";
-                        if (!text.includes("\n")) return;
+                  <TextField
+                    multiline
+                    rows={1}
+                    className="story-add-row"
+                    /* Not the panel heading again — the heading names the
+                       queue, this names what typing here does. */
+                    label={`Add ${estMode.singular === "task" ? "a task" : "an item"}`}
+                    placeholder={estMode.placeholder}
+                    hint={`Paste a whole list, one ${estMode.singular} per line, and every line gets queued at once.`}
+                    value={storyInput}
+                    onChange={(e) => setStoryInput(e.target.value)}
+                    onPaste={(e) => {
+                      // Paste a whole backlog: one item per line, straight from
+                      // Jira, Linear, a spreadsheet column, or a doc.
+                      const text = e.clipboardData?.getData("text") || "";
+                      if (!text.includes("\n")) return;
+                      e.preventDefault();
+                      addStoryLines(text);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
-                        addStoryLines(text);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          addStoryLines(storyInput);
-                        }
-                      }}
-                    />
-                    <button
-                      className="btn-story-add"
-                      disabled={!storyInput.trim()}
-                      onClick={() => addStoryLines(storyInput)}
-                    >
-                      + Add
-                    </button>
-                  </div>
-                  <div className="story-paste-hint">
-                    Paste a whole list, one {estMode.singular} per line, and every line gets queued at once.
-                  </div>
+                        addStoryLines(storyInput);
+                      }
+                    }}
+                  >
+                    <Button disabled={!storyInput.trim()} onClick={() => addStoryLines(storyInput)}>
+                      <Icon name="plus" size={16} /> Add
+                    </Button>
+                  </TextField>
                   {hasStories && (
                     <>
                       <div className="story-progress">
@@ -9603,15 +7564,14 @@ function GameScreen({
                                 </span>
                               )}
                               {state !== "done" && (
-                                <button
-                                  type="button"
+                                <IconButton
+                                  icon="close"
+                                  size="sm"
                                   className="story-item-remove"
-                                  aria-label={`Remove ${s.name} from the queue`}
+                                  label={`Remove ${s.name} from the queue`}
                                   title="Remove from queue"
                                   onClick={() => onRemoveStory?.(i)}
-                                >
-                                  ✕
-                                </button>
+                                />
                               )}
                             </div>
                           );
@@ -9621,74 +7581,32 @@ function GameScreen({
                   )}
                 </div>
 
-                {/* Reveal moved to RoomActionBar at the top of this column.
-                    It used to sit here, below the story queue, where it was
-                    off-screen on a phone and styled quietly enough to read as
-                    disabled. */}
-                {revealed && (
+                {/* Reveal moved to RoomActionBar at the top of this column,
+                    and everything a finished round can do moved into the one
+                    row under the estimate. What is left here is the mid-round
+                    escape hatch: before the cards are up there is no estimate
+                    for that row to sit under. */}
+                {!revealed && (
                   <>
-                    {requiresManualFinalEstimate ? (
-                      <div className="obs-secondary-row">
-                        <button
-                          className="btn-new-session"
-                          onClick={() => {
-                            if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
-                          }}
-                        >
+                    {(round > 1 || storiesDone > 0) && (
+                      <Row className="obs-secondary-row">
+                        <Button onClick={confirmNewSprint}>
                           <Icon name="refresh" size={16} /> New sprint
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="obs-secondary-row" style={{ marginTop: 8 }}>
-                          <button className="btn-next-round" onClick={handleRevoteStory}>
-                            ↺ Re-vote this {estMode.singular}
-                          </button>
-                          <button
-                            className="btn-new-session"
-                            onClick={() => {
-                              if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
-                            }}
-                          >
-                            <Icon name="refresh" size={16} /> New sprint
-                          </button>
-                        </div>
-                        <div className="btn-hint">
-                          "Re-vote" keeps the same {estMode.singular} · "New Sprint" resets everything
-                        </div>
-                      </>
+                        </Button>
+                      </Row>
                     )}
+                    {/* Used once, at the end. It carried a divider, a full-width
+                        danger block and a hint — three labels and 34,848px² for
+                        an irreversible action, second only to the control that
+                        runs the session. The confirm dialog states the
+                        consequence, so the button does not need to. */}
+                    <Row end className="obs-danger-row">
+                      <Button variant="danger" size="sm" onClick={confirmEndSession}>
+                        <Icon name="close" size={16} /> End session
+                      </Button>
+                    </Row>
                   </>
                 )}
-
-                {!revealed && (round > 1 || storiesDone > 0) && (
-                  <div className="obs-secondary-row">
-                    <button
-                      className="btn-new-session"
-                      onClick={() => {
-                        if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
-                      }}
-                    >
-                      <Icon name="refresh" size={16} /> New sprint
-                    </button>
-                  </div>
-                )}
-                {/* Used once, at the end. It carried a divider, a full-width
-                    danger block and a hint — three labels and 34,848px² for an
-                    irreversible action, second only to the control that runs
-                    the session. The confirm dialog states the consequence, so
-                    the button does not need to. */}
-                <div className="obs-danger-row">
-                  <button
-                    type="button"
-                    className="btn btn--danger btn--sm"
-                    onClick={() => {
-                      if (window.confirm("End the session? This disconnects everyone and permanently deletes all session data.")) onEndSession();
-                    }}
-                  >
-                    <Icon name="close" size={16} /> End session
-                  </button>
-                </div>
               </div>
             )}
           </div>
@@ -9700,32 +7618,29 @@ function GameScreen({
               <span className="ptitle">At the Table</span>
               {voters.length > 0 && !revealed && (
                 <>
-                  <div className="vp-head" role="status" aria-live="polite">
-                    <span>
-                      {votedCount} of {voters.length} voted
-                    </span>
+                  <Row between className="vp-head" role="status" aria-live="polite">
+                    <span>{votedCount} of {voters.length} voted</span>
                     <span>{voters.length - votedCount} waiting</span>
-                  </div>
-                  <div className="vp-bar">
-                    <div
-                      className="vp-fill"
-                      style={{
-                        width: `${voters.length ? (votedCount / voters.length) * 100 : 0}%`,
-                      }}
-                    />
-                  </div>
+                  </Row>
+                  <Progress
+                    value={votedCount}
+                    max={voters.length}
+                    label={`${votedCount} of ${voters.length} voters have played a card`}
+                    className="vp-bar"
+                  />
                 </>
               )}
               {players.length === 0 && (
-                <div className="nobody">Nobody here yet</div>
+                <EmptyState title="Nobody here yet">
+                  Share the invite link and the table fills up as people arrive.
+                </EmptyState>
               )}
-              <div className="plist">
+              {/* Rule 5: the brass ring on the avatar says "voted" and so does
+                  the word beside it. Neither carries the meaning alone. */}
+              <ul className="plist">
                 {voters.map((p) => (
-                  <div
-                    key={p.id}
-                    className={`prow${p.voted ? " voted" : " not-voted-yet"}`}
-                  >
-                    <div className="pav">{ini(p.name)}</div>
+                  <li key={p.id} className={`prow${p.voted ? " voted" : " not-voted-yet"}`}>
+                    <Avatar name={p.name} size="sm" state={p.voted ? "voted" : "waiting"} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="pname">
                         {p.name}
@@ -9733,38 +7648,30 @@ function GameScreen({
                       </div>
                       <div className="prole">
                         {p.voted ? (
-                          <span className="voted-label">✓ Voted</span>
+                          <span className="voted-label">Voted</span>
                         ) : (
-                          <span className="waiting-label">
-                            Hasn't voted yet
-                          </span>
+                          <span className="waiting-label">Hasn't voted yet</span>
                         )}
                       </div>
                     </div>
-                    <div className="prow-actions">
-                      {revealed && p.voted ? (
-                        <div className="vchip">{p.vote}</div>
-                      ) : (
-                        <div className={`pdot${p.voted ? " v" : " w"}`} />
-                      )}
+                    <Row nowrap className="prow-actions">
+                      {revealed && p.voted && <Chip tone="gold" count>{p.vote}</Chip>}
                       {isObs && p.id !== myId && (
-                        <button
-                          type="button"
-                          className="btn-remove-player"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Remove ${p.name} from the room`}
                           onClick={() => onRemoveParticipant(p.id, p.name)}
                         >
                           Remove
-                        </button>
+                        </Button>
                       )}
-                    </div>
-                  </div>
+                    </Row>
+                  </li>
                 ))}
-                {observers.length > 0 && voters.length > 0 && (
-                  <div className="sep" />
-                )}
                 {observers.map((p) => (
-                  <div key={p.id} className="prow obs">
-                    <div className="pav">{ini(p.name)}</div>
+                  <li key={p.id} className="prow obs">
+                    <Avatar name={p.name} size="sm" facilitator />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="pname">
                         {p.name}
@@ -9772,21 +7679,21 @@ function GameScreen({
                       </div>
                       <div className="prole">Facilitator · No vote</div>
                     </div>
-                    <div className="prow-actions">
-                      <div className="pdot o" />
+                    <Row nowrap className="prow-actions">
                       {isObs && p.id !== myId && (
-                        <button
-                          type="button"
-                          className="btn-remove-player"
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`Remove ${p.name} from the room`}
                           onClick={() => onRemoveParticipant(p.id, p.name)}
                         >
                           Remove
-                        </button>
+                        </Button>
                       )}
-                    </div>
-                  </div>
+                    </Row>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
             {/* Sprint Analytics, facilitator only */}
@@ -9889,9 +7796,10 @@ function GameScreen({
                 return (
                   <div className="panel">
                     <span className="ptitle">Sprint Analytics</span>
-                    <div className="a-empty" style={{ marginTop: 6 }}>
-                      Consensus rate, spread, and {estMode.singular} totals appear here after the first recorded estimate.
-                    </div>
+                    <EmptyState title="Nothing recorded yet">
+                      Consensus rate, spread, and {estMode.singular} totals appear here after the first
+                      recorded estimate.
+                    </EmptyState>
                   </div>
                 );
               }
@@ -9900,38 +7808,43 @@ function GameScreen({
                 <div className="panel">
                   <span className="ptitle">Sprint Analytics</span>
 
-                  {/* ── Section 1: Sprint Snapshot ── */}
+                  {/* ── Section 1: Sprint Snapshot ──
+                      A stack, not a Grid: three tiles auto-fitted two-up in a
+                      258px rail and orphaned the third on a row of its own. */}
                   <div className="a-kpis">
-                    <div className="a-kpi">
-                      <span className="a-kpi-v">{storiesDone}</span>
-                      <span className="a-kpi-l">{estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized</span>
-                    </div>
-                    <div className="a-kpi">
-                      <span className="a-kpi-v">{isTshirt ? tshirtMostCommon : scopeDisp}</span>
-                      <span className="a-kpi-l">{isTshirt ? "Most used size" : "Sprint scope"}</span>
-                    </div>
-                    <div className="a-kpi">
-                      <span className="a-kpi-v">{isTshirt ? tshirtSizeMix : avgDisp2}</span>
-                      <span className="a-kpi-l">{isTshirt ? "Size mix" : `Avg / ${estMode.singular}`}</span>
-                    </div>
+                    <StatTile
+                      label={`${estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized`}
+                      value={storiesDone}
+                    />
+                    <StatTile
+                      label={isTshirt ? "Most used size" : "Sprint scope"}
+                      value={(isTshirt ? tshirtMostCommon : scopeDisp) === "—" ? null : isTshirt ? tshirtMostCommon : scopeDisp}
+                      empty="After the first estimate"
+                    />
+                    <StatTile
+                      label={isTshirt ? "Size mix" : `Avg / ${estMode.singular}`}
+                      value={(isTshirt ? tshirtSizeMix : avgDisp2) === "—" ? null : isTshirt ? tshirtSizeMix : avgDisp2}
+                      empty="After the first estimate"
+                    />
                   </div>
 
                   {/* ── Section 2: Team Alignment ── */}
                   <div className="a-align">
-                    <div className="a-align-head">
+                    <Row between className="a-align-head">
                       <span className="a-align-title">Team Alignment</span>
+                      {/* Rule 5: the bar's colour band is a second signal, never
+                          the only one — the word says the same thing. */}
                       {consensusRate !== null && (
-                        <span className={`a-align-score ${fillClass}`}>
+                        <Chip tone={fillClass === "good" ? "success" : fillClass === "low" ? "danger" : fillClass === "ok" ? "warning" : undefined}>
                           {alignLabel ? `${alignLabel} · ${consensusRate}%` : `${consensusRate}%`}
-                        </span>
+                        </Chip>
                       )}
-                    </div>
-                    <div className="a-align-bar-track">
-                      <div
-                        className={`a-align-bar-fill ${fillClass}`}
-                        style={{ width: `${consensusRate ?? 0}%` }}
-                      ></div>
-                    </div>
+                    </Row>
+                    <Progress
+                      value={consensusRate ?? 0}
+                      label={`Team alignment ${consensusRate ?? 0} per cent`}
+                      className={`a-align-bar ${fillClass}`}
+                    />
                     <div className="a-align-sub">{alignSub}</div>
                     <div className="a-align-note">% of {estMode.plural} where all voters agreed on the first vote</div>
                   </div>
@@ -9942,17 +7855,16 @@ function GameScreen({
                       <div className="analytics-breakdown-title">
                         T-Shirt size breakdown
                       </div>
-                      <div className="analytics-size-grid">
+                      <Grid min="72px" className="analytics-size-grid">
                         {tshirtBreakdown.map(({ size, count }) => (
-                          <div className="analytics-size-card" key={size}>
-                            <span className="analytics-size-label">{size}</span>
-                            <span className="analytics-size-count">{count}</span>
-                            <span className="analytics-size-copy">
-                              {count === 1 ? estMode.singular : estMode.plural}
-                            </span>
-                          </div>
+                          <StatTile
+                            key={size}
+                            label={size}
+                            value={count}
+                            meta={count === 1 ? estMode.singular : estMode.plural}
+                          />
                         ))}
-                      </div>
+                      </Grid>
                     </div>
                   )}
 
@@ -9962,21 +7874,26 @@ function GameScreen({
                       {estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized{listedStories.length > 0 ? ` (${listedStories.length})` : ""}
                     </div>
                     {listedStories.length > 0 ? (
-                      <div className="a-story-list">
-                        {listedStories.map((s, i) => (
-                          <div className="a-story-row" key={i}>
-                            <span className="a-story-idx">{i + 1}</span>
-                            <span className="a-story-name" title={s.name}>{s.name}</span>
-                            <span className="a-story-est">{s.estimate}{unitLabel}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <ResultsTable
+                        className="a-story-list"
+                        columns={[
+                          { key: "idx", label: "#", numeric: true },
+                          { key: "name", label: estMode.singular.charAt(0).toUpperCase() + estMode.singular.slice(1) },
+                          { key: "estimate", label: "Estimate", numeric: true },
+                        ]}
+                        rows={listedStories.map((st, i) => ({
+                          id: i,
+                          idx: i + 1,
+                          name: st.name,
+                          estimate: `${st.estimate}${unitLabel}`,
+                        }))}
+                      />
                     ) : (
-                      <div className="a-empty">
+                      <EmptyState title={`No ${estMode.plural} sized yet`}>
                         {storiesDone > 0
                           ? `Add ${estMode.singular} names to the queue to track estimates here.`
-                          : `No ${estMode.plural} sized yet, estimates will appear here after the first round.`}
-                      </div>
+                          : `Estimates appear here after the first recorded round.`}
+                      </EmptyState>
                     )}
                   </div>
 
@@ -9986,14 +7903,13 @@ function GameScreen({
                       <div className="analytics-breakdown-title">
                         {deckLabel} — point distribution
                       </div>
-                      <div className="analytics-chips">
+                      <Row className="analytics-chips">
                         {breakdown.map(([val, cnt]) => (
-                          <div className="analytics-chip" key={val}>
-                            <span className="analytics-chip-val">{val}{unitLabel}</span>
-                            <span className="analytics-chip-cnt">×{cnt}</span>
-                          </div>
+                          <Chip key={val} tone="gold">
+                            {val}{unitLabel} <span className="analytics-chip-cnt">×{cnt}</span>
+                          </Chip>
                         ))}
-                      </div>
+                      </Row>
                     </div>
                   )}
                 </div>
@@ -10002,51 +7918,49 @@ function GameScreen({
 
             {/* Estimation Spree, shown when streak ≥ 1, all players saw same consensus */}
             {streak > 0 && (
-              <div className={`streak-panel${streak >= 3 ? " streak-hot" : ""}`}>
-                <div className="streak-fire">
-                  {"\u2666".repeat(streak >= 5 ? 3 : streak >= 3 ? 2 : 1)}
-                </div>
-                <div className="streak-body">
-                  <div className="streak-count">
-                    {streak === 1
-                      ? "Estimation Spree!"
-                      : `${streak}-round spree!`}
-                  </div>
-                  <div className="streak-label">
-                    {streak >= 5
-                      ? "Unstoppable. The team is perfectly aligned."
-                      : streak >= 3
-                      ? "Team is locked in, great backlog clarity"
-                      : streak === 2
-                      ? "Two in a row, team understands the work"
-                      : "First consensus, everyone on the same page"}
-                  </div>
-                </div>
-              </div>
+              <Alert
+                tone="gold"
+                className={`streak-panel${streak >= 3 ? " streak-hot" : ""}`}
+                title={
+                  <>
+                    <span className="streak-fire" aria-hidden="true">
+                      {"\u2666".repeat(streak >= 5 ? 3 : streak >= 3 ? 2 : 1)}
+                    </span>{" "}
+                    {streak === 1 ? "Estimation spree!" : `${streak}-round spree!`}
+                  </>
+                }
+              >
+                {streak >= 5
+                  ? "Unstoppable. The team is perfectly aligned."
+                  : streak >= 3
+                  ? "Team is locked in, great backlog clarity"
+                  : streak === 2
+                  ? "Two in a row, team understands the work"
+                  : "First consensus, everyone on the same page"}
+              </Alert>
             )}
 
             {/* Session summary, works with or without a named queue */}
             {summaryRows.length > 0 && (
               <div className="panel">
                 <span className="ptitle">Sprint Summary</span>
-                <div className="summary-rows">
-                  {summaryRows.map((row, i) => (
-                    <div key={i} className={`summary-row${row.estimate != null ? " sized" : ""}`}>
-                      <span className="summary-row-name">{row.name}</span>
-                      <span className="summary-row-est">
-                        {row.estimate != null ? row.estimate : "—"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="summary-total">
-                  {summarySized} of {summaryRows.length} sized
-                  {summaryTotalPoints !== null && ` · ${summaryTotalPoints} points total`}
-                </div>
-                <div className="summary-actions">
-                  <button className="btn-inv" onClick={copySummary}><Icon name="copy" size={16} /> Copy</button>
-                  <button className="btn-inv" onClick={downloadSummaryCsv}>⬇ CSV</button>
-                </div>
+                <ResultsTable
+                  className="summary-rows"
+                  caption={`${summarySized} of ${summaryRows.length} sized${summaryTotalPoints !== null ? ` · ${summaryTotalPoints} points total` : ""}`}
+                  columns={[
+                    { key: "name", label: "Item" },
+                    { key: "estimate", label: "Estimate", numeric: true },
+                  ]}
+                  rows={summaryRows.map((row, i) => ({
+                    id: i,
+                    name: row.name,
+                    estimate: row.estimate != null ? row.estimate : "—",
+                  }))}
+                />
+                <Row className="summary-actions">
+                  <Button size="sm" onClick={copySummary}><Icon name="copy" size={16} /> Copy</Button>
+                  <Button size="sm" onClick={downloadSummaryCsv}><Icon name="arrowRight" size={16} /> CSV</Button>
+                </Row>
                 {showWtpPoll && <WtpPoll onDone={() => setWtpDone(true)} />}
               </div>
             )}

@@ -24,12 +24,16 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 449 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 362 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 18 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
+| `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 23 KB |
+| `src/design-system/components.css` | The `pp-` component classes | 51 KB |
+| `src/design-system/index.js` | The React components. Import from here | 37 KB |
+| `src/design-system/README.md` | The rulebook: theming, the ten rules, the decision table | 20 KB |
 | `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 8 KB |
 | `scripts/build-rules.mjs` | Strips comments from the Firebase rules to make the console-pasteable copy | 1 KB |
-| `scripts/gen-ai-context.mjs` | Generates this file | 11 KB |
+| `scripts/gen-ai-context.mjs` | Generates this file | 13 KB |
 | `database.rules.json` | Firebase rules, with comments. **Source of truth.** | 17 KB |
 | `database.rules.publish.json` | Generated. This is what gets pasted into the Firebase console | 12 KB |
 
@@ -111,7 +115,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 82 test blocks across AdminDashboard.test.js, App.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 137 test blocks across AdminDashboard.test.js, App.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -125,25 +129,37 @@ Run both before committing.
 
 ## Design system
 
-Read `docs/DESIGN-SYSTEM.md` before writing any UI. The short version: use a
-token, never a raw px or hex value; one `.btn` base class with four intents;
-one primary action per screen; icons from `ICON_PATHS`, never emoji.
+Read `src/design-system/README.md` before writing any UI. The short version: use
+a token, never a raw px or hex value; one primary action per screen; selection is
+`aria-pressed`, never a class; icons from `ICON_PATHS`, never emoji.
+
+**Dark is the default and needs no JavaScript** — the dark roles sit on `:root`, so
+first paint, crawlers and a no-JS browser all get it. Light is opt-in via
+`[data-theme="light"]`, set by `ThemeToggle` and remembered under `pp-theme`.
+There is deliberately no `prefers-color-scheme` block: the theme never moves under
+a user who did not ask. Components import from `src/design-system`; App.js's old
+`--bg` / `--gold` names are aliases of the semantic roles, which is what made the
+existing 10k-line file theme-aware without rewriting it.
 
 | Measure | Now | Note |
 |---|---|---|
-| Design tokens in `:root` | 71 | Type, spacing, elevation, motion, semantic colour |
-| Icons in `ICON_PATHS` | 18 | One stroke family, `currentColor` |
-| Distinct font sizes in CSS | 45 | Target is the 8-step scale; the rest is unmigrated legacy |
-| Distinct padding pairs | 77 | Target is the 4px grid |
-| Legacy button classes | 8 | Migrate onto `.btn` when you touch one |
+| Design tokens | 196 | Type, spacing, elevation, motion, semantic colour |
+| Roles defined per theme | 86 | Every one exists in both, or light falls back to a dark value |
+| Icons in `ICON_PATHS` | 20 | One stroke family, `currentColor` |
+| Distinct font sizes in CSS | 22 | Target is the 8-step scale; the rest is unmigrated legacy |
+| Distinct padding pairs | 17 | Target is the 4px grid |
+| Legacy button classes in App.js | 3 | The button system is `Button` / `.pp-btn`; these are leftover skins |
+| Raw hex text colours left in App.js | 3 | All on a surface that is identical in both themes |
 
-The last three are deliberately unflattering. They are the size of the remaining
-migration, and they should fall over time, never rise. `src/designsystem.test.js`
-fails if the token layer, the button system or the no-emoji rule is broken.
+The bottom four are deliberately unflattering. They are the size of the remaining
+migration, and they should fall over time, never rise.
+`src/designsystem.test.js` guards the button system and the no-emoji rule;
+`src/design-system/design-system.test.js` computes the actual WCAG contrast of
+every semantic role in both themes and fails if one drops below AA.
 
-## Components in App.js (33)
+## Components in App.js (32)
 
-`Icon`, `BrandMark`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
+`BrandMark`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
 
 ---
 
@@ -368,6 +384,74 @@ That also removed the third copy of the same invite. The header strip has one,
 the action bar's primary is the other, and the solo banner was a third — it now
 only appears for a Team Room, where "the link stays the same every sprint" is
 information the header does not carry.
+
+**Once the cards are up, the action bar is status only.** It kept its primary
+slot after the reveal, so "Record 13 and continue" sat at the top of the column
+above the timer while the 13 it was recording was a screen further down — the
+number and the button that commits it were a scroll apart, and the facilitator
+had to hold the estimate in their head on the way up. Everything a finished
+round can do is now one `.round-actions` row directly under `.avg-hero`:
+record, re-vote, new sprint, end session. `RoomActionBar`'s `primary` is `null`
+when `revealed`, and the card renders the title, the voted chip, the progress
+bar and the hint.
+
+That collapsed three groups into one. The row replaced a second primary inside
+the split-vote picker ("Save selected estimate & …", which wrote the same thing
+as the record button through a near-duplicate handler), the re-vote / new sprint
+pair under the story queue, and the right-aligned end-session row under that.
+`obs-controls` keeps only the `!revealed` copies, because before the reveal
+there is no estimate for the row to sit under. Do not re-add a record button to
+the action bar; the whole point is that there is one, and it is beside the
+number. Guarded in `designsystem.test.js` → "a finished round has one set of
+controls".
+
+**A panel owns the gap between its children; the children own nothing.** Every
+block inside a `.panel` used to declare its own margin — 14px from three
+analytics sections, 0 from the timer's Start countdown button, 24px from a
+`<Grid>` — so no two gaps in one panel were the same number. The visible
+symptom was the Countdown length hint sitting 8px under the select it describes
+and 0px above the button below it: the helper had detached from its own control
+and attached to the next one, and the panel's 20px bottom padding made the whole
+card look bottom-heavy. Two rules replaced all of it, and the ladder is now
+monotone — 8 inside a field, 12 under the panel's eyebrow, 16 between blocks,
+20 to the edge:
+
+```css
+.panel > * + *          { margin-top: var(--sp-4); }
+.panel > .ptitle + *    { margin-top: var(--sp-3); }
+```
+
+A block needing more says so *after* that rule (`.round-actions` does). Do not
+give a panel child its own `margin-top` to "fix" a gap; change the panel's
+number or the child's position. Guarded in `designsystem.test.js` → "one gap
+scale".
+
+**A control is one rung above its container or it is not a control.**
+`.pp-btn--secondary` was painted `--surface-1` — the exact value a `.panel` and
+a `.pp-card` paint themselves — so Re-vote, New sprint, Start countdown, Copy
+and CSV were all the same colour as the thing they sat on, with a hairline as
+the only evidence they were pressable. They are `--surface-2` now, which adds
+light on felt and ink on paper, so they read as raised in both themes without a
+second accent competing with the one gold primary. That forced a matching move:
+disabled was `--surface-2`, which would have made a dead control and a live one
+share a fill, so disabled dropped to `--tint-raise` — still visibly a control,
+unmistakably inert, and distinct from secondary on fill, text and border at
+once. Guarded in `designsystem.test.js` → "buttons".
+
+**Three numbers in a 300px rail are rows, not tiles.** Sprint Analytics' KPIs
+were a `<Grid min="96px">`, which auto-fitted two-up in the 258px of content a
+rail leaves and orphaned the third on a row of its own — and the 24px grid gap
+was wider than the 14px between the panel's own sections, so one reading unit
+sat further apart than the units did. Three columns is not the repair either: a
+`--fs-6` value has no room in an 80px column, and shrinking the number to fit
+would be fixing a layout problem with typography. `.a-kpis` is a flex column of
+label-left/value-right rows sharing `.prow`'s geometry, so the analytics panel
+and the players list in the same rail read as one product, and the tabular
+values line up in a column — which is the only reason to group three KPIs. All
+three section sub-headings (`.a-section-title`, `.a-align-title`,
+`.analytics-breakdown-title`) share one uppercase treatment; Team Alignment used
+to be sentence case, so one panel announced three peer sections three ways.
+Guarded in `designsystem.test.js` → "the sprint snapshot is a stack, not a grid".
 
 **Do not render a count of nothing.** "0 of 1 voted" is fine; "0 of 0 voted"
 over an empty progress bar is not, and neither is a gold "0 stories done" badge

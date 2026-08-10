@@ -1,0 +1,73 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   pointpoker design system — base
+
+   Deliberately thin. src/App.js already ships its own reset, heading rules and
+   link styling, and this file is injected into <head> while App.js injects its
+   CSS from the <body>, so App.js wins every collision. Anything opinionated
+   about bare elements therefore belongs THERE, not here — putting `a { }` in
+   this file would silently underline every link in the product that App.js
+   does not name explicitly.
+
+   What is left is the set that is additive and cannot regress anything: the
+   page ground, the numeral rule, focus, and reduced motion.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html {
+  /* Paints the overscroll gutter and the space behind a short page. Without it
+     the browser fills that band with its own white and the dark theme flashes
+     at the bottom of every scroll. */
+  background: var(--bg-page);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg-page);
+  color: var(--text-1);
+}
+
+/* Rule 8: numbers are Outfit with tabular figures. A column of stat values
+   must not jitter as it updates, and Cormorant's old-style figures wobble. */
+[data-numeric],
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-ui);
+}
+
+/* Focus is never removed without a replacement. 2px at 2px offset on anything
+   a keyboard can reach. */
+:where(button, [role="button"], a, input, select, textarea, summary):focus-visible {
+  outline: var(--bw-thick) solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+::selection {
+  background: var(--brass-300);
+  color: var(--felt-950);
+}
+
+/* Rule 7: animate transform and opacity only, and respect the preference. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Available to any component; the room uses it for the live-region text that
+   announces a reveal to a screen reader without showing it twice. */
+.pp-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

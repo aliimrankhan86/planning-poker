@@ -40,7 +40,18 @@ const bucketEvents = [...new Set(grab(app, /"(table_[a-z0-9_]+|session_[a-z0-9_]
 const maxParticipants = (routeMeta.match(/MAX_PARTICIPANTS = (\d+)/) || [])[1];
 const decks = grab(app, /^\s{2}([a-z]+):\s*\{\n\s*label:/gm);
 const components = grab(app, /^function ([A-Z]\w+)\(/gm);
-const testFiles = readdirSync("src").filter((f) => f.endsWith(".test.js"));
+/* One level deep, because the design system keeps its tests beside itself. A
+   flat readdir here silently under-reported the suite the moment src/ grew a
+   subdirectory. */
+const testFiles = readdirSync("src", { withFileTypes: true }).flatMap((e) =>
+  e.isDirectory()
+    ? readdirSync(join("src", e.name))
+        .filter((f) => f.endsWith(".test.js"))
+        .map((f) => join(e.name, f))
+    : e.name.endsWith(".test.js")
+      ? [e.name]
+      : [],
+);
 const testCount = testFiles
   .map((f) => (read(join("src", f)).match(/^\s*test\(/gm) || []).length)
   .reduce((a, b) => a + b, 0);
@@ -56,12 +67,21 @@ const ruleAssertions = existsSync("scripts/rules-test.mjs")
    drift is visible in a diff rather than discovered a year later. */
 const cssBlock = app.slice(app.indexOf("const CSS = `"), app.indexOf("`;", app.indexOf("const CSS = `")));
 const uniq = (re, src = cssBlock) => new Set(src.match(re) || []).size;
+/* Tokens live in the design system now, not in App.js's :root. App.js must not
+   redeclare them — its <style> renders from the body and would win over the
+   imported sheet, pinning the app to one theme. */
+const dsTokens = read("src/design-system/tokens.css");
+const dsIcons = read("src/design-system/icons.js");
 const designStats = {
   fontSizes: uniq(/font-size: *[0-9.]+(?:rem|px)/g),
   paddingPairs: uniq(/padding: *[0-9]+px [0-9]+px/g),
   buttonClasses: uniq(/^\.[a-z][a-z0-9-]*(?:btn|button)[a-z0-9-]*/gm),
-  tokens: uniq(/^ {2}--[a-z0-9-]+:/gm),
-  icons: (app.match(/^ {2}[a-zA-Z]+: "[Mm][^"]+",$/gm) || []).length,
+  tokens: uniq(/^ {2}--[a-z0-9-]+:/gm, dsTokens),
+  themedRoles: new Set(
+    (dsTokens.slice(dsTokens.indexOf('[data-theme="light"] {')).match(/^ {2}--[a-z0-9-]+:/gm) || []),
+  ).size,
+  icons: (dsIcons.match(/^ {2}[a-zA-Z]+: "[Mm][^"]+",$/gm) || []).length,
+  rawHexInApp: uniq(/(?<![-\w])color: *#[0-9a-fA-F]{3,8}/g),
 };
 
 const hand = existsSync("docs/AI-CONTEXT.hand.md")
@@ -105,6 +125,10 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 | \`src/App.js\` | The entire app: CSS string, all components, all Firebase logic | ${kb("src/App.js")} |
 | \`src/routeMeta.mjs\` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | ${kb("src/routeMeta.mjs")} |
 | \`src/AdminDashboard.js\` | Owner-only usage dashboard, lazy-loaded so users never download it | ${kb("src/AdminDashboard.js")} |
+| \`src/design-system/tokens.css\` | Every colour, size, radius, shadow and duration. Dark on \`:root\`, light under \`[data-theme="light"]\` | ${kb("src/design-system/tokens.css")} |
+| \`src/design-system/components.css\` | The \`pp-\` component classes | ${kb("src/design-system/components.css")} |
+| \`src/design-system/index.js\` | The React components. Import from here | ${kb("src/design-system/index.js")} |
+| \`src/design-system/README.md\` | The rulebook: theming, the ten rules, the decision table | ${kb("src/design-system/README.md")} |
 | \`scripts/prerender.mjs\` | Writes one real HTML file per route after the CRA build | ${kb("scripts/prerender.mjs")} |
 | \`scripts/build-rules.mjs\` | Strips comments from the Firebase rules to make the console-pasteable copy | ${kb("scripts/build-rules.mjs")} |
 | \`scripts/gen-ai-context.mjs\` | Generates this file | ${kb("scripts/gen-ai-context.mjs")} |
@@ -176,21 +200,33 @@ Run both before committing.
 
 ## Design system
 
-Read \`docs/DESIGN-SYSTEM.md\` before writing any UI. The short version: use a
-token, never a raw px or hex value; one \`.btn\` base class with four intents;
-one primary action per screen; icons from \`ICON_PATHS\`, never emoji.
+Read \`src/design-system/README.md\` before writing any UI. The short version: use
+a token, never a raw px or hex value; one primary action per screen; selection is
+\`aria-pressed\`, never a class; icons from \`ICON_PATHS\`, never emoji.
+
+**Dark is the default and needs no JavaScript** — the dark roles sit on \`:root\`, so
+first paint, crawlers and a no-JS browser all get it. Light is opt-in via
+\`[data-theme="light"]\`, set by \`ThemeToggle\` and remembered under \`pp-theme\`.
+There is deliberately no \`prefers-color-scheme\` block: the theme never moves under
+a user who did not ask. Components import from \`src/design-system\`; App.js's old
+\`--bg\` / \`--gold\` names are aliases of the semantic roles, which is what made the
+existing 10k-line file theme-aware without rewriting it.
 
 | Measure | Now | Note |
 |---|---|---|
-| Design tokens in \`:root\` | ${designStats.tokens} | Type, spacing, elevation, motion, semantic colour |
+| Design tokens | ${designStats.tokens} | Type, spacing, elevation, motion, semantic colour |
+| Roles defined per theme | ${designStats.themedRoles} | Every one exists in both, or light falls back to a dark value |
 | Icons in \`ICON_PATHS\` | ${designStats.icons} | One stroke family, \`currentColor\` |
 | Distinct font sizes in CSS | ${designStats.fontSizes} | Target is the 8-step scale; the rest is unmigrated legacy |
 | Distinct padding pairs | ${designStats.paddingPairs} | Target is the 4px grid |
-| Legacy button classes | ${designStats.buttonClasses} | Migrate onto \`.btn\` when you touch one |
+| Legacy button classes in App.js | ${designStats.buttonClasses} | The button system is \`Button\` / \`.pp-btn\`; these are leftover skins |
+| Raw hex text colours left in App.js | ${designStats.rawHexInApp} | All on a surface that is identical in both themes |
 
-The last three are deliberately unflattering. They are the size of the remaining
-migration, and they should fall over time, never rise. \`src/designsystem.test.js\`
-fails if the token layer, the button system or the no-emoji rule is broken.
+The bottom four are deliberately unflattering. They are the size of the remaining
+migration, and they should fall over time, never rise.
+\`src/designsystem.test.js\` guards the button system and the no-emoji rule;
+\`src/design-system/design-system.test.js\` computes the actual WCAG contrast of
+every semantic role in both themes and fails if one drops below AA.
 
 ## Components in App.js (${components.length})
 

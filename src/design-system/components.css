@@ -1,0 +1,842 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   pointpoker design system — components
+
+   Every class is `pp-` prefixed for two reasons: it cannot collide with the
+   legacy class names still living in src/App.js during the migration, and a
+   prefixed class survives the ad-blocker lists that eat things like `.promo`
+   and `.sponsor`.
+
+   Source order is part of the system. At equal specificity the later rule
+   wins, so a @media (min-width: …) block must sit BELOW every base rule it
+   overrides. Do not fix an overridden breakpoint by out-specifying it — move
+   the block.
+
+   Order below matches the handoff's styles.css exactly.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ── layout ─────────────────────────────────────────────────────────────── */
+/* Layout primitives. The answer to "wasted space": auto-fit grids and one gutter token.
+
+   A page is a stack of BANDS. A band is edge to edge — it owns the background
+   and the vertical rhythm — and its content sits in a CONTAINER, which is the
+   only thing in the product allowed to set a page width. That is what keeps the
+   header, the hero, the room and the footer on the same two vertical lines at
+   every screen size. */
+.pp-container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+.pp-container--narrow { max-width: var(--container-narrow); }
+.pp-container--wide { max-width: var(--container-wide); }
+/* A container inside a container is the same measure asked for twice: it must
+   not cap or pad again, or content steps in one more gutter at every level. */
+.pp-container .pp-container { max-width: none; padding-inline: 0; }
+
+.pp-section { padding-block: var(--section-y); }
+.pp-section--tight { padding-block: var(--sp-10); }
+.pp-section--felt { background: var(--surface-felt); color: var(--text-on-felt); }
+.pp-section--sunken { background: var(--bg-sunken); }
+
+/* The blocks inside one band — a heading, a prose column, a card grid, a
+   subsection — are always --block-y apart, whatever they are. Written as a
+   flow rather than a flex gap because the children are ordinary content that
+   also has to read correctly on its own. */
+.pp-flow > * + * { margin-top: var(--block-y); }
+/* Two exceptions, both because the flow now owns the gap and the child would
+   otherwise add a second one on top of it. */
+.pp-flow > .pp-section-head { margin-bottom: 0; }
+.pp-flow > .pp-section { padding-block: 0; }
+
+.pp-stack { display: flex; flex-direction: column; gap: var(--stack-gap, var(--sp-4)); }
+.pp-stack--sm { --stack-gap: var(--sp-2); }
+.pp-stack--lg { --stack-gap: var(--sp-8); }
+
+.pp-row { display: flex; align-items: center; gap: var(--row-gap, var(--sp-3)); flex-wrap: wrap; }
+.pp-row--between { justify-content: space-between; }
+.pp-row--end { justify-content: flex-end; }
+.pp-row--nowrap { flex-wrap: nowrap; }
+
+/* One grid rule covers every card deck on the site. No breakpoint soup. */
+.pp-grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(var(--grid-min, 260px), 1fr)); }
+.pp-grid--sm { --grid-min: 180px; }
+.pp-grid--lg { --grid-min: 320px; }
+
+/* Capped at the reading measure and centred in whatever holds it. The cap is
+   line length, not layout: 68ch is where a line stops being comfortable to
+   read. Left-aligned inside a 1096px band that cap left 382px hanging off the
+   right and read as "the text is narrow" — centred, the same 714px reads as a
+   column. The text itself stays left; centred body copy loses the ragged edge
+   the eye uses to find the next line. */
+.pp-prose { max-width: var(--measure); margin-inline: auto; color: var(--text-2); font-size: var(--fs-3); line-height: var(--lh-body); }
+.pp-prose > * + * { margin-top: var(--sp-4); }
+.pp-prose h2 { font-size: var(--fs-5); margin-top: var(--sp-10); color: var(--text-1); }
+.pp-prose h3 { font-size: var(--fs-4); font-family: var(--font-ui); font-weight: var(--fw-semi); margin-top: var(--sp-8); color: var(--text-1); }
+.pp-prose strong { color: var(--text-1); font-weight: var(--fw-semi); }
+
+.pp-divider { height: 1px; background: var(--divider); border: 0; margin: 0; }
+.pp-divider--gold { background: linear-gradient(90deg, transparent, var(--border-gold), transparent); }
+
+.pp-eyebrow {
+  font-size: var(--fs-1); font-weight: var(--fw-semi); text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow); color: var(--text-3); line-height: var(--lh-snug);
+}
+/* A band heading is centred. It is the one thing on the screen that says what
+   the next 400px are about, and a symmetric column under it reads as composed
+   where a left-hung one reads as unfinished. `--start` is for the exception:
+   a heading that shares a row with something else — a panel above its own
+   table, a hero beside a form — keeps that thing's axis instead. */
+.pp-section-head {
+  display: flex; flex-direction: column; gap: var(--sp-3);
+  max-width: var(--measure); margin-inline: auto; margin-bottom: var(--sp-8);
+  text-align: center; align-items: center;
+}
+.pp-section-head--start { margin-inline: 0; text-align: left; align-items: flex-start; }
+/* Actions directly under a heading share its axis. Without this the /pricing
+   CTA had a centred headline above two buttons hard against the left edge,
+   665px of nothing beside them. */
+.pp-section-head:not(.pp-section-head--start) + .pp-row { justify-content: center; }
+.pp-section-head__title { font-size: var(--fs-section); }
+.pp-section-head__sub { font-size: var(--fs-4); color: var(--text-2); line-height: var(--lh-snug); }
+
+
+
+
+/* ── brand ─────────────────────────────────────────────────────────────── */
+/* Logo. The mark is a card pip: a brass-edged diamond on felt. Wordmark is lowercase Outfit 600. */
+.pp-logo { display: inline-flex; align-items: center; gap: var(--sp-3); text-decoration: none; color: var(--text-1); }
+.pp-logo:hover { text-decoration: none; }
+.pp-logo__mark {
+  --mark-size: 34px;
+  width: var(--mark-size); height: var(--mark-size); flex: none;
+  display: grid; place-items: center;
+  background: var(--action-gradient);
+  border-radius: 6px;
+  transform: rotate(45deg);
+  box-shadow: var(--elev-1);
+}
+.pp-logo__mark::after {
+  content: ""; width: 38%; height: 38%;
+  background: var(--felt-700); border-radius: 2px;
+}
+.pp-logo__word {
+  font-family: var(--font-ui); font-size: var(--fs-5); font-weight: var(--fw-semi);
+  letter-spacing: -0.02em; line-height: var(--lh-snug); color: inherit;
+}
+.pp-logo__word em { font-style: normal; color: var(--action-quiet); }
+.pp-logo--sm .pp-logo__mark { --mark-size: 26px; }
+.pp-logo--sm .pp-logo__word { font-size: var(--fs-4); }
+.pp-logo--lg .pp-logo__mark { --mark-size: 48px; }
+.pp-logo--lg .pp-logo__word { font-size: var(--fs-6); }
+.pp-logo--serif .pp-logo__word { font-family: var(--font-display); font-weight: var(--fw-bold); letter-spacing: 0; }
+.pp-logo--on-felt .pp-logo__word { color: var(--text-on-felt); }
+.pp-logo--on-felt .pp-logo__word em { color: var(--brass-300); }
+
+
+/* ── buttons ─────────────────────────────────────────────────────────────── */
+/* One base class, five intents, three sizes. Intent is three custom properties, never a new class.
+   Rule: exactly one .pp-btn--primary per screen. */
+.pp-btn {
+  --btn-bg: transparent;
+  --btn-fg: var(--text-1);
+  --btn-bd: var(--border-strong);
+  --btn-bg-hover: color-mix(in oklab, var(--text-1) 7%, transparent);
+  --btn-shadow: var(--elev-0);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-height: var(--control-md);
+  padding-inline: var(--sp-5);
+  border: var(--bw-hair) solid var(--btn-bd);
+  border-radius: var(--r-sm);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--font-ui);
+  font-size: var(--fs-3);
+  font-weight: var(--fw-semi);
+  line-height: var(--lh-snug);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.pp-btn:hover:not(:disabled) { background: var(--btn-bg-hover); }
+.pp-btn:active:not(:disabled) { transform: translateY(1px); }
+/* Disabled is RECESSED. It used to be painted --surface-2, which is now the
+   raised fill of an enabled secondary button — a dead control and a live one
+   would have shared a background and differed only in text colour. It sits a
+   whisper above its container instead: still visibly a control, unmistakably
+   not one you can press, and distinct from --secondary on fill, text and
+   border at once. */
+.pp-btn:disabled, .pp-btn[aria-disabled="true"] {
+  background: var(--tint-raise); color: var(--text-3); border-color: var(--border-subtle);
+  box-shadow: none; cursor: not-allowed;
+}
+
+.pp-btn--primary {
+  --btn-bg: var(--action-gradient);
+  --btn-bg-hover: var(--action-gradient-hover);
+  --btn-fg: var(--action-fg);
+  --btn-bd: transparent;
+  --btn-shadow: var(--elev-1);
+}
+/* A secondary button was painted --surface-1 — the exact value a .panel and a
+   .pp-card paint themselves — so the control was the same colour as the thing
+   it sat on and only a hairline said it was pressable. A control is one rung
+   above its container or it is not a control: --surface-2 adds light on felt
+   and ink on paper, so it reads as raised in both themes without a second
+   accent competing with the one primary action on the screen. */
+.pp-btn--secondary {
+  --btn-bg: var(--surface-2);
+  --btn-bg-hover: color-mix(in oklab, var(--text-1) 10%, var(--surface-2));
+  --btn-fg: var(--text-1);
+  --btn-bd: var(--border-strong);
+  --btn-shadow: var(--elev-1);
+}
+.pp-btn--ghost {
+  --btn-bg: transparent;
+  --btn-bg-hover: color-mix(in oklab, var(--text-1) 8%, transparent);
+  --btn-fg: var(--text-2);
+  --btn-bd: transparent;
+}
+.pp-btn--danger {
+  --btn-bg: transparent;
+  --btn-bg-hover: var(--danger-surface);
+  --btn-fg: var(--danger);
+  --btn-bd: var(--danger-border);
+}
+.pp-btn--on-felt {
+  --btn-bg: rgba(255,255,255,0.08);
+  --btn-bg-hover: rgba(255,255,255,0.16);
+  --btn-fg: var(--text-on-felt);
+  --btn-bd: rgba(255,255,255,0.28);
+}
+
+.pp-btn--sm { min-height: var(--control-sm); padding-inline: var(--sp-4); font-size: var(--fs-2); }
+.pp-btn--lg { min-height: var(--control-lg); padding-inline: var(--sp-6); font-size: var(--fs-4); }
+.pp-btn--block { width: 100%; }
+.pp-btn__icon { width: 1.25em; height: 1.25em; flex: none; }
+
+/* Rule 6, without giving up the handoff's density. A small control still
+   *looks* 36px; the finger gets --tap-min. The hit area grows vertically only:
+   growing it sideways would let neighbouring controls in a row swallow each
+   other's taps, which is worse than the target being small. */
+.pp-btn--sm, .pp-icon-btn--sm, .pp-segmented__item { position: relative; }
+.pp-btn--sm::after, .pp-icon-btn--sm::after, .pp-segmented__item::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%;
+  height: var(--tap-min); transform: translateY(-50%);
+}
+
+/* Square control for an icon alone. Always carries an aria-label. */
+.pp-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: var(--control-md); height: var(--control-md); flex: none;
+  padding: 0; border: var(--bw-hair) solid transparent; border-radius: var(--r-sm);
+  background: transparent; color: var(--text-2); cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.pp-icon-btn:hover { background: var(--surface-2); color: var(--text-1); }
+.pp-icon-btn--bordered { border-color: var(--border-strong); background: var(--surface-1); }
+.pp-icon-btn--sm { width: var(--control-sm); height: var(--control-sm); }
+
+/* A .pp-btn performs an action. A .pp-choice holds state. Selection is aria-pressed, never a class. */
+.pp-choice {
+  display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-1);
+  min-height: var(--tap-min); width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--bw-thick) solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-1); color: var(--text-1);
+  font-family: var(--font-ui); text-align: left; cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.pp-choice:hover { border-color: var(--border-strong); }
+.pp-choice[aria-pressed="true"] {
+  border-color: var(--action);
+  background: color-mix(in oklab, var(--action) 12%, var(--surface-1));
+}
+.pp-choice__icon { flex: none; color: var(--action-quiet); }
+.pp-choice[aria-pressed="true"] .pp-choice__icon { color: var(--action); }
+.pp-choice__label { font-size: var(--fs-3); font-weight: var(--fw-semi); line-height: var(--lh-snug); }
+.pp-choice__desc { font-size: var(--fs-2); color: var(--text-2); line-height: var(--lh-snug); letter-spacing: var(--fs-2-tracking); }
+.pp-choice--compact { flex-direction: row; align-items: center; justify-content: center; }
+.pp-choice-row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
+.pp-choice-row > .pp-choice { flex: 1 1 var(--choice-basis, 180px); width: auto; }
+.pp-choice-grid { display: grid; gap: var(--sp-3); grid-template-columns: repeat(var(--choice-cols, 2), minmax(0, 1fr)); }
+
+
+/* ── segmented ─────────────────────────────────────────────────────────────── */
+/* Segmented control: 2–4 mutually exclusive views. Selection reads as a raised chip, not a colour change alone. */
+.pp-segmented {
+  display: inline-flex; padding: var(--sp-1); gap: var(--sp-1);
+  background: var(--surface-2); border: var(--bw-hair) solid var(--border-subtle);
+  border-radius: var(--r-sm);
+}
+.pp-segmented__item {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  min-height: var(--control-sm); padding-inline: var(--sp-4);
+  border: var(--bw-hair) solid transparent; border-radius: calc(var(--r-sm) - 3px);
+  background: transparent; color: var(--text-2);
+  font-family: var(--font-ui); font-size: var(--fs-2); font-weight: var(--fw-medium);
+  line-height: var(--lh-snug); cursor: pointer; white-space: nowrap;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+.pp-segmented__item:hover { color: var(--text-1); }
+.pp-segmented__item[aria-pressed="true"], .pp-segmented__item[aria-selected="true"] {
+  background: var(--surface-1); color: var(--text-1); font-weight: var(--fw-semi);
+  border-color: var(--border-gold); box-shadow: var(--elev-1);
+}
+.pp-segmented--block { display: flex; width: 100%; }
+.pp-segmented--block .pp-segmented__item { flex: 1; }
+
+
+/* ── forms ─────────────────────────────────────────────────────────────── */
+/* Forms. 16px is the floor on anything typed into: iOS zooms the viewport below it and breaks the layout behind. */
+.pp-field { display: flex; flex-direction: column; gap: var(--sp-2); }
+.pp-label { font-size: var(--fs-2); font-weight: var(--fw-medium); color: var(--text-2); line-height: var(--lh-snug); letter-spacing: var(--fs-2-tracking); }
+.pp-label__req { color: var(--danger); }
+
+.pp-input, .pp-textarea, .pp-select__control {
+  width: 100%; min-height: var(--control-md);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--surface-1); color: var(--text-1);
+  border: var(--bw-hair) solid var(--border-strong); border-radius: var(--r-sm);
+  font-family: var(--font-ui); font-size: var(--fs-3); line-height: var(--lh-snug);
+  transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.pp-input::placeholder, .pp-textarea::placeholder { color: var(--text-3); }
+.pp-input:hover, .pp-textarea:hover, .pp-select__control:hover { border-color: var(--action); }
+.pp-input[aria-invalid="true"], .pp-textarea[aria-invalid="true"], .pp-select__control[aria-invalid="true"] {
+  border-color: var(--danger); background: var(--danger-surface);
+}
+.pp-input:disabled, .pp-textarea:disabled, .pp-select__control:disabled { background: var(--surface-2); color: var(--text-3); cursor: not-allowed; }
+.pp-textarea { min-height: 112px; padding-block: var(--sp-3); line-height: var(--lh-body); resize: vertical; }
+.pp-input--lg { min-height: var(--control-lg); font-size: var(--fs-4); }
+
+.pp-hint { font-size: var(--fs-2); color: var(--text-3); line-height: var(--lh-snug); letter-spacing: var(--fs-2-tracking); }
+.pp-error { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-2); font-weight: var(--fw-medium); color: var(--danger); line-height: var(--lh-snug); }
+.pp-error::before { content: "!"; width: 16px; height: 16px; flex: none; display: grid; place-items: center; border-radius: var(--r-full); background: var(--danger); color: var(--surface-1); font-size: 11px; font-weight: var(--fw-bold); line-height: 1; }
+
+.pp-select { position: relative; display: block; }
+.pp-select__control { appearance: none; padding-right: var(--sp-10); cursor: pointer; }
+.pp-select::after {
+  content: ""; position: absolute; right: var(--sp-4); top: 50%; width: 8px; height: 8px;
+  border-right: var(--bw-thick) solid var(--text-2); border-bottom: var(--bw-thick) solid var(--text-2);
+  transform: translateY(-70%) rotate(45deg); pointer-events: none;
+}
+
+.pp-input-group { display: flex; gap: var(--sp-2); align-items: stretch; }
+.pp-input-group .pp-input { flex: 1; min-width: 0; }
+
+/* Switch, checkbox, radio. All three keep a 44px hit area via the label wrapper. */
+.pp-switch { display: inline-flex; align-items: center; gap: var(--sp-3); min-height: var(--tap-min); cursor: pointer; }
+.pp-switch__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pp-switch__track {
+  width: 52px; height: 30px; flex: none; border-radius: var(--r-full);
+  background: var(--surface-2); border: var(--bw-hair) solid var(--border-strong);
+  padding: 3px; display: flex; align-items: center;
+  transition: background var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
+}
+.pp-switch__thumb { width: 22px; height: 22px; border-radius: var(--r-full); background: var(--surface-1); box-shadow: var(--elev-1); transition: transform var(--dur-base) var(--ease-out); }
+.pp-switch__input:checked + .pp-switch__track { background: var(--action-gradient); border-color: transparent; }
+.pp-switch__input:checked + .pp-switch__track .pp-switch__thumb { transform: translateX(22px); }
+.pp-switch__input:focus-visible + .pp-switch__track { outline: var(--bw-thick) solid var(--focus); outline-offset: 2px; }
+.pp-switch__label { font-size: var(--fs-3); color: var(--text-1); line-height: var(--lh-snug); }
+
+.pp-check { display: inline-flex; align-items: flex-start; gap: var(--sp-3); min-height: var(--tap-min); padding-block: var(--sp-2); cursor: pointer; }
+.pp-check__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pp-check__box {
+  width: 22px; height: 22px; flex: none; margin-top: 1px;
+  border: var(--bw-thick) solid var(--border-strong); border-radius: 5px;
+  background: var(--surface-1); display: grid; place-items: center;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.pp-check--radio .pp-check__box { border-radius: var(--r-full); }
+.pp-check__box::after { content: ""; width: 6px; height: 11px; border-right: 2px solid var(--text-on-gold); border-bottom: 2px solid var(--text-on-gold); transform: rotate(45deg) scale(0); transform-origin: center; transition: transform var(--dur-fast) var(--ease-out); margin-top: -2px; }
+.pp-check--radio .pp-check__box::after { width: 8px; height: 8px; border: 0; border-radius: var(--r-full); background: var(--text-on-gold); transform: scale(0); margin: 0; }
+.pp-check__input:checked + .pp-check__box { background: var(--action); border-color: var(--action); }
+.pp-check__input:checked + .pp-check__box::after { transform: rotate(45deg) scale(1); }
+.pp-check--radio .pp-check__input:checked + .pp-check__box::after { transform: scale(1); }
+.pp-check__input:focus-visible + .pp-check__box { outline: var(--bw-thick) solid var(--focus); outline-offset: 2px; }
+.pp-check__label { font-size: var(--fs-3); color: var(--text-1); line-height: var(--lh-snug); }
+
+
+/* ── cards ─────────────────────────────────────────────────────────────── */
+/* Surfaces. One card shape: 1px hairline, 14px radius, elev-1. Variants change intent, never geometry. */
+.pp-card {
+  display: flex; flex-direction: column; gap: var(--sp-3);
+  padding: var(--sp-5);
+  background: var(--surface-1);
+  border: var(--bw-hair) solid var(--border-subtle);
+  border-radius: var(--r-md);
+  box-shadow: var(--elev-1);
+}
+.pp-card--raised { box-shadow: var(--elev-2); }
+.pp-card--flat { box-shadow: none; background: var(--surface-2); }
+.pp-card--felt { background: var(--surface-felt); color: var(--text-on-felt); border-color: rgba(255,255,255,0.12); }
+.pp-card--felt .pp-card__title, .pp-card--felt h1, .pp-card--felt h2, .pp-card--felt h3 { color: var(--text-on-felt); }
+.pp-card--felt .pp-card__body { color: var(--text-on-felt-2); }
+.pp-card--felt .pp-card__eyebrow { color: var(--brass-300); }
+.pp-card--gold { border-color: var(--border-gold); }
+.pp-card--interactive { cursor: pointer; transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out); }
+.pp-card--interactive:hover { transform: translateY(-2px); box-shadow: var(--elev-2); border-color: var(--border-gold); }
+.pp-card--pad-sm { padding: var(--sp-4); }
+.pp-card--pad-lg { padding: var(--sp-8); }
+
+.pp-card__eyebrow { font-size: var(--fs-1); font-weight: var(--fw-semi); text-transform: uppercase; letter-spacing: var(--tracking-eyebrow); color: var(--text-3); line-height: var(--lh-snug); }
+.pp-card__title { font-family: var(--font-ui); font-size: var(--fs-4); font-weight: var(--fw-semi); line-height: var(--lh-snug); letter-spacing: 0; }
+.pp-card__body { font-size: var(--fs-2); line-height: var(--lh-body); color: var(--text-2); letter-spacing: var(--fs-2-tracking); }
+.pp-card__footer { display: flex; align-items: center; gap: var(--sp-3); margin-top: auto; padding-top: var(--sp-2); }
+.pp-card--editorial .pp-card__title { font-family: var(--font-display); font-size: var(--fs-5); font-weight: var(--fw-bold); letter-spacing: var(--tracking-display); }
+
+/* Stat tile. Value first, label above it, meaning below. Never render zeroes for absent data. */
+.pp-stat { display: grid; gap: var(--sp-1); padding: var(--sp-4); background: var(--surface-1); border: var(--bw-hair) solid var(--border-subtle); border-radius: var(--r-md); }
+.pp-stat__label { font-size: var(--fs-1); font-weight: var(--fw-semi); text-transform: uppercase; letter-spacing: var(--tracking-eyebrow); color: var(--text-3); line-height: var(--lh-snug); }
+.pp-stat__value { font-family: var(--font-ui); font-size: var(--fs-6); font-weight: var(--fw-bold); line-height: var(--lh-tight); color: var(--text-1); font-variant-numeric: tabular-nums; }
+.pp-stat__meta { font-size: var(--fs-2); color: var(--text-3); line-height: var(--lh-snug); }
+.pp-stat--hero .pp-stat__value { font-size: var(--fs-8); }
+.pp-stat--gold .pp-stat__value { color: var(--action-quiet); }
+
+/* Hero. Felt ground by default; --paper for content pages that need to breathe. */
+.pp-hero { position: relative; overflow: hidden; background: var(--surface-felt); color: var(--text-on-felt); }
+.pp-hero::before { content: ""; position: absolute; inset: 0; background: var(--felt-texture); pointer-events: none; }
+.pp-hero__inner { position: relative; max-width: var(--container); margin-inline: auto; padding: var(--section-y) var(--gutter); display: grid; gap: var(--sp-10); align-items: center; }
+.pp-hero__copy { display: grid; gap: var(--sp-5); justify-items: start; }
+.pp-hero__eyebrow { font-size: var(--fs-1); font-weight: var(--fw-semi); text-transform: uppercase; letter-spacing: var(--tracking-eyebrow); color: var(--brass-300); line-height: var(--lh-snug); }
+.pp-hero__title { font-family: var(--font-display); font-size: var(--fs-hero); font-weight: var(--fw-bold); line-height: var(--lh-tight); letter-spacing: var(--tracking-display); color: var(--text-on-felt); }
+.pp-hero__sub { font-size: var(--fs-4); line-height: var(--lh-body); color: var(--text-on-felt-2); max-width: var(--measure-tight); }
+.pp-hero__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+.pp-hero__trust { display: flex; flex-wrap: wrap; gap: var(--sp-4); font-size: var(--fs-2); color: var(--text-on-felt-2); letter-spacing: var(--fs-2-tracking); }
+.pp-hero--paper { background: var(--bg-page); color: var(--text-1); }
+.pp-hero--paper .pp-hero__title { color: var(--text-1); }
+.pp-hero--paper .pp-hero__sub, .pp-hero--paper .pp-hero__trust { color: var(--text-2); }
+.pp-hero--paper .pp-hero__eyebrow { color: var(--text-3); }
+@media (min-width: 1024px) {
+  .pp-hero__inner { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); }
+  .pp-hero--centred .pp-hero__inner { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+  .pp-hero--centred .pp-hero__copy { justify-items: center; }
+}
+
+
+/* ── vote-card ─────────────────────────────────────────────────────────────── */
+/* The playing card. The one place the casino is literal, and the only element allowed a lift shadow.
+   Suit glyphs are typographic characters from the text font — the documented emoji exemption. */
+.pp-vote-card {
+  --vote-w: 76px;
+  position: relative; display: grid; place-items: center;
+  width: var(--vote-w); aspect-ratio: 2 / 3; padding: 0;
+  background: var(--surface-card-face); color: var(--felt-950);
+  border: var(--bw-hair) solid rgba(10,31,24,0.18); border-radius: var(--r-sm);
+  box-shadow: var(--elev-card-lift);
+  font-family: var(--font-ui); font-size: var(--fs-6); font-weight: var(--fw-semi);
+  font-variant-numeric: tabular-nums; line-height: var(--lh-tight);
+  cursor: pointer; user-select: none;
+  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.pp-vote-card::before, .pp-vote-card::after {
+  content: var(--vote-suit, "\2666"); position: absolute;
+  font-size: var(--fs-1); line-height: 1; /* single glyph, no descender: the documented exemption */
+  color: var(--brass-600); opacity: 0.9;
+}
+.pp-vote-card::before { top: 6px; left: 8px; }
+.pp-vote-card::after { bottom: 6px; right: 8px; transform: rotate(180deg); }
+.pp-vote-card:hover:not(:disabled) { transform: translateY(-8px); }
+.pp-vote-card[aria-pressed="true"] {
+  transform: translateY(-14px);
+  border-color: var(--brass-500);
+  box-shadow: var(--elev-card-lift), 0 0 0 3px color-mix(in oklab, var(--action) 55%, transparent);
+}
+.pp-vote-card:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
+.pp-vote-card--sm { --vote-w: 56px; font-size: var(--fs-5); }
+.pp-vote-card--lg { --vote-w: 104px; font-size: var(--fs-8); }
+.pp-vote-card--red { color: var(--red-600); }
+.pp-vote-card--red::before, .pp-vote-card--red::after { color: var(--red-600); }
+
+/* Face down: felt back with a brass lattice. No image, no SVG — two repeating gradients. */
+.pp-vote-card--back {
+  background:
+    repeating-linear-gradient(45deg, rgba(241,185,63,0.16) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, rgba(241,185,63,0.16) 0 2px, transparent 2px 9px),
+    linear-gradient(160deg, var(--felt-600) 0%, var(--felt-700) 55%, var(--felt-850) 100%);
+  border-color: var(--border-gold); color: transparent;
+}
+.pp-vote-card--back::before, .pp-vote-card--back::after { content: none; }
+
+/* Reveal. The signature moment; 420ms, one axis, respects reduced motion via base.css. */
+.pp-vote-card-flip { perspective: 900px; width: var(--vote-w, 76px); }
+.pp-vote-card-flip__inner { position: relative; transform-style: preserve-3d; transition: transform var(--dur-flip) var(--ease-flip); }
+.pp-vote-card-flip[data-revealed="true"] .pp-vote-card-flip__inner { transform: rotateY(180deg); }
+.pp-vote-card-flip__face { backface-visibility: hidden; }
+.pp-vote-card-flip__face--front { position: absolute; inset: 0; transform: rotateY(180deg); }
+
+.pp-vote-hand { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+@media (max-width: 480px) {
+  .pp-vote-hand { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: var(--sp-2); }
+  .pp-vote-hand .pp-vote-card { --vote-w: 100%; }
+}
+
+
+/* ── chips ─────────────────────────────────────────────────────────────── */
+/* Chips and counters. A chip states a fact; it is never a control unless it carries a button element. */
+.pp-chip {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  min-height: 26px; padding-inline: var(--sp-3); border-radius: var(--r-full);
+  background: var(--surface-2); color: var(--text-2);
+  border: var(--bw-hair) solid var(--border-subtle);
+  font-size: var(--fs-1); font-weight: var(--fw-semi); line-height: var(--lh-snug);
+  letter-spacing: var(--fs-1-tracking); white-space: nowrap;
+}
+.pp-chip--gold { background: color-mix(in oklab, var(--action) 18%, transparent); color: var(--action-quiet); border-color: var(--border-gold); }
+.pp-chip--success { background: var(--success-surface); color: var(--success); border-color: var(--success-border); }
+.pp-chip--danger { background: var(--danger-surface); color: var(--danger); border-color: var(--danger-border); }
+.pp-chip--info { background: var(--info-surface); color: var(--info); border-color: var(--info-border); }
+.pp-chip--warning { background: var(--warning-surface); color: var(--warning); border-color: var(--warning-border); }
+.pp-chip--on-felt { background: rgba(255,255,255,0.10); color: var(--text-on-felt); border-color: rgba(255,255,255,0.22); }
+.pp-chip__dot { width: 7px; height: 7px; border-radius: var(--r-full); background: currentColor; flex: none; }
+.pp-chip--count { min-width: 26px; padding-inline: var(--sp-2); justify-content: center; font-variant-numeric: tabular-nums; }
+
+.pp-avatar {
+  --avatar-size: 40px;
+  width: var(--avatar-size); height: var(--avatar-size); flex: none;
+  display: grid; place-items: center; border-radius: var(--r-full);
+  background: var(--felt-700); color: var(--cream);
+  border: var(--bw-thick) solid transparent;
+  font-family: var(--font-ui); font-size: var(--fs-2); font-weight: var(--fw-semi); line-height: 1;
+  text-transform: uppercase;
+}
+.pp-avatar--sm { --avatar-size: 28px; font-size: var(--fs-1); }
+.pp-avatar--lg { --avatar-size: 56px; font-size: var(--fs-4); }
+.pp-avatar--voted { border-color: var(--action); }
+.pp-avatar--waiting { background: var(--surface-2); color: var(--text-3); border-style: dashed; border-color: var(--border-strong); }
+.pp-avatar--facilitator { box-shadow: 0 0 0 2px var(--bg-page), 0 0 0 4px var(--border-gold); }
+.pp-avatar-stack { display: flex; }
+.pp-avatar-stack .pp-avatar + .pp-avatar { margin-left: -10px; box-shadow: 0 0 0 2px var(--bg-page); }
+
+.pp-participant { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); }
+.pp-participant:hover { background: var(--surface-2); }
+.pp-participant__name { flex: 1; min-width: 0; font-size: var(--fs-3); line-height: var(--lh-snug); color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-participant__meta { font-size: var(--fs-1); color: var(--text-3); letter-spacing: var(--fs-1-tracking); }
+.pp-participant-list { display: flex; flex-direction: column; gap: var(--sp-1); }
+
+
+/* ── table ─────────────────────────────────────────────────────────────── */
+/* Results grid. Numbers right-aligned and tabular so a column does not jitter as it updates.
+   Below 640px each row becomes its own block with the header echoed from data-label. */
+.pp-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.pp-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--fs-3); }
+.pp-table th {
+  text-align: left; padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-1); font-weight: var(--fw-semi); text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow); color: var(--text-3); line-height: var(--lh-snug);
+  border-bottom: var(--bw-hair) solid var(--border-strong); white-space: nowrap;
+}
+.pp-table td { padding: var(--sp-3) var(--sp-4); color: var(--text-1); line-height: var(--lh-snug); border-bottom: var(--bw-hair) solid var(--divider); }
+.pp-table tbody tr:hover td { background: var(--surface-2); }
+.pp-table .pp-num, .pp-table th.pp-num { text-align: right; font-variant-numeric: tabular-nums; }
+.pp-table--card { background: var(--surface-1); border: var(--bw-hair) solid var(--border-subtle); border-radius: var(--r-md); overflow: hidden; }
+.pp-table caption { caption-side: top; text-align: left; padding-bottom: var(--sp-3); font-size: var(--fs-2); color: var(--text-3); }
+
+@media (max-width: 640px) {
+  .pp-table--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .pp-table--stack tbody tr { display: grid; gap: var(--sp-1); padding: var(--sp-3) 0; border-bottom: var(--bw-hair) solid var(--divider); }
+  .pp-table--stack td { display: flex; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-1) var(--sp-4); border: 0; }
+  .pp-table--stack td::before { content: attr(data-label); color: var(--text-3); font-size: var(--fs-2); font-weight: var(--fw-medium); }
+}
+
+/* Countdown. Ring is a conic gradient driven by --timer-progress (0–1). */
+.pp-timer { display: inline-flex; align-items: center; gap: var(--sp-3); }
+.pp-timer__ring {
+  --timer-progress: 1;
+  width: 56px; height: 56px; flex: none; border-radius: var(--r-full);
+  display: grid; place-items: center;
+  background: conic-gradient(var(--action) calc(var(--timer-progress) * 360deg), var(--surface-2) 0);
+  transition: background var(--dur-base) linear;
+}
+.pp-timer__ring::after { content: ""; position: absolute; }
+.pp-timer__face {
+  width: 46px; height: 46px; border-radius: var(--r-full);
+  background: var(--surface-1); display: grid; place-items: center;
+  font-family: var(--font-ui); font-size: var(--fs-4); font-weight: var(--fw-semi);
+  font-variant-numeric: tabular-nums; color: var(--text-1); line-height: 1;
+}
+.pp-timer__label { font-size: var(--fs-2); color: var(--text-2); line-height: var(--lh-snug); }
+.pp-timer--urgent .pp-timer__ring { background: conic-gradient(var(--danger) calc(var(--timer-progress) * 360deg), var(--surface-2) 0); }
+.pp-timer--urgent .pp-timer__face { color: var(--danger); }
+
+
+/* ── feedback ─────────────────────────────────────────────────────────────── */
+/* Messages. The old build lost them: low-contrast text on the page ground with no shape of its own.
+   Every message here has a surface, a full border in the state hue and a solid icon disc. */
+.pp-alert {
+  display: grid; grid-template-columns: auto 1fr; gap: var(--sp-3);
+  padding: var(--sp-4); border-radius: var(--r-md);
+  background: var(--info-surface); border: var(--bw-hair) solid var(--info-border);
+  color: var(--text-1);
+}
+.pp-alert__icon {
+  width: 24px; height: 24px; flex: none; border-radius: var(--r-full);
+  display: grid; place-items: center;
+  background: var(--info); color: var(--surface-1);
+  font-size: var(--fs-1); font-weight: var(--fw-bold); line-height: 1;
+}
+.pp-alert__body { display: grid; gap: var(--sp-1); min-width: 0; }
+.pp-alert__title { font-size: var(--fs-3); font-weight: var(--fw-semi); line-height: var(--lh-snug); color: var(--text-1); }
+.pp-alert__text { font-size: var(--fs-2); line-height: var(--lh-body); color: var(--text-2); letter-spacing: var(--fs-2-tracking); }
+.pp-alert__actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); }
+.pp-alert--success { background: var(--success-surface); border-color: var(--success-border); }
+.pp-alert--success .pp-alert__icon { background: var(--success); }
+.pp-alert--warning { background: var(--warning-surface); border-color: var(--warning-border); }
+.pp-alert--warning .pp-alert__icon { background: var(--warning); }
+.pp-alert--danger { background: var(--danger-surface); border-color: var(--danger-border); }
+.pp-alert--danger .pp-alert__icon { background: var(--danger); }
+.pp-alert--gold { background: color-mix(in oklab, var(--action) 14%, transparent); border-color: var(--border-gold); }
+.pp-alert--gold .pp-alert__icon { background: var(--action); color: var(--text-on-gold); }
+
+.pp-toast-region {
+  position: fixed; z-index: var(--z-toast); inset-inline: var(--sp-4); bottom: max(var(--sp-4), env(safe-area-inset-bottom));
+  display: flex; flex-direction: column-reverse; gap: var(--sp-3); pointer-events: none;
+}
+.pp-toast {
+  position: relative; pointer-events: auto; overflow: hidden;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-4); padding-top: calc(var(--sp-4) + 2px);
+  background: var(--surface-3); border: var(--bw-hair) solid var(--border-strong);
+  border-radius: var(--r-md); box-shadow: var(--elev-3);
+  animation: pp-toast-in var(--dur-base) var(--ease-out) both;
+}
+.pp-toast::before { content: ""; position: absolute; top: 0; inset-inline: 0; height: 3px; background: var(--action); }
+.pp-toast--success::before { background: var(--success); }
+.pp-toast--danger::before { background: var(--danger); }
+.pp-toast__text { font-size: var(--fs-3); line-height: var(--lh-snug); color: var(--text-1); }
+.pp-toast__sub { font-size: var(--fs-2); color: var(--text-2); line-height: var(--lh-snug); }
+@keyframes pp-toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (min-width: 640px) {
+  .pp-toast-region { inset-inline: auto var(--sp-6); bottom: var(--sp-6); width: 380px; }
+}
+
+.pp-progress { height: 8px; border-radius: var(--r-full); background: var(--surface-2); overflow: hidden; }
+.pp-progress__bar { height: 100%; border-radius: inherit; background: var(--action-gradient); transition: width var(--dur-base) var(--ease-out); }
+.pp-progress--tall { height: 12px; }
+
+.pp-skeleton {
+  background: var(--skeleton); background-size: 200% 100%;
+  border-radius: var(--r-sm); animation: pp-shimmer 1.4s linear infinite;
+}
+.pp-skeleton--text { height: 1em; margin-block: 0.3em; }
+.pp-skeleton--title { height: 1.4em; width: 60%; }
+.pp-skeleton--card { height: 132px; border-radius: var(--r-md); }
+@keyframes pp-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* Empty state. One line explaining what will appear here. Never three zeroes — zeroes read as data. */
+.pp-empty {
+  display: grid; gap: var(--sp-3); justify-items: center; text-align: center;
+  padding: var(--sp-10) var(--sp-5);
+  border: var(--bw-hair) dashed var(--border-strong); border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.pp-empty__title { font-size: var(--fs-4); font-weight: var(--fw-semi); color: var(--text-1); line-height: var(--lh-snug); font-family: var(--font-ui); }
+.pp-empty__text { font-size: var(--fs-2); color: var(--text-2); max-width: 42ch; line-height: var(--lh-body); }
+
+.pp-tooltip {
+  position: absolute; z-index: var(--z-overlay); max-width: 260px;
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm);
+  background: var(--felt-850); color: var(--cream);
+  font-size: var(--fs-2); line-height: var(--lh-snug); box-shadow: var(--elev-2);
+}
+.pp-popover {
+  position: absolute; z-index: var(--z-overlay); min-width: 240px; max-width: 340px;
+  padding: var(--sp-4); border-radius: var(--r-md);
+  background: var(--surface-3); border: var(--bw-hair) solid var(--border-strong);
+  box-shadow: var(--elev-3); color: var(--text-1);
+}
+
+
+/* ── tabs ─────────────────────────────────────────────────────────────── */
+/* Tabs. The selected tab is marked four ways at once — weight, colour, a 3px brass bar and a tint —
+   because a colour shift alone gets missed, which is exactly what happened in the app. */
+.pp-tabs {
+  display: flex; gap: var(--sp-1); align-items: stretch;
+  border-bottom: var(--bw-hair) solid var(--border-subtle);
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.pp-tabs::-webkit-scrollbar { display: none; }
+.pp-tab {
+  position: relative; display: inline-flex; align-items: center; gap: var(--sp-2);
+  min-height: 48px; padding: 0 var(--sp-4); flex: none;
+  border: 0; background: transparent; color: var(--text-2);
+  font-family: var(--font-ui); font-size: var(--fs-3); font-weight: var(--fw-medium);
+  line-height: var(--lh-snug); cursor: pointer; white-space: nowrap;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.pp-tab::after {
+  content: ""; position: absolute; left: var(--sp-2); right: var(--sp-2); bottom: -1px;
+  height: 3px; border-radius: 3px 3px 0 0; background: transparent;
+  transition: background var(--dur-base) var(--ease-out);
+}
+.pp-tab:hover { color: var(--text-1); background: var(--surface-2); }
+.pp-tab[aria-selected="true"] {
+  color: var(--text-1); font-weight: var(--fw-semi);
+  background: color-mix(in oklab, var(--action) 10%, transparent);
+}
+.pp-tab[aria-selected="true"]::after { background: var(--action); }
+.pp-tab__count {
+  min-width: 22px; height: 22px; padding-inline: 6px; border-radius: var(--r-full);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-2); color: var(--text-2);
+  font-size: var(--fs-1); font-weight: var(--fw-semi); font-variant-numeric: tabular-nums;
+}
+.pp-tab[aria-selected="true"] .pp-tab__count { background: var(--action); color: var(--text-on-gold); }
+.pp-tabpanel { padding-top: var(--sp-6); }
+.pp-tabs--fill .pp-tab { flex: 1; justify-content: center; }
+
+
+/* ── accordion ─────────────────────────────────────────────────────────────── */
+/* Accordion. Used for the FAQ blocks that carry most of the SEO copy. */
+/* An FAQ is reading content, so it takes the reading measure and centres like
+   the prose it sits under — a 1096px answer is a 130-character line. */
+.pp-accordion { border-top: var(--bw-hair) solid var(--divider); max-width: var(--measure); margin-inline: auto; }
+.pp-accordion__item { border-bottom: var(--bw-hair) solid var(--divider); }
+.pp-accordion__trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4);
+  width: 100%; min-height: 56px; padding: var(--sp-4) 0;
+  border: 0; background: transparent; color: var(--text-1);
+  font-family: var(--font-ui); font-size: var(--fs-4); font-weight: var(--fw-semi);
+  line-height: var(--lh-snug); text-align: left; cursor: pointer;
+}
+.pp-accordion__trigger:hover { color: var(--text-link-hover); }
+.pp-accordion__chevron {
+  width: 10px; height: 10px; flex: none; margin-right: var(--sp-1);
+  border-right: var(--bw-thick) solid var(--action);
+  border-bottom: var(--bw-thick) solid var(--action);
+  transform: rotate(45deg); transform-origin: 60% 60%;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.pp-accordion__trigger[aria-expanded="true"] .pp-accordion__chevron { transform: rotate(-135deg); }
+.pp-accordion__panel {
+  padding-bottom: var(--sp-5); max-width: var(--measure);
+  font-size: var(--fs-3); line-height: var(--lh-body); color: var(--text-2);
+}
+
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+/* Header. 64px on phones, 72px from lg. One primary action in the bar, ever. */
+.pp-header {
+  position: sticky; top: 0; z-index: var(--z-sticky);
+  background: color-mix(in oklab, var(--bg-page) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: var(--bw-hair) solid var(--divider);
+}
+.pp-header__inner {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4);
+  min-height: 64px; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter);
+}
+.pp-nav { display: none; align-items: center; gap: var(--sp-1); }
+.pp-nav__link {
+  position: relative; display: inline-flex; align-items: center; min-height: 40px;
+  padding-inline: var(--sp-3); border-radius: var(--r-sm);
+  color: var(--text-2); font-size: var(--fs-3); font-weight: var(--fw-medium); text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.pp-nav__link:hover { color: var(--text-1); background: var(--surface-2); text-decoration: none; }
+.pp-nav__link[aria-current="page"] { color: var(--text-1); font-weight: var(--fw-semi); }
+.pp-nav__link[aria-current="page"]::after {
+  content: ""; position: absolute; left: var(--sp-3); right: var(--sp-3); bottom: 2px;
+  height: 2px; border-radius: 2px; background: var(--action);
+}
+.pp-header__actions { display: flex; align-items: center; gap: var(--sp-2); }
+.pp-header__trust {
+  display: none; font-size: var(--fs-1); line-height: var(--lh-snug);
+  letter-spacing: var(--fs-1-tracking); color: var(--text-3);
+}
+.pp-nav-panel {
+  display: flex; flex-direction: column; gap: var(--sp-1);
+  padding: var(--sp-3) var(--gutter) var(--sp-5);
+  border-bottom: var(--bw-hair) solid var(--divider); background: var(--surface-1);
+}
+.pp-nav-panel .pp-nav__link { min-height: var(--tap-min); font-size: var(--fs-4); }
+
+@media (min-width: 1024px) {
+  .pp-header__inner { min-height: 72px; }
+  .pp-nav { display: flex; }
+  .pp-header__trust { display: block; }
+  .pp-nav-toggle { display: none; }
+}
+
+
+/* ── footer ─────────────────────────────────────────────────────────────── */
+/* Footer sits on the felt in both themes: it closes the page like the edge of the table. */
+.pp-footer { background: var(--surface-felt); color: var(--text-on-felt); border-top: var(--bw-hair) solid var(--border-gold); }
+.pp-footer__inner {
+  max-width: var(--container); margin-inline: auto; padding: var(--sp-16) var(--gutter) var(--sp-8);
+  display: grid; gap: var(--sp-10);
+}
+.pp-footer__cols { display: grid; gap: var(--sp-8); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.pp-footer__brand { display: grid; gap: var(--sp-3); max-width: 40ch; }
+.pp-footer__tagline { font-size: var(--fs-2); color: var(--text-on-felt-2); line-height: var(--lh-body); }
+.pp-footer__heading {
+  font-family: var(--font-ui); font-size: var(--fs-1); font-weight: var(--fw-semi);
+  text-transform: uppercase; letter-spacing: var(--tracking-eyebrow);
+  color: var(--brass-300); margin-bottom: var(--sp-3);
+}
+.pp-footer__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.pp-footer__list a {
+  color: var(--text-on-felt-2); font-size: var(--fs-2); text-decoration: none;
+  display: inline-flex; min-height: 28px; align-items: center;
+}
+.pp-footer__list a:hover { color: var(--brass-300); text-decoration: underline; }
+.pp-footer__base {
+  display: flex; flex-wrap: wrap; gap: var(--sp-4); justify-content: space-between; align-items: center;
+  padding-top: var(--sp-6); border-top: var(--bw-hair) solid rgba(255,255,255,0.12);
+  font-size: var(--fs-1); color: var(--text-on-felt-2); letter-spacing: var(--fs-1-tracking);
+}
+
+
+/* ── overlays ─────────────────────────────────────────────────────────────── */
+/* Modal and drawer. On phones the modal becomes a bottom sheet — thumb reach, not a centred box. */
+.pp-scrim { position: fixed; inset: 0; z-index: var(--z-overlay); background: var(--scrim); backdrop-filter: blur(3px); }
+.pp-modal-layer { position: fixed; inset: 0; z-index: var(--z-modal); display: grid; place-items: center; padding: var(--sp-4); pointer-events: none; }
+.pp-modal {
+  pointer-events: auto; width: min(520px, 100%); max-height: min(86vh, 720px); overflow-y: auto;
+  display: grid; gap: var(--sp-4); padding: var(--sp-6);
+  background: var(--surface-3); border: var(--bw-hair) solid var(--border-strong);
+  border-radius: var(--r-lg); box-shadow: var(--elev-3);
+  animation: pp-modal-in var(--dur-base) var(--ease-out) both;
+}
+.pp-modal--wide { width: min(760px, 100%); }
+.pp-modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
+.pp-modal__title { font-family: var(--font-display); font-size: var(--fs-5); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
+.pp-modal__sub { margin-top: var(--sp-2); font-size: var(--fs-2); line-height: var(--lh-body); color: var(--text-2); letter-spacing: var(--fs-2-tracking); max-width: var(--measure-tight); }
+.pp-modal__body { font-size: var(--fs-3); line-height: var(--lh-body); color: var(--text-2); }
+.pp-modal__footer { display: flex; gap: var(--sp-3); justify-content: flex-end; flex-wrap: wrap; }
+@keyframes pp-modal-in { from { opacity: 0; transform: translateY(10px) scale(0.99); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 560px) {
+  .pp-modal-layer { align-items: end; padding: 0; }
+  .pp-modal { width: 100%; border-radius: var(--r-lg) var(--r-lg) 0 0; max-height: 88vh; padding-bottom: max(var(--sp-6), env(safe-area-inset-bottom)); }
+  .pp-modal__footer { flex-direction: column-reverse; }
+  .pp-modal__footer .pp-btn { width: 100%; }
+}
+
+.pp-drawer {
+  position: fixed; z-index: var(--z-modal); top: 0; right: 0; bottom: 0;
+  width: min(420px, 100%); overflow-y: auto;
+  display: grid; grid-template-rows: auto 1fr auto; gap: var(--sp-4);
+  padding: var(--sp-5); background: var(--surface-3);
+  border-left: var(--bw-hair) solid var(--border-strong); box-shadow: var(--elev-3);
+  animation: pp-drawer-in var(--dur-base) var(--ease-out) both;
+}
+@keyframes pp-drawer-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.pp-drawer__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.pp-drawer__title { font-size: var(--fs-5); font-family: var(--font-display); font-weight: var(--fw-bold); }
+
+/* The room's action bar: one control, one place, changing label. Sticks inside the thumb arc on phones. */
+.pp-action-bar {
+  position: sticky; bottom: 0; z-index: var(--z-sticky);
+  display: flex; gap: var(--sp-3); align-items: center;
+  padding: var(--sp-3) var(--gutter) max(var(--sp-4), env(safe-area-inset-bottom));
+  background: color-mix(in oklab, var(--bg-page) 92%, transparent);
+  backdrop-filter: blur(10px); border-top: var(--bw-hair) solid var(--divider);
+}
+.pp-action-bar .pp-btn--primary { flex: 1; }
+@media (min-width: 768px) {
+  .pp-action-bar { position: static; background: none; backdrop-filter: none; border-top: 0; padding-inline: 0; }
+  .pp-action-bar .pp-btn--primary { flex: 0 0 auto; }
+}
