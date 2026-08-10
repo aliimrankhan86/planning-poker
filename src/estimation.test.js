@@ -1,4 +1,4 @@
-import { tally, teamCode } from "./estimation";
+import { tally, teamCode, sprintResetUpdates } from "./estimation";
 
 /* The estimation maths is the product. If `tally` is wrong the app still
    renders, still feels fine, and quietly records the wrong number into a
@@ -123,5 +123,68 @@ describe("teamCode", () => {
 
   test("is stable, so the same team always lands on the same room", () => {
     expect(teamCode("Product Team")).toBe(teamCode("  PRODUCT   team  "));
+  });
+});
+
+/* The reset that did not reset. A new sprint zeroed storiesDone, streak and
+   consensusCount and left every estimate that produced them, so the analytics
+   panel reported "Stories sized 0" above a list of sized stories. The point of
+   testing the payload rather than the write is that the bug was an omission —
+   three paths missing from a list of thirteen. */
+describe("sprintResetUpdates", () => {
+  const room = {
+    players: { a: { voted: true, vote: "5" }, b: { voted: true, vote: "21" } },
+    stories: { 0: { name: "Login", estimate: "13" }, 1: { name: "Search", estimate: "5" } },
+    rounds: { 0: { estimate: "13", isConsensus: true } },
+    timer: { duration: 45 },
+    storiesDone: 2,
+    activeStory: 2,
+  };
+
+  test("clears every estimate the counters are counting", () => {
+    const upd = sprintResetUpdates(room);
+    expect(upd["stories/0/estimate"]).toBeNull();
+    expect(upd["stories/1/estimate"]).toBeNull();
+    expect(upd.rounds).toBeNull();
+    expect(upd.storiesDone).toBe(0);
+    expect(upd.consensusCount).toBe(0);
+    expect(upd.streak).toBe(0);
+  });
+
+  test("rewinds the queue so the room is not sitting past its last story", () => {
+    expect(sprintResetUpdates(room).activeStory).toBe(0);
+  });
+
+  test("keeps the backlog — the confirm promises votes and rounds, not names", () => {
+    const paths = Object.keys(sprintResetUpdates(room));
+    expect(paths).not.toContain("stories");
+    expect(paths.filter((p) => /^stories\//.test(p)).every((p) => p.endsWith("/estimate"))).toBe(true);
+  });
+
+  test("takes every player's card back and closes the reveal", () => {
+    const upd = sprintResetUpdates(room);
+    expect(upd["players/a/voted"]).toBe(false);
+    expect(upd["players/a/vote"]).toBeNull();
+    expect(upd["players/b/vote"]).toBeNull();
+    expect(upd.revealed).toBe(false);
+    expect(upd.round).toBe(1);
+  });
+
+  test("stops the timer and restores the room's own countdown length", () => {
+    expect(sprintResetUpdates(room)["timer/remaining"]).toBe(45);
+    expect(sprintResetUpdates({})["timer/remaining"]).toBe(30);
+    expect(sprintResetUpdates(room)["timer/running"]).toBe(false);
+    expect(sprintResetUpdates(room)["timer/startedBy"]).toBeNull();
+  });
+
+  test("an empty room resets without inventing player or story paths", () => {
+    const upd = sprintResetUpdates({});
+    expect(Object.keys(upd).some((p) => /^players\/|^stories\//.test(p))).toBe(false);
+    expect(upd.storiesDone).toBe(0);
+  });
+
+  test("every value is a legal write — no undefined reaches Firebase", () => {
+    // update() throws on undefined; null is the documented delete.
+    expect(Object.values(sprintResetUpdates(room)).every((v) => v !== undefined)).toBe(true);
   });
 });

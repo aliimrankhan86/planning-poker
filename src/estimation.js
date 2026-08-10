@@ -69,6 +69,46 @@ export function tally(players = []) {
   };
 }
 
+/**
+ * The room-relative paths a new sprint has to blank, and what to blank them to.
+ *
+ * This is a list, and the bug it exists to prevent is a short one. The counters
+ * used to be zeroed while the records they counted survived: storiesDone went
+ * to 0 with every queued estimate still attached, every recorded round still in
+ * `rounds`, and activeStory still pointing past the end of the queue. The panel
+ * then read "Stories sized 0" directly above "Stories sized (1)" listing an
+ * estimate. Counters and records reset together, or neither does.
+ *
+ * The backlog itself survives: the stories keep their names and the queue
+ * rewinds to the top, because the confirm promises to clear votes and rounds,
+ * not to delete what somebody typed.
+ *
+ * @param {{players?: object, stories?: object, timer?: {duration?: number}}} roomData
+ * @returns {Record<string, unknown>} room-relative path → value, for one
+ *   multi-path update. `null` deletes.
+ */
+export function sprintResetUpdates(roomData = {}) {
+  const upd = {};
+  for (const id of Object.keys(roomData?.players || {})) {
+    upd[`players/${id}/voted`] = false;
+    upd[`players/${id}/vote`] = null;
+  }
+  for (const idx of Object.keys(roomData?.stories || {})) {
+    upd[`stories/${idx}/estimate`] = null;
+  }
+  upd.activeStory = 0;
+  upd.rounds = null;
+  upd.revealed = false;
+  upd.round = 1;
+  upd.storiesDone = 0;
+  upd.streak = 0;
+  upd.consensusCount = 0;
+  upd["timer/running"] = false;
+  upd["timer/remaining"] = roomData?.timer?.duration || 30;
+  upd["timer/startedBy"] = null;
+  return upd;
+}
+
 /** Formats a number for display: whole numbers bare, otherwise one decimal. */
 export const showNum = (n) =>
   n === null || n === undefined ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(1);

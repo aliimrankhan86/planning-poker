@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 362 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 364 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 18 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 23 KB |
@@ -115,12 +115,12 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 137 test blocks across AdminDashboard.test.js, App.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 144 test blocks across AdminDashboard.test.js, App.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
 
-`npm run test:rules` — 62 assertions against the real Firebase rules
+`npm run test:rules` — 65 assertions against the real Firebase rules
 engine in the emulator (needs JDK 21, which the script locates itself). The rules cannot
 be checked by reading them and have to be deployed by hand, which is how two silent
 outages happened. Run this after touching `database.rules.json`.
@@ -404,6 +404,35 @@ there is no estimate for the row to sit under. Do not re-add a record button to
 the action bar; the whole point is that there is one, and it is beside the
 number. Guarded in `designsystem.test.js` → "a finished round has one set of
 controls".
+
+**Counters and the records they count reset together, or neither does.** A new
+sprint zeroed `storiesDone`, `streak` and `consensusCount` and left every
+estimate that produced them: queued stories kept `estimate`, `rounds` kept every
+recorded round, and `activeStory` stayed past the end of the queue, so the room
+was sitting on a story it had already sized. Sprint Analytics read
+"Stories sized 0" directly above "Stories sized (1)" listing an estimate, and the
+summary still totalled the previous sprint's points. Which paths a reset blanks
+now lives in `sprintResetUpdates()` in `src/estimation.js` — a pure
+`roomData → {path: value}` map — precisely because the bug was an omission from a
+list, and a list is the thing a test can read. `resetSession` in App.js is only
+the wiring that prefixes `rooms/{code}/`.
+
+What a reset does **not** touch is the backlog. The confirm promises to clear
+votes, estimates and rounds; deleting the story names someone typed on that
+promise would be a destructive surprise, so the queue keeps its stories and
+rewinds to index 0 to be estimated again. Guarded three ways: `estimation.test.js`
+→ "sprintResetUpdates" for the payload, `scripts/rules-test.mjs` for whether the
+rules engine actually permits the deletes (`stories/$i/estimate` and `rounds/$i`
+are both validated for the value going in, not for its removal), and the confirm
+string itself in `designsystem.test.js`.
+
+**A room write that can be rejected says so.** Five of them could not: room
+creation, join, team-room entry, add-story and remove-story all `await`ed a write
+with no `catch`, so a rules rejection or a dropped connection surfaced as an
+unhandled promise and a button that appeared to do nothing. `resetSession` was
+the sixth and the one that made it visible. Every write into `rooms/` now
+`console.error`s and shows a toast naming the action that failed. If you add
+another, it does too.
 
 **A panel owns the gap between its children; the children own nothing.** Every
 block inside a `.panel` used to declare its own margin — 14px from three

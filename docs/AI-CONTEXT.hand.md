@@ -240,6 +240,35 @@ the action bar; the whole point is that there is one, and it is beside the
 number. Guarded in `designsystem.test.js` → "a finished round has one set of
 controls".
 
+**Counters and the records they count reset together, or neither does.** A new
+sprint zeroed `storiesDone`, `streak` and `consensusCount` and left every
+estimate that produced them: queued stories kept `estimate`, `rounds` kept every
+recorded round, and `activeStory` stayed past the end of the queue, so the room
+was sitting on a story it had already sized. Sprint Analytics read
+"Stories sized 0" directly above "Stories sized (1)" listing an estimate, and the
+summary still totalled the previous sprint's points. Which paths a reset blanks
+now lives in `sprintResetUpdates()` in `src/estimation.js` — a pure
+`roomData → {path: value}` map — precisely because the bug was an omission from a
+list, and a list is the thing a test can read. `resetSession` in App.js is only
+the wiring that prefixes `rooms/{code}/`.
+
+What a reset does **not** touch is the backlog. The confirm promises to clear
+votes, estimates and rounds; deleting the story names someone typed on that
+promise would be a destructive surprise, so the queue keeps its stories and
+rewinds to index 0 to be estimated again. Guarded three ways: `estimation.test.js`
+→ "sprintResetUpdates" for the payload, `scripts/rules-test.mjs` for whether the
+rules engine actually permits the deletes (`stories/$i/estimate` and `rounds/$i`
+are both validated for the value going in, not for its removal), and the confirm
+string itself in `designsystem.test.js`.
+
+**A room write that can be rejected says so.** Five of them could not: room
+creation, join, team-room entry, add-story and remove-story all `await`ed a write
+with no `catch`, so a rules rejection or a dropped connection surfaced as an
+unhandled promise and a button that appeared to do nothing. `resetSession` was
+the sixth and the one that made it visible. Every write into `rooms/` now
+`console.error`s and shows a toast naming the action that failed. If you add
+another, it does too.
+
 **A panel owns the gap between its children; the children own nothing.** Every
 block inside a `.panel` used to declare its own margin — 14px from three
 analytics sections, 0 from the timer's Start countdown button, 24px from a

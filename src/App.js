@@ -54,7 +54,7 @@ import {
   PRIVATE_PATHS,
   MAX_PARTICIPANTS,
 } from "./routeMeta.mjs";
-import { tally, showNum, teamCode } from "./estimation";
+import { tally, showNum, teamCode, sprintResetUpdates } from "./estimation";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -3257,19 +3257,29 @@ export default function App() {
     setMyRole(role);
     setCode(c);
     setPrefillTeam("");
-    await set(ref(db, `rooms/${c}`), {
-      createdAt: serverTimestamp(),
-      revealed: false,
-      round: 1,
-      storiesDone: 0,
-      streak: 0,
-      consensusCount: 0,
-      deck,
-      estimationMode,
-      plan: "free",
-      timer: { running: false, duration: 30, remaining: 30 },
-      players: { [myId]: { id: myId, name, role, voted: false, vote: null, online: true } },
-    });
+    /* A rejected write here used to throw past every line below it, so the room
+       was never created, the screen never changed, and the only trace was an
+       unhandled rejection in a console nobody has open. The button appeared to
+       do nothing at all. */
+    try {
+      await set(ref(db, `rooms/${c}`), {
+        createdAt: serverTimestamp(),
+        revealed: false,
+        round: 1,
+        storiesDone: 0,
+        streak: 0,
+        consensusCount: 0,
+        deck,
+        estimationMode,
+        plan: "free",
+        timer: { running: false, duration: 30, remaining: 30 },
+        players: { [myId]: { id: myId, name, role, voted: false, vote: null, online: true } },
+      });
+    } catch (err) {
+      console.error("[pointpoker] room creation failed", err);
+      showToast("Could not create the room, check your connection and try again.");
+      return;
+    }
 
     // Server-side soft-disconnect: marks offline rather than removing immediately.
     // Players offline for more than an hour are removed by sweepAwayPlayers,
@@ -3303,14 +3313,15 @@ export default function App() {
     setMyRole(role);
     setCode(c);
     setPrefillTeam("");
-    await update(ref(db, `rooms/${c}/players/${myId}`), {
-      id: myId,
-      name,
-      role,
-      voted: false,
-      vote: null,
-      online: true,
-    });
+    try {
+      await update(ref(db, `rooms/${c}/players/${myId}`), {
+        id: myId, name, role, voted: false, vote: null, online: true,
+      });
+    } catch (err) {
+      console.error("[pointpoker] join failed", err);
+      showToast("Could not join that room, check your connection and try again.");
+      return;
+    }
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).update({ online: false, disconnectedAt: serverTimestamp() });
     window.history.replaceState({}, "", roomPath(c));
     setScreen("game");
@@ -3348,33 +3359,39 @@ export default function App() {
     setMyRole(role);
     setCode(c);
     setPrefillTeam(c);
-    if (!snap.exists()) {
-      await set(ref(db, `rooms/${c}`), {
-        createdAt: serverTimestamp(),
-        revealed: false,
-        round: 1,
-        storiesDone: 0,
-        streak: 0,
-        consensusCount: 0,
-        deck,
-        estimationMode,
-        // Everything is free — "free" is the only plan new rooms are created with.
-        plan: "free",
-        teamName,
-        founderRoom,
-        timer: { running: false, duration: 30, remaining: 30 },
-        players: { [myId]: { id: myId, name, role, voted: false, vote: null, online: true } },
-      });
-    } else {
-      // Join existing room. If estimationMode was never set (legacy room or
-      // first session after the feature shipped), write the facilitator's
-      // chosen mode now. The Firebase rule allows this because !data.exists().
-      const upd = {};
-      upd[`rooms/${c}/players/${myId}`] = { id: myId, name, role, voted: false, vote: null, online: true };
-      if (!existingRoom.estimationMode) {
-        upd[`rooms/${c}/estimationMode`] = estimationMode;
+    try {
+      if (!snap.exists()) {
+        await set(ref(db, `rooms/${c}`), {
+          createdAt: serverTimestamp(),
+          revealed: false,
+          round: 1,
+          storiesDone: 0,
+          streak: 0,
+          consensusCount: 0,
+          deck,
+          estimationMode,
+          // Everything is free — "free" is the only plan new rooms are created with.
+          plan: "free",
+          teamName,
+          founderRoom,
+          timer: { running: false, duration: 30, remaining: 30 },
+          players: { [myId]: { id: myId, name, role, voted: false, vote: null, online: true } },
+        });
+      } else {
+        // Join existing room. If estimationMode was never set (legacy room or
+        // first session after the feature shipped), write the facilitator's
+        // chosen mode now. The Firebase rule allows this because !data.exists().
+        const upd = {};
+        upd[`rooms/${c}/players/${myId}`] = { id: myId, name, role, voted: false, vote: null, online: true };
+        if (!existingRoom.estimationMode) {
+          upd[`rooms/${c}/estimationMode`] = estimationMode;
+        }
+        await update(ref(db), upd);
       }
-      await update(ref(db), upd);
+    } catch (err) {
+      console.error("[pointpoker] team room entry failed", err);
+      showToast(`Could not open ${teamName}, check your connection and try again.`);
+      return;
     }
     onDisconnect(ref(db, `rooms/${c}/players/${myId}`)).update({ online: false, disconnectedAt: serverTimestamp() });
     // Keep the clean stable team-room URL so invites and browser refreshes stay consistent.
@@ -3477,8 +3494,16 @@ export default function App() {
     names.forEach((name, i) => {
       upd[`rooms/${code}/stories/${startIdx + i}`] = { name, estimate: null };
     });
-    await update(ref(db), upd);
-  }, [code, roomData]);
+    try {
+      await update(ref(db), upd);
+    } catch (err) {
+      // A rejected queue write left the field cleared and the list unchanged,
+      // which reads as "it swallowed my backlog".
+      console.error("[pointpoker] addStory write failed", err);
+      showToast(names.length > 1 ? "Could not add those items, check your connection and try again."
+                                 : "Could not add that item, check your connection and try again.");
+    }
+  }, [code, roomData, showToast]);
 
   // Drop a queued item. Stories are index-keyed and activeStory is an index into
   // them, so the whole list is rewritten and the pointer shifted to match.
@@ -3491,13 +3516,18 @@ export default function App() {
     const next = list.filter((_, i) => i !== idx);
     // One write for the whole list — a multi-path update may not mix a parent
     // path with its own children, so `stories` is replaced wholesale.
-    await update(ref(db), {
-      [`rooms/${code}/stories`]: next.length
-        ? Object.fromEntries(next.map((story, i) => [i, story]))
-        : null,
-      [`rooms/${code}/activeStory`]: Math.min(activeIdx, next.length),
-    });
-  }, [code, roomData]);
+    try {
+      await update(ref(db), {
+        [`rooms/${code}/stories`]: next.length
+          ? Object.fromEntries(next.map((story, i) => [i, story]))
+          : null,
+        [`rooms/${code}/activeStory`]: Math.min(activeIdx, next.length),
+      });
+    } catch (err) {
+      console.error("[pointpoker] removeStory write failed", err);
+      showToast("Could not remove that item, check your connection and try again.");
+    }
+  }, [code, roomData, showToast]);
 
   const recordAndNextStory = useCallback(async (estimate, isConsensus = false) => {
     const idx = roomData?.activeStory ?? 0;
@@ -3530,23 +3560,21 @@ export default function App() {
     }
   }, [code, roomData, showToast]);
 
+  /* Which paths a new sprint blanks is a list that was missing three entries,
+     so it lives in estimation.js where a test can read it. This is the wiring. */
   const resetSession = useCallback(async () => {
-    const players = roomData?.players || {};
-    const upd = {};
-    Object.keys(players).forEach((id) => {
-      upd[`rooms/${code}/players/${id}/voted`] = false;
-      upd[`rooms/${code}/players/${id}/vote`] = null;
-    });
-    upd[`rooms/${code}/revealed`] = false;
-    upd[`rooms/${code}/round`] = 1;
-    upd[`rooms/${code}/storiesDone`] = 0;
-    upd[`rooms/${code}/streak`] = 0;
-    upd[`rooms/${code}/consensusCount`] = 0;
-    upd[`rooms/${code}/timer/running`] = false;
-    upd[`rooms/${code}/timer/remaining`] = roomData?.timer?.duration || 30;
-    upd[`rooms/${code}/timer/startedBy`] = null;
-    await update(ref(db), upd);
-    showToast("New sprint started. Everyone's votes are cleared.");
+    const upd = Object.fromEntries(
+      Object.entries(sprintResetUpdates(roomData)).map(([path, v]) => [`rooms/${code}/${path}`, v]),
+    );
+    try {
+      await update(ref(db), upd);
+      showToast("New sprint started. Votes and estimates are cleared.");
+    } catch (err) {
+      // Every other write in this file reports its failure; this one used to
+      // reject into an unhandled promise and leave a half-reset room silent.
+      console.error("[pointpoker] resetSession write failed", err);
+      showToast("Could not start a new sprint, check your connection and try again.");
+    }
   }, [code, roomData, showToast]);
 
   const endSession = useCallback(async () => {
@@ -6845,7 +6873,9 @@ function GameScreen({
   }, [onNewRound]);
 
   const confirmNewSprint = useCallback(() => {
-    if (window.confirm("Start a new sprint? This clears all votes and rounds for everyone in the room.")) onReset();
+    // Names what actually goes and what stays. "Clears all votes and rounds"
+    // was true of the counters and false of the estimates, which survived.
+    if (window.confirm("Start a new sprint? This clears every vote, estimate and round for everyone in the room. Your story queue is kept.")) onReset();
   }, [onReset]);
 
   const confirmEndSession = useCallback(() => {

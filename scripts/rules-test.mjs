@@ -106,6 +106,31 @@ await deny("a player name is length-capped", put("rooms/ABC12/players/p3", { id:
 await deny("a story name is length-capped", put("rooms/ABC12/stories/1", { name: "x".repeat(201) }));
 await deny("the timer cannot be set beyond its bounds", put("rooms/ABC12/timer/duration", 99999));
 
+/* A new sprint has to UNDO both record paths in one multi-path write, and every
+   one of those paths is guarded by a .validate written for the value going in,
+   not for its removal. `stories/$i/estimate` is validated against the deck, and
+   `rounds/$i` requires two children — a delete that trips either rule leaves
+   the room half-reset, with counters at zero and last sprint's estimates still
+   attached. Mirrors sprintResetUpdates() in src/estimation.js; if that list
+   grows a path, this payload grows with it. */
+await allow("a new sprint clears both record paths in one write", patch("rooms/ABC12", {
+  "players/p1/voted": false,
+  "players/p1/vote": null,
+  "stories/0/estimate": null,
+  activeStory: 0,
+  rounds: null,
+  revealed: false,
+  round: 1,
+  storiesDone: 0,
+  streak: 0,
+  consensusCount: 0,
+  "timer/running": false,
+  "timer/remaining": 30,
+  "timer/startedBy": null,
+}));
+await deny("  …but the story it kept still cannot take an off-deck estimate", put("rooms/ABC12/stories/0/estimate", "XL"));
+await allow("  …and the room it left behind is still a valid room", canRead("rooms/ABC12"));
+
 /* ── ANALYTICS ──────────────────────────────────────────────────────── */
 
 await deny("analytics cannot be read by an anonymous visitor", canRead("analytics"));
