@@ -54,7 +54,16 @@ import {
   PRIVATE_PATHS,
   MAX_PARTICIPANTS,
 } from "./routeMeta.mjs";
-import { tally, showNum, teamCode, sprintResetUpdates } from "./estimation";
+import {
+  tally,
+  showNum,
+  teamCode,
+  sprintResetUpdates,
+  deleteSizedItemUpdates,
+  cleanRoomCode,
+  mkCode,
+  playerId as uid,
+} from "./estimation";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -326,8 +335,6 @@ const ESTIMATION_MODES = {
 };
 const getEstMode = (mode) => ESTIMATION_MODES[mode] || ESTIMATION_MODES.stories;
 const INVALID_PLACEHOLDER_NAMES = new Set(["alex johnson", "e.g. alex johnson"]);
-const uid = () => Math.random().toString(36).slice(2, 10);
-const mkCode = () => Math.random().toString(36).slice(2, 7).toUpperCase();
 const homePath = () => "/";
 const roomPath = (code) => `/?room=${encodeURIComponent(code)}`;
 const teamRoomPath = (teamNameOrCode) => `/t/${teamCode(teamNameOrCode)}`;
@@ -404,12 +411,10 @@ const CSS = `
    pattern the market leader uses, and it is the reason their room feels
    simpler than ours despite having fewer features.
 
-   On phones it sticks to the bottom of the viewport, inside the thumb arc,
-   which is where the hand already is.
    ═══════════════════════════════════════════════ */
 .action-bar {
-  /* The card is the design system's; what is local is that this one sticks to
-     the top of the column on a desktop and docks to the bottom on a phone. */
+  /* The card is the design system's; what is local is that this one follows
+     the column on a desktop, where there is height to spare. */
   position: sticky; top: var(--sp-3); z-index: var(--z-sticky);
 }
 .action-bar-title {
@@ -430,23 +435,28 @@ const CSS = `
 }
 
 @media (max-width: 780px) {
-  .action-bar {
-    position: sticky;
-    top: auto;
-    bottom: 0;
-    margin: 0 calc(var(--sp-4) * -1) calc(var(--sp-4) * -1);
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-    border-bottom: none;
-    /* Clear the iOS home indicator so the CTA is never half under it. */
-    padding-bottom: max(var(--sp-4), env(safe-area-inset-bottom));
-    box-shadow: var(--elev-3);
-  }
+  /* This block used to dock the bar to the bottom of the phone viewport with
+     position: sticky and bottom: 0, and it has never once done so. Bottom
+     stickiness only pulls a box UP when its flow position would put it below
+     the scrollport edge; it does not push a box DOWN from a flow position that
+     is already on screen, and this bar sits near the top of its column. The
+     result was a full-bleed card with two square corners and home-indicator
+     padding stranded in the middle of the page. A real thumb-arc dock is
+     position: fixed and costs 150px of a 812px screen for the whole session,
+     which is a product decision, not a CSS repair. In flow the bar is already
+     the loudest thing above the fold, so it stays in flow and keeps the
+     gutters every other panel uses. */
+  .action-bar { position: static; }
 }
 
 html { font-size: 16px; scroll-behavior: smooth; background-color: var(--bg); }
 html, body, * {
   scrollbar-width: thin;
-  scrollbar-color: var(--gold) var(--scroll-track);
+  /* Firefox reads this, WebKit reads the block below. Both must name the same
+     role: --gold is the brand gold in either theme by design, so pointing the
+     Firefox thumb at it painted a full-saturation brass bar down the edge of
+     every scrolling panel in the light theme. */
+  scrollbar-color: var(--scroll-thumb-flat) var(--scroll-track);
 }
 *::-webkit-scrollbar {
   width: 12px;
@@ -461,9 +471,7 @@ html, body, * {
   border-radius: 999px;
   border: 2px solid var(--scroll-thumb-border);
 }
-*::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #f8da91 0%, #efc45d 48%, #d39c35 100%);
-}
+*::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 *::-webkit-scrollbar-corner { background: transparent; }
 body {
   font-family: 'Outfit', sans-serif;
@@ -473,14 +481,25 @@ body {
     var(--page-ground);
   min-height: 100vh;
   color: var(--cream);
-  overflow-x: hidden;
+  /* No overflow-x: hidden here. One hidden axis forces the other to compute to
+     auto, so body became a scroll container, and every position: sticky in the
+     product then measured itself against a box with nothing to scroll — the
+     phone action bar below has always been written to dock into the thumb arc
+     and has never once done it. The guard was also guarding nothing: no route
+     overflows horizontally at 320, 375 or 1280. */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Accessible focus ring — visible for keyboard, invisible for mouse */
+/* Accessible focus ring — visible for keyboard, invisible for mouse.
+   This rule and the one in base.css have identical specificity, and this file
+   is injected from <body> so it wins. It used to paint --gold2, which is
+   brass-300 in BOTH themes: a #ffd978 ring on paper measures 1.4:1, so keyboard
+   focus was invisible for every light-theme user. --focus is the role that
+   moves with the theme (brass-300 on felt, brass-700 on paper, ≥4.4:1 either
+   way). */
 :focus-visible {
-  outline: 2.5px solid var(--gold2);
+  outline: 2.5px solid var(--focus);
   outline-offset: 3px;
   border-radius: 6px;
 }
@@ -503,17 +522,13 @@ body::before {
 /* ── ANIMATIONS ── */
 @keyframes fadeUp   { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
-@keyframes shimmer  { 0% { background-position:-300% center; } 100% { background-position:300% center; } }
 @keyframes spin     { to { transform: rotate(360deg); } }
 @keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
-@keyframes flip     { 0% { transform:rotateY(90deg) scale(.85); } 60% { transform:rotateY(-6deg) scale(1.02); } 100% { transform:rotateY(0) scale(1); } }
 @keyframes dealIn   { from { opacity:0; transform:translateY(-18px) scale(.9); } to { opacity:1; transform:none; } }
-@keyframes glow     { 0%,100% { box-shadow:0 0 20px rgba(201,145,42,.25); } 50% { box-shadow:0 0 40px rgba(201,145,42,.6), 0 0 80px rgba(201,145,42,.15); } }
-@keyframes urgentBg { 0%,100% { background:rgba(192,57,43,.1); } 50% { background:rgba(192,57,43,.22); } }
+@keyframes urgentBg { 0%,100% { background: color-mix(in oklab, var(--danger) 10%, transparent); } 50% { background: color-mix(in oklab, var(--danger) 24%, transparent); } }
 @keyframes heroIn   { from { opacity:0; transform:scale(.92) translateY(12px); } to { opacity:1; transform:none; } }
 @keyframes badgePop  { 0% { transform:scale(0.7); opacity:0; } 70% { transform:scale(1.08); } 100% { transform:scale(1); opacity:1; } }
 @keyframes consensusIn { 0% { opacity:0; transform:scale(.88) translateY(16px); } 60% { transform:scale(1.03) translateY(-4px); } 100% { opacity:1; transform:scale(1) translateY(0); } }
-@keyframes starBurst   { 0% { transform:scale(0) rotate(0deg); opacity:1; } 100% { transform:scale(1.6) rotate(180deg); opacity:0; } }
 
 /* ══════════════════════ CONFETTI CANVAS ══════════════════════ */
 .confetti-canvas {
@@ -536,20 +551,13 @@ body::before {
   font-family: 'Outfit', sans-serif;
   font-size: 2.4rem; font-weight: 700; color: var(--gold-ink2);
   letter-spacing: -0.02em;
-  text-shadow: 0 0 40px rgba(201,145,42,.8), 0 4px 20px rgba(0,0,0,.8);
+  text-shadow: var(--glow-accent);
   line-height: 1.1;
 }
 .consensus-burst-sub {
-  font-size: .9rem; color: var(--text-1);
-  margin-top: 6px; font-weight: 300; letter-spacing: .5px;
-  text-shadow: 0 2px 8px rgba(0,0,0,.9);
-}
-.facilitator-overlay-summary-v.gold { color: var(--gold-ink2); }
-.facilitator-overlay-chip.active {
-  border-color: rgba(241,185,63,.56);
-  background: linear-gradient(180deg, rgba(241,185,63,.22), rgba(241,185,63,.11));
-  color: var(--gold-ink3);
-  box-shadow: 0 16px 34px rgba(241,185,63,.14), inset 0 1px 0 rgba(255,255,255,.06);
+  font-size: var(--fs-2); color: var(--text-1);
+  margin-top: 6px; font-weight: 400; letter-spacing: .5px;
+  text-shadow: var(--glow-display);
 }
 
 /* ══════════════════════ JOIN SCREEN ══════════════════════ */
@@ -564,31 +572,35 @@ body::before {
 .join-layout { max-width: calc(440px + var(--gutter) * 2); }
 .join-mark { display: flex; justify-content: center; margin-bottom: var(--sp-5); }
 
+/* The panel the whole product is entered through. It used to carry a 155deg
+   three-stop gradient, a white veil, a cyan inner ring, a 110px shadow off the
+   elevation scale, a full-panel backdrop-filter and an infinitely shimmering
+   rainbow hairline. That is six treatments doing the job of one: this is a
+   card, and the system already knows how to draw a card.
+
+   What is left is a flat surface, the hairline, --elev-3 because it is the one
+   raised object on the screen, and a single brass rule along the top edge that
+   points at the brass button 500px below it. */
 .join-box {
   width: 100%; max-width: 440px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
-    linear-gradient(155deg, var(--surface) 0%, var(--surface2) 58%, var(--surface3) 100%);
-  border: 1px solid var(--border);
-  border-radius: 28px;
-  padding: 48px 40px 44px;
-  box-shadow: 0 44px 110px var(--shadow-cast), inset 0 1px 0 rgba(255,255,255,.06), inset 0 0 0 1px rgba(126,230,255,.04);
+  background: var(--surface-1);
+  border: var(--bw-hair) solid var(--border-subtle);
+  border-radius: var(--r-xl);
+  padding: var(--sp-12) var(--sp-10) var(--sp-10);
+  box-shadow: var(--elev-3);
   position: relative; overflow: hidden;
-  animation: fadeUp .45s ease;
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  animation: fadeUp var(--dur-slow) var(--ease-out) both;
 }
 .join-box::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--mint), var(--gold2), var(--aqua), transparent);
-  background-size: 300% auto; animation: shimmer 3s linear infinite;
+  background: linear-gradient(90deg, transparent, var(--action) 30%, var(--action) 70%, transparent);
 }
 .join-title {
   font-family: 'Outfit', sans-serif;
   font-size: clamp(1.75rem, 4.4vw, 2.35rem); font-weight: 700;
   color: var(--cream); text-align: center;
   margin-bottom: 4px; letter-spacing: -0.03em; line-height: 1.1;
-  text-shadow: 0 12px 32px rgba(0,0,0,.42);
+  text-shadow: var(--glow-display);
 }
 .join-sub {
   text-align: center; color: var(--text-2);
@@ -607,7 +619,7 @@ body::before {
 .trust-strip li {
   font-size: var(--fs-1); font-weight: 500; letter-spacing: var(--fs-1-tracking);
   color: var(--text-2);
-  background: rgba(255,255,255,.045);
+  background: var(--tint-raise-2);
   border: 1px solid var(--border);
   border-radius: 999px; padding: 5px 11px;
   white-space: nowrap;
@@ -677,13 +689,7 @@ body::before {
 /* Stacked, the panel and the form card are two separate regions and need a gap
    between them; side by side they are two columns and do not. */
 .join-side + .join-box { margin-top: var(--sp-6); }
-.workspace-panel {
-  margin-top: var(--sp-6);
-  padding: var(--sp-5);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-}
+.workspace-panel { margin-top: var(--sp-6); }
 /* Not a .panel, so it carries its own gap — but the same eyebrow gets the same
    gap under it wherever it appears. */
 .workspace-panel .ptitle { margin-bottom: var(--sp-3); }
@@ -709,8 +715,8 @@ body::before {
   width: 100%;
   min-width: 0;
   border-radius: var(--r-md);
-  border: 1px solid rgba(126,230,255,.16);
-  background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06));
+  border: var(--bw-hair) solid var(--gold-line-1);
+  background: var(--tint-raise-2);
 }
 .workspace-team-url code {
   min-width: 0;
@@ -774,9 +780,9 @@ body::before {
 }
 .workspace-rename.highlight {
   border-radius: var(--r-md);
-  border: 1px solid rgba(241,185,63,.34);
+  border: var(--bw-hair) solid var(--gold-line-1);
   padding: 0 var(--sp-3);
-  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(255,255,255,.025));
+  background: var(--gold-fill-1);
 }
 /* Secondary lines inside the form card: one class instead of the same four
    inline declarations written out four times. */
@@ -849,8 +855,8 @@ body::before {
   color: var(--text-1);
 }
 .choice[aria-pressed="true"] {
-  background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08));
-  border-color: rgba(241,185,63,.34);
+  background: var(--gold-fill-2);
+  border-color: var(--gold-line-1);
   color: var(--gold-ink2);
 }
 .choice[aria-pressed="true"] .choice-desc { color: var(--gold-ink2); }
@@ -928,8 +934,8 @@ body::before {
 .scroll-target { scroll-margin-top: 92px; }
 #plans.scroll-target { scroll-margin-top: 72px; }
 .seo-plan-card.pro {
-  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(241,185,63,.04));
-  border-color: rgba(241,185,63,.22);
+  background: var(--gold-fill-1);
+  border-color: var(--gold-line-1);
 }
 .seo-plan-card.pro .seo-plan-topline { color: var(--gold-ink2); }
 .seo-plan-card.pro .seo-plan-price { color: var(--gold-ink2); }
@@ -949,13 +955,18 @@ body::before {
 }
 .seo-plan-actions { justify-content: center; }
 /* ══════════════════════ ROOM HEADER (game view) ══════════════════════
-   Sits below the global NavBar — top: 64px keeps it stacked correctly.
-   Full .hdr override is in the new CSS block appended at end of CSS string. */
+   In a room this IS the banner: it carries the brand, the round, the code,
+   Leave, the theme toggle and the invite. The marketing navbar carries the
+   brand and the theme toggle too, so stacking the two put the same wordmark
+   and the same toggle on screen twice, 65px apart, and gave the page two
+   role="banner" landmarks. The phone breakpoint had already worked this out
+   and hidden the navbar; the argument does not change with width. */
+.in-room .navbar { display: none; }
 .hdr {
   background: var(--surface-bar-solid);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(20px);
-  position: sticky; top: 64px; z-index: 100;
+  position: sticky; top: 0; z-index: 100;
 }
 .hdr-in {
   display: flex; align-items: center; justify-content: space-between;
@@ -971,8 +982,8 @@ body::before {
   min-width: 0;
   padding: 8px 10px;
   border-radius: 14px;
-  border: 1px solid rgba(126,230,255,.16);
-  background: linear-gradient(180deg, rgba(126,230,255,.08), rgba(241,185,63,.06));
+  border: var(--bw-hair) solid var(--gold-line-1);
+  background: var(--tint-raise-2);
 }
 .hdr-invite-copy {
   min-width: 0;
@@ -1010,15 +1021,21 @@ body::before {
 .lcol, .rcol { display: flex; flex-direction: column; gap: var(--gap); }
 
 /* ══════════════════════ PANEL ══════════════════════ */
-.panel {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
-    linear-gradient(180deg, var(--surface), var(--surface2));
-  border: 1px solid var(--border); border-radius: var(--radius);
-  padding: var(--sp-5); backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,.04);
+/* One container treatment for the whole product. .story-panel and
+   .workspace-panel are the same object as .panel — a titled box standing on
+   its own in a column — but were painted with --tint-raise instead of a
+   surface, so in the light theme the story queue was a grey-green rectangle
+   sitting between two ivory ones. Same shape, same paint; only their internal
+   rhythm differs, so they are deliberately left out of the child-flow rule
+   below. The backdrop-filter went with it: a blur behind an opaque surface
+   costs a compositor layer and renders nothing. */
+.panel, .story-panel, .workspace-panel {
+  background: var(--surface-1);
+  border: var(--bw-hair) solid var(--border-subtle); border-radius: var(--radius);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-soft), var(--inset-hi);
 }
-.panel-gold { border-color: rgba(241,185,63,.24); box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,.04), 0 0 0 1px rgba(241,185,63,.04); }
+.panel-gold { border-color: var(--gold-line-1); box-shadow: var(--shadow-soft), var(--inset-hi); }
 /* A panel owns its vertical rhythm; its children do not bring their own.
    Every block inside one used to declare a margin of its own — 14px from three
    analytics sections, 0 from the timer's button, 24px from a Grid — so the gap
@@ -1029,6 +1046,21 @@ body::before {
    so after this rule (.round-actions). */
 .panel > * + * { margin-top: var(--sp-4); }
 .panel > .ptitle + * { margin-top: var(--sp-3); }
+/* Countdown length and Start are one decision, so they share a row.
+   align-items: end, not center: the select carries a label above it and the
+   button does not, so the only edge the two have in common is the bottom one.
+   Both controls are min-height var(--control-md), so aligning there lines up
+   the whole of each.
+   Wrap rather than a breakpoint. This panel lives in a rail whose width does
+   not track the viewport, so a media query would be measuring the wrong box;
+   the two flex bases just stop fitting and each takes a full row, at whatever
+   width that happens to be. */
+.timer-setup { display: flex; flex-wrap: wrap; align-items: end; gap: var(--sp-3); }
+.timer-setup > .pp-field { flex: 1 1 9rem; min-width: 0; }
+.timer-setup > .pp-btn { flex: 1 1 11rem; }
+/* 8px, not the panel's 16: the hint belongs to the row above it, and a hint
+   spaced like a sibling block reads as being about the whole panel. */
+.timer-setup + .pp-hint { display: block; margin-top: var(--sp-2); }
 .ptitle {
   font-size: var(--fs-1); font-weight: 600; letter-spacing: 2.5px;
   text-transform: uppercase; color: var(--text-3);
@@ -1039,7 +1071,7 @@ body::before {
   padding: var(--sp-4); background: var(--tint-raise);
   border-radius: var(--r-md); border: 1px solid var(--border);
 }
-.ring-area.urgent { animation: urgentBg 1s ease infinite; }
+.ring-area.urgent { animation: urgentBg 1.1s var(--ease-out) infinite; }
 .rnum.urgent { color: var(--danger); }
 .rtxt { flex: 1; }
 .rstatus { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: var(--sp-1); color: var(--text-2); }
@@ -1063,10 +1095,19 @@ body::before {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
-.pcard:hover:not(.locked) { transform: translateY(-16px) scale(1.06); filter: drop-shadow(0 22px 18px rgba(0,0,0,.55)); }
-.pcard:focus-visible { outline: 3px solid rgba(232,184,75,.85); outline-offset: 4px; }
-.pcard.sel { transform: translateY(-18px) scale(1.08); filter: drop-shadow(0 0 16px rgba(201,145,42,.9)) drop-shadow(0 20px 22px rgba(0,0,0,.6)); }
+.pcard:hover:not(.locked) { transform: translateY(-16px) scale(1.06); filter: drop-shadow(0 18px 16px var(--shadow-card)); }
+.pcard:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.pcard.sel { transform: translateY(-18px) scale(1.08); filter: drop-shadow(0 0 12px var(--gold-line-2)) drop-shadow(0 16px 20px var(--shadow-card)); }
 .pcard.locked { cursor: default; }
+/* THE CARD FACE IS THEME-INDEPENDENT ON PURPOSE, and it is the only thing in
+   the product that is. A playing card is a physical object made of ivory stock
+   with red and black ink on it; turning the room lights on does not repaint it.
+   The literal values below — the paper gradient, the black card-edge, the white
+   inset that gives the stock its thickness, the red pips — are therefore not
+   un-migrated leftovers, and re-pointing them at --surface-1 would make the
+   deck vanish into the table in the light theme. Everything AROUND the card
+   (its lift shadow, its selection ring, its focus ring) does move with the
+   theme, and does, above. */
 .pcard-inner {
   width: 100%; height: 100%;
   background: linear-gradient(160deg, #ffffff 0%, #fdf6e8 100%);
@@ -1074,12 +1115,12 @@ body::before {
   box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px var(--shadow-card);
   position: relative; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  transition: background .15s;
+  transition: background var(--dur-fast) var(--ease-out);
 }
 .pcard.sel .pcard-inner {
   background: linear-gradient(160deg, #fffde8 0%, #fff6c0 100%);
-  border-color: rgba(201,145,42,.65);
-  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px var(--shadow-card), 0 0 0 2.5px rgba(201,145,42,.9);
+  border-color: var(--gold-line-2);
+  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px var(--shadow-card), 0 0 0 2.5px var(--brass-600);
 }
 /* Corner pip — top-left */
 .pcard-tl {
@@ -1101,12 +1142,15 @@ body::before {
 .pcard.red .pcard-num,     .pcard.red .pcard-bignum   { color: #b01020; }
 .pcard.red .pcard-suit-sm, .pcard.red .pcard-bigsuit  { color: #b01020; }
 .pcard:not(.red) .pcard-suit-sm, .pcard:not(.red) .pcard-bigsuit { color: var(--text-on-gold); }
-/* Wild (?) card */
-.pcard.wild .pcard-bignum  { font-size: 2.2rem; color: #6b3fa0; }
-.pcard.wild .pcard-bigsuit { color: #6b3fa0; font-size: 1.1rem; }
-.pcard.wild .pcard-num     { color: #6b3fa0; }
-.pcard.wild .pcard-suit-sm { color: #6b3fa0; }
-.pcard.wild .pcard-inner   { background: linear-gradient(160deg, #fdfaff 0%, #f0e8ff 100%); }
+/* Wild (?) card — "I cannot size this".
+   It was lavender on lilac, the only purple anywhere in the product and the one
+   hue with no role in the system. It is still the odd card out, but it says so
+   in the house colours now: felt ink on a stock tinted towards the table. */
+.pcard.wild .pcard-bignum  { font-size: 2.2rem; color: var(--felt-600); }
+.pcard.wild .pcard-bigsuit { color: var(--felt-600); font-size: 1.1rem; }
+.pcard.wild .pcard-num     { color: var(--felt-600); }
+.pcard.wild .pcard-suit-sm { color: var(--felt-600); }
+.pcard.wild .pcard-inner   { background: linear-gradient(160deg, #fbfdfa 0%, #e8f0e6 100%); }
 .vstatus { text-align: center; font-size: .82rem; padding: var(--sp-2) 0; }
 .vstatus.voted { color: var(--gold-ink); }
 .vstatus.wait  { color: var(--text-3); font-style: italic; }
@@ -1114,11 +1158,16 @@ body::before {
 /* ══════════════════════ RESULTS HERO ══════════════════════ */
 .avg-hero {
   text-align: center; padding: var(--sp-8) var(--sp-6);
-  background: linear-gradient(135deg, rgba(201,145,42,.14), rgba(201,145,42,.04));
-  border: 1.5px solid rgba(201,145,42,.4); border-radius: var(--r-lg);
+  background: var(--gold-fill-2);
+  border: var(--bw-thick) solid var(--gold-line-2); border-radius: var(--r-lg);
   margin-bottom: var(--sp-5); animation: heroIn .45s ease;
-  box-shadow: 0 0 50px rgba(201,145,42,.12), 0 8px 32px rgba(0,0,0,.35);
+  box-shadow: 0 0 50px var(--gold-glow), var(--elev-2);
 }
+/* Same floor as .pp-card__body: the hero's children each hand-margined their
+   own gap and the range grid declared none, so the sentence pointing at the
+   tiles touched them. Collapses with a larger declared margin, and the rules
+   below win on source order where they set their own. */
+.avg-hero > * + * { margin-top: var(--sp-3); }
 .avg-hero-label {
   font-size: var(--fs-1); font-weight: 600; letter-spacing: 2.5px;
   text-transform: uppercase; color: var(--text-2); margin-bottom: var(--sp-3);
@@ -1126,13 +1175,13 @@ body::before {
 .avg-hero-num {
   font-family: 'Outfit', sans-serif;
   font-size: 5.5rem; color: var(--gold-ink2); font-weight: 700;
-  line-height: 1; letter-spacing: -0.05em; text-shadow: 0 0 50px rgba(201,145,42,.45);
-  animation: heroIn .5s ease;
+  line-height: 1; letter-spacing: -0.05em; text-shadow: var(--glow-numeral);
+  animation: heroIn var(--dur-slow) var(--ease-out) both;
 }
 .avg-hero-sub { font-size: var(--fs-1); color: var(--text-2); margin-top: var(--sp-3); }
 .avg-hero-consensus {
   display: inline-block; margin-top: var(--sp-4);
-  background: rgba(201,145,42,.18); border: 1px solid rgba(201,145,42,.38);
+  background: var(--gold-fill-3); border: var(--bw-hair) solid var(--gold-line-2);
   border-radius: var(--r-full); padding: var(--sp-2) var(--sp-5);
   font-size: .82rem; font-weight: 600; color: var(--gold-ink2);
   animation: badgePop .4s .2s ease both;
@@ -1151,16 +1200,16 @@ body::before {
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 6px 18px var(--shadow-card), 0 2px 0 rgba(255,255,255,.9) inset;
 }
-.rv-card-face.outlier-high { border: 2px solid #e74c3c; box-shadow: 0 6px 18px rgba(231,76,60,.3); }
-.rv-card-face.outlier-low  { border: 2px solid #3498db; box-shadow: 0 6px 18px rgba(52,152,219,.3); }
-.rv-card-face.consensus    { border: 2px solid var(--gold); box-shadow: 0 6px 18px rgba(201,145,42,.4); }
+.rv-card-face.outlier-high { border: var(--bw-thick) solid var(--danger); box-shadow: 0 6px 18px var(--danger-border); }
+.rv-card-face.outlier-low  { border: var(--bw-thick) solid var(--info); box-shadow: 0 6px 18px var(--info-border); }
+.rv-card-face.consensus    { border: 2px solid var(--gold); box-shadow: 0 6px 18px var(--gold-line-2); }
 .rv-val { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; color: var(--ink); letter-spacing: -0.04em; }
 .rv-val.red { color: #b01020; }
 .rv-name { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .rv-you-tag { font-size: var(--fs-1); color: var(--gold-ink2); font-weight: 700; letter-spacing: .3px; }
 .outlier-tag { font-size: var(--fs-1); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
-.outlier-tag.high { background: rgba(231,76,60,.18); color: var(--danger); }
-.outlier-tag.low  { background: rgba(52,152,219,.18); color: #3498db; }
+.outlier-tag.high { background: var(--danger-surface); color: var(--danger); }
+.outlier-tag.low  { background: var(--info-surface); color: var(--info); }
 .no-vote { text-align: center; color: var(--text-3); font-size: var(--fs-1); padding: var(--sp-2) 0; }
 
 /* ══════════════════════ OBSERVER CONTROLS ══════════════════════ */
@@ -1184,9 +1233,9 @@ body::before {
 /* When New Sprint is the only button in the row, stretch it full-width */
 
 /* Story queue panel */
-.story-panel { background: var(--tint-raise); border: 1px solid var(--border); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-3); }
+.story-panel { margin-bottom: var(--sp-3); }
 .story-panel-title { font-size: var(--fs-1); font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text-3); margin-bottom: var(--sp-1); display: flex; align-items: center; gap: var(--sp-2); }
-.ptitle-optional, .story-panel-optional { font-size: var(--fs-1); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--gold-ink3); background: rgba(201,145,42,.1); border: 1px solid rgba(201,145,42,.2); border-radius: 20px; padding: 1px 7px; }
+.ptitle-optional, .story-panel-optional { font-size: var(--fs-1); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--gold-ink3); background: var(--gold-fill-1); border: var(--bw-hair) solid var(--gold-line-1); border-radius: 20px; padding: 1px 7px; }
 .story-panel-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-3); line-height: 1.5; font-style: italic; }
 .story-progress { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-3); }
 .story-add-row { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-2); }
@@ -1203,7 +1252,7 @@ body::before {
   background: none; color: var(--text-3); cursor: pointer;
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); transition: color .15s, background .15s, border-color .15s;
 }
-.story-item-remove:hover { color: var(--red); background: rgba(214,72,72,.12); border-color: rgba(214,72,72,.28); }
+.story-item-remove:hover { color: var(--danger); background: var(--danger-surface); border-color: var(--danger-border); }
 /* Willingness-to-pay poll */
 .wtp-panel { margin-top: var(--sp-4);
 }
@@ -1220,10 +1269,10 @@ body::before {
   color: var(--text-2);
 }
 /* Sprint summary */
-.summary-row.sized { background: rgba(201,145,42,.06); border-color: rgba(201,145,42,.14); }
+.summary-row.sized { background: var(--gold-fill-1); border-color: var(--gold-line-1); }
 .summary-row.sized .summary-row-name { color: var(--cream); }
 .summary-row.sized .summary-row-est { color: var(--gold-ink2); }
-@keyframes recordGlow { 0%, 100% { box-shadow: 0 12px 28px rgba(75,216,137,.25); } 50% { box-shadow: 0 14px 40px rgba(75,216,137,.60), 0 0 0 5px rgba(75,216,137,.18); } }
+@keyframes recordGlow { 0%, 100% { box-shadow: 0 10px 24px color-mix(in oklab, var(--success) 26%, transparent); } 50% { box-shadow: 0 14px 36px color-mix(in oklab, var(--success) 52%, transparent), 0 0 0 5px color-mix(in oklab, var(--success) 18%, transparent); } }
 /* The one thing the primary button cannot say for itself: the whole table
    agreed, so this is the obvious next press. Glow only — the button keeps its
    own geometry, colour and type. */
@@ -1260,21 +1309,30 @@ body::before {
   background: var(--tint-raise-2); border: 1px solid var(--border);
   transition: all .3s;
 }
-.prow.voted { background: var(--goldB); border-color: rgba(201,145,42,.15); }
-.prow.obs   { background: rgba(41,128,185,.07); border-color: rgba(41,128,185,.12); }
-.prow.not-voted-yet { border-color: rgba(255,255,255,.04); opacity: .75; }
-.prow.not-voted-yet .pav { background: rgba(255,255,255,.10); color: var(--text-2); }
+.prow.voted { background: var(--gold-fill-1); border-color: var(--gold-line-1); }
+/* Observers were painted in --info: a cool blue row, blue border, blue role
+   label and a blue avatar in a table that is otherwise only felt green and
+   brass. Blue is the alert vocabulary here, and "runs the session" is a role,
+   not a warning — the same hue meaning two things. Brass is already spoken for
+   by .voted, so the observer reads as the dealer instead: felt avatar, neutral
+   row, quiet label. The row still differs from a voter's on three channels. */
+.prow.obs   { background: var(--tint-raise); border-color: var(--border2); }
+.prow.not-voted-yet { border-color: var(--border); opacity: .75; }
+.prow.not-voted-yet .pav { background: var(--tint-raise-2); color: var(--text-2); }
 .prow.voted .pav { background: var(--gold); color: var(--ink); }
-.prow.obs   .pav { background: rgba(41,128,185,.4); }
+.prow.obs   .pav { background: var(--felt-700); color: var(--text-on-felt); }
 .pname { font-size: .84rem; font-weight: 500; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .prole { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: 1px; }
-.prow.obs .prole { color: var(--info); }
 .prow-actions { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
 .pdot.v { background: var(--gold); }
-.pdot.w { background: rgba(255,255,255,.12); animation: pulse 2s ease infinite; }
-.pdot.o { background: rgba(93,173,226,.35); }
+.pdot.w { background: var(--text-3); animation: pulse 2s var(--ease-out) infinite; }
+.pdot.o { background: var(--info); }
 .voted-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--gold-ink); font-weight: 600; }
-.waiting-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--danger); font-style: italic; }
+/* "Hasn't voted yet" is the state every round starts in, for everybody. It was
+   painted --danger, so the moment a round opened the participant list filled up
+   with red: the colour that means something has gone wrong, used for the thing
+   that is supposed to happen. Pending is quiet. */
+.waiting-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-style: italic; }
 .nobody { font-size: var(--fs-1); color: var(--text-3); font-style: italic; text-align: center; padding: var(--sp-3) 0; }
 
 /* ══════════════════════ SESSION WARNING ══════════════════════ */
@@ -1303,7 +1361,11 @@ body::before {
   background: var(--tint-raise-2); border-color: var(--border);
 }
 .a-kpis .pp-stat__label { letter-spacing: .08em; }
-.a-kpis .pp-stat__meta { text-align: right; }
+/* A text-align: right on .a-kpis .pp-stat__meta lived here and matched
+   nothing: none of the three tiles in this rail passes a meta. It was also the
+   only right-alignment left in the product outside numeric table columns, and
+   this tile is a baseline flex row rather than the stacked grid that rule was
+   written against — so it would not have done what it looked like it did. */
 /* One step down from the tile default: the hero number on this screen is the
    agreed estimate, and a 28px KPI in the rail competes with it. */
 .a-kpis .pp-stat__value { font-size: var(--fs-5); }
@@ -1314,9 +1376,9 @@ body::before {
 .a-align-score.ok      { color: var(--gold-ink); }
 .a-align-score.low     { color: var(--warning); }   /* amber — coaching signal, not an error */
 .a-align-score.neutral { color: var(--text-3); }
-.a-align-bar.good .pp-progress__bar    { background: linear-gradient(90deg,#2ecc71,#27ae60); }
+.a-align-bar.good .pp-progress__bar    { background: var(--success); }
 .a-align-bar.ok .pp-progress__bar      { background: linear-gradient(90deg,var(--gold),var(--gold2)); }
-.a-align-bar.low .pp-progress__bar     { background: linear-gradient(90deg,#e67e22,#d35400); }  /* amber, not red */
+.a-align-bar.low .pp-progress__bar     { background: var(--warning); }  /* amber, not red */
 .a-align-bar.neutral .pp-progress__bar { background: var(--tint-raise-2); }
 .a-align-sub  { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); line-height: 1.4; }
 .a-align-note { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); font-style: italic; }
@@ -1333,24 +1395,32 @@ body::before {
    gap for both of them. */
 .a-section-title, .analytics-breakdown-title { margin-bottom: var(--sp-2); }
 .a-story-list { max-height: 180px; overflow-y: auto; }
+/* Four columns in a 258px rail. The table's own 16px inline padding is tuned
+   for a table that has the page to itself; here it was spending 128px of the
+   rail on gutters, which pushed the delete column out past the wrapper's
+   scroll edge — present, focusable, and not on screen. 8px fits all four with
+   room to spare. The last column takes exactly its one 36px control. */
+.a-story-list th, .a-story-list td { padding-inline: var(--sp-2); }
+.a-story-list th:last-child, .a-story-list td:last-child { width: 1%; padding-left: 0; }
+.a-story-delete:hover { color: var(--danger); background: var(--danger-surface); }
+/* Below 760px the table stops being a table: every cell becomes its own row,
+   label on the left and value on the right. A 1% width is a column instruction
+   and it collapsed the delete cell to 8px there — the button was 8px wide and
+   unhittable. Columns do not exist in this layout, so the rule does not
+   either. */
+@media (max-width: 760px) {
+  .a-story-list td:last-child { width: auto; padding-left: var(--sp-2); }
+}
 .analytics-chip-cnt { color: var(--text-3); font-weight: 300; }
 
 /* ══════════════════════ STREAK / ESTIMATION SPREE ══════════════════════ */
 .streak-fire  { font-size: 1.45rem; flex-shrink: 0; line-height: 1; }
 
-/* ══════════════════════ TOAST ══════════════════════ */
-.toast {
-  position: fixed; bottom: 28px; left: 50%;
-  transform: translateX(-50%) translateY(70px);
-  background: linear-gradient(135deg, rgba(255,244,202,.98), rgba(255,223,128,.96)); color: var(--ink);
-  border-radius: 16px; padding: 12px 22px;
-  font-size: .86rem; font-weight: 600;
-  box-shadow: 0 20px 50px var(--shadow-cast);
-  border: 1px solid rgba(255,255,255,.35);
-  z-index: 500; white-space: nowrap;
-  transition: transform .32s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity: 0;
-}
-.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+/* The room's toast is <ToastRegion><Toast>, styled by .pp-toast in the design
+   system. A second .toast rule lived here and matched nothing — a fixed pill
+   painting two hard-coded cream literals that never answered the theme, with
+   white-space: nowrap so a long message would have run off a phone. Dead, so
+   it never did either, but it was the next person's trap. */
 
 /* ══════════════════════ COOKIE CONSENT ══════════════════════ */
 /* Storage notice, not a consent gate: nothing here needs consent under PECR
@@ -1372,7 +1442,7 @@ body::before {
 
 /* ══════════════════════ LOADING ══════════════════════ */
 .loading { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
-.spinner { width: 34px; height: 34px; border: 3px solid rgba(201,145,42,.18); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
+.spinner { width: 34px; height: 34px; border: 3px solid var(--gold-line-1); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
 .pf-icon.no  { color: var(--text-3); }
 
 /* ══════════════════════ RESPONSIVE ══════════════════════ */
@@ -1385,10 +1455,6 @@ body::before {
   .game-grid.as-facilitator .rcol { order: -1; }
   /* One compact row: back, code, copy. The full URL is not readable or useful
      on a phone, and it was pushing the whole room below the fold. */
-  /* In a room the .hdr already carries brand, code, and Leave — stacking the
-     marketing navbar on top of it cost 65px of a 812px screen for nothing. */
-  .in-room .navbar { display: none; }
-  .in-room .hdr { top: 0; }
   .hdr-in { min-height: 52px; padding-block: var(--sp-2); gap: var(--sp-2); flex-wrap: nowrap; }
   .hdr-l .chip-logo { display: none; }
   .hdr-c { order: 0; flex: 1; justify-content: center; gap: 6px; }
@@ -1528,9 +1594,9 @@ body::before {
 }
 .chip-logo img {
   width: 100%; height: 100%; object-fit: contain; display: block;
-  filter: drop-shadow(0 8px 18px rgba(0,0,0,.28));
+  filter: drop-shadow(0 8px 18px var(--shadow-cast));
 }
-.chip-logo:hover  { transform: translateY(-1px) scale(1.03); filter: drop-shadow(0 0 14px rgba(241,185,63,.24)); }
+.chip-logo:hover  { transform: translateY(-1px) scale(1.03); filter: drop-shadow(0 0 14px var(--gold-glow)); }
 .chip-logo:active { transform: translateY(0) scale(1.01); }
 
 /* Nav auth buttons */
@@ -1551,9 +1617,14 @@ body::before {
   padding: var(--sp-12) 0 0;
   flex-shrink: 0;
 }
+/* padding-block, not padding-bottom: the plan bar's rule above had 16px of its
+   own padding on top of it and nothing under it, so the brand mark and the two
+   column headings started hard against the line. A divider needs air on both
+   sides — a little less above, where it closes the bar, than below, where it
+   opens the columns. */
 .footer-inner {
   display: grid; grid-template-columns: 1.6fr 1fr 1fr;
-  gap: var(--block-y); padding-bottom: var(--sp-8);
+  gap: var(--block-y); padding-block: var(--sp-8);
 }
 .footer-col-brand { display: flex; flex-direction: column; gap: 12px; }
 .footer-brand-row { display: flex; align-items: center; gap: 10px; }
@@ -1566,19 +1637,27 @@ body::before {
   font-size: var(--fs-1); color: var(--text-3); line-height: 1.65;
   font-weight: 300; max-width: 280px;
 }
-.footer-col-links { display: flex; flex-direction: column; gap: 2px; }
+/* No gap: the links' own padding does the spacing, so there is no dead 2px
+   strip between two stacked targets. */
+.footer-col-links { display: flex; flex-direction: column; }
 .footer-col-title {
   font-size: var(--fs-1); font-weight: 700; letter-spacing: 2px;
   text-transform: uppercase; color: var(--text-3);
   margin-bottom: 10px;
 }
+/* Stacked targets, so the --tap-min ::after trick used on the nav row cannot
+   apply — a 44px overlay on a 29px pitch would steal the neighbour's taps.
+   The pitch itself has to grow instead: 33px with a mouse (over the 24px WCAG
+   2.2 AA floor), 41px on a touch screen (the HIG figure, less the 2px the
+   underline needs). */
 .footer-link {
   color: var(--text-2); font-size: .83rem; text-decoration: none;
-  padding: 5px 0; transition: color .15s;
+  padding-block: var(--sp-2); transition: color var(--dur-fast) var(--ease-out);
   background: none; border: none; cursor: pointer;
   font-family: 'Outfit', sans-serif; text-align: left;
   display: inline-block;
 }
+@media (pointer: coarse) { .footer-link { padding-block: var(--sp-3); } }
 .footer-link:hover { color: var(--mint2); }
 /* Two footer links that are not links: one is a statement of fact, the other
    sits mid-sentence in the legal note. */
@@ -1587,7 +1666,7 @@ body::before {
 /* The room code is data, not prose: it wants figures that line up. */
 .room-code-chip { font-family: ui-monospace, Menlo, monospace; letter-spacing: .12em; }
 .footer-bottom {
-  border-top: 1px solid rgba(255,255,255,.06);
+  border-top: var(--bw-hair) solid var(--border);
   padding-block: var(--sp-5);
   display: flex; align-items: flex-start; justify-content: space-between;
   flex-wrap: wrap; gap: var(--sp-3);
@@ -1596,29 +1675,24 @@ body::before {
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-weight: 300;
   line-height: 1.5;
 }
+/* No text-align: right. The note is a flex item that wraps onto its own line
+   below ~940px, and once it does, space-between puts its box on the LEFT while
+   the right-alignment still ran inside it — three lines ragged down the left
+   edge with "affiliated with pointpoker." orphaned out to the right, directly
+   under a left-aligned copyright line. Right-aligning only ever read correctly
+   in the one case where the two shared a row. Both are left-aligned now, which
+   holds in both cases and needs no breakpoint to undo it. */
 .footer-legal-note {
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); line-height: 1.6;
-  max-width: 480px; text-align: right;
+  max-width: 480px;
 }
-.login-modal::-webkit-scrollbar { width: 10px; }
-.login-modal::-webkit-scrollbar-track {
-  background: var(--scroll-track);
-  border-radius: 999px;
-}
-.login-modal::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--gold2), var(--gold));
-  border: 2px solid rgba(255,255,255,.03);
-}
-.login-modal::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, var(--gold3), var(--gold2));
-}
+/* The modal used to restate the global scrollbar rules at a different width and
+   in the brand golds, which are theme-constant — a bright brass bar down the
+   edge of a paper dialog. The global rules are themed; this one just used them. */
 .login-modal::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 20px 20px 0 0;
-  background: linear-gradient(90deg, transparent, var(--mint), var(--gold2), var(--aqua), transparent);
-  background-size: 300% auto; animation: shimmer 3s linear infinite;
+  background: linear-gradient(90deg, transparent, var(--action) 30%, var(--action) 70%, transparent);
 }
-.login-modal-chip { display: flex; justify-content: center; margin-bottom: 20px; }
 .account-status-label {
   color: var(--text-3);
   text-transform: uppercase;
@@ -1628,20 +1702,13 @@ body::before {
 }
 .account-status-pill.pro {
   color: var(--gold-ink2);
-  border-color: rgba(241,185,63,.30);
-  background: rgba(241,185,63,.10);
+  border-color: var(--gold-line-1);
+  background: var(--gold-fill-1);
 }
 .account-status-copy {
   font-size: var(--fs-1);
   line-height: 1.6;
   color: var(--text-3);
-}
-.login-mode-hint {
-  margin: -2px 0 16px;
-  text-align: center;
-  font-size: var(--fs-1);
-  line-height: 1.5;
-  color: var(--gold-ink2);
 }
 .login-upgrade-note {
   margin-top: 12px;
@@ -1663,14 +1730,14 @@ body::before {
 }
 .login-modal-upgrade a {
   color: var(--gold-ink2); text-decoration: none; font-weight: 600;
-  border-bottom: 1px solid rgba(201,145,42,.3); transition: border-color .2s;
+  border-bottom: var(--bw-hair) solid var(--gold-line-1); transition: border-color var(--dur-base) var(--ease-out);
 }
 .login-modal-upgrade a:hover { border-bottom-color: var(--gold2); }
 .auth-mode-btn.active {
-  border-color: rgba(241,185,63,.42); background: linear-gradient(180deg, rgba(241,185,63,.16), rgba(241,185,63,.08)); color: var(--gold-ink2);
+  border-color: var(--gold-line-2); background: var(--gold-fill-2); color: var(--gold-ink2);
 }
-.auth-status.success { color: var(--success); background: rgba(46,204,113,.08); border: 1px solid rgba(46,204,113,.18); }
-.auth-status.error   { color: var(--danger); background: rgba(231,76,60,.06); border: 1px solid rgba(231,76,60,.15); }
+.auth-status.success { color: var(--success); background: var(--success-surface); border: var(--bw-hair) solid var(--success-border); }
+.auth-status.error   { color: var(--danger); background: var(--danger-surface); border: var(--bw-hair) solid var(--danger-border); }
 .nav-account {
   display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-right: 12px;
   min-width: 0;
@@ -1681,11 +1748,11 @@ body::before {
 }
 .nav-account-plan {
   display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.12); background: var(--tint-raise-2);
+  border: var(--bw-hair) solid var(--border2); background: var(--tint-raise-2);
   color: var(--text-3); font-size: var(--fs-1); letter-spacing: .12em; text-transform: uppercase;
 }
 .nav-account-plan.pro {
-  color: var(--gold-ink2); border-color: rgba(201,145,42,.32); background: rgba(201,145,42,.12);
+  color: var(--gold-ink2); border-color: var(--gold-line-1); background: var(--gold-fill-2);
 }
 
 /* The navbar CTA used to carry a caption — "No sign-up · No card · No limits"
@@ -1704,17 +1771,17 @@ body::before {
 /* ─── Footer plan comparison bar ─── */
 .footer-plan-bar {
   display: flex; align-items: center; gap: var(--sp-5); flex-wrap: wrap;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  border-bottom: var(--bw-hair) solid var(--border);
   padding-block: var(--sp-4);
 }
 .footer-plan-item { display: flex; align-items: center; gap: 8px; }
 .footer-plan-badge.free {
   background: var(--tint-raise-2); color: var(--text-3);
-  border: 1px solid rgba(255,255,255,.10);
+  border: var(--bw-hair) solid var(--border);
 }
 .footer-plan-badge.pro {
-  background: rgba(201,145,42,.14); color: var(--gold-ink2);
-  border: 1px solid rgba(201,145,42,.28);
+  background: var(--gold-fill-2); color: var(--gold-ink2);
+  border: var(--bw-hair) solid var(--gold-line-1);
 }
 .footer-plan-text { font-size: var(--fs-1); color: var(--text-3); }
 .footer-plan-divider {
@@ -1724,19 +1791,21 @@ body::before {
 /* ══════════════════════ LEGAL PAGES ══════════════════════ */
 .legal-page { width: 100%;
 }
-.legal-back {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border-radius: 10px;
-  border: 1px solid var(--border2); background: var(--tint-raise);
-  color: var(--text-2); font-family: 'Outfit', sans-serif;
-  font-size: .84rem; font-weight: 500; cursor: pointer;
-  transition: all .2s; margin-bottom: 32px;
-}
-.legal-back:hover { background: var(--tint-raise-2); color: var(--cream); }
+/* A back link, not a second button system. It was re-declaring padding, radius,
+   border, fill, colour, weight, size and transition on top of the
+   .pp-btn--ghost.pp-btn--sm it already carries — nine properties to say
+   "smaller and quieter", which is what those two modifiers already say. All
+   that is left is where it sits.
+
+   Where it sits changed too. It used to be dropped between the hero and the
+   page body, so on every marketing page there was a lone 130px-wide control
+   floating in an otherwise empty 150px band. Above the hero it reads as the
+   breadcrumb it always was. */
+.legal-back { margin-block: var(--sp-4) var(--sp-1); }
 .legal-body h2 {
   font-family: 'Outfit', sans-serif; font-size: 1.08rem; font-weight: 600;
   color: var(--cream); letter-spacing: -0.01em; margin: 36px 0 12px;
-  padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.07);
+  padding-bottom: 6px; border-bottom: var(--bw-hair) solid var(--border);
 }
 .legal-body p, .legal-body li {
   font-size: .88rem; line-height: 1.75; color: var(--text-2);
@@ -1786,8 +1855,8 @@ body::before {
   font-weight: 600;
 }
 .marketing-plan-card.pro {
-  background: linear-gradient(180deg, rgba(241,185,63,.10), rgba(241,185,63,.04));
-  border-color: rgba(241,185,63,.22);
+  background: var(--gold-fill-1);
+  border-color: var(--gold-line-1);
 }
 .marketing-plan-card.pro .marketing-plan-topline { color: var(--gold-ink2); }
 .marketing-plan-card.pro .marketing-plan-price { color: var(--gold-ink2); }
@@ -1805,6 +1874,16 @@ body::before {
   .marketing-related-grid,
   .marketing-plan-grid { grid-template-columns: 1fr; }
 }
+/* Three stat tiles in a 515px hero rail, laid out by the auto-fit grid, came
+   out two-up with the third orphaned beside 250px of nothing. Three facts read
+   as a list, so in the rail they are a list; the auto-fit grid takes over again
+   below lg, where the aside is the full container width and three across fits.
+   This block sits after the max-width: 680px rule above it on purpose — see the
+   note at the top of this file about source order. */
+@media (min-width: 1024px) {
+  .marketing-stat-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 .hi-stat-val.gold { color: var(--gold-ink2); }
 
 /* NavBar history button */
@@ -1831,21 +1910,42 @@ body::before {
      obvious. Every one of these destinations is also in the footer, so the bar
      keeps the brand and the primary action and drops the rest. */
   .navbar-links { display: none; }
+  /* The switch keeps its position, loses its word — the same call as the
+     wordmark two rules up, for the same reason and at the same width. The
+     component itself already drops to one short word at 780px; this bar needs
+     the rest of it gone. .navbar-right does not shrink, and even at 99px it
+     took 306 of the 375 here, squeezed .navbar-left to 29px, and left the 44px
+     brand mark overflowing its own box and sitting under the switch track.
+     The room header, which is roomier, keeps the word.
+     Dropping the word is not dropping the state. A switch says which way it is
+     set by where the thumb is, which is the whole reason this is a switch and
+     not a button — and clipped, not display:none, so the accessible name is
+     still the full "Dark theme" that this bar can no longer show.
+     Not display:none on the switch itself: the theme lives nowhere else. No
+     footer control, no OS fallback (tokens.css deliberately ignores
+     prefers-color-scheme). Hide it and a phone is stuck in dark for good. */
+  .navbar .pp-theme-switch .pp-switch__label {
+    position: absolute; width: 1px; height: 1px; min-width: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
   .nav-account-name { max-width: 140px; }
   .footer-plan-bar { gap: 14px; }
   .footer-plan-cta { margin-left: 0; }
 }
 @media (max-width: 520px) {
   .footer-inner { grid-template-columns: 1fr; }
-  .footer-legal-note { text-align: left; max-width: 100%; }
+  /* text-align: left used to be undone here — the base rule no longer needs it. */
+  .footer-legal-note { max-width: 100%; }
   .navbar-inner { gap: var(--sp-2); }
   .navbar-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   /* Narrow bars buy width by tightening horizontal padding and dropping to the
      small type role. The 44px tap floor from pp-btn is deliberately untouched:
      a phone is where it matters most. */
-  .navbar.authenticated .nav-btn-login,
-  .navbar.authenticated .nav-btn-history { display: inline-flex; }
-  .navbar:not(.authenticated) .nav-btn-login { display: none; }
+  /* "Sign in" used to be hidden here, which left a signed-out phone with no
+     route to an account at all — the footer only grows an Account column once
+     you already have one. Measured at 320px, the narrowest phone still sold:
+     logo 44 + toggle 36 + Sign in 66 + Start a free room 130 + gaps = 288 in a
+     288px content box, on one row, no overflow. It fits; it stays. */
   .navbar .nav-btn-login,
   .navbar .nav-btn-history,
   .navbar .nav-btn-register {
@@ -1921,6 +2021,10 @@ body::before {
 // MAX_PARTICIPANTS is imported from routeMeta.mjs so the marketing copy and the
 // enforced cap can never disagree. Rooms in Firebase still carry a `plan` field
 // (the security rules require it) but it no longer changes what anyone can do.
+// Mirrors the three-digit key cap on rooms/$roomId/stories/$storyIndex in
+// database.rules.json. The rule is the real limit — it is the one an attacker
+// meets — and this is so a team that reaches it is told what happened.
+const MAX_QUEUE = 1000;
 const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours, auto-end + save history
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
 const PLAYER_AWAY_TIMEOUT_MS = 60 * 60 * 1000;       // 1 hour, grace period before sweeping disconnected players
@@ -2114,7 +2218,7 @@ function NavBar({
           {/* Dark is the default and stays the default; this is the only way to
               leave it, and the choice is remembered. It sits before the account
               controls so it never competes with the one primary action. */}
-          <ThemeToggle size="sm" />
+          <ThemeToggle />
           {currentUser ? (
             <>
               <Button
@@ -2313,15 +2417,6 @@ function LoginModal({
       : mode === "reset"
         ? "Enter your account email and we’ll send a password reset link."
         : "Welcome back. Your Team Rooms and sprint history are waiting.";
-  const modeHint = currentUser
-    ? "Both Team Rooms and Sprint History are already available on this account."
-    : teamRoomIntent
-      ? "One free account, then your Team Room links never change again."
-      : mode === "register"
-        ? "You never need an account to run a room, only to keep permanent Team Room links."
-        : mode === "signin"
-          ? "Already registered? Sign in to restore your Team Rooms and sprint history."
-          : "We’ll email you a reset link for this account.";
   const isRegisterTransition =
     mode === "register" &&
     (authStatus === "loading" ||
@@ -2487,10 +2582,15 @@ function LoginModal({
   return (
     <Modal open title={title} subtitle={subtitle} onClose={onClose} className="login-modal">
       <Stack>
-        <div className="login-modal-chip">
-          <BrandMark size={52} label="pointpoker" />
-        </div>
-
+        {/* The chip, the reassurance card and the mode hint used to sit here in
+            a stack, and on a 375px phone they pushed the password field and the
+            submit button 330px below the fold — three paraphrases of one
+            sentence in front of the task the dialog exists for. The subtitle
+            already carries the message per mode, so the hint is gone and the
+            card is kept only where it is not a restatement: the account panel
+            when signed in, and the "you never needed one" reassurance on the
+            tab where someone is deciding whether to create an account. */}
+        {(currentUser || mode === "register") && (
         <Card variant="flat" pad="sm">
           {currentUser ? (
             <Stack gap="sm">
@@ -2509,7 +2609,7 @@ function LoginModal({
             </p>
           )}
         </Card>
-        <p className="login-mode-hint">{modeHint}</p>
+        )}
 
         {showAuthForm && (
           <>
@@ -2783,8 +2883,10 @@ export default function App() {
   // ?team=NAME  → Team Room tab pre-filled with team name
   const [code, setCode] = useState(() => {
     const p = new URLSearchParams(window.location.search);
-    const r = p.get("room");
-    return r ? r.toUpperCase() : "";
+    // Sanitised here too, not only in the field: this value is handed to
+    // JoinScreen as the prefill, so ?room=a.b would otherwise arrive in the box
+    // already loaded and take out ref() the moment anyone pressed Join.
+    return cleanRoomCode(p.get("room"));
   });
   const [prefillTeam, setPrefillTeam] = useState(() => {
     // Clean URL: /t/<slug>  e.g. /t/rpa-build-team
@@ -2808,6 +2910,24 @@ export default function App() {
     clearTimeout(toastRef.current);
     toastRef.current = setTimeout(() => setToastOn(false), 3400);
   }, []);
+
+  /* Every Firebase write below is somebody pressing a button, and a rejected
+     write has to say so. Left bare it becomes an unhandled rejection: the
+     button appears to do nothing at all, in a product where "nothing happened"
+     and "it worked, wait for the others" look identical. Room creation, joining,
+     the story queue and the sprint reset were each hardened against exactly
+     that, one at a time, after each was reported separately. This is the same
+     fix as one thing, so the next write cannot be the one that forgets. */
+  const write = useCallback(async (failureMessage, run) => {
+    try {
+      await run();
+      return true;
+    } catch (err) {
+      console.error(`[pointpoker] ${failureMessage}`, err);
+      showToast(failureMessage);
+      return false;
+    }
+  }, [showToast]);
 
   useEffect(() => {
     const pathname = window.location.pathname;
@@ -3075,14 +3195,17 @@ export default function App() {
         clearInterval(timerRef.current);
         timerRef.current = null;
         remainingRef.current = null;
-        await update(ref(db, `rooms/${code}/timer`), {
-          running: false,
-          remaining: 0,
-        });
-        await update(ref(db, `rooms/${code}`), { revealed: true });
-        showToast("Time is up. Cards revealed.");
+        // The interval is already cleared by the time these run, so a rejection
+        // here does not retry a second later — the countdown simply stops at
+        // zero and the cards never turn over. It has to be said out loud.
+        const stopped = await write("Time is up, but the timer could not be stopped. Reveal the cards manually.", () =>
+          update(ref(db, `rooms/${code}/timer`), { running: false, remaining: 0 }));
+        const revealed = await write("Time is up, but the cards could not be revealed. Try the Reveal button.", () =>
+          update(ref(db, `rooms/${code}`), { revealed: true }));
+        if (stopped && revealed) showToast("Time is up. Cards revealed.");
       } else {
-        await update(ref(db, `rooms/${code}/timer`), { remaining: r });
+        // One tick failing is not worth a message — the next second retries it.
+        await update(ref(db, `rooms/${code}/timer`), { remaining: r }).catch(() => {});
       }
     }, 1000);
 
@@ -3101,22 +3224,26 @@ export default function App() {
       // Use a fresh Firebase read rather than the stale closure value.
       clearTimeout(autoRevealRef.current);
       autoRevealRef.current = setTimeout(async () => {
-        const snap = await new Promise((res) =>
-          onValue(ref(db, `rooms/${code}`), res, { onlyOnce: true }),
-        );
-        if (!snap.exists()) return;
+        // get() rather than a promise wrapped round onValue: onValue's third
+        // argument here is an options object, not an error callback, so a failed
+        // read never resolved and never rejected. The auto-reveal just stopped
+        // existing, silently, for the rest of the round.
+        const snap = await get(ref(db, `rooms/${code}`)).catch(() => null);
+        if (!snap?.exists()) return;
         const fresh = snap.val();
         const freshVoters = Object.values(fresh.players || {}).filter(
           (p) => p.role === "voter",
         );
         if (freshVoters.every((p) => p.voted) && !fresh.revealed) {
-          await update(ref(db, `rooms/${code}`), { revealed: true });
-          await update(ref(db, `rooms/${code}/timer`), {
-            running: false,
-            remaining: 0,
-            startedBy: null,
+          const ok = await write("Everyone voted, but the cards could not be revealed. Try the Reveal button.", async () => {
+            await update(ref(db, `rooms/${code}`), { revealed: true });
+            await update(ref(db, `rooms/${code}/timer`), {
+              running: false,
+              remaining: 0,
+              startedBy: null,
+            });
           });
-          showToast("Everyone voted. Revealing cards.");
+          if (ok) showToast("Everyone voted. Revealing cards.");
         }
       }, 700);
     }
@@ -3148,14 +3275,25 @@ export default function App() {
         if (authUserRef.current && roomDataRef.current) {
           await saveSessionHistory(authUserRef.current.uid, roomDataRef.current, code);
         }
-        await remove(ref(db, `rooms/${code}`));
+        // Leaving is the point of this branch, so it happens whether or not the
+        // delete lands. A rejection here used to throw out of the interval
+        // callback and strand everyone inside an expired room with no notice;
+        // reapStaleRooms clears the room afterwards either way. The toast is
+        // chosen after, because write()'s own message would be overwritten by
+        // the success line three statements later.
+        const cleared = await remove(ref(db, `rooms/${code}`)).then(() => true).catch((err) => {
+          console.error("[pointpoker] expired room delete failed", err);
+          return false;
+        });
         setScreen("join");
         setRoomData(null);
         setSessionWarning(false);
         setCode("");
         setPrefillTeam("");
         window.history.replaceState({}, "", homePath());
-        showToast("Session ended automatically after 5 hours. Your sprint data is saved to history.");
+        showToast(cleared
+          ? "Session ended automatically after 5 hours. Your sprint data is saved to history."
+          : "Session ended automatically after 5 hours. Your sprint data is saved to history, but the room could not be cleared from the server.");
       } else if (age >= SESSION_WARN_MS && !sessionWarningRef.current) {
         setSessionWarning(true);
         showToast("Session ends in about 10 minutes. Time to wrap up.");
@@ -3297,9 +3435,18 @@ export default function App() {
 
   const handleJoin = async (name, role, c) => {
     pendingSessionNameRef.current = name;
-    const snap = await new Promise((res) =>
-      onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
-    );
+    /* get(), not a promise wrapped round onValue: the third argument to onValue
+       is an options object, not an error callback, so a read that failed never
+       resolved and never rejected — the Join button stayed pressed for as long
+       as the person was willing to wait. get() rejects, and the catch says so. */
+    const snap = await get(ref(db, `rooms/${c}`)).catch((err) => {
+      console.error("[pointpoker] room lookup failed", err);
+      return null;
+    });
+    if (!snap) {
+      showToast("Could not reach the server to look that room up. Check your connection and try again.");
+      return;
+    }
     if (!snap.exists()) {
       showToast(`Room "${c}" not found. If it was a one-off room, ask the host for a fresh link or code.`);
       return;
@@ -3337,9 +3484,16 @@ export default function App() {
     pendingSessionNameRef.current = name;
     const c = teamCode(teamName);
     const founderRoom = isFounderRoom(c);
-    const snap = await new Promise((res) =>
-      onValue(ref(db, `rooms/${c}`), res, { onlyOnce: true }),
-    );
+    // Same as handleJoin: onValue with an options object never rejects, so a
+    // failed lookup hung the Open button rather than reporting anything.
+    const snap = await get(ref(db, `rooms/${c}`)).catch((err) => {
+      console.error("[pointpoker] team room lookup failed", err);
+      return null;
+    });
+    if (!snap) {
+      showToast(`Could not reach the server to open ${teamName}. Check your connection and try again.`);
+      return;
+    }
     const existingRoom = snap.exists() ? snap.val() || {} : null;
     // Hosting a Team Room needs a free account: the slug is derived from the
     // account name so two different teams can never collide on the same URL.
@@ -3409,12 +3563,14 @@ export default function App() {
       if (!roomData || roomData.revealed) return;
       const cur = roomData.players?.[myId]?.vote;
       if (cur === val) return;
-      await update(ref(db, `rooms/${code}/players/${myId}`), {
-        voted: true,
-        vote: val,
-      });
+      // The most-pressed control in the product. A rejected vote left the card
+      // unlifted and said nothing, which reads as "the site is laggy" rather
+      // than "your vote is not in" — and the table then waits on a player who
+      // believes they have already voted.
+      await write("Your card could not be played, check your connection and try again.", () =>
+        update(ref(db, `rooms/${code}/players/${myId}`), { voted: true, vote: val }));
     },
-    [roomData, code, myId],
+    [roomData, code, myId, write],
   );
 
   const revealVotes = useCallback(async () => {
@@ -3423,13 +3579,15 @@ export default function App() {
     if (!roomDataRef.current?.revealed && (roomDataRef.current?.round || 1) === 1) {
       track(bucketTableSize(countParticipants(roomDataRef.current?.players || {})));
     }
-    await update(ref(db, `rooms/${code}`), { revealed: true });
-    await update(ref(db, `rooms/${code}/timer`), {
-      running: false,
-      remaining: 0,
-      startedBy: null,
+    await write("Could not reveal the cards, check your connection and try again.", async () => {
+      await update(ref(db, `rooms/${code}`), { revealed: true });
+      await update(ref(db, `rooms/${code}/timer`), {
+        running: false,
+        remaining: 0,
+        startedBy: null,
+      });
     });
-  }, [code]);
+  }, [code, write]);
 
   // estimate !== null  → story is complete; persist estimate and advance counters
   // estimate === null  → re-vote; clear votes only, counters unchanged
@@ -3488,6 +3646,17 @@ export default function App() {
     if (!names.length) return;
     const current = roomData?.stories || {};
     const startIdx = Object.keys(current).length;
+    /* The security rules cap a story key at three digits, because the key IS
+       the index and constraining its format is the only way to bound a list
+       that takes unauthenticated writes. Refuse here as well, or the write goes
+       out, comes back rejected as a whole — a multi-path update is atomic — and
+       the queue reports "check your connection" for something that is not the
+       connection. Kept next to the rule it mirrors: database.rules.json,
+       rooms/$roomId/stories/$storyIndex. */
+    if (startIdx + names.length > MAX_QUEUE) {
+      showToast(`A room holds ${MAX_QUEUE} ${getEstMode(roomData?.estimationMode).plural}. This queue has ${startIdx}.`);
+      return;
+    }
     // Track the first story added — signals the story queue feature is being used
     if (startIdx === 0) track("feature_queue");
     const upd = {};
@@ -3528,6 +3697,21 @@ export default function App() {
       showToast("Could not remove that item, check your connection and try again.");
     }
   }, [code, roomData, showToast]);
+
+  /* The wiring. Which paths a delete touches, and why the lists are rewritten
+     rather than punched through, is in estimation.js where a test can read it
+     without a browser — same arrangement as sprintResetUpdates above. */
+  const deleteSizedItem = useCallback(async (kind, index) => {
+    const paths = deleteSizedItemUpdates(roomData, kind, index);
+    if (!paths) return false;
+    const upd = Object.fromEntries(
+      Object.entries(paths).map(([path, v]) => [`rooms/${code}/${path}`, v]),
+    );
+    const ok = await write("Could not delete that estimate, check your connection and try again.",
+      () => update(ref(db), upd));
+    if (ok) showToast("Estimate deleted.");
+    return ok;
+  }, [code, roomData, write, showToast]);
 
   const recordAndNextStory = useCallback(async (estimate, isConsensus = false) => {
     const idx = roomData?.activeStory ?? 0;
@@ -3590,26 +3774,34 @@ export default function App() {
     if (authUserRef.current && roomDataRef.current) {
       await saveSessionHistory(authUserRef.current.uid, roomDataRef.current, code);
     }
-    await remove(ref(db, `rooms/${code}`));
+    /* The one destructive action in the product, and the only one behind a
+       confirm. Bare, a rejected delete threw before every line below it: the
+       screen never changed, so the facilitator who had just confirmed
+       "permanently deletes all session data" was left sitting in the room with
+       no idea whether it had happened. Leave regardless — the local timers are
+       already cleared above and reapStaleRooms collects the room either way. */
+    await write("Could not delete the room from the server. You have left the session.", () =>
+      remove(ref(db, `rooms/${code}`)));
     setScreen("join");
     setRoomData(null);
     setSessionWarning(false);
     setCode("");
     setPrefillTeam("");
     window.history.replaceState({}, "", homePath());
-  }, [code]);
+  }, [code, write]);
 
   const startTimer = useCallback(
     async (sec) => {
-      await update(ref(db, `rooms/${code}/timer`), {
-        running: true,
-        duration: sec,
-        remaining: sec,
-        startedBy: myId,
-      });
-      track("feature_timer");
+      const started = await write("Could not start the timer, check your connection and try again.", () =>
+        update(ref(db, `rooms/${code}/timer`), {
+          running: true,
+          duration: sec,
+          remaining: sec,
+          startedBy: myId,
+        }));
+      if (started) track("feature_timer");
     },
-    [code, myId],
+    [code, myId, write],
   );
 
   const stopTimer = useCallback(async () => {
@@ -3618,11 +3810,11 @@ export default function App() {
       timerRef.current = null;
     }
     remainingRef.current = null;
-    await update(ref(db, `rooms/${code}/timer`), {
-      running: false,
-      startedBy: null,
-    });
-  }, [code]);
+    // The local interval is already gone, so a failure here leaves everyone
+    // else watching a countdown that has stopped counting.
+    await write("Could not stop the timer for everyone else, check your connection and try again.", () =>
+      update(ref(db, `rooms/${code}/timer`), { running: false, startedBy: null }));
+  }, [code, write]);
 
   const removeParticipant = useCallback(async (targetId, targetName) => {
     if (!code || !targetId || targetId === myId) return;
@@ -3638,12 +3830,13 @@ export default function App() {
       await update(ref(db, `rooms/${code}/timer`), {
         running: false,
         startedBy: null,
-      });
+      }).catch(() => {}); // the removal below is the point; a stuck timer is not worth blocking it
     }
 
-    await remove(ref(db, `rooms/${code}/players/${targetId}`));
-    showToast(`${targetName || "Participant"} removed from the room.`);
-  }, [code, myId, showToast]);
+    const removed = await write(`Could not remove ${targetName || "that person"}, check your connection and try again.`, () =>
+      remove(ref(db, `rooms/${code}/players/${targetId}`)));
+    if (removed) showToast(`${targetName || "Participant"} removed from the room.`);
+  }, [code, myId, showToast, write]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -3786,6 +3979,7 @@ export default function App() {
               onRemoveParticipant={removeParticipant}
               onAddStory={addStory}
               onRemoveStory={removeStory}
+              onDeleteSizedItem={deleteSizedItem}
               onRecordStory={recordAndNextStory}
               sessionWarning={sessionWarning}
               toast={showToast}
@@ -3974,9 +4168,15 @@ function Confetti({ onDone, big }) {
 /* The eleven marketing routes are all one shape, so they are all one set of
    design-system components: a Hero, then Sections whose heads are SectionHead
    and whose bodies are a Grid of Cards. Nothing below styles itself. */
+/* `flow`, because a section is allowed more than one block in it. Without it,
+   the pricing page's "Why free, and for how long" note sat flush against the
+   bottom of the card grid above it — zero pixels, next to a 24px gutter between
+   the cards themselves. The flow gives every block in a band the same
+   --block-y, and .pp-flow already zeroes SectionHead's own margin so the
+   heading does not get the gap twice. */
 function MarketingSection({ title, intro, children }) {
   return (
-    <Section tight className="marketing-section">
+    <Section tight flow className="marketing-section">
       <SectionHead title={title} subtitle={intro} />
       {children}
     </Section>
@@ -4020,6 +4220,11 @@ function MarketingPageShell({
 }) {
   return (
     <div className="marketing-page">
+      <Container>
+        <Button variant="ghost" size="sm" className="legal-back" onClick={() => onNavigate("/")}>
+          ← Back to home
+        </Button>
+      </Container>
       <Hero
         paper
         eyebrow={eyebrow}
@@ -4045,12 +4250,7 @@ function MarketingPageShell({
           </Grid>
         }
       />
-      <Container>
-        <Button variant="ghost" size="sm" className="legal-back" onClick={() => onNavigate("/")}>
-          ← Back to home
-        </Button>
-        {children}
-      </Container>
+      <Container>{children}</Container>
     </div>
   );
 }
@@ -5099,6 +5299,11 @@ async function saveUserProfile(user, profile = {}) {
     createdAt: profile.createdAt || Date.now(),
     lastLoginAt: Date.now(),
   };
+  // throws: caller handles. Deliberately not swallowed here, because the two
+  // callers need opposite things from a failure — handleRegister turns it into
+  // the visible "could not create your account" error, and the auth-state
+  // listener discards it so that a profile write nobody asked for cannot block
+  // someone from using the app. A catch here would take the first away.
   await update(ref(db, `users/${user.uid}`), nextProfile);
 }
 
@@ -5736,11 +5941,22 @@ function JoinScreen({
   const activeTab = TABS.some((t) => t.key === tab) ? tab : "create";
   const [nameDraft, setNameDraft] = useState(signedIn ? defaultName : recallName());
   const [nameEdited, setNameEdited] = useState(false);
-  // No default. Defaulting to voter meant the person creating the room was
-  // silently a voter, and every record control is facilitator-only, so a solo
-  // creator reached a revealed round with no way to record and no way to
-  // promote themselves. One deliberate click removes that dead end.
-  const [role, setRole] = useState("");
+  /* The tab is the answer to the role question, so it may as well answer it.
+     You are creating a room, so you are the one running it; you are joining
+     someone else's with a code, so you are there to vote in it. Team is create
+     with a fixed URL, so it defaults the same way.
+
+     The picker had no default at all, because defaulting everyone to voter left
+     a solo creator at a revealed round with no way to record — every record
+     control is facilitator-only. Defaulting BY TAB fixes that dead end without
+     the mandatory click: the branch that produced it is the one branch that now
+     starts on facilitator.
+
+     Derived, not synced. An effect mirroring the tab into role state would have
+     to know whether the user had overridden it, and that flag is this `||`. A
+     pick outranks the tab from then on, in either direction. */
+  const [pickedRole, setPickedRole] = useState("");
+  const role = pickedRole || (activeTab === "join" ? "voter" : "observer");
   const [deck, setDeck] = useState(() => getFounderDefaultDeck(prefillTeam));
   const [estMode, setEstMode] = useState("stories");
   const [rc, setRc] = useState(prefillCode || "");
@@ -5765,14 +5981,7 @@ function JoinScreen({
      focus does not help a mouse user: a programmatic focus() does not match
      :focus-visible, so nothing was highlighted either. */
   const [errField, setErrField] = useState("");
-  /* A room the user asked for and could not have yet, because the role picker
-     has no default by design. Without this, opening a Team Room on a phone is
-     a round trip: tap Open, get sent down to the role picker, pick one, scroll
-     back up, tap Open again. The intent is held only until the next unrelated
-     interaction — clearErr drops it — so nothing opens by surprise later. */
-  const [pendingRoomKey, setPendingRoomKey] = useState("");
   const [copiedDedicatedRoomKey, setCopiedDedicatedRoomKey] = useState("");
-  const roleGroupRef = useRef(null);
   const workspaceRoomEditorRef = useRef(null);
   const workspaceRoomEditorInputRef = useRef(null);
   // No autoFocus here on purpose. It re-fired on every remount and yanked focus
@@ -5797,7 +6006,7 @@ function JoinScreen({
     currentUser || {},
   );
 
-  const clearErr = () => { setErr(""); setErrField(""); setPendingRoomKey(""); };
+  const clearErr = () => { setErr(""); setErrField(""); };
   const fail = (message, field = "") => { setErr(message); setErrField(field); };
   // Rendered next to the field it names; falls back to the slot above the call
   // to action for anything that is not about one specific field.
@@ -5806,16 +6015,12 @@ function JoinScreen({
       ? <span className="pp-error" id="join-error" role="alert">{err}</span>
       : null;
 
-  /* Six call sites reach the room handlers and only three of them go through
-     go() — the dedicated Team Room shortcuts and the auto-enter effect call in
-     directly. Since the picker has no default, each one has to stop rather than
-     write a blank role into the room, which the rules would reject anyway. */
-  const requireRole = useCallback(() => {
-    if (role) return true;
-    setErr("Pick your role first. Participants vote, facilitators run the session.");
-    setErrField("role");
-    return false;
-  }, [role]);
+  /* requireRole() lived here: a guard every path took so a blank role could not
+     reach a room write. `role` cannot be blank now — the tab always supplies
+     one — so the guard could not fire, and with it went the whole resume dance
+     it needed (hold the room the user asked for, refuse it, focus the picker,
+     re-open on the next click). A branch that cannot run is not a safety net;
+     it is a description of a flow that no longer exists. */
   // Live preview of the room code a team name would produce
   const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
   const teamPrimaryLabel = canEnterTeamRoom
@@ -5916,41 +6121,28 @@ function JoinScreen({
     el?.focus({ preventScroll: true });
   };
 
-  const openDedicatedRoom = (room, chosenRole = role) => {
+  const openDedicatedRoom = (room) => {
     const validatedName = validateEnteredName();
     if (!validatedName.ok) {
       fail(validatedName.message, "name");
       focusMissingField(nameInputRef.current);
       return;
     }
-    if (!chosenRole) {
-      fail(`Pick your role and ${room.shortLabel} opens.`, "role");
-      setPendingRoomKey(room.key);
-      focusMissingField(roleGroupRef.current?.querySelector("button"));
-      return;
-    }
     setSelectedDedicatedRoomKey(room.key);
-    onTeamRoom(validatedName.name, chosenRole, room.name, deck, estMode);
+    onTeamRoom(validatedName.name, role, room.name, deck, estMode);
   };
 
-  // Picking the role the panel was waiting for finishes the job it started.
-  const chooseRole = (nextRole) => {
-    const resumed = dedicatedTeamRooms.find((r) => r.key === pendingRoomKey);
-    setRole(nextRole);
-    clearErr();
-    if (resumed) openDedicatedRoom(resumed, nextRole);
-  };
+  const chooseRole = (nextRole) => { setPickedRole(nextRole); clearErr(); };
 
   const go = () => {
     const validatedName = validateEnteredName();
     if (!validatedName.ok) { fail(validatedName.message, "name"); nameInputRef.current?.focus(); return; }
-    if (!requireRole()) { roleGroupRef.current?.querySelector("button")?.focus(); return; }
     const enteredName = validatedName.name;
     if (activeTab === "create") {
       onCreate(enteredName, role, deck, estMode);
     } else if (activeTab === "join") {
       if (!rc.trim()) { fail("Please enter a room code", "code"); return; }
-      onJoin(enteredName, role, rc.trim().toUpperCase());
+      onJoin(enteredName, role, cleanRoomCode(rc));
     } else {
       // team room — hosting one needs a free account for a unique URL
       if (!canEnterTeamRoom) {
@@ -6044,8 +6236,6 @@ function JoinScreen({
     if (!teamRouteMatch || !matchedDedicatedRoomFromRoute) return;
     const validatedName = validateEnteredName();
     if (!validatedName.ok) return;
-    // role is in this effect's deps, so picking one completes the entry.
-    if (!requireRole()) return;
     const nextName = validatedName.name;
     autoEnterOwnTeamRoomRef.current = true;
     onTeamRoom(nextName, role, matchedDedicatedRoomFromRoute.name, deck);
@@ -6055,7 +6245,6 @@ function JoinScreen({
     teamRouteMatch,
     matchedDedicatedRoomFromRoute,
     role,
-    requireRole,
     deck,
     onTeamRoom,
     validateEnteredName,
@@ -6228,7 +6417,12 @@ function JoinScreen({
             label="Room code"
             placeholder="e.g. A1B2C"
             value={rc}
-            onChange={(e) => { setRc(e.target.value.toUpperCase()); clearErr(); }}
+            /* Sanitised on the way in, not on the way out: this field is the
+               trust boundary, and everything downstream of it — the prefill,
+               the join handler, ref() itself — assumed base-36 and got
+               whatever was pasted. Paste the share link and the code is
+               lifted out of it. */
+            onChange={(e) => { setRc(cleanRoomCode(e.target.value)); clearErr(); }}
             onKeyDown={(e) => e.key === "Enter" && go()}
             maxLength={12}
             autoComplete="off"
@@ -6278,7 +6472,7 @@ function JoinScreen({
             pointing at nothing. */}
         <Stack gap="sm">
           <span className="pp-label" id="join-role-label">Your role</span>
-          <ChoiceRow ref={roleGroupRef} role="group" aria-labelledby="join-role-label">
+          <ChoiceRow role="group" aria-labelledby="join-role-label">
             {ROLES.map(({ r, icon, l, s }) => (
               <Choice
                 key={r}
@@ -6287,13 +6481,10 @@ function JoinScreen({
                 description={s}
                 selected={role === r}
                 aria-label={`${l} role: ${s}`}
-                // Clear the prompt too: once a role is picked it is telling the
-                // user to do something they have just done.
                 onSelect={() => chooseRole(r)}
               />
             ))}
           </ChoiceRow>
-          {fieldError("role")}
         </Stack>
 
         {(activeTab === "create" || activeTab === "team") && (
@@ -6773,6 +6964,7 @@ function GameScreen({
   onRemoveParticipant,
   onAddStory,
   onRemoveStory,
+  onDeleteSizedItem,
   onRecordStory,
   sessionWarning,
   toast,
@@ -6785,6 +6977,16 @@ function GameScreen({
   const [finalEstimate, setFinalEstimate] = useState("");
   const [headerLinkCopied, setHeaderLinkCopied] = useState(false);
   const [solobannerDismissed, setSoloBannerDismissed] = useState(false);
+  /* The sized row a delete has been asked about, held while the dialog asks.
+     The whole row, not its index: the dialog names the item and its estimate,
+     and it is the only thing on screen that can say what is about to go. */
+  const [pendingDelete, setPendingDelete] = useState(null);
+  /* Where focus goes after a delete. A dialog normally hands focus back to
+     whatever opened it, and here that is the ✕ of the row being removed — it
+     is not in the document any more, so the restore finds nothing and the
+     keyboard lands on <body>, at the top of a long room. The list the row came
+     out of is the nearest thing that still exists. */
+  const sizedListRef = useRef(null);
   // Confetti fires once per consensus reveal, keyed by round number
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConsensus, setShowConsensus] = useState(false);
@@ -7128,7 +7330,7 @@ function GameScreen({
             {code && <Chip className="room-code-chip">{code}</Chip>}
           </div>
           <div className="hdr-r">
-            <ThemeToggle size="sm" />
+            <ThemeToggle />
             <div className="hdr-invite" aria-label="Invite team">
               <div className="hdr-invite-copy">
                 <span className="hdr-invite-label">{inviteLabel}</span>
@@ -7220,23 +7422,48 @@ function GameScreen({
                 <>
                   {!timer.running && !revealed && (
                     <>
-                      {/* A placeholder is not a label and neither is the panel
+                      {/* Length and Start are one decision, so they are one
+                          row: you pick 45 and press the thing next to it. They
+                          used to be stacked with the hint wedged between them,
+                          which put a sentence in the path of a two-step action.
+
+                          The hint moved out of the Select and under the row for
+                          the same reason it reads better there — it describes
+                          the timer, not the length — and because a hint inside
+                          the field makes the field taller than the button, so
+                          nothing in the row can align to anything. Its
+                          aria-describedby is now wired by hand to keep the
+                          screen-reader announcement exactly as it was.
+
+                          A placeholder is not a label and neither is the panel
                           heading above it: a screen reader used to land on this
                           control announcing only "30 seconds". */}
-                      <Select
-                        label="Countdown length"
-                        value={tsel}
-                        onChange={(e) => setTsel(+e.target.value)}
-                        options={[
-                          { value: 30, label: "30 seconds" },
-                          { value: 45, label: "45 seconds" },
-                          { value: 60, label: "1 minute" },
-                        ]}
-                        hint="The team can vote without this. Use it if you want to time-box the round."
-                      />
-                      <Button block onClick={() => onStart(tsel)}>
-                        <Icon name="play" size={18} /> Start {tsel === 60 ? "1 min" : `${tsel}s`} countdown
-                      </Button>
+                      <div className="timer-setup">
+                        <Select
+                          id="timer-length"
+                          label="Countdown length"
+                          value={tsel}
+                          onChange={(e) => setTsel(+e.target.value)}
+                          options={[
+                            { value: 30, label: "30 seconds" },
+                            { value: 45, label: "45 seconds" },
+                            { value: 60, label: "1 minute" },
+                          ]}
+                          aria-describedby="timer-length-hint"
+                        />
+                        {/* Accent, not primary. The screen's filled primary is
+                            whatever the action bar is asking for — invite the
+                            team, reveal the cards — and this panel says
+                            OPTIONAL on its own heading. It is the action of
+                            this panel, one weight down from the action of the
+                            room. */}
+                        <Button variant="accent" onClick={() => onStart(tsel)}>
+                          <Icon name="play" size={18} /> Start {tsel === 60 ? "1 min" : `${tsel}s`} countdown
+                        </Button>
+                      </div>
+                      <p className="pp-hint" id="timer-length-hint">
+                        The team can vote without this. Use it if you want to time-box the round.
+                      </p>
                     </>
                   )}
                   {timer.running && (
@@ -7392,10 +7619,15 @@ function GameScreen({
                       )}
                       {!allSame && minV !== null && (
                         <>
+                          {/* Min, median, max — not average. The hero number a
+                              few lines up is the average, and repeating it here
+                              as the one gold tile drew the eye to the value the
+                              reader had just read instead of to the spread this
+                              row exists to show. The helper above calls this
+                              "the range", and an average is not part of one. */}
                           <Grid min="110px" className="avg-hero-range">
                             <StatTile label="Min" value={minV} />
                             <StatTile label="Median" value={medianDisp} />
-                            <StatTile label="Average" value={avgDisp} gold />
                             <StatTile label="Max" value={maxV} />
                           </Grid>
                           {spread > 0 && (
@@ -7569,7 +7801,7 @@ function GameScreen({
                       }
                     }}
                   >
-                    <Button disabled={!storyInput.trim()} onClick={() => addStoryLines(storyInput)}>
+                    <Button variant="accent" disabled={!storyInput.trim()} onClick={() => addStoryLines(storyInput)}>
                       <Icon name="plus" size={16} /> Add
                     </Button>
                   </TextField>
@@ -7731,15 +7963,20 @@ function GameScreen({
               const isTshirt = deck === "tshirt";
               const tshirtOrder = ["XS", "S", "M", "L", "XL", "XXL"];
 
-              // Stories from the named queue that have been recorded
-              const sizedQueueStories = stories.filter((s) => s.estimate != null && s.estimate !== "?");
+              /* Stories from the named queue that have been recorded. srcIndex
+                 is the position in the stored list, kept because filtering
+                 loses it and deleting a row needs the address of the thing it
+                 stands for, not the address of the row. */
+              const sizedQueueStories = stories
+                .map((s, srcIndex) => ({ ...s, srcIndex }))
+                .filter((s) => s.estimate != null && s.estimate !== "?");
 
               // Rounds recorded via newRound (no-queue path).
               // T-shirt sessions still save valid deck values here, so keep both the
               // full set for breakdown/counting and the numeric subset for point KPIs.
-              const recordedRounds = rounds.filter(
-                (r) => r.estimate != null && r.estimate !== "?"
-              );
+              const recordedRounds = rounds
+                .map((r, srcIndex) => ({ ...r, srcIndex }))
+                .filter((r) => r.estimate != null && r.estimate !== "?");
               const numericRounds = recordedRounds.filter(
                 (r) => !isNaN(Number(r.estimate))
               );
@@ -7802,7 +8039,11 @@ function GameScreen({
               // Per-item list — queue names when available, fallback to mode label + index
               const listedStories = sizedStories.map((s, i) => ({
                 name: s.name && s.name.trim() ? s.name.trim() : `${estMode.progressLabel} ${i + 1}`,
-                estimate: s.estimate,
+                // With the unit, because the row and the delete dialog both
+                // quote it and "recorded at 8" is not a story point.
+                estimate: `${s.estimate}${unitLabel}`,
+                kind: hasQueueData ? "story" : "round",
+                srcIndex: s.srcIndex,
               }));
 
               const topTshirtEntry = tshirtBreakdown.reduce(
@@ -7899,7 +8140,7 @@ function GameScreen({
                   )}
 
                   {/* ── Section 4: Sized this sprint ── */}
-                  <div className="a-stories">
+                  <div className="a-stories" ref={sizedListRef} tabIndex={-1}>
                     <div className="a-section-title">
                       {estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized{listedStories.length > 0 ? ` (${listedStories.length})` : ""}
                     </div>
@@ -7910,12 +8151,28 @@ function GameScreen({
                           { key: "idx", label: "#", numeric: true },
                           { key: "name", label: estMode.singular.charAt(0).toUpperCase() + estMode.singular.slice(1) },
                           { key: "estimate", label: "Estimate", numeric: true },
+                          /* A real column heading, not a blank one — the
+                             stacked layout under 760px prints every heading in
+                             front of its cell, so an empty string would leave a
+                             button on a line with nothing naming it. Hidden at
+                             table widths, where 81px of the rail's 343 went to
+                             a word that three ✕ buttons had already said. */
+                          { key: "remove", label: "Remove", hideLabel: true },
                         ]}
                         rows={listedStories.map((st, i) => ({
                           id: i,
                           idx: i + 1,
                           name: st.name,
-                          estimate: `${st.estimate}${unitLabel}`,
+                          estimate: st.estimate,
+                          remove: (
+                            <IconButton
+                              icon="close"
+                              size="sm"
+                              className="a-story-delete"
+                              label={`Delete the ${st.estimate} estimate for ${st.name}`}
+                              onClick={() => { rememberDialogOpener(); setPendingDelete(st); }}
+                            />
+                          ),
                         }))}
                       />
                     ) : (
@@ -7997,6 +8254,45 @@ function GameScreen({
           </div>
         </div>
       </div>
+
+      {/* Deleting a recorded estimate is the one action in the room that
+          removes work the team already did, so it is the one that gets a
+          dialog instead of the toast-and-undo the rest of the room uses —
+          there is nothing to undo it with. The dialog names the item and the
+          number, because "are you sure?" over a list of five rows is a
+          question about the wrong thing.
+          Cancel holds focus on open: the safe way out should be the one that
+          is already under your finger. */}
+      <Modal
+        open={!!pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        title={`Delete this ${estMode.singular}?`}
+        subtitle={pendingDelete ? `${pendingDelete.name} — recorded at ${pendingDelete.estimate}` : undefined}
+        footer={
+          <>
+            <Button data-autofocus onClick={() => setPendingDelete(null)}>Cancel</Button>
+            <Button
+              variant="danger-strong"
+              onClick={() => {
+                onDeleteSizedItem?.(pendingDelete.kind, pendingDelete.srcIndex);
+                setPendingDelete(null);
+                /* Only if the dialog's own restore came up empty. React reuses
+                   the row nodes, so deleting row 2 of 3 leaves a ✕ at that
+                   index and focus lands on it — the right answer, and better
+                   than this one. This catches the last row, where it does not. */
+                requestAnimationFrame(() => {
+                  if (document.activeElement === document.body) sizedListRef.current?.focus();
+                });
+              }}
+            >
+              <Icon name="close" size={16} /> Confirm delete
+            </Button>
+          </>
+        }
+      >
+        It comes off the sized list and out of the sprint totals. Estimating it
+        again means running another round.
+      </Modal>
     </>
   );
 }

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { ref as dbRef } from "firebase/database";
 import App from "./App";
@@ -183,47 +185,183 @@ describe("account funnel analytics", () => {
   });
 });
 
-/* ── Role selection ────────────────────────────────────────────────────
-   The picker defaulted to Participant, including for the person creating
-   the room. Anyone who never changed it reached a revealed round with no
-   way to record the estimate: every record control is facilitator-only and
-   a voter cannot promote themselves. Making the choice explicit costs one
-   click and removes the dead end.
-──────────────────────────────────────────────────────────────────────── */
+/* ── Role selection ───────────────────────────────────────
+   The picker defaulted to Participant for everyone, including the person
+   creating the room. Anyone who never changed it reached a revealed round with
+   no way to record the estimate: every record control is facilitator-only and
+   a voter cannot promote themselves. That was fixed by removing the default
+   entirely, which cost every user a mandatory click to say something the tab
+   they were already on had said for them.
+
+   The default is per tab now, which is the version that has neither problem.
+   These tests pin the three things that matter: the two tabs disagree, the
+   creator is never silently a voter, and a deliberate pick outranks the tab
+   from then on — in both directions, or switching tabs would quietly undo a
+   choice the user made on purpose.
+──────────────────────────────────────────────────────────── */
 describe("role selection", () => {
   const roles = () => screen.getAllByRole("button", { name: /role:/i });
-  const pressed = () => roles().filter((b) => b.getAttribute("aria-pressed") === "true");
-  const nameField = () => screen.getByPlaceholderText(/alex johnson/i);
+  const chosen = () =>
+    roles().find((b) => b.getAttribute("aria-pressed") === "true")?.textContent.trim();
+  const tab = (name) => fireEvent.click(screen.getByRole("button", { name }));
 
-  test("no role is preselected", () => {
+  test("exactly one role is preselected, never none and never both", () => {
     render(<App />);
     expect(roles().length).toBe(2);
-    expect(pressed()).toEqual([]);
+    expect(roles().filter((b) => b.getAttribute("aria-pressed") === "true").length).toBe(1);
   });
 
-  test("a room cannot be created until a role is chosen", () => {
+  test("creating a room makes you the facilitator", () => {
     render(<App />);
-    fireEvent.change(nameField(), { target: { value: "Alex" } });
-    // The tab is now "Create" and only the submit says "Create Room →", so
-    // this no longer has to disambiguate — the arrow is kept as the exact name.
-    fireEvent.click(screen.getByRole("button", { name: "Create Room →" }));
-    expect(screen.getByRole("alert")).toHaveTextContent(/role/i);
+    expect(chosen()).toMatch(/^Facilitator/);
   });
 
-  test("choosing a role records the choice", () => {
+  test("joining someone else's room makes you a participant", () => {
     render(<App />);
+    tab("Join");
+    expect(chosen()).toMatch(/^Participant/);
+  });
+
+  test("a shared link lands on Join, so it lands on Participant", () => {
+    window.history.pushState({}, "", "/?room=AB12C");
+    try {
+      render(<App />);
+      expect(chosen()).toMatch(/^Participant/);
+    } finally {
+      window.history.pushState({}, "", "/");
+    }
+  });
+
+  test("a deliberate pick outranks the tab, in both directions", () => {
+    render(<App />);
+    tab("Join");
+    expect(chosen()).toMatch(/^Participant/);
     fireEvent.click(screen.getByRole("button", { name: /facilitator role:/i }));
-    expect(pressed().length).toBe(1);
-    expect(screen.getByRole("button", { name: /facilitator role:/i }))
-      .toHaveAttribute("aria-pressed", "true");
+    expect(chosen()).toMatch(/^Facilitator/);
+    // The tab that would have said Participant no longer gets to.
+    tab("Create");
+    expect(chosen()).toMatch(/^Facilitator/);
+    tab("Join");
+    expect(chosen()).toMatch(/^Facilitator/);
+  });
+});
+
+/* ── ONE CAP, TWO FILES ──────────────────────────────────────────────────
+   rooms/$roomId/stories/$storyIndex takes unauthenticated writes, and a rule
+   cannot count children — so the key format is the cap, and the key format is
+   a number of digits. The client has to know the same number, because a
+   multi-path update is atomic: one index over the line rejects the whole paste
+   and the queue blames the connection for it.
+─────────────────────────────────────────────────────────────────────────── */
+describe("the story-queue cap", () => {
+  const rules = readFileSync(join(__dirname, "..", "database.rules.json"), "utf8");
+  const appSrc = readFileSync(join(__dirname, "App.js"), "utf8");
+
+  test("the rule and the client agree on how many stories a room holds", () => {
+    const digits = Number(rules.match(/\$storyIndex\.matches\(\/\^\[0-9\]\{1,(\d)\}\$\//)[1]);
+    const clientCap = Number(appSrc.match(/const MAX_QUEUE = (\d+);/)[1]);
+    expect(clientCap).toBe(10 ** digits);
   });
 
-  test("picking a role clears the prompt that asked for one", () => {
-    render(<App />);
-    fireEvent.change(nameField(), { target: { value: "Alex" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create Room \u2192" }));
-    expect(screen.getByRole("alert")).toHaveTextContent(/role/i);
-    fireEvent.click(screen.getByRole("button", { name: /facilitator role:/i }));
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  test("rounds are capped the same way, since they are keyed the same way", () => {
+    expect(rules).toMatch(/\$roundIndex\.matches\(\/\^\[0-9\]\{1,3\}\$\//);
+  });
+
+  test("hitting it says so, instead of reporting a network problem", () => {
+    const guard = appSrc.slice(appSrc.indexOf("if (startIdx + names.length > MAX_QUEUE)"), appSrc.indexOf("if (startIdx + names.length > MAX_QUEUE)") + 220);
+    expect(guard).toMatch(/showToast/);
+    expect(guard).not.toMatch(/connection/);
+  });
+});
+
+/* ── THE SITEMAP IS A FOURTH COPY OF THE ROUTE TABLE ─────────────────────
+   routeMeta.mjs already feeds the runtime router, the runtime <head>, and the
+   build-time prerender, so a new page reaches Google's crawler through three
+   of the four. public/sitemap.xml is hand-written, and a page missing from it
+   is invisible in exactly the way that leaves no symptom to notice: the site
+   works, the page renders, nothing 404s, it simply never gets crawled. The
+   project already stopped this class of drift twice — build-rules.mjs for the
+   security rules, prerender.mjs for the meta — and this is the third.
+─────────────────────────────────────────────────────────────────────────── */
+describe("the sitemap and the route table say the same thing", () => {
+  const sitemap = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "..", "public", "sitemap.xml"), "utf8");
+  const listed = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
+    .map(([, url]) => url.replace(SITE_URL, "") || "/");
+  const indexable = Object.keys(STATIC_SCREEN_BY_PATH).filter((p) => !PRIVATE_PATHS.includes(p));
+
+  test("every indexable route is in the sitemap", () => {
+    expect(indexable.filter((r) => !listed.includes(r))).toEqual([]);
+  });
+
+  test("the sitemap advertises nothing that is not a route", () => {
+    expect(listed.filter((r) => !indexable.includes(r))).toEqual([]);
+  });
+
+  test("no route is listed twice, which splits its own ranking signal", () => {
+    expect(new Set(listed).size).toBe(listed.length);
+  });
+
+  test("every URL is absolute and on the canonical host", () => {
+    // A relative <loc>, or the apex that vercel.json 301s to www, wastes the
+    // crawl on a redirect.
+    for (const [, url] of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+      expect(url.startsWith(`${SITE_URL}/`)).toBe(true);
+    }
+  });
+
+  test("robots.txt keeps live rooms out of the index", () => {
+    const robots = require("node:fs").readFileSync(
+      require("node:path").join(__dirname, "..", "public", "robots.txt"), "utf8");
+    expect(robots).toMatch(/Disallow:\s*\/t\//);
+    expect(robots).toMatch(/Disallow:\s*\/\*\?room=/);
+    expect(robots).toContain(`Sitemap: ${SITE_URL}/sitemap.xml`);
+  });
+});
+
+/* ── A WRITE THAT FAILS HAS TO SAY SO ────────────────────────────────────
+   Every Firebase write in App.js is somebody pressing a button. Left bare, a
+   rejected one becomes an unhandled rejection and the button appears to do
+   nothing at all — indistinguishable, to the person pressing it, from "it
+   worked, wait for the others". Room creation, joining, the story queue and
+   the sprint reset were each reported and hardened separately, which is what
+   a missing rule looks like. This is the rule.
+─────────────────────────────────────────────────────────────────────────── */
+describe("no Firebase write fails silently", () => {
+  const source = require("node:fs").readFileSync(
+    require("node:path").join(__dirname, "App.js"), "utf8");
+  const lines = source.split("\n");
+
+  test("every awaited write is inside a try, a write() call, or an explicit catch", () => {
+    const unguarded = [];
+    lines.forEach((line, i) => {
+      if (!/await\s+(update|set|remove|push)\(/.test(line)) return;
+      if (/\.catch\(/.test(line)) return;                  // handled inline
+      const before = lines.slice(Math.max(0, i - 30), i).join("\n");
+      const after = lines.slice(i, i + 8).join("\n");
+      if (/try\s*\{/.test(before)) return;
+      if (/await write\(/.test(before) || /=>\s*(update|set|remove|push)\(/.test(line)) return;
+      if (/\.catch\(/.test(after)) return;                 // handled on a continuation line
+      // The one escape hatch, and it has to be claimed out loud: a helper whose
+      // rejection is the caller's to interpret. Two callers of saveUserProfile
+      // want opposite things from a failure, so a catch inside it would be
+      // wrong. Writing the marker is a decision; inheriting silence is not.
+      if (/throws: caller handles/.test(before)) return;
+      unguarded.push(`${i + 1}: ${line.trim()}`);
+    });
+    expect(unguarded).toEqual([]);
+  });
+
+  test("the escape hatch stays rare enough to read in one sitting", () => {
+    expect((source.match(/throws: caller handles/g) || []).length).toBeLessThanOrEqual(2);
+  });
+
+  test("no read is wrapped in a promise that can never reject", () => {
+    // onValue's third argument is an options object, not an error callback, so
+    // `new Promise(res => onValue(ref, res, {onlyOnce:true}))` never settles on
+    // failure — the button stayed pressed for as long as anyone would wait.
+    // get() rejects. Three of these existed.
+    expect(source).not.toMatch(/new Promise\([^)]*\)\s*=>\s*\n?\s*onValue\(/);
+    expect(source).not.toMatch(/onValue\([^;]*\{\s*onlyOnce:\s*true\s*\}/);
   });
 });

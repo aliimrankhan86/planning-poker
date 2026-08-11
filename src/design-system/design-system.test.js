@@ -288,30 +288,76 @@ describe("the ten rules", () => {
 describe("ThemeToggle", () => {
   afterEach(() => act(() => setTheme("dark")));
 
-  test("names what pressing it will do, not what is currently true", async () => {
+  /* This was an IconButton whose name stated its outcome — "Switch to the light
+     theme" — on the reasoning that a control labelled with its own state is the
+     most reliably misread thing on the web. True of buttons, which have one
+     appearance and only their name to go on. Not true of a switch, which has a
+     visible position: role="switch" exists so the name can be the thing and
+     aria-checked can be the state. So the label now says which theme is on, and
+     these tests hold it to the switch contract instead of the button one.
+
+     There is no aria-label any more either. The visible text is the accessible
+     name, which is the one arrangement WCAG 2.5.3 cannot drift out of: the two
+     cannot disagree because there is only one of them. */
+
+  test("is a switch, and its position is the theme", async () => {
     render(<ThemeToggle />);
-    // A toggle labelled with its own state is the most reliably misread
-    // control on the web: "Dark mode" tells you nothing about which way it
-    // goes. The name is always the outcome.
-    const button = screen.getByRole("button", { name: "Switch to the light theme" });
-    await userEvent.click(button);
+    const control = screen.getByRole("switch");
+    expect(control).not.toBeChecked();              // dark is the default, and off
+    expect(control).toHaveAccessibleName("Dark theme");
+
+    await userEvent.click(control);
 
     expect(document.documentElement.dataset.theme).toBe("light");
-    expect(screen.getByRole("button", { name: "Switch to the dark theme" })).toBeInTheDocument();
+    expect(control).toBeChecked();
+    expect(control).toHaveAccessibleName("Light theme");
+  });
+
+  test("the visible word is inside the accessible name", async () => {
+    // WCAG 2.5.3. Someone driving the page by voice says "click Dark", and the
+    // words they can see have to be words the control answers to.
+    render(<ThemeToggle />);
+    const control = screen.getByRole("switch");
+    expect(control).toHaveAccessibleName(expect.stringContaining("Dark"));
+
+    await userEvent.click(control);
+    expect(control).toHaveAccessibleName(expect.stringContaining("Light"));
+  });
+
+  test("the keyboard drives it", async () => {
+    // A switch answers to Space. Losing that is the usual cost of swapping a
+    // button for something that looks like one.
+    render(<ThemeToggle />);
+    const control = screen.getByRole("switch");
+    control.focus();
+    await userEvent.keyboard(" ");
+    expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
+  test("the word survives the narrow bar that hides it", () => {
+    /* The navbar clips " theme" under 780px and the whole label at its own
+       breakpoint, both with clip-path rather than display:none — precisely so
+       the name stays whole when the words cannot be shown. A future tidy-up to
+       display:none would pass every test above and silently rename the control
+       to "Dark" on a phone. This is the one that would notice. */
+    render(<ThemeToggle />);
+    expect(screen.getByRole("switch")).toHaveAccessibleName("Dark theme");
+    expect(screen.getByText(/theme/).tagName).toBe("SPAN");
   });
 
   test("remembers the choice", async () => {
     render(<ThemeToggle />);
-    await userEvent.click(screen.getByRole("button"));
+    await userEvent.click(screen.getByRole("switch"));
     expect(localStorage.getItem("pp-theme")).toBe("light");
   });
 
   test("two toggles on one screen agree", async () => {
     render(<><ThemeToggle /><ThemeToggle /></>);
-    const [first] = screen.getAllByRole("button");
+    const [first] = screen.getAllByRole("switch");
     await userEvent.click(first);
-    for (const b of screen.getAllByRole("button")) {
-      expect(b).toHaveAccessibleName("Switch to the dark theme");
+    for (const s of screen.getAllByRole("switch")) {
+      expect(s).toBeChecked();
+      expect(s).toHaveAccessibleName("Light theme");
     }
   });
 });

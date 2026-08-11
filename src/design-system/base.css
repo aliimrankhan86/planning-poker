@@ -33,6 +33,18 @@ body {
   font-family: var(--font-ui);
 }
 
+/* Rule 9: the browser breaks the lines, the type system says where. `balance`
+   evens a heading's lines so a two-line h2 cannot leave one word stranded on
+   the second; `pretty` stops a paragraph ending on a lone short word. Both are
+   purely additive — a browser without them wraps exactly as it does today — and
+   :where() keeps the specificity at zero so any component can still override. */
+:where(h1, h2, h3, h4, .pp-hero__title, .pp-section-head__title, .join-title) {
+  text-wrap: balance;
+}
+:where(p, .pp-hero__sub, .pp-section-head__sub) {
+  text-wrap: pretty;
+}
+
 /* Focus is never removed without a replacement. 2px at 2px offset on anything
    a keyboard can reach. */
 :where(button, [role="button"], a, input, select, textarea, summary):focus-visible {

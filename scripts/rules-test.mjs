@@ -131,10 +131,58 @@ await allow("a new sprint clears both record paths in one write", patch("rooms/A
 await deny("  …but the story it kept still cannot take an off-deck estimate", put("rooms/ABC12/stories/0/estimate", "XL"));
 await allow("  …and the room it left behind is still a valid room", canRead("rooms/ABC12"));
 
+/* Deleting a recorded estimate rewrites its whole list contiguously, because a
+   hole in an index-keyed list whose next key comes from a counter is a
+   collision waiting for the next round. Both lists are replaced wholesale and
+   both can go to null, and every one of those shapes has to survive the
+   validators. Mirrors deleteSizedItemUpdates() in src/estimation.js. */
+await allow("a deleted sized story leaves the queue contiguous", patch("rooms/ABC12", {
+  stories: { 0: { name: "Kept", estimate: "8" } }, activeStory: 1, storiesDone: 1, consensusCount: 1,
+}));
+await allow("  …and deleting the last one empties the node", patch("rooms/ABC12", {
+  stories: null, activeStory: 0, storiesDone: 0, consensusCount: 0,
+}));
+await allow("a deleted round leaves the rounds map contiguous", patch("rooms/ABC12", {
+  rounds: { 0: { estimate: "13", isConsensus: false } }, storiesDone: 1, consensusCount: 0,
+}));
+await allow("  …and deleting the last one empties that node too", patch("rooms/ABC12", {
+  rounds: null, storiesDone: 0, consensusCount: 0,
+}));
+
+/* ── RESOURCE EXHAUSTION ────────────────────────────────────────────────
+   rooms/$id takes unauthenticated writes, so anyone holding a room code — and
+   a Team Room's code is a slug of its name — can write to these lists. There
+   is no way to bound a child count in a rule, so the index FORMAT is the cap:
+   three digits is 1000 entries, ~200KB at the per-name limit, and more backlog
+   than a room will ever work through. Before this, one request could seed
+   stories/999999999 and nothing said no.
+   The same rule stops a non-numeric key, which the client cannot survive: it
+   reads this node with Object.values() and sorts rounds by Number(key). */
+await deny("a story index beyond the cap is refused", put("rooms/ABC12/stories/1000", { name: "x" }));
+await deny("  …as is a non-numeric one, which would become a NaN in the sort", put("rooms/ABC12/stories/junk", { name: "x" }));
+await deny("a round index beyond the cap is refused", put("rooms/ABC12/rounds/1000", { estimate: "8", isConsensus: true }));
+await allow("  …and the last index inside it still works", put("rooms/ABC12/rounds/999", { estimate: "8", isConsensus: true }));
+
+/* Not a rule this file can assert an ALLOW for, because it is a DENY the app
+   depends on never reaching: the root .validate requires a `players` node, so
+   removing the last player is rejected. leaveRoom deletes the whole room in
+   that case and onDisconnect only marks a player offline. This pins both
+   halves — the deny, and the path the app takes instead. */
+await allow("a room with two players can lose one", put("rooms/LAST1", room({
+  players: { a: { id: "a", name: "A", role: "voter", voted: false },
+             b: { id: "b", name: "B", role: "voter", voted: false } },
+})));
+await allow("  …the second player leaves", put("rooms/LAST1/players/b", null));
+await deny("  …but the last one cannot: it would leave the room without players", put("rooms/LAST1/players/a", null));
+await allow("  …so leaving alone deletes the room instead, which is what leaveRoom does", put("rooms/LAST1", null));
+
 /* ── ANALYTICS ──────────────────────────────────────────────────────── */
 
 await deny("analytics cannot be read by an anonymous visitor", canRead("analytics"));
 await deny("  …not even a single counter", canRead(`analytics/daily/${today}/room_created`));
+
+await deny("a counter on a date that is not a calendar day is refused",
+  put("analytics/daily/2029-19-39/room_created", 1));
 
 /* This pair is the whole reason the harness exists. The counter starts absent,
    so the first write can only pass through the `!data.exists() && val === 1`
@@ -238,6 +286,21 @@ await allow("a signed-in visitor may write their own profile", put("users/intrud
 await deny("  …but claiming plan:\"pro\" does not unlock analytics", canRead("analytics", intruder));
 await deny("  …and another account's profile stays unreadable", canRead(`users/${ADMIN_UID}`, intruder));
 await deny("  …and the room list stays unenumerable", canRead("rooms", intruder));
+
+/* This field leaves the database: notifyOwnerOnSignup puts it straight into a
+   mail subject. nodemailer neutralises header injection and the HTML body is
+   escaped, so this is defence in depth — but a length check alone let a
+   signed-in user store a newline in a string bound for an SMTP header. */
+const profileWith = (email) => ({
+  email, displayName: "Intruder", teamRoomName: "Team",
+  createdAt: Date.now(), lastLoginAt: Date.now(),
+});
+await deny("a profile email cannot carry a newline into a mail subject",
+  put("users/intruder-uid", profileWith("a@b.com\nBcc: victim@example.com"), intruder));
+await deny("  …nor a bare string that is not an address at all",
+  put("users/intruder-uid", profileWith("not an email"), intruder));
+await allow("  …and a real address, plus-addressed and multi-label, still saves",
+  put("users/intruder-uid", profileWith("ali+poker@mail.example.co.uk"), intruder));
 
 await allow("the allowlisted owner can read the analytics tree", canRead("analytics", owner));
 await allow("  …and the daily node the dashboard actually subscribes to", canRead("analytics/daily", owner));

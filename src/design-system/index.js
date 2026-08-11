@@ -154,25 +154,45 @@ export function SegmentedControl({ options, value, onChange, block = false, aria
 }
 
 /**
- * The theme control. A button, not a Choice: switching theme is an action with
- * an outcome, not a selection held in a group.
+ * The theme control: a two-position switch that names the position it is in.
  *
- * The accessible name always states what pressing it will DO ("Switch to the
- * light theme"), never what is currently true — a toggle labelled with its own
- * state is the most reliably misread control on the web.
+ * It used to be an IconButton labelled with its own outcome — "Switch to the
+ * light theme" over a sun glyph — on the reasoning that a control labelled with
+ * its current state is the most reliably misread thing on the web. That
+ * reasoning is right, and it is right *about buttons*. A button has one
+ * appearance and only its name to say what will happen, so naming the state
+ * leaves the reader guessing which half of the sentence they are looking at.
+ *
+ * A switch does not have that problem, because a switch has a visible position.
+ * `role="switch"` exists precisely so the name can be the thing and the state
+ * can be the state, and here they are both on the control: the word says which
+ * theme is on, the thumb says which side it is on, and they cannot disagree.
+ *
+ * The label says "Dark theme", not "Dark", because the bare word is only a
+ * whole thought while you are looking at the switch it sits on. There is no
+ * aria-label: the visible text is the accessible name, which is the only
+ * arrangement WCAG 2.5.3 cannot be broken by — someone driving the page by
+ * voice reads the word off the screen and says it, and it matches.
+ *
+ * "theme" is a separate span so a narrow navbar can drop it to "Dark" without
+ * dropping the control. It is clipped rather than display:none for the reason
+ * above in reverse: clipped text still counts as the accessible name, so a
+ * phone screen reader hears the whole "Dark theme" it can no longer show.
+ *
+ * checked = light, because dark is the default and a switch's on-position
+ * should be the thing you turned on.
  */
-export function ThemeToggle({ size = "md", bordered = false, className }) {
+export function ThemeToggle({ className }) {
   const [theme, set] = useTheme();
-  const toLight = theme === "dark";
-  const onClick = useCallback(() => set(toLight ? "light" : "dark"), [set, toLight]);
+  const light = theme === "light";
+  const word = light ? "Light" : "Dark";
+  const onChange = useCallback((e) => set(e.target.checked ? "light" : "dark"), [set]);
   return (
-    <IconButton
-      icon={toLight ? "sun" : "moon"}
-      label={toLight ? "Switch to the light theme" : "Switch to the dark theme"}
-      size={size}
-      bordered={bordered}
-      className={className}
-      onClick={onClick}
+    <Switch
+      className={cx("pp-theme-switch", className)}
+      label={<>{word}<span className="pp-theme-switch__suffix"> theme</span></>}
+      checked={light}
+      onChange={onChange}
     />
   );
 }
@@ -416,8 +436,15 @@ export function ResultsTable({ columns, rows, caption, stack = true, className }
         {caption && <caption>{caption}</caption>}
         <thead>
           <tr>
+            {/* hideLabel is for an action column, where the heading is already
+                said by every button under it. The word is hidden, not dropped:
+                it is still the column's name for a screen reader, and it is
+                still what the stacked layout prints in front of each cell —
+                which is the one place it is not redundant. */}
             {columns.map((c) => (
-              <th key={c.key} className={c.numeric ? "pp-num" : undefined} scope="col">{c.label}</th>
+              <th key={c.key} className={c.numeric ? "pp-num" : undefined} scope="col">
+                {c.hideLabel ? <span className="pp-visually-hidden">{c.label}</span> : c.label}
+              </th>
             ))}
           </tr>
         </thead>
@@ -837,29 +864,8 @@ export function Modal({ open, title, subtitle, children, footer, wide = false, c
   );
 }
 
-export function Drawer({ open, title, children, footer, onClose }) {
-  const [ref, close] = useDialog(open, onClose);
-  const titleId = useId();
-  if (!open) return null;
-  return (
-    <>
-      <div className="pp-scrim" onClick={close} />
-      <aside ref={ref} className="pp-drawer" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
-        <div className="pp-drawer__head">
-          <h2 className="pp-drawer__title" id={titleId}>{title}</h2>
-          <IconButton icon="close" label="Close" onClick={close} />
-        </div>
-        <div>{children}</div>
-        {footer && <div className="pp-modal__footer">{footer}</div>}
-      </aside>
-    </>
-  );
-}
-
-/** The room's one action, in one place, with a changing label. */
-export function ActionBar({ children, className }) {
-  return <div className={cx("pp-action-bar", className)}>{children}</div>;
-}
+/* Drawer and ActionBar were exported from here and rendered by nothing. See the
+   note where their CSS used to live in components.css. */
 
 /* ── Layout primitives ──────────────────────────────────────────────────── */
 

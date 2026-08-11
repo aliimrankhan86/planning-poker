@@ -182,8 +182,17 @@ describe("room layout", () => {
     expect((bar.match(/variant="primary"/g) || []).length).toBe(1);
   });
 
-  test("the action bar clears the iOS home indicator on phones", () => {
-    expect(css).toMatch(/env\(safe-area-inset-bottom\)/);
+  test("the action bar does not claim to dock to the phone's thumb arc", () => {
+    // It never did: bottom stickiness pulls a box up when its flow position
+    // would fall below the scrollport, it does not push a box down from a
+    // position already on screen, and this bar sits near the top of its
+    // column. What shipped was a full-bleed card with two square corners and
+    // home-indicator padding stranded mid-page. See docs/UI-OVERHAUL.md.
+    const phone = css.slice(css.indexOf("@media (max-width: 780px)"));
+    const rule = phone.match(/\.action-bar\s*\{[^}]*\}/s);
+    expect(rule).not.toBeNull();
+    expect(rule[0]).not.toContain("bottom: 0");
+    expect(rule[0]).not.toContain("env(safe-area-inset-bottom)");
   });
 
   test("counts use tabular figures so they do not reflow as they climb", () => {
@@ -504,12 +513,15 @@ describe("the signed-in workspace", () => {
     expect(join()).not.toContain("Choose Team Room");
   });
 
-  test("asking for a room you cannot have yet is not a dead end", () => {
-    // Open needs a role, and the role picker has no default by design. The
-    // ask is held until the role is picked, then completed — otherwise
-    // opening a room on a phone is Open, scroll, pick, scroll back, Open.
-    expect(join()).toContain("pendingRoomKey");
-    expect(join()).toMatch(/clearErr = \(\) => \{[^}]*setPendingRoomKey\(""\)/);
+  test("Open needs nothing the form has not already answered", () => {
+    /* Open used to be able to refuse: the role picker had no default, so it
+       held the room you asked for, sent you down the page to pick a role, and
+       resumed on the next click. The tab supplies a role now, so the refusal
+       cannot happen and the machinery for recovering from it is gone. If a
+       default is ever removed again, this fails and says what to put back. */
+    expect(join()).not.toContain("pendingRoomKey");
+    expect(join()).not.toMatch(/const requireRole =/);
+    expect(join()).toMatch(/const role = pickedRole \|\| \(activeTab === "join" \? "voter" : "observer"\)/);
   });
 });
 
@@ -730,5 +742,453 @@ describe("the sprint snapshot is a stack, not a grid", () => {
     const rule = css.match(/\.a-section-title,\s*\n\.a-align-title,\s*\n\.analytics-breakdown-title\s*\{[^}]*\}/s);
     expect(rule).not.toBeNull();
     expect(rule[0]).toContain("text-transform: uppercase");
+  });
+});
+
+/* ── the 2026-08 overhaul. Each of these guards a bug that shipped, not a
+      preference. The reasoning is in docs/UI-OVERHAUL.md. ───────────────── */
+
+describe("the light theme keeps its value ladder", () => {
+  const light = tokens.slice(tokens.indexOf('[data-theme="light"] {'));
+  const paper = { "--paper-025": 99.0, "--paper-050": 97.6, "--paper-100": 95.4,
+                  "--paper-200": 92.6, "--paper-300": 88.9 };
+
+  test("the paper ramp is five rungs and nothing is pure white", () => {
+    for (const rung of Object.keys(paper)) expect(tokens).toContain(`${rung}:`);
+    // #fff as a surface is what made the old light theme "very bright".
+    const lightSurfaces = light.slice(0, light.indexOf("\n}"));
+    expect(lightSurfaces).not.toMatch(/--surface-[123]:\s*#fff\b/i);
+    expect(lightSurfaces).not.toMatch(/--surface-[123]:\s*#ffffff\b/i);
+  });
+
+  test("a card never sits below the page it is on", () => {
+    // --surface-1 (a card) must be lighter than --bg-page, at every scroll
+    // position: the page gradient's brightest stop stays under --surface-2.
+    expect(light).toMatch(/--bg-page:\s*var\(--paper-200\)/);
+    expect(light).toMatch(/--surface-1:\s*var\(--paper-050\)/);
+    expect(paper["--paper-050"]).toBeGreaterThan(paper["--paper-200"]);
+  });
+});
+
+describe("nothing can force a modal to scroll sideways", () => {
+  test("a modal's grid items may shrink", () => {
+    expect(dsCss).toMatch(/\.pp-modal > \*\s*\{[^}]*min-width:\s*0/s);
+  });
+
+  test("a full-width segmented control shrinks instead of overflowing", () => {
+    const rule = dsCss.match(/\.pp-segmented--block \.pp-segmented__item\s*\{[^}]*\}/s);
+    expect(rule).not.toBeNull();
+    expect(rule[0]).toContain("min-width: 0");
+    expect(rule[0]).toContain("white-space: normal");
+  });
+});
+
+describe("overflow-x: hidden never lands on body", () => {
+  // One hidden axis makes the other compute to auto, body becomes a scroll
+  // container, and every position: sticky in the product stops sticking.
+  const boot = readFileSync(join(__dirname, "..", "public", "index.html"), "utf8");
+  const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "");
+  test.each([["App.js CSS", css], ["boot CSS", boot]])("%s", (_label, source) => {
+    expect(stripComments(source)).not.toMatch(/body\s*\{[^}]*overflow-x:\s*hidden/s);
+  });
+});
+
+describe("one accent, one meaning", () => {
+  test("the observer row does not borrow the alert blue", () => {
+    const rule = css.match(/\.prow\.obs\s+\{[^}]*\}/s);
+    expect(rule).not.toBeNull();
+    expect(rule[0]).not.toContain("--info");
+  });
+
+  test("no component paints --cream on a felt background", () => {
+    // 1.3:1 in the light theme, where --cream is near the page colour.
+    expect(dsCss).not.toMatch(/background:\s*var\(--felt-\d+\);\s*color:\s*var\(--cream\)/);
+  });
+});
+
+describe("the boot shell paints the same ground the app does", () => {
+  const boot = readFileSync(join(__dirname, "..", "public", "index.html"), "utf8");
+  test("--boot-bg matches --bg-page in the light theme", () => {
+    // Otherwise every cold load flashes a brighter cream before React lands.
+    expect(boot).toMatch(/\[data-theme="light"\][^}]*--boot-bg:\s*#eceade/);
+    expect(tokens).toMatch(/--paper-200:\s*#eceade/i);
+  });
+});
+
+describe("a container with children has a rhythm of its own", () => {
+  /* Both of these shipped a collision: the facilitator's split-vote card put
+     its stat tiles flush against the sentence telling you to read them, and the
+     results hero did the same to its range row. In each case the container was
+     plain block flow, so every child had to hand-margin its own gap and one
+     forgot. The floor collapses with a larger declared margin, so it can only
+     ever add the missing gap. */
+  test.each([
+    ["a card body", dsCss, /\.pp-card__body > \* \+ \*\s*\{[^}]*margin-top:\s*var\(--sp-\d\)/s],
+    ["the results hero", css, /\.avg-hero > \* \+ \*\s*\{[^}]*margin-top:\s*var\(--sp-\d\)/s],
+  ])("%s spaces its own children", (_label, source, rule) => {
+    expect(source).toMatch(rule);
+  });
+});
+
+describe("the results card states each number once", () => {
+  test("the range row is min, median and max — the average is the hero", () => {
+    const hero = css.slice(css.indexOf(".avg-hero {"), css.indexOf(".avg-hero-consensus"));
+    expect(hero).toBeTruthy();
+    const range = app.match(/<Grid min="110px" className="avg-hero-range">[\s\S]*?<\/Grid>/);
+    expect(range).not.toBeNull();
+    for (const label of ["Min", "Median", "Max"]) {
+      expect(range[0]).toContain(`label="${label}"`);
+    }
+    // avgDisp is already printed, six lines up, at 5.5rem.
+    expect(range[0]).not.toContain('label="Average"');
+  });
+});
+
+describe("the design system does not keep a second copy of a fixed bug", () => {
+  test("no .pp-action-bar survives to re-offer the phone dock", () => {
+    // .action-bar's sticky-bottom "thumb arc" was removed from App.js once it
+    // turned out bottom stickiness only pulls a box up. The design system held
+    // an unrendered twin with the same rule, waiting for the next author.
+    expect(dsCss).not.toMatch(/^\.pp-action-bar\s*\{/m);
+    expect(dsIndex).not.toMatch(/export function ActionBar/);
+  });
+
+  test("the room's toast has one implementation", () => {
+    // App.js kept a .toast rule matching nothing, painting two hard-coded cream
+    // literals and white-space: nowrap. The rendered toast is .pp-toast.
+    expect(css).not.toMatch(/^\.toast\s*\{/m);
+    expect(dsCss).toMatch(/\.pp-toast\s*\{/);
+  });
+});
+
+describe("felt surfaces reach for a role, not a literal", () => {
+  /* The inverse block re-points every role inside a felt subtree. A component
+     that hard-codes white-alpha instead looks right by luck and stops moving
+     when the role is tuned — and a component NOT listed in that block gets the
+     light value on felt, which is how you get ink at 1.2:1. */
+  test.each([[".pp-card--felt"], [".pp-footer__base"]])("%s uses a border role", (sel) => {
+    const rule = dsCss.match(new RegExp(sel.replace(".", "\\.") + "\\s*\\{[^}]*\\}", "s"));
+    expect(rule).not.toBeNull();
+    expect(rule[0]).not.toMatch(/border(-top)?-color:\s*rgba\(255,255,255/);
+    expect(rule[0]).toMatch(/var\(--divider\)/);
+  });
+
+  test("every felt subtree selector is in the inverse block", () => {
+    const inverse = tokens.slice(tokens.indexOf("INVERSE BLOCKS IN LIGHT"));
+    const selectors = inverse.slice(0, inverse.indexOf("{"));
+    for (const sel of [".site-footer", ".pp-footer", ".pp-card--felt", ".pp-section--felt"]) {
+      expect(selectors).toContain(sel);
+    }
+  });
+});
+
+describe("nothing is left aligned against itself", () => {
+  /* The footer's legal note was text-align: right inside a flex item that wraps
+     onto its own line below ~940px. Once it wrapped, space-between put the box
+     on the LEFT and the right-alignment still ran inside it: three lines ragged
+     down the left edge with the last one orphaned out to the right, directly
+     under a left-aligned copyright. */
+  test("the footer's legal note does not right-align", () => {
+    const rule = css.match(/\.footer-legal-note\s*\{[^}]*\}/s);
+    expect(rule).not.toBeNull();
+    expect(rule[0]).not.toMatch(/text-align:\s*(right|end)/);
+  });
+
+  test("right alignment is reserved for columns of numbers", () => {
+    // Right-aligning prose is how you get an orphan. Numbers are the one case
+    // it is correct: comparable figures line up on their last digit.
+    const numeric = /pp-num|tabular|dash-bar-value/;
+    for (const [label, source] of [["App.js", css], ["components.css", dsCss]]) {
+      const rules = source.replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{[^{}]*\}/g) || [];
+      const offenders = rules
+        .filter((r) => /text-align:\s*(right|end)/.test(r))
+        .map((r) => r.split("{")[0].trim())
+        .filter((sel) => !numeric.test(sel));
+      expect({ [label]: offenders }).toEqual({ [label]: [] });
+    }
+  });
+});
+
+describe("a divider has air on both sides", () => {
+  test("the footer columns clear the plan bar's rule", () => {
+    // .footer-plan-bar carries a border-bottom and 16px of its own padding
+    // above it; .footer-inner had padding-bottom only, so the brand mark and
+    // the column headings started hard against the line.
+    const rule = css.match(/\.footer-inner\s*\{[^}]*\}/s);
+    expect(rule).not.toBeNull();
+    expect(rule[0]).toMatch(/padding-block:\s*var\(--sp-\d\)/);
+    expect(rule[0]).not.toMatch(/padding-bottom:/);
+  });
+});
+
+/* ── ONE GROUND COLOUR, FOUR FILES ───────────────────────────────────────
+   The colour behind the page is written out four times, in four languages,
+   because three of them have to be right before the stylesheet that owns it
+   has loaded: the boot block in index.html paints before first paint, the
+   manifest paints the PWA splash and the Android task switcher, and theme.js
+   repaints the mobile browser chrome on every toggle. None of them can read a
+   CSS custom property, so all any of them can do is repeat the value — and
+   two of them had drifted. theme.js said the light ground was #f6f3ea, three
+   steps up the paper ramp from the #eceade the page actually paints, so
+   choosing the light theme on a phone put a pale seam across the top of the
+   screen. The manifest still held #0c1a0f, the green from before the palette
+   was rebuilt, matching nothing at all.
+─────────────────────────────────────────────────────────────────────────── */
+describe("the ground is the same colour everywhere it is written down", () => {
+  const indexHtml = readFileSync(join(__dirname, "..", "public", "index.html"), "utf8");
+  const manifest = JSON.parse(readFileSync(join(__dirname, "..", "public", "manifest.json"), "utf8"));
+  const themeJs = readFileSync(join(__dirname, "design-system", "theme.js"), "utf8");
+
+  // The tokens are the source of truth; everything else is a copy of them.
+  const value = (name) => tokens.match(new RegExp(`${name}:\\s*(#[0-9a-f]{3,8})`, "i"))?.[1];
+  const dark = value("--felt-900");
+  const light = value("--paper-200");
+
+  test("the tokens the copies are copying still exist", () => {
+    expect(dark).toBeTruthy();
+    expect(light).toBeTruthy();
+    // --bg-page must still resolve to them, or every assertion below is
+    // checking agreement with a colour the page no longer paints.
+    expect(tokens).toMatch(/--bg-page:\s*var\(--felt-900\)/);
+    expect(tokens).toMatch(/--bg-page:\s*var\(--paper-200\)/);
+  });
+
+  test("the pre-paint boot block matches", () => {
+    expect(indexHtml).toMatch(new RegExp(`:root\\s*\\{[^}]*--boot-bg:\\s*${dark}`, "i"));
+    expect(indexHtml).toMatch(new RegExp(`\\[data-theme="light"\\]\\s*\\{[^}]*--boot-bg:\\s*${light}`, "i"));
+  });
+
+  test("the theme-color meta matches, and dark is the unqualified default", () => {
+    expect(indexHtml).toMatch(new RegExp(`<meta name="theme-color" content="${dark}"`, "i"));
+  });
+
+  test("the theme toggle repaints the browser chrome to the same two colours", () => {
+    const pair = themeJs.match(/BROWSER_UI_COLOUR\s*=\s*\{([^}]*)\}/)?.[1] || "";
+    expect(pair).toMatch(new RegExp(`dark:\\s*"${dark}"`, "i"));
+    expect(pair).toMatch(new RegExp(`light:\\s*"${light}"`, "i"));
+  });
+
+  test("the PWA manifest matches", () => {
+    expect(manifest.theme_color.toLowerCase()).toBe(dark.toLowerCase());
+    expect(manifest.background_color.toLowerCase()).toBe(dark.toLowerCase());
+  });
+});
+
+/* ── THE THEME HAS EXACTLY ONE DOOR ──────────────────────────────────────
+   tokens.css deliberately ignores prefers-color-scheme — dark is the product
+   default whatever the OS says — and there is no theme control in the footer.
+   So the switch in the navbar and the one in the room header are the only two
+   ways a light-theme user can reach the light theme, and hiding either one
+   locks that person into dark permanently with no error and nothing to click.
+
+   This nearly happened. The switch is 99px labelled where the icon button it
+   replaced was 32, .navbar-right is flex: 0 0 auto, and at 375px it took 306 of
+   the bar, squeezed .navbar-left to 29px and left the 44px brand mark
+   overflowing under the switch track. The tempting fix is display: none.
+─────────────────────────────────────────────────────────────────────────── */
+describe("the theme switch survives every width", () => {
+  const rulesFor = (source, selectorPattern) =>
+    (source.replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{[^{}]*\}/g) || [])
+      .filter((r) => selectorPattern.test(r.split("{")[0].trim()));
+
+  test("nothing anywhere hides the switch itself", () => {
+    for (const [label, source] of [["App.js", css], ["components.css", dsCss]]) {
+      const hidden = rulesFor(source, /pp-theme-switch\s*(,|\{|$)/)
+        .filter((r) => /display:\s*none|visibility:\s*hidden/.test(r));
+      expect({ [label]: hidden }).toEqual({ [label]: [] });
+    }
+  });
+
+  test("the narrow bar drops the word, not the control", () => {
+    /* Two steps, because the two rows this switch lives in have different
+       amounts of room. The component drops " theme" for itself; the navbar,
+       which cannot spare even one word, clips the label whole.
+       Clipped, not display:none — a clipped label is still the accessible
+       name, so what a phone stops showing it does not stop saying. */
+    expect(dsCss).toMatch(/\.pp-theme-switch__suffix\s*\{[^}]*clip-path/);
+    expect(css).toMatch(/\.navbar \.pp-theme-switch \.pp-switch__label\s*\{[^}]*clip-path/);
+    expect(css).not.toMatch(/\.navbar \.pp-theme-switch \.pp-switch__label\s*\{[^}]*display:\s*none/);
+  });
+
+  test("the label is width-pinned so toggling cannot shove the navbar", () => {
+    // "Dark" and "Light" are different widths. Without this the whole right
+    // side of the bar steps sideways every time anyone switches theme.
+    const rule = rulesFor(dsCss, /\.pp-theme-switch \.pp-switch__label/);
+    expect(rule.join("")).toMatch(/min-width:/);
+  });
+
+  test("the visible word and the accessible name are the same string", () => {
+    /* They used to be two strings — "Dark" on screen, "Theme: Dark" to a
+       screen reader — which satisfies WCAG 2.5.3 only for as long as nobody
+       edits one of them. There is one now, and no aria-label to drift from. */
+    expect(dsIndex).toMatch(/label=\{<>\{word\}<span className="pp-theme-switch__suffix"> theme<\/span><\/>\}/);
+    expect(dsIndex.slice(dsIndex.indexOf("export function ThemeToggle"), dsIndex.indexOf("export function ThemeToggle") + 700))
+      .not.toContain("aria-label");
+  });
+
+  test("the knob is not painted in a surface", () => {
+    /* --surface-1 is defined against the page, and in the default theme the
+       page is nearly black — so the raised knob was a dark disc in a dark
+       groove at 1.15:1, and the switch read as one flat pill. Ink contrasts
+       with whatever the theme puts behind it; that is what the role is for. */
+    const thumb = rulesFor(dsCss, /\.pp-switch__thumb$/).join("");
+    expect(thumb).toMatch(/background:\s*var\(--text-1\)/);
+    const track = rulesFor(dsCss, /\.pp-switch__track$/).join("");
+    expect(track).toMatch(/background:\s*var\(--bg-sunken\)/);
+  });
+});
+
+/* ── THE PANEL'S ACTION IS NOT THE SCREEN'S ─────────────────────────────
+   Start countdown, Add and End session were all reported as not standing out,
+   and all three were the same defect: a secondary button's fill measures 1.2:1
+   against the panel it sits on in the dark theme, so the only thing saying
+   "control" was a 2.0:1 hairline. That is below the 3:1 WCAG 2.2 SC 1.4.11
+   asks of a component boundary, and the light theme had already been fixed for
+   exactly this and the dark one left behind.
+
+   The fill is a separate problem from the rank. None of these three can be the
+   filled primary — the action bar always holds that while the room is live —
+   so they take the rung between primary and secondary instead.
+─────────────────────────────────────────────────────────────────────────── */
+describe("a control is one rung above the thing it sits on", () => {
+  const alpha = (decl) => Number((decl.match(/rgba\([^)]*?,\s*([\d.]+)\s*\)/) || [])[1]);
+
+  test("the dark theme's control edge clears 3:1, like the light one", () => {
+    // 0.26 measured 2.01:1 on a panel; 0.40 measures 3.08:1. The comment above
+    // the token carries the numbers — this holds the value they describe.
+    // Up to the first light-theme block — matching the selector with its
+    // brace, so the mention of it in the file's header comment is not it.
+    const dark = tokens.slice(0, tokens.indexOf('[data-theme="light"] {'));
+    expect(alpha(dark.match(/--border-strong:[^;]+;/)[0])).toBeGreaterThanOrEqual(0.4);
+  });
+
+  test("there is a rung between primary and secondary, and it is the one accent", () => {
+    expect(dsCss).toMatch(/\.pp-btn--accent\s*\{/);
+    const rule = dsCss.slice(dsCss.indexOf(".pp-btn--accent"), dsCss.indexOf("}", dsCss.indexOf(".pp-btn--accent")));
+    expect(rule).toMatch(/--btn-fg:\s*var\(--action-quiet\)/);
+    expect(rule).not.toMatch(/--action-gradient/);   // that belongs to primary alone
+    /* And its edge is the same one every other control draws. --border-gold
+       measures 2.74:1 on a dark panel and 1.77:1 on a light one — gold cannot
+       be a 3:1 boundary on paper, which is the whole reason --action-quiet
+       exists. The accent is in the fill and the label. */
+    expect(rule).toMatch(/--btn-bd:\s*var\(--border-strong\)/);
+  });
+
+  test("Start countdown and Add take it, and neither takes primary", () => {
+    /* The timer block renders behind !revealed and Add renders always, so
+       either one as primary would put a second gold slab beside Reveal. */
+    const start = app.slice(app.indexOf("Start {tsel") - 400, app.indexOf("Start {tsel"));
+    expect(start).toMatch(/variant="accent"/);
+    const add = app.slice(app.indexOf("<Icon name=\"plus\" size={16} /> Add") - 260, app.indexOf("<Icon name=\"plus\" size={16} /> Add"));
+    expect(add).toMatch(/variant="accent"/);
+  });
+
+  test("End session is a filled control, not red text in a box", () => {
+    const rule = dsCss.slice(dsCss.indexOf(".pp-btn--danger {"), dsCss.indexOf("}", dsCss.indexOf(".pp-btn--danger {")));
+    expect(rule).not.toMatch(/--btn-bg:\s*transparent/);
+    expect(rule).toMatch(/--btn-bg:\s*var\(--danger-surface\)/);
+  });
+
+  test("solid red exists for a confirm dialog and is not loose in the page", () => {
+    expect(dsCss).toMatch(/\.pp-btn--danger-strong\s*\{/);
+    // Exactly one caller: the delete confirmation. A solid destructive button
+    // anywhere else outranks the action the screen is actually for.
+    expect([...app.matchAll(/variant="danger-strong"/g)]).toHaveLength(1);
+  });
+});
+
+/* ── A ROW OF CHOICES IS ONE SHAPE ───────────────────────────────────────
+   The role cards stretch to the taller of the two, so "Votes on each story"
+   left 34px of dead space under it while "Runs the session and does not vote"
+   left 14 — same border, same padding, visibly different card. And the card's
+   single gap put the icon 4px from the label and the label 4px from its own
+   description, so all three read as one run of text.
+─────────────────────────────────────────────────────────────────────────── */
+describe("the role cards", () => {
+  const rule = (pattern) =>
+    (dsCss.replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{[^{}]*\}/g) || [])
+      .filter((r) => pattern.test(r.split("{")[0].trim())).join("");
+
+  test("a description reserves the second line the row was going to need", () => {
+    expect(rule(/^\.pp-choice__desc$/)).toMatch(/min-height:\s*calc\(2em/);
+  });
+
+  test("the compact variant, which has no description, is not padded out", () => {
+    expect(rule(/^\.pp-choice--compact \.pp-choice__desc$/)).toMatch(/min-height:\s*0/);
+  });
+
+  test("the icon is a rung of its own, not the first word of the label", () => {
+    expect(rule(/^\.pp-choice__icon$/)).toMatch(/margin-bottom:/);
+  });
+});
+
+/* ── DELETING A RECORDED ESTIMATE ────────────────────────────────────────
+   The only action in the room that removes work the team already did. It is
+   also the only one behind a dialog, because it is the only one with nothing
+   to undo it.
+─────────────────────────────────────────────────────────────────────────── */
+describe("the sized list can be corrected", () => {
+  const modal = app.slice(app.indexOf("open={!!pendingDelete}"), app.indexOf("open={!!pendingDelete}") + 1400);
+
+  test("the dialog names the row, not just the act", () => {
+    // "Are you sure?" over a list of five is a question about the wrong thing.
+    expect(modal).toMatch(/pendingDelete\.name/);
+    expect(modal).toMatch(/pendingDelete\.estimate/);
+  });
+
+  test("two ways out, and the safe one holds focus", () => {
+    expect(modal).toMatch(/data-autofocus[\s\S]*?Cancel/);
+    expect(modal).toMatch(/Confirm delete/);
+  });
+
+  test("the delete button carries the row in its name, not just an X", () => {
+    expect(app).toMatch(/label=\{`Delete the \$\{st\.estimate\} estimate for \$\{st\.name\}`\}/);
+  });
+
+  test("the action column's heading is hidden, never dropped", () => {
+    /* An empty heading breaks the stacked layout under 760px, which prints
+       every heading in front of its cell — the button would sit on a line
+       with nothing naming it. */
+    expect(app).toMatch(/\{ key: "remove", label: "Remove", hideLabel: true \}/);
+    expect(dsIndex).toMatch(/c\.hideLabel \? <span className="pp-visually-hidden">/);
+  });
+
+  test("and the column instruction that sizes it does not survive the stack", () => {
+    // width: 1% is how the column stays 36px wide; in the stacked layout every
+    // cell is its own flex row and the same rule collapsed the button to 8px.
+    expect(css).toMatch(/@media \(max-width: 760px\) \{\s*\.a-story-list td:last-child \{[^}]*width:\s*auto/);
+  });
+});
+
+/* ── ONE DECISION, ONE ROW ───────────────────────────────────────────────
+   Countdown length and Start are a single two-step action, and a hint used to
+   sit between them. The row that fixed that has to keep three properties, and
+   each of them is a thing that was wrong before.
+─────────────────────────────────────────────────────────────────────────── */
+describe("the timer row", () => {
+  const rule = (pattern) =>
+    (css.replace(/\/\*[\s\S]*?\*\//g, "").match(/[^{}]+\{[^{}]*\}/g) || [])
+      .filter((r) => pattern.test(r.split("{")[0].trim())).join("");
+
+  test("aligns on the bottom edge, the only one the two controls share", () => {
+    // The select carries a label above it and the button does not, so
+    // align-items: center would hang the button off the select's midpoint.
+    expect(rule(/^\.timer-setup$/m)).toMatch(/align-items:\s*end/);
+  });
+
+  test("wraps instead of reaching for a breakpoint", () => {
+    // The panel sits in a rail whose width does not track the viewport, so a
+    // media query here would be measuring the wrong box entirely. The row has
+    // to fall apart on its own, at whatever width it stops fitting.
+    expect(rule(/^\.timer-setup$/m)).toMatch(/flex-wrap:\s*wrap/);
+    expect(rule(/^\.timer-setup > \.pp-btn$/m)).toMatch(/flex:\s*1 1/);
+  });
+
+  test("the hint is still wired to the control it describes", () => {
+    // It moved out of <Select hint=…> to sit under the whole row, which means
+    // the aria-describedby that came free with the hint prop is now by hand.
+    expect(app).toMatch(/id="timer-length"/);
+    expect(app).toMatch(/aria-describedby="timer-length-hint"/);
+    expect(app).toMatch(/id="timer-length-hint"/);
   });
 });

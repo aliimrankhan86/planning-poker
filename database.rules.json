@@ -22,6 +22,15 @@
         // ── ROOT VALIDATION ───────────────────────────────────────────────
         // On initial room creation all required top-level fields must be present.
         // On subsequent updates the room already exists so newData always has them.
+        //
+        // Note the coupling this creates, because it is not obvious and it is
+        // load-bearing: requiring 'players' means REMOVING THE LAST PLAYER IS
+        // REJECTED — the write would leave the room without the node. leaveRoom
+        // already deletes the whole room when it is the last one out, and
+        // onDisconnect only marks a player offline, so nothing in the app hits
+        // it. Anything that ever removes a player unconditionally will, and it
+        // will fail silently inside an onDisconnect the client never hears back
+        // from. Verified against the emulator; see scripts/rules-test.mjs.
         ".validate": "newData.hasChildren(['createdAt', 'revealed', 'round', 'plan', 'deck', 'players', 'timer'])",
 
         // ── FIELD VALIDATION ──────────────────────────────────────────────
@@ -112,10 +121,20 @@
         },
 
         // ── STORIES ───────────────────────────────────────────────────────
+        // $storyIndex is the array position, so constraining its FORMAT is
+        // what caps the list — there is no other way to bound a child count
+        // here, and this path takes unauthenticated writes. Three digits is
+        // 1000 items, which is more backlog than a room can work through and
+        // 200KB at the per-name cap; without it one request could seed
+        // stories/999999999 and there was no ceiling at all.
+        // It is a correctness rule too: the client reads this node with
+        // Object.values() and sorts rounds numerically, so a non-numeric key
+        // injected here becomes a nameless story in the queue and a NaN in
+        // the sort.
         "stories": {
           "$storyIndex": {
             ".write": true,
-            ".validate": "!newData.exists() || newData.hasChildren(['name'])",
+            ".validate": "$storyIndex.matches(/^[0-9]{1,3}$/) && (!newData.exists() || newData.hasChildren(['name']))",
             "name": {
               ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
             },
@@ -128,11 +147,12 @@
 
         // ── ROUNDS ────────────────────────────────────────────────────────
         // Per-round estimates recorded by newRound (no-queue path).
-        // Keyed by storiesDone index at the time of recording.
+        // Keyed by storiesDone index at the time of recording. Same three-digit
+        // key cap as stories, for the same two reasons.
         "rounds": {
           "$roundIndex": {
             ".write": true,
-            ".validate": "newData.hasChildren(['estimate', 'isConsensus'])",
+            ".validate": "$roundIndex.matches(/^[0-9]{1,3}$/) && newData.hasChildren(['estimate', 'isConsensus'])",
             "estimate": {
               ".validate": "newData.isString() && (newData.val() === '?' || (newData.parent().parent().parent().child('deck').val() === 'fibonacci' && (newData.val() === '1' || newData.val() === '2' || newData.val() === '3' || newData.val() === '5' || newData.val() === '8' || newData.val() === '13' || newData.val() === '21' || newData.val() === '34')) || (newData.parent().parent().parent().child('deck').val() === 'tshirt' && (newData.val() === 'XS' || newData.val() === 'S' || newData.val() === 'M' || newData.val() === 'L' || newData.val() === 'XL' || newData.val() === 'XXL')) || (newData.parent().parent().parent().child('deck').val() === 'powers' && (newData.val() === '1' || newData.val() === '2' || newData.val() === '4' || newData.val() === '8' || newData.val() === '16' || newData.val() === '32')))"
             },
@@ -179,7 +199,7 @@
         "$date": {
           "$event": {
             ".write": true,
-            ".validate": "$date.matches(/^20[2-9][0-9]-[0-1][0-9]-[0-3][0-9]$/) && $event.matches(/^[a-z][a-z0-9_]{2,39}$/) && newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1))"
+            ".validate": "$date.matches(/^20[2-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/) && $event.matches(/^[a-z][a-z0-9_]{2,39}$/) && newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1))"
           }
         }
       }
@@ -195,8 +215,20 @@
         // old profile can still be saved, and they no longer grant anything.
         ".validate": "newData.hasChildren(['email', 'displayName', 'teamRoomName', 'createdAt', 'lastLoginAt']) && (!newData.child('teamRooms').exists() || (newData.child('teamRooms').child('primary').val() === newData.child('teamRoomName').val() && newData.child('teamRooms').child('secondary').val() !== newData.child('teamRooms').child('primary').val()))",
 
+        // Shape-checked, not just length-checked, because this string leaves
+        // the database: notifyOwnerOnSignup puts it in a mail subject line.
+        // The HTML body is escaped and nodemailer neutralises header injection,
+        // so this is the belt to that pair of braces — but a field that reaches
+        // an SMTP header should not be able to hold a newline in the first
+        // place, and a length cap alone let it.
+        // An allowlist rather than a ban on control characters: the rules
+        // engine has no \s class (it rejects the pattern outright), and
+        // enumerating what may appear is the safer direction anyway. This is
+        // the common address shape — plus-addressing and multi-label domains
+        // included. The rare RFC 5322 local-part punctuation (!#$%&'*/=?^`{|}~)
+        // is not in it, so an address using one could not save a profile.
         "email": {
-          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+          ".validate": "newData.isString() && newData.val().length <= 200 && newData.val().matches(/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z]{2,24}$/)"
         },
         "displayName": {
           ".validate": "newData.isString() && newData.val().length <= 40"

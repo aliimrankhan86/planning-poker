@@ -20,9 +20,14 @@ import { useSyncExternalStore } from "react";
 export const STORAGE_KEY = "pp-theme";
 export const DEFAULT_THEME = "dark";
 
-/* Kept in step with the two <meta name="theme-color"> values in index.html so
-   the browser chrome on mobile matches the page ground. */
-const BROWSER_UI_COLOUR = { dark: "#07110e", light: "#f6f3ea" };
+/* The mobile browser chrome sits directly above the page, so these have to be
+   the page ground exactly: --felt-900 and --paper-200, which are what
+   --bg-page resolves to in each theme. Light was #f6f3ea, three steps up the
+   paper ramp from the #eceade the page actually paints — a pale seam across
+   the top of every phone the moment anyone chose the light theme. Change
+   either token in tokens.css and change it here; designsystem.test.js fails if
+   these two and the boot values in public/index.html stop agreeing. */
+const BROWSER_UI_COLOUR = { dark: "#07110e", light: "#eceade" };
 
 function readStored() {
   try {

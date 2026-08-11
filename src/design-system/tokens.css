@@ -40,13 +40,44 @@
   --brass-300: #ffd978;
   --brass-200: #fff2be;
 
-  /* Ivory — chips, card faces, paper */
+  /* Ivory — the FACE OF A PLAYING CARD, and nothing else. These are the
+     brightest values in the product on purpose: in the light theme the deck is
+     the one object allowed to be near-white, so the cards read as paper laid on
+     a table rather than as holes cut in the page. Do not use them for UI
+     surfaces; that is what PAPER below is for. */
   --ivory-050: #fffefb;
   --ivory-100: #fffdfa;
   --ivory-200: #f6f3ea;
   --ivory-300: #efeadd;
   --ivory-400: #e2dccb;
   --ivory-500: #b8d1c2;
+
+  /* Paper — the light theme's ground and its surfaces.
+     The first light theme was built out of IVORY, which put the whole UI
+     between L* 92.8 and L* 100: a seven-point band at the very top of the
+     range. Nothing could be raised above anything else, the page gradient
+     started at L* 99.4 so a card was DARKER than the page behind it, and the
+     result was a white glare with no structure in it.
+
+     This is a real ladder instead. Five rungs, each 1.4 to 3.7 L* apart, and
+     the order never inverts:
+
+        paper-300  88.9   a band that sits BELOW the page
+        paper-200  92.6   the page itself
+        paper-100  95.4   recessed inside a card / raised on the page
+        paper-050  97.6   a card, a panel, an input
+        paper-025  99.0   the top of the stack: modal, popover, toast
+
+     The hue drifts from warm at the top of the ramp to a stone-green at the
+     bottom, so the light steps stay parchment and the dark ones stay stone
+     rather than going khaki. Nothing here is #ffffff: pure white next to
+     near-black text is what made the old theme glare. */
+  --paper-025: #fdfcf9;
+  --paper-050: #faf8f3;
+  --paper-100: #f4f2ea;
+  --paper-200: #eceade;
+  --paper-300: #e1e0d2;
+  --paper-400: #d2d3c4;
 
   /* State hues */
   --red-600:   #b3241f;
@@ -219,7 +250,13 @@
   --surface-card-face: var(--ivory-100);
 
   --border-subtle: rgba(134,198,166,0.14);
-  --border-strong: rgba(158,234,196,0.26);
+  /* Same 1.4.11 fix the light theme got, finally applied to the theme that is
+     on by default. 0.26 measured 2.01:1 on a panel, and a secondary button's
+     fill is 1.20:1 there, so the edge WAS the control — an Add button, a
+     select and a text input all had a boundary the spec does not consider
+     drawn. 0.40 measures 3.08:1 on a panel. --border-subtle is decorative,
+     stays quiet. */
+  --border-strong: rgba(158,234,196,0.40);
   --border-gold: rgba(241,185,63,0.42);
   --divider: rgba(134,198,166,0.12);
 
@@ -245,6 +282,13 @@
   --danger: var(--red-300);
   --danger-surface: rgba(224,72,72,0.14);
   --danger-border: rgba(224,72,72,0.42);
+  /* Solid red, for the one place a destructive action is the primary action:
+     the confirm button in a dialog that exists only to ask about it. Dark ink
+     on a bright fill, the same arrangement as --action on gold, because that is
+     what clears 4.5:1 in a theme this dark — 4.51:1 here, and 4.66:1 for the
+     button's own edge against the modal behind it. */
+  --danger-solid: var(--red-500);
+  --danger-solid-fg: var(--felt-900);
   --success: var(--green-500);
   --success-surface: rgba(75,216,137,0.13);
   --success-border: rgba(75,216,137,0.38);
@@ -265,37 +309,64 @@
   --elev-3: 0 24px 64px rgba(0,0,0,0.55);
   /* The one decorative shadow: a playing card lifted off the felt. */
   --elev-card-lift: 0 18px 38px rgba(0,0,0,0.52), 0 2px 0 rgba(255,255,255,0.5) inset;
+
+  /* Text shadow is a DARK-THEME legibility device, not a style. Big display
+     type floating over a felt gradient needs a shadow to keep its edge; the
+     same shadow on paper is a smudge, and three of them were hard-coded in
+     App.js as literal black and gold. Both roles collapse to `none` in light. */
+  --glow-display: 0 12px 32px rgba(0,0,0,0.42);
+  --glow-accent: 0 0 40px rgba(241,185,63,0.55), 0 4px 16px rgba(0,0,0,0.7);
+  --glow-numeral: 0 0 50px rgba(241,185,63,0.42);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SEMANTIC ROLES — LIGHT (opt-in)
 
-   The table under house lights: warm ivory paper, felt-green ink, brass still
-   reserved for the one action that finishes the job.
+   The table under house lights. Paper for the ground and the panels, felt-green
+   ink, brass still reserved for the one action that finishes the job.
+
+   Two rules earn their keep here and are worth stating before the values:
+
+   1. THE LADDER ONLY GOES ONE WAY. bg-sunken < bg-page < surface-2 < surface-1
+      < surface-3, always, including every stop of the page gradient. A surface
+      that is lighter than the thing it sits on in one scroll position and
+      darker in another is not elevation, it is noise.
+   2. NOTHING IS #ffffff AND NOTHING IS #000000. The brightest UI surface is
+      L* 99 and the darkest text is L* 13. Ink on pure paper measures ~19:1,
+      which is well past the point where more contrast buys legibility and into
+      the range that just hurts to look at for an hour. Body text now lands
+      near 15:1 on a card and 13:1 on the page — comfortably above AAA, and
+      calm.
    ═══════════════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
   color-scheme: light;
 
-  --bg-page: var(--ivory-200);
-  --bg-sunken: var(--ivory-300);
-  --surface-1: var(--ivory-050);      /* cards, panels */
-  --surface-2: var(--ivory-300);      /* rails, inset rows */
-  --surface-3: #ffffff;               /* raised: modals, popovers */
+  --bg-page: var(--paper-200);        /* L* 92.6 — the ground */
+  --bg-sunken: var(--paper-300);      /* L* 88.9 — a band below the ground */
+  --surface-1: var(--paper-050);      /* L* 97.6 — cards, panels, inputs */
+  --surface-2: var(--paper-100);      /* L* 95.4 — recessed in a card, raised on the page */
+  --surface-3: var(--paper-025);      /* L* 99.0 — modals, popovers, toasts */
   --surface-felt: var(--felt-700);    /* inverse block: hero, footer, the table */
   --surface-card-face: var(--ivory-100);
 
-  --border-subtle: rgba(10,31,24,0.12);
-  --border-strong: rgba(10,31,24,0.26);
+  /* --border-strong draws the edge of a CONTROL — an input, a checkbox, a
+     switch track, a secondary button — and WCAG 2.2 SC 1.4.11 asks for 3:1
+     against whatever sits behind it. The old 0.26 measured 1.75:1, so every
+     form control in the light theme had an edge that was not there. 0.50 gives
+     3.27:1 on a card, 3.20:1 on the page and 3.09:1 on a rail.
+     --border-subtle is decorative — card hairlines and dividers — and stays
+     quiet at 1.6:1. */
+  --border-subtle: rgba(10,31,24,0.22);
+  --border-strong: rgba(10,31,24,0.50);
   --border-gold: rgba(184,134,43,0.55);
-  --divider: rgba(10,31,24,0.10);
+  --divider: rgba(10,31,24,0.14);
 
-  --text-1: var(--felt-950);            /* 16.9:1 on --bg-page */
-  --text-2: #384a42;                    /*  8.4:1 */
-  /* 5.1:1 against --bg-page, but the floor has to hold on every surface the
-     role actually lands on. On a panel tinted with --tint-raise it measured
-     4.42:1, so the value moved one step darker; it now clears on the tinted
-     panel, the raised card and the page alike. */
-  --text-3: #4f6159;                    /*  5.9:1 on the page, 4.6:1 at worst */
+  --text-1: #17251f;                    /* 15.0:1 on a card, 13.2:1 on the page */
+  --text-2: #3c4d45;                    /*  8.5:1 / 7.4:1 */
+  /* The floor has to hold on every surface the role actually lands on, and the
+     darkest of those is --bg-sunken, not the page. 5.3:1 there, 4.6:1 even on
+     paper-400. */
+  --text-3: #4f5c56;                    /*  5.5:1 on a card, 5.3:1 at worst */
   --text-on-felt: #f5fbf7;
   --text-on-felt-2: rgba(245,251,247,0.78);
   --text-on-gold: var(--felt-950);
@@ -309,28 +380,44 @@
   --action-quiet: var(--brass-800);   /* brass that clears 4.5:1 on a raised ivory card, not just on the page */
   --focus: var(--brass-700);
 
+  /* State surfaces sit at L* 92, level with the page rather than above it. The
+     old set ran 94–96, which is brighter than the ground: an alert panel glowed
+     instead of settling, and a page with three of them on it had three bright
+     rectangles competing with the one gold button. Each still clears 4.5:1
+     against its own state text. */
   --danger: var(--red-600);
-  --danger-surface: #fdeceb;
-  --danger-border: rgba(179,36,31,0.34);
+  --danger-surface: #f7e4e3;          /* 5.4:1 with --danger */
+  --danger-border: rgba(179,36,31,0.38);
+  /* Light theme goes the other way round — deep red, white text — because on
+     paper the bright fill is the one that cannot hold 4.5:1. 6.58:1. */
+  --danger-solid: var(--red-600);
+  --danger-solid-fg: #ffffff;
   --success: var(--green-600);
-  --success-surface: #e6f5ed;
-  --success-border: rgba(23,115,76,0.30);
+  --success-surface: #d6eee3;         /* 4.8:1 */
+  --success-border: rgba(23,115,76,0.34);
   --info: var(--blue-600);
-  --info-surface: #e7f2f8;
-  --info-border: rgba(23,96,127,0.30);
+  --info-surface: #dbebf0;            /* 5.7:1 */
+  --info-border: rgba(23,96,127,0.34);
   --warning: var(--amber-600);
-  --warning-surface: #fbf1dd;
-  --warning-border: rgba(138,90,8,0.30);
+  --warning-surface: #f2e7d3;         /* 4.8:1 */
+  --warning-border: rgba(138,90,8,0.34);
 
-  --scrim: rgba(6,18,14,0.48);
-  --skeleton: linear-gradient(90deg, var(--ivory-300) 0%, var(--ivory-400) 50%, var(--ivory-300) 100%);
+  --scrim: rgba(6,18,14,0.44);
+  --skeleton: linear-gradient(90deg, var(--paper-100) 0%, var(--paper-300) 50%, var(--paper-100) 100%);
   --felt-texture: radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.06), transparent 60%);
 
+  /* Two layers each: a tight contact shadow that says the edge is off the
+     ground, and a wide ambient one that says how far. The hue is felt-green
+     rather than neutral black — a grey shadow on warm paper reads as dirt. */
   --elev-0: none;
-  --elev-1: 0 1px 2px rgba(6,18,14,0.10), 0 1px 1px rgba(6,18,14,0.06);
-  --elev-2: 0 8px 24px rgba(6,18,14,0.12), 0 2px 6px rgba(6,18,14,0.08);
-  --elev-3: 0 24px 64px rgba(6,18,14,0.18), 0 6px 16px rgba(6,18,14,0.10);
-  --elev-card-lift: 0 18px 38px rgba(6,18,14,0.22), 0 2px 0 rgba(255,255,255,0.6) inset;
+  --elev-1: 0 1px 1px rgba(24,45,36,0.05), 0 2px 4px rgba(24,45,36,0.06);
+  --elev-2: 0 2px 4px rgba(24,45,36,0.05), 0 8px 20px rgba(24,45,36,0.09);
+  --elev-3: 0 4px 10px rgba(24,45,36,0.07), 0 24px 56px rgba(24,45,36,0.14);
+  --elev-card-lift: 0 2px 4px rgba(24,45,36,0.10), 0 16px 32px rgba(24,45,36,0.18), 0 1px 0 rgba(255,255,255,0.7) inset;
+
+  --glow-display: none;
+  --glow-accent: none;
+  --glow-numeral: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -362,6 +449,23 @@
   --goldA: rgba(241,185,63,0.24);
   --goldB: rgba(241,185,63,0.14);
 
+  /* Brass used as a TINT — a selected chip's fill, an active border, the halo
+     round a won round. App.js wrote roughly forty of these by hand as literal
+     rgba, in two different golds (201,145,42 from the pre-token build and
+     241,185,63 from the palette), at fourteen different alphas. On paper a
+     bright brass tint at 10% is not there at all, which is why selected states
+     in the light theme had a gold border and no fill.
+     Three fills and two lines, and every gold tint in the product is one of
+     them. Light swaps the hue to brass-600 and pushes the alpha up, because a
+     tint has to be seen against paper, not against felt. */
+  --gold-fill-1: rgba(241,185,63,0.07);   /* a row that has been dealt with */
+  --gold-fill-2: rgba(241,185,63,0.13);   /* a selected chip */
+  --gold-fill-3: rgba(241,185,63,0.20);   /* the active one of a set */
+  --gold-line-1: rgba(241,185,63,0.22);   /* quiet brass edge */
+  --gold-line-2: rgba(241,185,63,0.40);   /* active brass edge */
+  --gold-glow:   rgba(241,185,63,0.22);   /* halo, dark theme only */
+
+
   /* Gold used as TEXT is a different role from gold used as a SURFACE: on
      ivory a #ffd978 label is 1.5:1 and invisible. The -ink aliases carry the
      text role and drop to --brass-700 in light; the plain names stay bright
@@ -384,6 +488,9 @@
 
   --scroll-track: rgba(7,17,14,0.94);
   --scroll-thumb: linear-gradient(180deg, #ffe08f 0%, #f5c659 42%, #dd9c22 100%);
+  /* Firefox's scrollbar-color takes a colour, not a gradient: the flat stand-in
+     for the middle of the gradient above. */
+  --scroll-thumb-flat: #f5c659;
   --scroll-thumb-border: rgba(5,10,9,0.62);
 
   --radius: 20px;
@@ -417,11 +524,16 @@
      secondary button first came out with no fill at all. */
   --tint-raise: rgba(255,255,255,0.03);
   --tint-raise-2: rgba(255,255,255,0.06);
+
+  /* The hairline of light along a raised edge. Real on felt, where a lit edge
+     is how you read depth; meaningless on paper, where the same white line on a
+     near-white surface is invisible and the shadow does all the work. */
+  --inset-hi: inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 [data-theme="light"] {
   --bg:       var(--bg-page);
-  --bg2:      var(--ivory-300);
+  --bg2:      var(--paper-100);
   --surface:  var(--surface-1);
   --surface2: var(--surface-2);
   --surface3: var(--surface-3);
@@ -436,6 +548,14 @@
   --gold3: var(--brass-200);
   --goldA: rgba(184,134,43,0.22);
   --goldB: rgba(184,134,43,0.12);
+
+  --gold-fill-1: rgba(184,134,43,0.09);
+  --gold-fill-2: rgba(184,134,43,0.16);
+  --gold-fill-3: rgba(184,134,43,0.26);
+  --gold-line-1: rgba(184,134,43,0.36);
+  --gold-line-2: rgba(184,134,43,0.62);
+  --gold-glow:   rgba(184,134,43,0.14);
+
 
   /* brass-700 measures 4.85:1 on --bg-page but only 4.4:1 once the text sits on
      a raised --surface-1, which is where most gold links actually are. The
@@ -459,30 +579,40 @@
 
   --scroll-track: rgba(10,31,24,0.08);
   --scroll-thumb: linear-gradient(180deg, #d9a83f 0%, #c08f22 42%, #8a6414 100%);
+  --scroll-thumb-flat: #c08f22;
   --scroll-thumb-border: rgba(10,31,24,0.18);
 
   --radius: 20px;
-  --shadow: 0 28px 90px rgba(6,18,14,0.16);
-  --shadow-soft: 0 20px 60px rgba(6,18,14,0.10);
+  --shadow: 0 24px 56px rgba(24,45,36,0.14), 0 4px 10px rgba(24,45,36,0.07);
+  --shadow-soft: 0 8px 20px rgba(24,45,36,0.09), 0 2px 4px rgba(24,45,36,0.05);
 
-  /* Paper under house lights: warm at the top, settling a shade towards the
-     fold. The washes stay on the same hues as dark, an order of magnitude
-     weaker — enough to keep the ground from reading as flat white, not enough
-     to tint it green. */
-  --page-ground: linear-gradient(180deg, var(--ivory-100) 0%, var(--ivory-200) 46%, var(--ivory-300) 100%);
-  --page-wash-1: rgba(23,115,76,0.07);
-  --page-wash-2: rgba(23,96,127,0.04);
-  --felt-wash-1: rgba(23,115,76,0.05);
-  --felt-wash-2: rgba(184,134,43,0.06);
+  /* Paper under house lights: a shade warmer at the top, settling towards the
+     fold. The whole gradient travels 3.2 L* and its brightest stop (94.0) stays
+     BELOW --surface-2 (95.4), so a panel is never darker than the page behind
+     it — which is exactly what the old gradient did, starting at L* 99.4 and
+     leaving cards to read as recessed at the top of every page.
 
-  --surface-bar: rgba(255,254,251,0.84);
-  --surface-bar-solid: rgba(255,254,251,0.95);
+     The washes are the same hues as dark, an order of magnitude weaker: enough
+     to keep the ground from reading as flat card stock, not enough to tint it. */
+  --page-ground: linear-gradient(180deg, #f0eee3 0%, var(--paper-200) 46%, #e7e5d9 100%);
+  --page-wash-1: rgba(23,115,76,0.055);
+  --page-wash-2: rgba(23,96,127,0.035);
+  --felt-wash-1: rgba(23,115,76,0.045);
+  --felt-wash-2: rgba(184,134,43,0.05);
 
-  --shadow-cast: rgba(6,18,14,0.14);
-  --shadow-card: rgba(6,18,14,0.22);
+  --surface-bar: rgba(244,242,234,0.86);
+  --surface-bar-solid: var(--paper-100);
 
-  --tint-raise: rgba(6,18,14,0.035);
-  --tint-raise-2: rgba(6,18,14,0.06);
+  --shadow-cast: rgba(24,45,36,0.13);
+  --shadow-card: rgba(24,45,36,0.20);
+
+  /* "One step off the ground", composited against whatever the parent happens
+     to be. On paper that means adding ink. The old 0.035 was invisible against
+     a surface only 2 L* away from it. */
+  --tint-raise: rgba(6,18,14,0.055);
+  --tint-raise-2: rgba(6,18,14,0.10);
+
+  --inset-hi: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -501,6 +631,7 @@
    footer's $0 chip read as a dark smudge.
    ═══════════════════════════════════════════════════════════════════════════ */
 [data-theme="light"] .site-footer,
+[data-theme="light"] .pp-footer,
 [data-theme="light"] .pp-card--felt,
 [data-theme="light"] .pp-section--felt,
 [data-theme="light"] .pp-hero:not(.pp-hero--paper) {

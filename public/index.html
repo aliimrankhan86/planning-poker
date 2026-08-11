@@ -84,8 +84,8 @@
          tokens has not loaded yet at this point, and the whole job of this
          block is to paint the correct ground before it does. They mirror
          --bg-page / --text-1 / --action in src/design-system/tokens.css. */
-      :root { --boot-bg: #07110e; --boot-fg: #f5fbf7; --boot-fg-2: rgba(245,251,247,.78); --boot-gold: #ffd978; --boot-gold-2: #f1b93f; --boot-rail: rgba(255,255,255,0.06); }
-      [data-theme="light"] { --boot-bg: #f6f3ea; --boot-fg: #06120e; --boot-fg-2: #384a42; --boot-gold: #8a6414; --boot-gold-2: #b8862b; --boot-rail: rgba(10,31,24,0.08); }
+      :root { --boot-bg: #07110e; --boot-fg: #f5fbf7; --boot-fg-2: rgba(245,251,247,.78); --boot-gold: #ffd978; --boot-gold-2: #f1b93f; --boot-rail: rgba(255,255,255,0.06); --boot-thumb: #f5c659; --boot-thumb-edge: rgba(5,10,9,0.62); }
+      [data-theme="light"] { --boot-bg: #eceade; --boot-fg: #17251f; --boot-fg-2: #3c4d45; --boot-gold: #8a6414; --boot-gold-2: #b8862b; --boot-rail: rgba(10,31,24,0.08); --boot-thumb: #c08f22; --boot-thumb-edge: rgba(10,31,24,0.18); }
 
       html { background: var(--boot-bg); }
       body {
@@ -94,16 +94,18 @@
         color: var(--boot-fg);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        overflow-x: hidden;
+        /* No overflow-x: hidden. One hidden axis makes the other compute to
+           `auto`, body becomes a scroll container, and every position: sticky
+           in the app silently stops sticking. */
         scrollbar-width: thin;
-        scrollbar-color: #c9922a var(--boot-rail);
+        scrollbar-color: var(--boot-thumb) var(--boot-rail);
       }
       *::-webkit-scrollbar { width: 12px; height: 12px; }
       *::-webkit-scrollbar-track { background: var(--boot-rail); border-radius: 999px; }
       *::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #f5d07a 0%, #e8b84b 45%, #c9922a 100%);
+        background: var(--boot-thumb);
         border-radius: 999px;
-        border: 2px solid rgba(8,14,9,0.55);
+        border: 2px solid var(--boot-thumb-edge);
       }
       #root { min-height: 100vh; }
       /* Static shell shown to non-JS crawlers and for the instant before React

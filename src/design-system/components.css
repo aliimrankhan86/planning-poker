@@ -190,17 +190,53 @@
   --btn-bd: var(--border-strong);
   --btn-shadow: var(--elev-1);
 }
+/* The rung between primary and secondary, and the one the system was missing.
+   A panel can have an action that is obviously THE action of that panel while
+   the screen's one filled primary belongs to something else — Start countdown
+   under Reveal everyone's cards, Add under the same. Both were secondary, which
+   is the rung for "a way out of this", and they read as grey boxes.
+   Keyed to the accent so it is legible as an action, outlined so it cannot be
+   mistaken for the primary next to it. One accent, two weights. */
+.pp-btn--accent {
+  --btn-bg: var(--gold-fill-2);
+  --btn-bg-hover: color-mix(in oklab, var(--action) 22%, var(--gold-fill-2));
+  --btn-fg: var(--action-quiet);
+  /* --border-gold, not --border-strong, was the obvious choice and it measures
+     2.74:1 on a dark panel and 1.77:1 on a light one. Gold on paper cannot
+     reach 3:1 as an edge at all — that is why --action-quiet exists — so the
+     boundary is the same one every other control draws, and the accent lives
+     in the fill and the label, where it has 9.9:1 and 6.2:1 to spend. */
+  --btn-bd: var(--border-strong);
+  --btn-shadow: var(--elev-1);
+}
 .pp-btn--ghost {
   --btn-bg: transparent;
   --btn-bg-hover: color-mix(in oklab, var(--text-1) 8%, transparent);
   --btn-fg: var(--text-2);
   --btn-bd: transparent;
 }
+/* Filled, for the same reason --secondary is: a control is one rung above its
+   container or it is not a control. Transparent-on-panel made "End session" —
+   the one irreversible thing in the room — read as a line of red text with a
+   box drawn round it, quieter than the Re-vote button beside it. It is tinted,
+   not solid: solid red would outrank Record, and Record is the action. */
 .pp-btn--danger {
-  --btn-bg: transparent;
-  --btn-bg-hover: var(--danger-surface);
+  --btn-bg: var(--danger-surface);
+  --btn-bg-hover: color-mix(in oklab, var(--danger) 26%, var(--danger-surface));
   --btn-fg: var(--danger);
   --btn-bd: var(--danger-border);
+  --btn-shadow: var(--elev-1);
+}
+/* The confirm button of a dialog that exists to ask one destructive question.
+   Solid is right there and nowhere else: a modal is its own screen, so this is
+   its one primary, and it is not competing with Record or Start behind the
+   scrim. Reach for --danger in the page itself. */
+.pp-btn--danger-strong {
+  --btn-bg: var(--danger-solid);
+  --btn-bg-hover: color-mix(in oklab, black 12%, var(--danger-solid));
+  --btn-fg: var(--danger-solid-fg);
+  --btn-bd: transparent;
+  --btn-shadow: var(--elev-1);
 }
 .pp-btn--on-felt {
   --btn-bg: rgba(255,255,255,0.08);
@@ -252,10 +288,24 @@
   border-color: var(--action);
   background: color-mix(in oklab, var(--action) 12%, var(--surface-1));
 }
-.pp-choice__icon { flex: none; color: var(--action-quiet); }
+/* Three things, two rungs. The card's gap put the icon 4px from the label and
+   the label 4px from its own description, so proximity said all three were one
+   run of text; the icon takes one extra step to say it is a mark on the card
+   and not the first word of the sentence. */
+.pp-choice__icon { flex: none; color: var(--action-quiet); margin-bottom: var(--sp-1); }
 .pp-choice[aria-pressed="true"] .pp-choice__icon { color: var(--action); }
 .pp-choice__label { font-size: var(--fs-3); font-weight: var(--fw-semi); line-height: var(--lh-snug); }
-.pp-choice__desc { font-size: var(--fs-2); color: var(--text-2); line-height: var(--lh-snug); letter-spacing: var(--fs-2-tracking); }
+/* Two lines, reserved. A row of choices stretches to its tallest card, so a
+   one-line description left 34px of dead space in one box and 14px in the one
+   beside it — same border, same padding, visibly different card. Reserving the
+   line the longer description was always going to need makes the pair one
+   shape, and costs nothing when every description is short. */
+.pp-choice__desc {
+  font-size: var(--fs-2); color: var(--text-2); line-height: var(--lh-snug);
+  letter-spacing: var(--fs-2-tracking);
+  min-height: calc(2em * var(--lh-snug));
+}
+.pp-choice--compact .pp-choice__desc { min-height: 0; }
 .pp-choice--compact { flex-direction: row; align-items: center; justify-content: center; }
 .pp-choice-row { display: flex; gap: var(--sp-3); flex-wrap: wrap; }
 .pp-choice-row > .pp-choice { flex: 1 1 var(--choice-basis, 180px); width: auto; }
@@ -284,7 +334,17 @@
   border-color: var(--border-gold); box-shadow: var(--elev-1);
 }
 .pp-segmented--block { display: flex; width: 100%; }
-.pp-segmented--block .pp-segmented__item { flex: 1; }
+/* Full-width mode is the one that meets a phone. `flex: 1` alone will not
+   shrink an item below its own nowrap label, so three two-word modes
+   ("Sign in / Create account / Reset password") need 371px and force whatever
+   contains them to scroll. min-width: 0 lets the track win, the tighter inline
+   padding buys back 48px, and dropping nowrap lets a label take a second line
+   rather than the control take a scrollbar. */
+.pp-segmented--block .pp-segmented__item {
+  flex: 1; min-width: 0;
+  padding-inline: var(--sp-2);
+  white-space: normal; text-align: center; text-wrap: balance;
+}
 
 
 /* ── forms ─────────────────────────────────────────────────────────────── */
@@ -328,17 +388,58 @@
 /* Switch, checkbox, radio. All three keep a 44px hit area via the label wrapper. */
 .pp-switch { display: inline-flex; align-items: center; gap: var(--sp-3); min-height: var(--tap-min); cursor: pointer; }
 .pp-switch__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+/* A track is a groove, so it is painted with the one surface that sits BELOW the
+   page — not --surface-2, which is the raised fill of a control. Getting that
+   backwards is why the off state was invisible in the dark theme: the track was
+   1.2:1 against the panel and the thumb was 1.15:1 against the track, so the
+   whole switch read as one flat pill with no knob in it. */
 .pp-switch__track {
   width: 52px; height: 30px; flex: none; border-radius: var(--r-full);
-  background: var(--surface-2); border: var(--bw-hair) solid var(--border-strong);
+  background: var(--bg-sunken); border: var(--bw-hair) solid var(--border-strong);
   padding: 3px; display: flex; align-items: center;
   transition: background var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
 }
-.pp-switch__thumb { width: 22px; height: 22px; border-radius: var(--r-full); background: var(--surface-1); box-shadow: var(--elev-1); transition: transform var(--dur-base) var(--ease-out); }
+/* The thumb is the state, so it is painted in ink, not in a surface. A surface
+   is defined relative to the page and the page is dark here, so --surface-1
+   made a dark knob in a dark groove; --text-1 is the one role that is
+   guaranteed to contrast with everything the theme puts behind it, which is
+   exactly the job. It reads on the sunken track and on the gold one. */
+.pp-switch__thumb { width: 22px; height: 22px; border-radius: var(--r-full); background: var(--text-1); box-shadow: var(--elev-1); transition: transform var(--dur-base) var(--ease-out); }
 .pp-switch__input:checked + .pp-switch__track { background: var(--action-gradient); border-color: transparent; }
 .pp-switch__input:checked + .pp-switch__track .pp-switch__thumb { transform: translateX(22px); }
 .pp-switch__input:focus-visible + .pp-switch__track { outline: var(--bw-thick) solid var(--focus); outline-offset: 2px; }
 .pp-switch__label { font-size: var(--fs-3); color: var(--text-1); line-height: var(--lh-snug); }
+
+/* The theme switch sits in the navbar and in the room header. It used to run a
+   size down from a form switch to save the row some width, which cost it the
+   only two things that made it findable — size and a legible knob — to buy back
+   8px in a bar that had the room. It is a full-size switch now.
+
+   The label is min-width'd to the wider of its own two states: it is the only
+   label in the product whose text changes while you look at it, and without
+   this every toggle nudged the whole right-hand side of the navbar sideways by
+   the difference between "Dark theme" and "Light theme". */
+.pp-theme-switch { gap: var(--sp-3); }
+.pp-theme-switch .pp-switch__label {
+  font-weight: var(--fw-medium); min-width: 6.4em; text-align: left;
+}
+
+/* Under 780px both of the rows this switch lives in run out of width — 166px
+   of theme control pushed the room header 55px past the viewport. It goes back
+   a size and drops to one word. Neither costs it anything now: the knob reads
+   at 20px as well as at 22px, and the clipped word is still the accessible
+   name, so "Dark theme" is what a screen reader hears at every width. */
+@media (max-width: 780px) {
+  .pp-theme-switch { gap: var(--sp-2); }
+  .pp-theme-switch .pp-switch__track { width: 44px; height: 26px; padding: 2px; }
+  .pp-theme-switch .pp-switch__thumb { width: 20px; height: 20px; }
+  .pp-theme-switch .pp-switch__input:checked + .pp-switch__track .pp-switch__thumb { transform: translateX(18px); }
+  .pp-theme-switch .pp-switch__label { font-size: var(--fs-2); min-width: 3.1em; }
+  .pp-theme-switch__suffix {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+}
 
 .pp-check { display: inline-flex; align-items: flex-start; gap: var(--sp-3); min-height: var(--tap-min); padding-block: var(--sp-2); cursor: pointer; }
 .pp-check__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -370,7 +471,7 @@
 }
 .pp-card--raised { box-shadow: var(--elev-2); }
 .pp-card--flat { box-shadow: none; background: var(--surface-2); }
-.pp-card--felt { background: var(--surface-felt); color: var(--text-on-felt); border-color: rgba(255,255,255,0.12); }
+.pp-card--felt { background: var(--surface-felt); color: var(--text-on-felt); border-color: var(--divider); }
 .pp-card--felt .pp-card__title, .pp-card--felt h1, .pp-card--felt h2, .pp-card--felt h3 { color: var(--text-on-felt); }
 .pp-card--felt .pp-card__body { color: var(--text-on-felt-2); }
 .pp-card--felt .pp-card__eyebrow { color: var(--brass-300); }
@@ -383,6 +484,13 @@
 .pp-card__eyebrow { font-size: var(--fs-1); font-weight: var(--fw-semi); text-transform: uppercase; letter-spacing: var(--tracking-eyebrow); color: var(--text-3); line-height: var(--lh-snug); }
 .pp-card__title { font-family: var(--font-ui); font-size: var(--fs-4); font-weight: var(--fw-semi); line-height: var(--lh-snug); letter-spacing: 0; }
 .pp-card__body { font-size: var(--fs-2); line-height: var(--lh-body); color: var(--text-2); letter-spacing: var(--fs-2-tracking); }
+/* A card body is block flow with no rhythm of its own, so every card holding
+   more than one child had to hand-margin the gap — and the facilitator's
+   split-vote card forgot one, landing its stat tiles flush against the
+   sentence telling you to read them. This is a floor, not a sum: adjacent
+   siblings' vertical margins collapse in block flow, so a child that already
+   declares a larger gap keeps it, and a child that declares none gets this. */
+.pp-card__body > * + * { margin-top: var(--sp-4); }
 .pp-card__footer { display: flex; align-items: center; gap: var(--sp-3); margin-top: auto; padding-top: var(--sp-2); }
 .pp-card--editorial .pp-card__title { font-family: var(--font-display); font-size: var(--fs-5); font-weight: var(--fw-bold); letter-spacing: var(--tracking-display); }
 
@@ -496,7 +604,7 @@
   --avatar-size: 40px;
   width: var(--avatar-size); height: var(--avatar-size); flex: none;
   display: grid; place-items: center; border-radius: var(--r-full);
-  background: var(--felt-700); color: var(--cream);
+  background: var(--felt-700); color: var(--text-on-felt);
   border: var(--bw-thick) solid transparent;
   font-family: var(--font-ui); font-size: var(--fs-2); font-weight: var(--fw-semi); line-height: 1;
   text-transform: uppercase;
@@ -637,7 +745,7 @@
 .pp-tooltip {
   position: absolute; z-index: var(--z-overlay); max-width: 260px;
   padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm);
-  background: var(--felt-850); color: var(--cream);
+  background: var(--felt-850); color: var(--text-on-felt);
   font-size: var(--fs-2); line-height: var(--lh-snug); box-shadow: var(--elev-2);
 }
 .pp-popover {
@@ -784,7 +892,7 @@
 .pp-footer__list a:hover { color: var(--brass-300); text-decoration: underline; }
 .pp-footer__base {
   display: flex; flex-wrap: wrap; gap: var(--sp-4); justify-content: space-between; align-items: center;
-  padding-top: var(--sp-6); border-top: var(--bw-hair) solid rgba(255,255,255,0.12);
+  padding-top: var(--sp-6); border-top: var(--bw-hair) solid var(--divider);
   font-size: var(--fs-1); color: var(--text-on-felt-2); letter-spacing: var(--fs-1-tracking);
 }
 
@@ -800,6 +908,12 @@
   border-radius: var(--r-lg); box-shadow: var(--elev-3);
   animation: pp-modal-in var(--dur-base) var(--ease-out) both;
 }
+/* A grid item's min-width is `auto`, so one child that cannot shrink — a
+   nowrap segmented control, a long room URL, a wide table — widens the whole
+   track past the modal box and the dialog starts scrolling sideways. Nothing
+   in a modal is ever allowed to do that: the track is capped here and the
+   child deals with its own overflow. */
+.pp-modal > * { min-width: 0; }
 .pp-modal--wide { width: min(760px, 100%); }
 .pp-modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
 .pp-modal__title { font-family: var(--font-display); font-size: var(--fs-5); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
@@ -815,28 +929,10 @@
   .pp-modal__footer .pp-btn { width: 100%; }
 }
 
-.pp-drawer {
-  position: fixed; z-index: var(--z-modal); top: 0; right: 0; bottom: 0;
-  width: min(420px, 100%); overflow-y: auto;
-  display: grid; grid-template-rows: auto 1fr auto; gap: var(--sp-4);
-  padding: var(--sp-5); background: var(--surface-3);
-  border-left: var(--bw-hair) solid var(--border-strong); box-shadow: var(--elev-3);
-  animation: pp-drawer-in var(--dur-base) var(--ease-out) both;
-}
-@keyframes pp-drawer-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
-.pp-drawer__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-.pp-drawer__title { font-size: var(--fs-5); font-family: var(--font-display); font-weight: var(--fw-bold); }
-
-/* The room's action bar: one control, one place, changing label. Sticks inside the thumb arc on phones. */
-.pp-action-bar {
-  position: sticky; bottom: 0; z-index: var(--z-sticky);
-  display: flex; gap: var(--sp-3); align-items: center;
-  padding: var(--sp-3) var(--gutter) max(var(--sp-4), env(safe-area-inset-bottom));
-  background: color-mix(in oklab, var(--bg-page) 92%, transparent);
-  backdrop-filter: blur(10px); border-top: var(--bw-hair) solid var(--divider);
-}
-.pp-action-bar .pp-btn--primary { flex: 1; }
-@media (min-width: 768px) {
-  .pp-action-bar { position: static; background: none; backdrop-filter: none; border-top: 0; padding-inline: 0; }
-  .pp-action-bar .pp-btn--primary { flex: 0 0 auto; }
-}
+/* .pp-drawer and .pp-action-bar lived here with their Drawer and ActionBar
+   components. Nothing ever rendered either one — the room uses RoomActionBar
+   and the .action-bar rules in App.js, and no screen has a drawer. Keeping
+   .pp-action-bar was the worse half: it still carried the sticky-bottom
+   "thumb arc" dock that was deleted from App.js once it turned out bottom
+   stickiness only ever pulls a box up, so the next author to reach for
+   <ActionBar> would have inherited a fix that had already been made. */

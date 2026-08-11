@@ -631,3 +631,36 @@ Treat this section as the fastest current-status read. Historical session notes 
   - ✕ button top-right of the card (`.facilitator-overlay-close`, absolute-positioned circle)
   - Backdrop click-to-close (`e.target === e.currentTarget` guard prevents inner clicks closing it)
   - Both call `setShowFinalEstimateOverlay(false)`
+
+### Session — 10 August 2026
+**Design-system overhaul: light theme, and the defects the sweep turned up**
+
+Full stage-by-stage record with the reasoning and the measurements is in
+[`docs/UI-OVERHAUL.md`](docs/UI-OVERHAUL.md). Summary:
+
+- **Light theme rebuilt.** It occupied L\* 92.8–100 — a seven-point band at the
+  top of the range, which is the "very bright" complaint. New five-rung
+  `--paper-*` ramp, elevation that cannot invert mid-scroll, text and borders
+  re-solved against the surfaces they actually land on. `--border-strong` went
+  from 1.75:1 to 3.27:1, fixing a WCAG 2.2 SC 1.4.11 failure on every input,
+  checkbox, switch and secondary button in the theme.
+- **Keyboard focus was invisible in the light theme** — App.js painted the ring
+  in `var(--gold2)`, 1.4:1 on paper, and beat the correct rule on injection
+  order. Now `var(--focus)`.
+- **`body { overflow-x: hidden }` had disabled every `position: sticky` in the
+  app**, and was set twice (App.js and the boot CSS). Removed; the sweep proves
+  no route overflows horizontally at 320, 375 or 1280.
+- **The sign-in modal scrolled sideways on a phone** and put its submit button
+  330px below the fold behind three paraphrases of one sentence. Fixed at the
+  cause (`min-width: 0` on modal grid items, a segmented control that shrinks);
+  submit now sits at 465px.
+- **A signed-out phone could not reach an account** — Sign in was hidden below
+  520px. It fits at 320px; the rule is gone.
+- Observers no longer borrow the alert blue; the boot screen no longer flashes
+  the old brighter cream; the Firefox scrollbar no longer paints brand brass on
+  paper; the room no longer renders two banners.
+- **289 tests passing** (from 269), including a new block guarding each of the
+  above. Build 220.72 kB gzipped, +1.92 kB, no new dependency.
+
+**Not done:** mid-vote / revealed / sprint-history / `/admin` screens not
+re-swept with the v2 auditor; drawer and toast not reviewed in light.

@@ -24,17 +24,17 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 364 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 386 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 18 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
-| `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 23 KB |
-| `src/design-system/components.css` | The `pp-` component classes | 51 KB |
-| `src/design-system/index.js` | The React components. Import from here | 37 KB |
+| `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 30 KB |
+| `src/design-system/components.css` | The `pp-` component classes | 57 KB |
+| `src/design-system/index.js` | The React components. Import from here | 38 KB |
 | `src/design-system/README.md` | The rulebook: theming, the ten rules, the decision table | 20 KB |
 | `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 8 KB |
 | `scripts/build-rules.mjs` | Strips comments from the Firebase rules to make the console-pasteable copy | 1 KB |
 | `scripts/gen-ai-context.mjs` | Generates this file | 13 KB |
-| `database.rules.json` | Firebase rules, with comments. **Source of truth.** | 17 KB |
+| `database.rules.json` | Firebase rules, with comments. **Source of truth.** | 19 KB |
 | `database.rules.publish.json` | Generated. This is what gets pasted into the Firebase console | 12 KB |
 
 `src/App.js` is one big file on purpose. It keeps deployment trivial for a solo maintainer.
@@ -115,12 +115,12 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 144 test blocks across AdminDashboard.test.js, App.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 224 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
 
-`npm run test:rules` — 65 assertions against the real Firebase rules
+`npm run test:rules` — 81 assertions against the real Firebase rules
 engine in the emulator (needs JDK 21, which the script locates itself). The rules cannot
 be checked by reading them and have to be deployed by hand, which is how two silent
 outages happened. Run this after touching `database.rules.json`.
@@ -143,13 +143,13 @@ existing 10k-line file theme-aware without rewriting it.
 
 | Measure | Now | Note |
 |---|---|---|
-| Design tokens | 196 | Type, spacing, elevation, motion, semantic colour |
-| Roles defined per theme | 86 | Every one exists in both, or light falls back to a dark value |
+| Design tokens | 215 | Type, spacing, elevation, motion, semantic colour |
+| Roles defined per theme | 99 | Every one exists in both, or light falls back to a dark value |
 | Icons in `ICON_PATHS` | 20 | One stroke family, `currentColor` |
 | Distinct font sizes in CSS | 22 | Target is the 8-step scale; the rest is unmigrated legacy |
-| Distinct padding pairs | 17 | Target is the 4px grid |
+| Distinct padding pairs | 14 | Target is the 4px grid |
 | Legacy button classes in App.js | 3 | The button system is `Button` / `.pp-btn`; these are leftover skins |
-| Raw hex text colours left in App.js | 3 | All on a surface that is identical in both themes |
+| Raw hex text colours left in App.js | 1 | All on a surface that is identical in both themes |
 
 The bottom four are deliberately unflattering. They are the size of the remaining
 migration, and they should fall over time, never rise.

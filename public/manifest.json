@@ -30,7 +30,7 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#0c1a0f",
-  "background_color": "#0c1a0f",
+  "theme_color": "#07110e",
+  "background_color": "#07110e",
   "categories": ["productivity", "business", "utilities"]
 }
