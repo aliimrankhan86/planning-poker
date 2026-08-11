@@ -919,3 +919,23 @@ the marketing pages, so it is a project rather than a follow-up.
 **Owner follow-up:** resubmit the sitemap in Search Console (15 → 18 URLs) and
 Request Indexing on the three new URLs. Do **not** delete and re-add the
 sitemap — the URL has not changed.
+
+### The deploy above failed, and nothing said so
+
+`d03bbcd` never reached production. Vercel validates `vercel.json` against a
+closed schema and **refuses to build** on an unknown key — the `"//"` comment
+added to the `/admin` header entry was rejected outright. Every check we run
+locally passed, the push succeeded, and the site quietly went on serving the
+previous build for ten minutes while `/pointing-poker` returned the homepage
+document with a 200.
+
+That silence is the real defect. A failed deploy is invisible from the
+terminal: `git push` exits 0 either way. Caught only by checking the live
+`<title>` before touching Search Console — which is also why requesting
+indexing before verifying the deploy would have handed Google three URLs of
+duplicate homepage content.
+
+Fixed by deleting the key; the explanation it carried already exists in
+`robots.txt`, which has real comments. Pinned by a test asserting every
+`vercel.json` header entry carries only `source`/`headers`/`has`/`missing`,
+verified to fail when the key is put back. **408 tests.**

@@ -493,6 +493,21 @@ describe("the sitemap and the route table say the same thing", () => {
       )}`).toBe(`${path}:true`);
     }
   });
+
+  /* Vercel validates vercel.json against a closed schema and refuses to build
+     on an unknown key — it does not warn and carry on. A "//" comment key cost
+     a whole deploy, which is silent here: the push succeeds, the tests pass,
+     and the site simply keeps serving the previous build. Explanations go in
+     robots.txt, which has real comments. */
+  test("vercel.json header entries carry no keys Vercel will reject", () => {
+    const vercel = JSON.parse(require("node:fs").readFileSync(
+      require("node:path").join(__dirname, "..", "vercel.json"), "utf8"));
+    const allowed = ["source", "headers", "has", "missing"];
+    for (const entry of vercel.headers) {
+      const stray = Object.keys(entry).filter((k) => !allowed.includes(k));
+      expect(`${entry.source}:${stray}`).toBe(`${entry.source}:`);
+    }
+  });
 });
 
 /* ── A WRITE THAT FAILS HAS TO SAY SO ────────────────────────────────────

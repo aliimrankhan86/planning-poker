@@ -17,7 +17,6 @@
       ]
     },
     {
-      "//": "Owner-only. It is not prerendered, so Vercel falls back to the home document — which carries robots: index, follow. App.js does rewrite that to noindex, but only once React has hydrated, so every crawler that does not run JS was being told to index it. Same header the team-room path already uses.",
       "source": "/admin",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
