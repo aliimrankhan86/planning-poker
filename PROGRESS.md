@@ -664,3 +664,48 @@ Full stage-by-stage record with the reasoning and the measurements is in
 
 **Not done:** mid-vote / revealed / sprint-history / `/admin` screens not
 re-swept with the v2 auditor; drawer and toast not reviewed in light.
+
+### Session — 11 August 2026
+
+Infrastructure, not interface. The work was deploying what previous sessions had
+only written, and checking the "left for you" list item by item instead of
+carrying it forward. **Four of nine items were already done** — the domain
+placeholders, the OG image, Email/Password auth, and a Vercel env var that was
+never needed because all six call sites already default to
+`support@pointpoker.app`.
+
+**Deployed to production**
+- `database.rules.json` is live. This closes the oldest real bug in the product:
+  `stories/$storyIndex/estimate` used two `.parent()` calls where it needed
+  three, so every queued-story estimate had been failing with `permission_denied`
+  since the queue shipped. Verified against the production database — an
+  anonymous client can now write one, and the three new hardening rules deny the
+  over-cap story index and the nonsense analytics date.
+- Both Cloud Functions redeployed with instance caps.
+
+**Cost.** Cloud Functions cannot run on Spark, which is the only reason the
+project is on Blaze at all. The console's cost trend for 1 Aug 2025 – 31 Aug 2026
+is a flat £0.00, and measured usage is ~0.006% of the invocation free tier. The
+exposure was accumulation and abuse, now bounded three ways: Artifact Registry
+cleanup 30 days → 3 (the usual source of a surprise Blaze bill, because images
+accrue on every deploy and nothing in the console points at them), `maxInstances`
+of 3 and 1 on the two functions (both previously able to scale to the
+3000-instance default), and the rules caps on room size. The budget already
+existed at £15 and is now £1, so alerts fire at 50p rather than £7.50. Google's
+spend-cap enforcement — the one that pauses services — is greyed out for these
+services, so no hard cap exists and the code-level ceilings are the real
+protection.
+
+**The two screens nobody could open.** `/admin` turned out to already have 11
+tests covering both gates. The sprint-history modal had none, because
+`HistoryModal` is private to `App.js`; its maths is now `sprintHistoryStats()` in
+`estimation.js` with 9 tests. Suspected defect that was not one: the trend
+compares the front half of the list against the back half, which is correct only
+because `App.js` sorts by `endedAt` descending — a test now fails if that sort is
+ever reversed.
+
+`/licenses` held two dead flags from the deleted paid tier; backed up and removed.
+
+**382 tests passing** (from 373). Lint clean. Build 224.32 kB.
+
+**Not done:** no hard spend cap is available from Google for RTDB or Functions.

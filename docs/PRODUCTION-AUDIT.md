@@ -434,9 +434,25 @@ usage — it was abuse and accumulation. Three controls now bound it:
 `orderByChild("createdAt").endAt(cutoff)` against a declared index, so it
 downloads only expired rooms rather than the whole table.
 
-**Not done, and not doable from here:** a billing budget alert. It lives in the
-Google Cloud console, and the browser reached a Google sign-in wall. A budget
-alert only notifies — it does not cap — so its absence changes no ceiling.
+**The budget alert already existed**, and the first attempt to check it hit a
+Google sign-in wall in the wrong browser. Read from the console it says two
+useful things:
+
+- **Cost trend, 1 Aug 2025 – 31 Aug 2026: a flat line at £0.00.** A full year on
+  Blaze with nothing charged. The free-tier arithmetic above is not a forecast,
+  it is what already happened.
+- The budget was set at £15/month, so the first alert fired at £7.50. Lowered to
+  **£1**, which moves the thresholds to £0.50 / £0.90 / £1.00. On a project that
+  should never cost anything, a warning at 50p is worth more than one at £7.50.
+  Email to billing admins was already enabled.
+
+**There is no hard cap available.** Google's "Spend cap enforcement" — the
+setting that pauses services rather than emailing about them — is greyed out and
+unselectable on this account: it is in Preview and covers a limited set of
+services that does not include Realtime Database or Cloud Functions. So alerts
+are the only mechanism Google offers here, which is precisely why the three
+code-level caps above (artifact cleanup, `maxInstances`, rules limits) are the
+real protection rather than a belt to the console's braces.
 
 ### Data
 
