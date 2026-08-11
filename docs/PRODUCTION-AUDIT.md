@@ -363,3 +363,102 @@ password has no fallback default, `.env` is gitignored and only `.env.example` i
 Every interpolation in the notification email's HTML body goes through `escapeHtml`.
 ESLint clean across `src/` (one error fixed: `globalThis` needed an `es2020` env in
 `setupTests.js`). Build clean. **373 Jest tests, 81 rule assertions.**
+
+---
+
+## Third pass — 2026-08-11 · the infrastructure, actually changed
+
+The two previous passes read and tested. This one deployed, and in doing so
+found that four of the nine "left for you" items had already been done and one
+of them never needed doing at all.
+
+### Already done, and the list was wrong to say otherwise
+
+| Item | Reality |
+|---|---|
+| `YOUR_DOMAIN_HERE` in 7 places | Zero occurrences. The domain is `www.pointpoker.app` throughout. |
+| `public/og-image.png` | Present, and measured at exactly 1200×630. |
+| Enable Email/Password auth | Already on. Probed with a deliberately invalid credential: the API answered `INVALID_LOGIN_CREDENTIALS`, not `OPERATION_NOT_ALLOWED`. |
+| `REACT_APP_SUPPORT_EMAIL` in Vercel | Not needed. All six call sites already read `process.env.REACT_APP_SUPPORT_EMAIL \|\| "support@pointpoker.app"`. Setting it only matters to *change* the address. |
+
+### Deployed
+
+**`database.rules.json` is live.** This closes the oldest real production bug in
+the product: `stories/$storyIndex/estimate` used `.parent().parent()` where it
+needed three, so every queued-story estimate had been failing with
+`permission_denied` since the queue shipped. Verified against the production
+database, not the emulator — an anonymous client can now write a queued-story
+estimate, and the three new hardening rules deny what they should:
+
+```
+ALLOW  create a room
+ALLOW  queue a story
+ALLOW  write the queued-story estimate   <- the bug
+DENY   story beyond the 3-digit cap
+DENY   analytics on a nonsense date
+```
+
+Rollback, should it ever be needed, is `git show 098bd51:database.rules.publish.json`.
+
+**Both Cloud Functions redeployed** carrying new instance caps (below).
+
+### Cost — the project is on Blaze, and that is the only reason cost exists
+
+Cloud Functions cannot run on Spark, so deploying `notifyOwnerOnSignup` and
+`reapStaleRooms` put the project on pay-as-you-go. Measured usage against the
+perpetual free tiers:
+
+| Resource | Free each month | Actual use | Headroom |
+|---|---|---|---|
+| Function invocations | 2,000,000 | ~120 (reaper, 4×/day) + a handful of signups | ~0.006% |
+| Function GB-seconds | 400,000 | well under 1,000 | negligible |
+| Cloud Scheduler jobs | 3 | 1 | — |
+| RTDB storage | 1 GB | 6 top-level nodes, 5 rooms | negligible |
+| RTDB egress | 10 GB | negligible | — |
+
+The bill at this usage is £0.00 and stays there. The exposure was never ordinary
+usage — it was abuse and accumulation. Three controls now bound it:
+
+1. **Artifact Registry cleanup policy: 30 days → 3.** Accumulated build images
+   are the single most common source of a surprise Blaze charge, because they
+   accrue silently on every deploy and nothing in the Firebase console points at
+   them.
+2. **`maxInstances` on both functions** — 3 on the signup mailer, 1 on the
+   reaper. Previously both could scale to the 3000-instance default. On the
+   reaper this is correctness first and cost second: two overlapping runs would
+   each compute a multi-path update from a snapshot the other is deleting.
+3. **The rules caps deployed above** bound how much one room can hold, which
+   bounds storage and egress together.
+
+`reapStaleRooms` was *checked* and needed no change: it already queries
+`orderByChild("createdAt").endAt(cutoff)` against a declared index, so it
+downloads only expired rooms rather than the whole table.
+
+**Not done, and not doable from here:** a billing budget alert. It lives in the
+Google Cloud console, and the browser reached a Google sign-in wall. A budget
+alert only notifies — it does not cap — so its absence changes no ceiling.
+
+### Data
+
+`/licenses` still held `PPRO-RPAB-TEAM-2026` and `PPRO-TEST-QA26-2026`, two dead
+flags from the deleted paid tier. Unreferenced in `src/`, unreachable by the
+rules, and now removed. Backed up before deletion; it contained no user data.
+Remaining top-level nodes: `rooms`, `users`, `history`, `admins`, `ops`,
+`analytics`.
+
+### The two "unverifiable" screens
+
+Both are now verified, and neither needed an account.
+
+- **`/admin`** already had 11 tests in `src/AdminDashboard.test.js`, covering
+  both gates (denied read, unauthenticated visitor), every KPI sum, and the
+  empty-database case. That is stronger evidence than one manual walkthrough.
+- **The sprint-history modal** had none, because `HistoryModal` is a private
+  function inside `App.js`. Its maths is now `sprintHistoryStats()` in
+  `src/estimation.js` with 9 tests. Suspected defect that turned out not to be
+  one: the trend compares the front half of `history` against the back half,
+  which is only right if the list is newest-first — and `App.js` does sort by
+  `endedAt` descending. Correct, and now pinned by a test that fails if the sort
+  is ever reversed.
+
+382 Jest tests, 6 suites. ESLint clean. Build 224.32 kB JS / 9.8 kB CSS.

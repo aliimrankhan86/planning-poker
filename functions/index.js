@@ -176,7 +176,11 @@ function ownerSignupEmail(profile, uid) {
 
 
 exports.notifyOwnerOnSignup = functions
-  .runWith({ serviceAccount: FUNCTION_SERVICE_ACCOUNT })
+  // ponytail: maxInstances is the spend ceiling, not a throughput tuning knob.
+  // This sends one email to one person, so three concurrent senders is already
+  // generous — and it means a signup flood costs a bounded number of
+  // invocations instead of scaling to the 3000-instance default.
+  .runWith({ serviceAccount: FUNCTION_SERVICE_ACCOUNT, maxInstances: 3 })
   .database.ref("/users/{uid}")
   .onCreate(async (snapshot, context) => {
   const uid = context.params.uid;
@@ -254,7 +258,10 @@ function freshTeamRoomState(roomId, room, now) {
 }
 
 exports.reapStaleRooms = functions
-  .runWith({ timeoutSeconds: 300, memory: "512MB" })
+  // maxInstances: 1 is correctness before cost here. Two reapers overlapping
+  // would each compute a multi-path update from a snapshot the other is
+  // already deleting out from under it.
+  .runWith({ timeoutSeconds: 300, memory: "512MB", maxInstances: 1 })
   .pubsub.schedule("every 6 hours")
   .timeZone("Europe/London")
   .onRun(async () => {

@@ -251,3 +251,47 @@ export const teamCode = (name) =>
     .slice(0, 24) // cap the URL
     .replace(/-$/, "") // the cap can land on a separator
   || "team";
+
+/**
+ * The four headline numbers and the trend badge the sprint-history modal shows.
+ *
+ * `history` arrives newest-first — App.js sorts it by `endedAt` descending —
+ * and that ordering is load-bearing: the trend compares the front half against
+ * the back half, so reversing the sort silently points the arrow the wrong way.
+ *
+ * Velocity, best and trend read only sessions that scored numeric points,
+ * because a t-shirt sprint has no `totalPoints` to average. Consensus is the
+ * deliberate exception — every sprint has a rate — so it divides by all of them.
+ */
+export function sprintHistoryStats(history = []) {
+  const totalSprints = history.length;
+  const pointSessions = history.filter((h) => h.totalPoints > 0);
+
+  const avgVelocity = pointSessions.length
+    ? Math.round(pointSessions.reduce((s, h) => s + h.totalPoints, 0) / pointSessions.length)
+    : 0;
+  const bestSprint = pointSessions.length
+    ? Math.max(...pointSessions.map((h) => h.totalPoints))
+    : 0;
+  const avgConsensus = totalSprints
+    ? Math.round(history.reduce((s, h) => s + (h.consensusRate || 0), 0) / totalSprints)
+    : 0;
+
+  // ceil(n/2) < n for every n >= 2, so `older` is never the empty slice that
+  // would make olderAvg NaN and drop the badge without saying why.
+  let trend = null;
+  if (pointSessions.length >= 2) {
+    const half = Math.ceil(pointSessions.length / 2);
+    const recent = pointSessions.slice(0, half);
+    const older = pointSessions.slice(half);
+    const recentAvg = recent.reduce((s, h) => s + h.totalPoints, 0) / recent.length;
+    const olderAvg = older.reduce((s, h) => s + h.totalPoints, 0) / older.length;
+    /* Rule 5: an arrow alone is a colour-coded glyph. The word beside it is
+       what a screen reader and a colour-blind reader actually get. */
+    if (recentAvg > olderAvg * 1.05) trend = { icon: "↑", label: "Improving", tone: "success" };
+    else if (recentAvg < olderAvg * 0.95) trend = { icon: "↓", label: "Declining", tone: "danger" };
+    else trend = { icon: "→", label: "Steady", tone: "gold" };
+  }
+
+  return { totalSprints, avgVelocity, bestSprint, avgConsensus, trend };
+}

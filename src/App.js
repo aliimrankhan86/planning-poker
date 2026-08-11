@@ -60,6 +60,7 @@ import {
   teamCode,
   sprintResetUpdates,
   deleteSizedItemUpdates,
+  sprintHistoryStats,
   cleanRoomCode,
   mkCode,
   playerId as uid,
@@ -5768,34 +5769,8 @@ function PrivacyPage({ onBack }) {
 }
 
 function HistoryModal({ onClose, history }) {
-  const totalSprints = history.length;
-
-  // Compute insights from numeric-point sessions only
-  const pointSessions = history.filter(h => h.totalPoints > 0);
-  const avgVelocity = pointSessions.length > 0
-    ? Math.round(pointSessions.reduce((s, h) => s + h.totalPoints, 0) / pointSessions.length)
-    : 0;
-  const bestSprint = pointSessions.length > 0
-    ? Math.max(...pointSessions.map(h => h.totalPoints))
-    : 0;
-  const avgConsensus = totalSprints > 0
-    ? Math.round(history.reduce((s, h) => s + (h.consensusRate || 0), 0) / totalSprints)
-    : 0;
-
-  // Trend: compare most recent half vs earlier half (need ≥2 sessions)
-  let trend = null;
-  if (pointSessions.length >= 2) {
-    const half  = Math.ceil(pointSessions.length / 2);
-    const recent = pointSessions.slice(0, half);
-    const older  = pointSessions.slice(half);
-    const recentAvg = recent.reduce((s, h) => s + h.totalPoints, 0) / recent.length;
-    const olderAvg  = older.reduce((s, h)  => s + h.totalPoints, 0)  / older.length;
-    /* Rule 5: an arrow alone is a colour-coded glyph. The word beside it is
-       what a screen reader and a colour-blind reader actually get. */
-    if (recentAvg > olderAvg * 1.05)      trend = { icon: "↑", label: "Improving", tone: "success" };
-    else if (recentAvg < olderAvg * 0.95) trend = { icon: "↓", label: "Declining", tone: "danger" };
-    else                                   trend = { icon: "→", label: "Steady",    tone: "gold" };
-  }
+  const { totalSprints, avgVelocity, bestSprint, avgConsensus, trend } =
+    sprintHistoryStats(history);
 
   const fmtDate = (ts) => {
     if (!ts) return "—";

@@ -3,6 +3,7 @@ import {
   teamCode,
   sprintResetUpdates,
   deleteSizedItemUpdates,
+  sprintHistoryStats,
   cleanRoomCode,
   mkCode,
   playerId,
@@ -376,5 +377,67 @@ describe("room codes are minted, not guessed", () => {
     playerId();
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
+  });
+});
+
+/* The sprint-history modal is the one screen that needs a signed-in account
+   with real history to see, which made it the last thing in the product nobody
+   could check without logging in. Its maths lives here now, so it is checked
+   on every run instead. */
+describe("sprintHistoryStats", () => {
+  // Newest first, the order App.js hands over.
+  const h = (totalPoints, consensusRate = 0) => ({ totalPoints, consensusRate });
+
+  it("returns zeroes rather than NaN for an empty history", () => {
+    expect(sprintHistoryStats([])).toEqual({
+      totalSprints: 0, avgVelocity: 0, bestSprint: 0, avgConsensus: 0, trend: null,
+    });
+  });
+
+  it("defaults its argument, so a missing history does not throw", () => {
+    expect(sprintHistoryStats().totalSprints).toBe(0);
+  });
+
+  it("averages velocity over scoring sprints only, not every sprint", () => {
+    // Two t-shirt sprints score 0 and must not drag the average down.
+    const s = sprintHistoryStats([h(10), h(20), h(0), h(0)]);
+    expect(s.avgVelocity).toBe(15);
+    expect(s.bestSprint).toBe(20);
+    expect(s.totalSprints).toBe(4);
+  });
+
+  it("averages consensus over every sprint, including t-shirt ones", () => {
+    // 80 + 60 + 40 + 0 = 180 / 4 = 45. Dividing by scoring sprints would say 70.
+    expect(sprintHistoryStats([h(5, 80), h(5, 60), h(0, 40), h(0, 0)]).avgConsensus).toBe(45);
+  });
+
+  it("needs two scoring sprints before it will call a trend", () => {
+    expect(sprintHistoryStats([h(10)]).trend).toBeNull();
+    expect(sprintHistoryStats([h(10), h(0), h(0)]).trend).toBeNull();
+  });
+
+  it("reads the newest half as the recent one", () => {
+    // Newest first: 30 now, 10 before. That is improving, not declining.
+    expect(sprintHistoryStats([h(30), h(10)]).trend).toMatchObject({ label: "Improving" });
+    expect(sprintHistoryStats([h(10), h(30)]).trend).toMatchObject({ label: "Declining" });
+  });
+
+  it("calls a move inside ±5% steady rather than pretending it is a change", () => {
+    expect(sprintHistoryStats([h(102), h(100)]).trend).toMatchObject({ label: "Steady" });
+  });
+
+  it("pairs every arrow with a word, so the badge is not colour and glyph alone", () => {
+    for (const history of [[h(30), h(10)], [h(10), h(30)], [h(100), h(100)]]) {
+      const { trend } = sprintHistoryStats(history);
+      expect(trend.icon).toBeTruthy();
+      expect(trend.label).toMatch(/Improving|Declining|Steady/);
+    }
+  });
+
+  it("never slices an empty older half, whatever the count", () => {
+    for (let n = 2; n <= 9; n += 1) {
+      const history = Array.from({ length: n }, (_, i) => h(n - i));
+      expect(sprintHistoryStats(history).trend).not.toBeNull();
+    }
   });
 });
