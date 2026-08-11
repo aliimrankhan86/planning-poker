@@ -24,14 +24,14 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 393 KB |
-| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 22 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 399 KB |
+| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 48 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 30 KB |
 | `src/design-system/components.css` | The `pp-` component classes | 58 KB |
 | `src/design-system/index.js` | The React components. Import from here | 38 KB |
 | `src/design-system/README.md` | The rulebook: theming, the ten rules, the decision table | 20 KB |
-| `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 9 KB |
+| `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 10 KB |
 | `scripts/build-rules.mjs` | Strips comments from the Firebase rules to make the console-pasteable copy | 1 KB |
 | `scripts/gen-ai-context.mjs` | Generates this file | 13 KB |
 | `database.rules.json` | Firebase rules, with comments. **Source of truth.** | 19 KB |
@@ -52,7 +52,7 @@ Do not split it without a reason that outweighs that.
   history. Joining any room, including a Team Room someone shared, never needs an account.
 - **Rooms are disposable.** Deleted when everyone leaves; idle rooms are swept after an hour.
 
-## Routes (16)
+## Routes (19)
 
 - `/`
 - `/terms`
@@ -69,6 +69,9 @@ Do not split it without a reason that outweighs that.
 - `/scrum-poker`
 - `/story-point-estimation`
 - `/remote-sprint-planning`
+- `/pointing-poker`
+- `/story-points-to-hours`
+- `/planning-poker-jira`
 - `/admin`  (private, never indexed, never prerendered)
 
 Every public route is prerendered at build time with its own title, description, canonical,
@@ -105,17 +108,18 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 ## Commands
 
 - `npm run start` — `react-scripts start`
-- `npm run build` — `node scripts/gen-ai-context.mjs && react-scripts build && node scripts/prerender.mjs`
+- `npm run build` — `node scripts/gen-ai-context.mjs && node scripts/gen-sitemap.mjs && react-scripts build && node scripts/prerender.mjs`
 - `npm run test` — `react-scripts test`
 - `npm run eject` — `react-scripts eject`
 - `npm run build:rules` — `node scripts/build-rules.mjs`
 - `npm run test:rules` — `node scripts/build-rules.mjs && PATH="$(/usr/libexec/java_home -v 21 2>/dev/null)/bin:$PATH" npx --yes firebase-tools emulators:exec --only database --project demo-pointpoker 'node scripts/rules-test.mjs'`
 - `npm run prerender` — `node scripts/prerender.mjs`
+- `npm run sitemap` — `node scripts/gen-sitemap.mjs`
 - `npm run docs` — `node scripts/gen-ai-context.mjs`
 
 ## Tests
 
-`npm test` — 240 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 246 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -146,7 +150,7 @@ existing 10k-line file theme-aware without rewriting it.
 | Design tokens | 215 | Type, spacing, elevation, motion, semantic colour |
 | Roles defined per theme | 99 | Every one exists in both, or light falls back to a dark value |
 | Icons in `ICON_PATHS` | 20 | One stroke family, `currentColor` |
-| Distinct font sizes in CSS | 22 | Target is the 8-step scale; the rest is unmigrated legacy |
+| Distinct font sizes in CSS | 23 | Target is the 8-step scale; the rest is unmigrated legacy |
 | Distinct padding pairs | 14 | Target is the 4px grid |
 | Legacy button classes in App.js | 3 | The button system is `Button` / `.pp-btn`; these are leftover skins |
 | Raw hex text colours left in App.js | 3 | All on a surface that is identical in both themes |
@@ -157,9 +161,9 @@ migration, and they should fall over time, never rise.
 `src/design-system/design-system.test.js` computes the actual WCAG contrast of
 every semantic role in both themes and fails if one drops below AA.
 
-## Components in App.js (33)
+## Components in App.js (34)
 
-`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
+`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
 
 ---
 

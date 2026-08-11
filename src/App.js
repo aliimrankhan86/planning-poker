@@ -55,6 +55,7 @@ import {
   MAX_PARTICIPANTS,
   SUPPORT_EMAIL,
   SUPPORT_FAQ,
+  ROUTE_CONTENT,
 } from "./routeMeta.mjs";
 import {
   tally,
@@ -1636,7 +1637,7 @@ body::before {
    sides — a little less above, where it closes the bar, than below, where it
    opens the columns. */
 .footer-inner {
-  display: grid; grid-template-columns: 1.6fr 1fr 1fr;
+  display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr;
   gap: var(--block-y); padding-block: var(--sp-8);
 }
 .footer-col-brand { display: flex; flex-direction: column; gap: 12px; }
@@ -1865,6 +1866,26 @@ body::before {
 }
 .marketing-list strong {
   color: var(--text-1);
+  font-weight: 600;
+}
+/* Body copy on the data-driven pages. Measure is capped in ch rather than px
+   so it tracks the font size: past roughly 70 characters the eye loses the
+   start of the next line. */
+.marketing-prose {
+  max-width: 68ch;
+  margin: 0 auto 14px;
+  font-size: .92rem;
+  line-height: 1.72;
+  color: var(--text-2);
+}
+.marketing-prose:last-child { margin-bottom: 0; }
+/* Ordered steps keep their numbers. .marketing-list replaces the marker with a
+   ♦, which is right for an unordered list and wrong for a sequence. */
+ol.marketing-list { list-style: decimal; padding-left: 22px; counter-reset: none; }
+ol.marketing-list li { padding-left: 4px; }
+ol.marketing-list li::before { content: none; }
+ol.marketing-list li::marker {
+  color: var(--gold-ink2);
   font-weight: 600;
 }
 .marketing-plan-card.pro {
@@ -2527,6 +2548,25 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
               <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>Support &amp; contact</RouteLink>
             </>
           )}
+        </div>
+
+        {/* Column 4, Guides.
+            Nine of the guide pages had no sitewide link at all — they were
+            reachable only from another page's related-links block, which
+            leaves them near the edge of the crawl and gives them almost no
+            internal link equity. A footer column costs one row of markup and
+            links every one of them from every page. */}
+        <div className="footer-col-links">
+          <div className="footer-col-title">Guides</div>
+          <RouteLink href="/what-is-planning-poker" className="footer-link" onNavigate={onNavigate}>What is planning poker?</RouteLink>
+          <RouteLink href="/pointing-poker" className="footer-link" onNavigate={onNavigate}>Pointing &amp; poker planning</RouteLink>
+          <RouteLink href="/fibonacci-story-points" className="footer-link" onNavigate={onNavigate}>Fibonacci story points</RouteLink>
+          <RouteLink href="/story-points-to-hours" className="footer-link" onNavigate={onNavigate}>Story points to hours</RouteLink>
+          <RouteLink href="/story-point-estimation" className="footer-link" onNavigate={onNavigate}>Story point estimation</RouteLink>
+          <RouteLink href="/planning-poker-jira" className="footer-link" onNavigate={onNavigate}>Planning poker with Jira</RouteLink>
+          <RouteLink href="/scrum-poker" className="footer-link" onNavigate={onNavigate}>Scrum poker</RouteLink>
+          <RouteLink href="/remote-sprint-planning" className="footer-link" onNavigate={onNavigate}>Remote sprint planning</RouteLink>
+          <RouteLink href="/agile-estimation-tool" className="footer-link" onNavigate={onNavigate}>Agile estimation tool</RouteLink>
         </div>
       </div>
 
@@ -4119,6 +4159,10 @@ export default function App() {
           {screen === "remoteSprintPlanning" && (
             <RemoteSprintPlanningPage onNavigate={navTo} />
           )}
+          {/* Every data-driven page, in one line. See STATIC_SCREEN_BY_PATH. */}
+          {screen.startsWith("/") && ROUTE_CONTENT[screen] && (
+            <ContentPage path={screen} onNavigate={navTo} />
+          )}
           {screen === "admin" && (
             <Suspense fallback={<div className="loading"><div className="spinner" /></div>}>
               <AdminDashboard currentUser={authUser} onBack={() => navTo("/")} />
@@ -4429,15 +4473,92 @@ function MarketingPageShell({
           </>
         }
         aside={
-          <Grid min="180px" className="marketing-stat-grid">
-            {highlights.map((item) => (
-              <StatTile key={item.label} label={item.label} value={item.value} gold />
-            ))}
-          </Grid>
+          highlights?.length ? (
+            <Grid min="180px" className="marketing-stat-grid">
+              {highlights.map((item) => (
+                <StatTile key={item.label} label={item.label} value={item.value} gold />
+              ))}
+            </Grid>
+          ) : null
         }
       />
       <Container>{children}</Container>
     </div>
+  );
+}
+
+/* One component for every page whose whole substance is prose, lists and an
+   FAQ. The thirteen pages above predate it and are hand-built because each has
+   its own furniture; these do not, and writing a third near-identical eighty
+   line component was the point at which the data was obviously the page.
+
+   It renders the same ROUTE_CONTENT object the prerender turns into static
+   HTML and FAQPage JSON-LD, so the crawler, the answer engine and the reader
+   are looking at one set of words by construction rather than by discipline.
+   A new landing page is now a data object in routeMeta.mjs and a line in
+   STATIC_SCREEN_BY_PATH. */
+function ContentPage({ path, onNavigate }) {
+  const c = ROUTE_CONTENT[path];
+  if (!c) return null;
+
+  return (
+    <MarketingPageShell
+      eyebrow={c.eyebrow}
+      title={c.h1}
+      intro={c.intro}
+      highlights={c.highlights}
+      onNavigate={onNavigate}
+      primaryHref="/"
+      primaryLabel="Start a free room"
+      secondaryHref="/features"
+      secondaryLabel="See all features"
+    >
+      {c.body?.length > 0 && (
+        <Section tight flow className="marketing-section">
+          {c.body.map((p) => <p key={p} className="marketing-prose">{p}</p>)}
+        </Section>
+      )}
+
+      {(c.sections || []).map((s) => (
+        <MarketingSection key={s.title} title={s.title} intro={s.intro}>
+          {s.body?.map((p) => <p key={p} className="marketing-prose">{p}</p>)}
+          {s.bullets?.length > 0 && (
+            <ul className="marketing-list">
+              {s.bullets.map((b) => <li key={b}>{b}</li>)}
+            </ul>
+          )}
+        </MarketingSection>
+      ))}
+
+      {c.steps?.length > 0 && (
+        <MarketingSection title={c.stepsTitle || "How it works"} intro={c.stepsIntro}>
+          <ol className="marketing-list">
+            {c.steps.map((s) => <li key={s}>{s}</li>)}
+          </ol>
+        </MarketingSection>
+      )}
+
+      {/* Same Accordion as the home and support FAQs: answers stay in the DOM
+          when collapsed, so the FAQPage schema describes text a crawler can
+          actually read on the page. */}
+      {c.faq?.length > 0 && (
+        <MarketingSection
+          title="Frequently asked questions"
+          intro="The questions people actually type into a search box, answered straight."
+        >
+          <Accordion items={c.faq.map(({ q, a }) => ({ question: q, answer: <p>{a}</p> }))} />
+        </MarketingSection>
+      )}
+
+      {c.related?.length > 0 && (
+        <MarketingRelatedLinks
+          title="Related pages"
+          intro="Where to go next, depending on whether you want the theory or the room."
+          onNavigate={onNavigate}
+          links={c.related}
+        />
+      )}
+    </MarketingPageShell>
   );
 }
 

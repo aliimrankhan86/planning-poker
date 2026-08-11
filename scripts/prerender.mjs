@@ -17,6 +17,7 @@
 ═══════════════════════════════════════════════════════════════════════ */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { contentModified } from "./gen-sitemap.mjs";
 import {
   SITE_URL,
   DEFAULT_META,
@@ -31,6 +32,9 @@ import {
 const BUILD_DIR = "build";
 const esc = (s = "") =>
   String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// Shared with the sitemap so <lastmod> and dateModified can never disagree.
+const CONTENT_MODIFIED = contentModified();
 
 const ORGANISATION = {
   "@type": "Organization",
@@ -62,6 +66,17 @@ const SOFTWARE_APP = {
   "@type": "SoftwareApplication",
   "@id": `${SITE_URL}/#app`,
   name: "Point Poker",
+  // Six names for one ceremony, and teams search for all six. This is the
+  // machine-readable way to say so — the alternative is five near-identical
+  // landing pages, which is a doorway-page penalty rather than a ranking.
+  alternateName: [
+    "Planning Poker",
+    "Scrum Poker",
+    "Pointing Poker",
+    "Poker Planning",
+    "Sprint Poker",
+    "Estimation Poker",
+  ],
   applicationCategory: "BusinessApplication",
   applicationSubCategory: "Agile estimation",
   operatingSystem: "Web browser",
@@ -113,6 +128,7 @@ function graphFor(path, m, content) {
     description: m.description,
     isPartOf: { "@id": `${SITE_URL}/#website` },
     inLanguage: "en-GB",
+    dateModified: CONTENT_MODIFIED,
   });
   if (path === "/") nodes.push(SOFTWARE_APP);
   if (content?.faq?.length) {
@@ -130,7 +146,9 @@ function graphFor(path, m, content) {
     nodes.push({
       "@type": "HowTo",
       "@id": `${SITE_URL}${path}#howto`,
-      name: "How to run planning poker with your team",
+      // Was hardcoded to the home page's wording. Once a second page carried a
+      // different set of steps, the schema was describing the wrong procedure.
+      name: content.stepsTitle || "How to run planning poker with your team",
       totalTime: "PT15M",
       estimatedCost: { "@type": "MonetaryAmount", currency: "GBP", value: "0" },
       step: content.steps.map((text, i) => ({
@@ -153,8 +171,18 @@ function shellFor(path, m, content) {
   if (content.bullets?.length) {
     parts.push(`<ul>${content.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`);
   }
+  // Sections carry the depth. Answer engines extract headed prose and lists far
+  // more reliably than one undifferentiated wall, so each one keeps its own h2.
+  (content.sections || []).forEach((s) => {
+    parts.push(`<h2>${esc(s.title)}</h2>`);
+    if (s.intro) parts.push(`<p>${esc(s.intro)}</p>`);
+    (s.body || []).forEach((p) => parts.push(`<p>${esc(p)}</p>`));
+    if (s.bullets?.length) {
+      parts.push(`<ul>${s.bullets.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>`);
+    }
+  });
   if (content.steps?.length) {
-    parts.push("<h2>How it works</h2>");
+    parts.push(`<h2>${esc(content.stepsTitle || "How it works")}</h2>`);
     parts.push(`<ol>${content.steps.map((b) => `<li>${esc(b)}</li>`).join("")}</ol>`);
   }
   if (content.faq?.length) {

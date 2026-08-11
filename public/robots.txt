@@ -5,4 +5,15 @@ Allow: /
 Disallow: /t/
 Disallow: /*?room=
 
+# Owner-only usage dashboard. Not prerendered, so the host falls back to the
+# home document and a crawler that does not run JavaScript is told to index it.
+# vercel.json sends X-Robots-Tag: noindex on the same path.
+Disallow: /admin
+
+# Every AI crawler is deliberately allowed by the wildcard above — GPTBot,
+# ClaudeBot, PerplexityBot, OAI-SearchBot, Google-Extended and the rest. Being
+# quotable in an answer engine is the point. Naming them in their own groups
+# would replace, not extend, the wildcard rule, so the three Disallow lines
+# above would stop applying to them.
+
 Sitemap: https://www.pointpoker.app/sitemap.xml

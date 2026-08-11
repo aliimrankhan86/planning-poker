@@ -48,6 +48,18 @@ export const STATIC_SCREEN_BY_PATH = {
   "/scrum-poker": "scrumPoker",
   "/story-point-estimation": "storyPointEstimation",
   "/remote-sprint-planning": "remoteSprintPlanning",
+  /* Routes below render from ROUTE_CONTENT via <ContentPage>, so adding one
+     costs a data object rather than a hand-written component.
+
+     Their "screen" is their own path. That is deliberate: the screen name has
+     to differ per page or React bails out of the state update when you
+     navigate between two of them and the old page stays on screen. Using the
+     path means there is no second name to invent, no inverse lookup, and no
+     per-page line in the render switch. Nothing else in the app uses a screen
+     name starting with "/". */
+  "/pointing-poker": "/pointing-poker",
+  "/story-points-to-hours": "/story-points-to-hours",
+  "/planning-poker-jira": "/planning-poker-jira",
   "/admin": "admin",
 };
 
@@ -125,6 +137,31 @@ export const STATIC_ROUTE_META = {
     "Remote Sprint Planning Tool — Free | Point Poker",
     "Run remote sprint planning in a shared planning poker room with facilitator controls, a Team Room link your squad reuses every sprint, and live alignment analytics.",
   ),
+  /* The three routes below were added after a query-demand sweep found large
+     clusters the site answered nowhere:
+       • the naming cluster — "pointing poker", "poker planning", "sprint
+         poker", "estimation poker", "agile poker" are the same ceremony under
+         five names, and we ranked for none of the other four
+       • "story points to hours" and its variants, one of the highest-volume
+         questions in the whole space
+       • "planning poker jira" and the other tracker/chat queries
+     One page each. Five near-identical synonym pages would be doorway pages,
+     which is a penalty rather than a ranking. */
+  "/pointing-poker": meta(
+    "/pointing-poker",
+    "Pointing Poker Online — Free Tool, No Sign-Up Needed",
+    "Pointing poker, poker planning, sprint poker, estimation poker and scrum poker are five names for one ceremony: everyone sizes the work privately, then all the cards turn over together. Play it free here, up to 20 people per room, no account.",
+  ),
+  "/story-points-to-hours": meta(
+    "/story-points-to-hours",
+    "Story Points to Hours: Why There Is No Conversion Rate",
+    "Story points do not convert to hours, and a fixed ratio quietly turns them back into the time estimates they replaced. What teams are really asking when they want the conversion, and how to forecast a sprint with velocity instead — worked example included.",
+  ),
+  "/planning-poker-jira": meta(
+    "/planning-poker-jira",
+    "Planning Poker for Jira — Free, No Plugin to Install",
+    "Run planning poker alongside Jira, Linear or Azure DevOps without a Marketplace plugin or an admin approval queue. Paste the backlog in one go, estimate together, export the agreed points as CSV, and bulk-update the tracker you already use.",
+  ),
   "/terms": meta(
     "/terms",
     "Terms of Service | Point Poker",
@@ -167,6 +204,22 @@ const HOME_FAQ = [
   {
     q: "Does this work for remote and distributed teams?",
     a: "Yes. Paste the room link into Slack, Teams or the meeting chat and everyone joins from the browser they already have open, on desktop or phone.",
+  },
+  {
+    q: "Is scrum poker the same as planning poker?",
+    a: "Yes, and so are pointing poker, poker planning, sprint poker, estimation poker and agile poker. Six names, one ceremony: private sizing, simultaneous reveal, then a discussion wherever the cards disagree. This tool runs all of them, because they are the same thing.",
+  },
+  {
+    // Deliberately not "how many hours is a story point?" — that query belongs
+    // to /story-points-to-hours, and two of our own URLs answering it splits
+    // the signal so neither ranks. This is the adjacent question, and it hands
+    // the deeper one off.
+    q: "Can we estimate in hours instead of story points?",
+    a: "You can put any numbers you like on the cards, but hours undo most of what the ceremony is for: they invite false precision, and they stop being comparable the moment the team's makeup changes. Points measure relative size instead, and a date comes from measured velocity rather than from converting each card.",
+  },
+  {
+    q: "Do I need a Jira plugin to use this?",
+    a: "No, and there isn't one. Paste your issues into the room queue in a single go, estimate together, then export the agreed points as CSV and bulk-update Jira, Linear or Azure DevOps from the file. Nothing to install and no admin approval needed.",
   },
 ];
 
@@ -233,6 +286,9 @@ const ALL_LINKS = [
   ["/agile-estimation-tool", "Agile estimation tool"],
   ["/what-is-planning-poker", "What is planning poker?"],
   ["/fibonacci-story-points", "Fibonacci story points"],
+  ["/pointing-poker", "Pointing poker and poker planning"],
+  ["/story-points-to-hours", "Story points to hours"],
+  ["/planning-poker-jira", "Planning poker with Jira"],
   ["/about", "About"],
   ["/trust", "Trust and privacy"],
   ["/support", "Support"],
@@ -246,6 +302,44 @@ export const ROUTE_CONTENT = {
     body: [
       `Every feature is free for every team. Other planning poker tools cap the free tier at seven participants, or nine votes a game, or they put the timer and the averages behind a paid plan. Here you get ${MAX_PARTICIPANTS} people per room, unlimited voting rounds, unlimited stories, all three card decks, the timer, the full facilitator analytics and export, for nothing.`,
       "Simultaneous reveal is the whole point. Everyone votes privately, the cards flip together, and nobody anchors on the first number said out loud. Where the estimates differ, the spread and the outliers are marked so the discussion starts at the disagreement instead of finding its way there.",
+      "If you know the ceremony as scrum poker, pointing poker, poker planning, sprint poker, estimation poker or agile poker, this is that. Six names, one game, and the same room runs all of them.",
+    ],
+    sections: [
+      {
+        title: "Built for the person running the session",
+        intro:
+          "Most of the friction in an estimation meeting lands on the facilitator, so most of the tooling here is theirs.",
+        bullets: [
+          "Only the facilitator can reveal, so the table never turns over early",
+          "Queue the whole backlog up front by pasting it in, one item per line",
+          "A countdown timer to time-box a round, when a round needs one",
+          "Consensus rate, spread, outliers and re-vote counts, live as you go",
+          "Record the agreed number and move to the next item without resetting the room",
+          "Keyboard shortcuts: 1–9 to vote, R to reveal, N for the next item",
+        ],
+      },
+      {
+        title: "What it costs, and where the catch usually is",
+        intro:
+          "Free planning poker tools normally have a limit somewhere. These are the ones teams actually run into, and where this tool sits against each.",
+        bullets: [
+          "Votes per game — some free tiers stop at nine rounds. Unlimited here.",
+          "Items per session — some stop at five issues. Unlimited here.",
+          "People per room — free tiers commonly cap around ten. Twenty here, facilitators included.",
+          "Room creation — some meter it with credits. Uncapped here.",
+          "Advertising — some free rooms carry ads. None here, and no third-party trackers.",
+          "Timer and averages — often reserved for paid plans. Included here.",
+        ],
+      },
+      {
+        title: "Works with the tools you already have",
+        intro:
+          "Nothing to install, for anyone, including whoever administers your tracker.",
+        body: [
+          "Paste a backlog straight out of Jira, Linear, Azure DevOps or a spreadsheet into the queue, size it as a team, then export the agreed estimates as CSV and bulk-update the tracker. There is no plugin, no OAuth prompt and no admin approval ticket standing between you and Thursday's refinement session.",
+          "Sharing works the same way. The room is a URL, so it goes into Slack, Teams, Zoom, Meet or a calendar invite and everyone joins from the browser they already have open, on a laptop or a phone.",
+        ],
+      },
     ],
     steps: HOW_TO_STEPS,
     faq: HOME_FAQ,
@@ -339,6 +433,226 @@ export const ROUTE_CONTENT = {
     body: [
       "Nobody can reliably tell a 7 from an 8. The Fibonacci gaps force a real choice between clearly different sizes, which makes estimates faster and more honest.",
       "A large card is a signal, not a number: 21 and 34 usually mean the story should be split before it enters a sprint.",
+    ],
+  },
+  "/pointing-poker": {
+    eyebrow: "Pointing poker",
+    highlights: [
+      { value: "6 names", label: "One ceremony, six things teams call it" },
+      { value: "1 game", label: "Private vote, reveal together, discuss the gap" },
+      { value: "$0", label: "Every feature, every team, no account" },
+    ],
+    related: [
+      { href: "/what-is-planning-poker", kicker: "Guide", title: "What is planning poker?", copy: "The ceremony itself: why the simultaneous reveal is the part that does the work." },
+      { href: "/fibonacci-story-points", kicker: "Guide", title: "Fibonacci story points", copy: "Why the gaps widen, and what a 21 or a 34 is really telling you." },
+      { href: "/", kicker: "Product", title: "Open a free room", copy: "No account, no install. Create a room and paste the link into your team chat." },
+    ],
+    h1: "Pointing Poker: The Same Game Under Six Names",
+    intro:
+      "Pointing poker is planning poker. So are poker planning, sprint poker, estimation poker, agile poker and scrum poker. One ceremony, six labels, and the mechanism underneath is identical every time: everyone picks a card privately, all the cards turn over at once, and the team talks about the gap.",
+    body: [
+      "Which name you use mostly says where you learned it rather than what you do. James Grenning described the technique in 2002, and Mike Cohn's Agile Estimating and Planning put the name \"planning poker\" in front of most of the industry three years later. \"Scrum poker\" attaches it to the framework teams usually run it inside. \"Pointing poker\" and \"story point poker\" name the unit instead of the ceremony. \"Poker planning\" is the same two words the other way round. \"Sprint poker\" names the meeting it happens in. None is more correct than the others, and no tool behaves differently depending on which one you typed into Google.",
+      "What every version shares is the simultaneous reveal, and that is the part doing the work. When people call out numbers in turn, the first number spoken becomes an anchor and everyone after it drifts toward it — so the estimate ends up measuring seniority rather than complexity. Turning all the cards over at the same moment removes the anchor. That is the whole trick, and it is why a ceremony that looks slightly silly on paper has outlasted most of the estimation techniques that replaced it.",
+    ],
+    sections: [
+      {
+        title: "The six names and where each comes from",
+        bullets: [
+          "Planning poker — the original name, from the 2002 technique and the 2005 book that popularised it",
+          "Scrum poker — the same ceremony, named after the framework most teams run it inside",
+          "Pointing poker — named after the unit, the story point, rather than the meeting",
+          "Poker planning — the same two words in the other order, common outside English-first teams",
+          "Sprint poker — named after the meeting, usually sprint planning or backlog refinement",
+          "Estimation poker and agile poker — generic labels for the same private-vote-then-reveal loop",
+        ],
+      },
+      {
+        title: "What stays the same whichever name you use",
+        bullets: [
+          "Everyone sizes the work privately, so nobody sees a number before choosing their own",
+          "All cards reveal at the same instant, which is what removes the anchoring bias",
+          "Numbers come from a scale with widening gaps, usually Fibonacci, so close calls are not on the table",
+          "Disagreement is the point — the highest and lowest voters explain, and that surfaces missing acceptance criteria",
+          "The team agrees one number and moves on, rather than averaging its way to a decision nobody holds",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What is pointing poker?",
+        a: "Pointing poker is a consensus estimation technique where every team member privately picks a card representing the size of a piece of work, and everyone reveals at the same time. It is the same thing as planning poker — the name just refers to the story point rather than to the planning meeting.",
+      },
+      {
+        q: "Is pointing poker the same as planning poker?",
+        a: "Yes. Pointing poker, planning poker, poker planning, scrum poker, sprint poker, estimation poker and agile poker all describe one ceremony: private sizing, simultaneous reveal, discussion where the cards disagree. Any tool built for one works for all of them, including this one.",
+      },
+      {
+        q: "What is poker planning?",
+        a: "Poker planning is planning poker with the two words swapped, and it means exactly the same thing. The order varies by team and by region rather than by method — there is no difference in how the session is run.",
+      },
+      {
+        q: "What is sprint poker?",
+        a: "Sprint poker is planning poker named after the meeting it usually happens in. Teams run it during sprint planning or backlog refinement to size the items they are considering pulling into the next sprint.",
+      },
+      {
+        q: "Is there a free pointing poker tool?",
+        a: `Yes, this one. Every feature is free for every team: up to ${MAX_PARTICIPANTS} people per room, unlimited rounds, unlimited stories, all three card decks, the timer, facilitator analytics and CSV export. No account is needed to run or join a room, and there are no ads.`,
+      },
+      {
+        q: "Why is it called poker at all?",
+        a: "Because of the cards and the simultaneous reveal, not because anyone is betting. Each player holds a hand of numbered cards, plays one face down, and the whole table turns over together. Nothing is wagered and there is no winner.",
+      },
+    ],
+  },
+  "/story-points-to-hours": {
+    eyebrow: "Story points and time",
+    highlights: [
+      { value: "No rate", label: "A point is relative size, not a unit of clock time" },
+      { value: "Velocity", label: "Points completed per sprint, measured not assumed" },
+      { value: "A range", label: "How an honest forecast gets reported" },
+    ],
+    related: [
+      { href: "/fibonacci-story-points", kicker: "Guide", title: "Fibonacci story points", copy: "Why 1, 2, 3, 5, 8, 13 and not a smooth scale — the gaps carry the uncertainty." },
+      { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "Running the estimate itself, and what a split vote is actually telling you." },
+      { href: "/", kicker: "Product", title: "Size a real story", copy: "Open a free room and try it on something you have to estimate this sprint." },
+    ],
+    h1: "Story Points to Hours: There Is No Conversion Rate",
+    intro:
+      "There is no correct number of hours in a story point, and a team that settles on one has quietly gone back to estimating in time. That is the honest answer. The useful answer is that this is almost always a forecasting question wearing a disguise — and forecasting has a real method that does not need a conversion at all.",
+    body: [
+      "A story point measures relative size: effort, complexity and uncertainty rolled into one number. A 5 is meant to be roughly five times the size of a 1 for your team, this quarter, with the people you currently have. It is not five times any fixed amount of clock time, and the same 5 in another team's backlog may take a completely different number of days.",
+      "The reason a fixed ratio breaks is that uncertainty is the part you cannot convert. A 1-point story is well understood, so the spread of durations it could actually take is narrow. A 13 is large partly because nobody is sure what is inside it, so its spread is wide. Multiplying both by the same hours-per-point number throws away precisely the information the bigger card was carrying, and hands a stakeholder a figure that looks more precise than anything the team said.",
+    ],
+    sections: [
+      {
+        title: "What to do instead: forecast with velocity",
+        intro:
+          "Velocity is points completed per sprint, measured rather than assumed. It answers the question the conversion was reaching for, and it gets more accurate over time instead of less.",
+        body: [
+          "Say a team finished 8, 13 and 9 points over its last three sprints. Average velocity is 10 points a sprint, with an observed range of 8 to 13. A 40-point backlog is therefore about four sprints — and reported honestly, three to five.",
+          "That forecast is built entirely from what this team actually did. It needs no hours-per-point number, it accounts for the team's real capacity including meetings and support work, and it sharpens every sprint as the sample grows. A conversion table does the opposite: it hides a change in velocity instead of measuring it, so it drifts further from reality the longer it is used.",
+        ],
+      },
+      {
+        title: "Why the question keeps coming up",
+        bullets: [
+          "Somebody outside the team needs a date, and points do not answer that on their own — velocity does",
+          "A new team has no velocity yet, so points feel unanchored for the first two or three sprints",
+          "Time-based reporting or billing is imposed from elsewhere, and points have to be translated at the boundary",
+          "The team is using points as a relabelled day estimate already, in which case the conversion just makes it visible",
+        ],
+      },
+      {
+        title: "The one place a rough figure is defensible",
+        body: [
+          "If you must give a boundary figure — a contract, a budget line, an external commitment — derive it from your own velocity and state it as a range, not a rate. \"Our last six sprints ran 8 to 13 points, so this 40-point scope is three to five sprints\" is defensible, because every number in it was measured. \"One point is six hours\" is not, because that number was chosen.",
+          "Keep the conversion at the boundary and out of the estimation session. The moment the team starts sizing cards by mentally multiplying to hours, the ceremony has stopped measuring relative size and the wide-gap scale has no purpose left.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "How many hours is a story point?",
+        a: "There is no fixed answer, and that is by design. Story points measure relative size rather than duration, so the number of hours in a point differs between teams and drifts within one team as it learns the domain. If you need a duration, use your team's measured velocity — points completed per sprint — rather than an hours-per-point rate.",
+      },
+      {
+        q: "How many hours is 5 story points?",
+        a: "Nobody can tell you without knowing the team, and any tool that answers with a number is guessing. A 5 means roughly five times the size of your team's 1-point reference story. To turn that into time, divide the sprint's points by the sprint length using your own recent velocity, and quote the result as a range.",
+      },
+      {
+        q: "How do you convert story points to days?",
+        a: "You do not convert them item by item. You forecast in aggregate: take the points the team actually completed in recent sprints, average them, and divide the remaining scope by that velocity. A team averaging 10 points a sprint will take about four sprints to clear 40 points — a forecast built from measurement rather than from a chosen ratio.",
+      },
+      {
+        q: "Why should story points not be converted to hours?",
+        a: "Because the conversion discards the uncertainty the scale exists to express. A 1 is well understood and a 13 is not, so their ranges of possible durations are nothing alike. Applying one multiplier to both produces a precise-looking number with none of the precision, and it re-creates the time estimates story points were adopted to get away from.",
+      },
+      {
+        q: "How do you estimate a sprint without converting points to hours?",
+        a: "Pull work until the points add up to roughly your recent average velocity, then stop. A team that has completed 8, 13 and 9 points in three sprints plans around 10 and treats anything above 13 as optimistic. No hours are involved at any step, and the plan is anchored to what the team has actually delivered.",
+      },
+      {
+        q: "Do story points measure time at all?",
+        a: "Indirectly and in aggregate, never per item. Effort is one of the three things a point rolls up, alongside complexity and uncertainty, so a bigger number does correlate with more time. But the correlation only becomes useful once you have several sprints of completed points to average, and it holds for a batch of stories rather than for any single card.",
+      },
+    ],
+  },
+  "/planning-poker-jira": {
+    eyebrow: "Planning poker and Jira",
+    highlights: [
+      { value: "0 plugins", label: "Nothing to install, nothing for an admin to approve" },
+      { value: "Paste in", label: "A whole backlog into the queue, one item per line" },
+      { value: "CSV out", label: "Bulk-update Jira, Linear or Azure DevOps from the export" },
+    ],
+    related: [
+      { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "Bulk paste, the story queue, facilitator analytics and what the CSV contains." },
+      { href: "/remote-sprint-planning", kicker: "Guide", title: "Remote sprint planning", copy: "Running the ceremony across a distributed team, and reusing one room every sprint." },
+      { href: "/", kicker: "Product", title: "Open a free room", copy: "Paste this sprint's issues in and size them. No account and no admin ticket." },
+    ],
+    h1: "Planning Poker with Jira, Without Installing Anything",
+    intro:
+      "Point Poker has no Jira plugin. You do not need one: paste your issues into a room, estimate them together, export the agreed points as CSV, and bulk-update Jira from the file. No Marketplace install, no admin approval queue, and everyone who is not facilitating just opens a link.",
+    body: [
+      "Most planning poker tools that advertise a Jira integration need somebody with Jira admin rights to install an app, approve its permission scopes, and frequently move the team onto a paid plan first. In a lot of organisations that is a two-week ticket for a ceremony that is happening on Thursday. The workflow below runs this afternoon, and works the same whether your tracker is Jira, Linear, Azure DevOps, Trello, GitHub Projects or a spreadsheet.",
+      "What you give up is automatic write-back. With an installed plugin the estimate lands on the issue the moment you record it; here you record estimates in the room and push them to the tracker in one bulk edit at the end. For an hour of refinement that is a single extra step. If your team genuinely needs per-issue write-back as it happens, an installed plugin is the better fit, and it is worth saying so plainly rather than pretending otherwise.",
+    ],
+    // Names the HowTo schema as well as the on-page heading, so the structured
+    // data describes this procedure rather than the home page's.
+    stepsTitle: "How to run planning poker with Jira, step by step",
+    stepsIntro: "Five steps, and none of them is an install.",
+    steps: [
+      "In Jira, select the issues you are refining and copy the keys and summaries",
+      "Open a Point Poker room and paste the whole list into the queue, one item per line",
+      "Work the queue: everyone votes, the cards reveal together, the facilitator records the agreed number",
+      "Download the session CSV, which pairs each item with its final estimate",
+      "Back in Jira, bulk-edit the same issues and set Story Points from the CSV column",
+    ],
+    sections: [
+      {
+        title: "Why bulk paste is the part that matters",
+        body: [
+          "The queue accepts one item per line, so a backlog copied straight out of a Jira filter, a Linear view or a spreadsheet lands in the room in a single paste. That is the step that usually justifies an integration, and it takes about five seconds without one.",
+          "Keep the issue key at the start of each line. It survives into the CSV export, which is what makes the bulk edit at the other end a paste rather than a retyping exercise.",
+        ],
+      },
+      {
+        title: "The same flow for other trackers",
+        bullets: [
+          "Linear — copy identifiers and titles from a view, paste in, export CSV, bulk update",
+          "Azure DevOps — the CSV imports through the standard work item import, mapping to Effort or Story Points",
+          "Trello, GitHub Projects, Asana, Monday, ClickUp, Notion — any tool that takes a CSV or a bulk edit",
+          "A spreadsheet — the CSV opens directly in Excel, Google Sheets or Numbers",
+        ],
+      },
+      {
+        title: "Running it inside Slack, Teams, Zoom or Meet",
+        body: [
+          "There is no Slack app or Teams app either, and for the same reason: the room is a URL. Paste it into the channel or the meeting chat and everyone joins from the browser already open in front of them, on a laptop or a phone. Nobody installs anything and nobody signs in.",
+          "On a video call, the facilitator usually shares their screen so the table and the reveal are visible to the room, while each person votes on their own device. That works identically in Zoom, Teams, Meet and Webex because none of them are involved.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Does Point Poker have a Jira integration?",
+        a: "No. There is no Marketplace plugin, no OAuth connection and no write-back to issues. The supported path is bulk paste in and CSV export out, which needs no admin permissions and works with every tracker rather than one. If per-issue write-back matters more to your team than avoiding the install, a plugin-based tool is the honest recommendation.",
+      },
+      {
+        q: "How do I use planning poker with Jira for free?",
+        a: "Copy the issue keys and summaries from your Jira filter, paste them into a Point Poker room queue one per line, estimate as a team, then export the CSV and bulk-edit Story Points in Jira from it. Every part of that is free here, with no participant cap below 20 and no limit on how many issues you size in a session.",
+      },
+      {
+        q: "How do I get the estimates back into Jira?",
+        a: "Download the session CSV from the facilitator panel. It pairs every item with its agreed estimate, so if you kept the Jira key at the start of each line you can bulk-edit the same set of issues and fill Story Points straight from the export. The clipboard summary works too if you would rather paste into a ticket comment.",
+      },
+      {
+        q: "Does this work with Azure DevOps, Linear or Trello?",
+        a: "Yes, and in exactly the same way, because nothing in the flow is Jira-specific. Anything you can copy a list out of can be pasted into the queue, and the CSV export imports anywhere that accepts a CSV — Azure DevOps work item import, Linear, Trello, GitHub Projects, or a spreadsheet.",
+      },
+      {
+        q: "Can I run planning poker inside Microsoft Teams or Slack?",
+        a: "You can run it from Teams or Slack without an app: paste the room link into the channel or meeting chat and everyone joins in their browser. There is no Teams app and no Slack bot to install, so there is nothing for an IT administrator to approve before Thursday's refinement session.",
+      },
     ],
   },
   "/about": {

@@ -324,14 +324,121 @@ describe("the story-queue cap", () => {
   });
 });
 
+/* ── DATA-DRIVEN CONTENT PAGES ───────────────────────────────────────────
+   Three pages built from ROUTE_CONTENT alone, added after a query-demand
+   sweep found whole clusters the site answered nowhere. They share one
+   <ContentPage> renderer, so these tests are really testing the renderer:
+   break it and all three go blank at once, with the prerendered shell still
+   serving perfect HTML to crawlers and nothing at all to a person.
+─────────────────────────────────────────────────────────────────────────── */
+describe("pages rendered from route data", () => {
+  const dataDriven = Object.entries(STATIC_SCREEN_BY_PATH)
+    .filter(([, s]) => s.startsWith("/"))
+    .map(([path]) => path);
+
+  /* Every test here navigates. jsdom keeps one location for the whole file, so
+     without this the next describe block starts on whichever marketing page ran
+     last and its "home screen" assertions fail for no visible reason. */
+  afterEach(() => window.history.pushState({}, "", "/"));
+
+  /* Internal footer links as [href, element] pairs. The footer is the only
+     <footer> outside <main>, so it is the document's contentinfo landmark.
+     mailto: and the legal <button>s are not routes and drop out here. */
+  const footerHrefs = () =>
+    within(screen.getByRole("contentinfo"))
+      .getAllByRole("link")
+      .map((el) => [el.getAttribute("href"), el])
+      .filter(([href]) => href?.startsWith("/"));
+
+  test("there is at least one, or this whole block is silently vacuous", () => {
+    expect(dataDriven.length).toBeGreaterThan(0);
+  });
+
+  test.each(dataDriven)("%s renders its heading and every FAQ answer", (path) => {
+    window.history.pushState({}, "", path);
+    render(<App />);
+    const content = ROUTE_CONTENT[path];
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(content.h1);
+
+    /* The FAQ answers have to be in the DOM even while collapsed. The page
+       emits FAQPage JSON-LD built from this same array, and schema promising
+       answers the page does not contain is how a rich result gets pulled. */
+    for (const { q, a } of content.faq) {
+      expect(screen.getByText(q)).toBeInTheDocument();
+      expect(screen.getByText(a)).toBeInTheDocument();
+    }
+  });
+
+  /* The bug this design avoids: every data-driven page shares one component,
+     so if they also shared a screen name, React would see setScreen("content")
+     land on "content", skip the re-render, and leave the previous page on
+     screen. Giving each its own path as its screen name is what prevents it,
+     and this is the test that notices if someone "tidies" that away. */
+  test("navigating from one to another actually swaps the content", () => {
+    const [first, second] = dataDriven;
+    expect(second).toBeDefined();
+
+    window.history.pushState({}, "", first);
+    render(<App />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(ROUTE_CONTENT[first].h1);
+
+    // The footer Guides column links every one of them from every page.
+    fireEvent.click(footerHrefs().find(([href]) => href === second)[1]);
+
+    expect(window.location.pathname).toBe(second);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(ROUTE_CONTENT[second].h1);
+  });
+
+  /* A footer link to a path with no route silently drops the visitor on the
+     join screen, and spends crawl budget doing it. */
+  test("every internal footer link points at a real route", () => {
+    window.history.pushState({}, "", "/");
+    render(<App />);
+    const hrefs = footerHrefs().map(([href]) => href);
+
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      expect(`${href}:${!!STATIC_SCREEN_BY_PATH[href]}`).toBe(`${href}:true`);
+    }
+    // And nothing indexable is left with no sitewide link at all.
+    for (const path of dataDriven) expect(hrefs).toContain(path);
+  });
+
+  /* scripts/prerender.mjs names the HowTo schema after content.stepsTitle and
+     falls back to the home page's wording. That fallback was correct while one
+     page had steps; the moment a second one did, the schema was describing the
+     wrong procedure to Google. */
+  test("a page with its own steps names them, so the HowTo schema is not generic", () => {
+    for (const [path, content] of Object.entries(ROUTE_CONTENT)) {
+      // Pages reusing the shared HOW_TO_STEPS are describing the same
+      // procedure, so the default name is the correct one for them.
+      if (!content.steps?.length || content.steps === ROUTE_CONTENT["/"].steps) continue;
+      expect(`${path}:${!!content.stepsTitle}`).toBe(`${path}:true`);
+    }
+  });
+
+  test("no two pages answer the same question", () => {
+    // Two URLs competing for one query split the signal and neither wins.
+    const asked = new Map();
+    for (const [path, content] of Object.entries(ROUTE_CONTENT)) {
+      for (const { q } of content.faq || []) {
+        const key = q.toLowerCase();
+        expect(`${key} :: ${asked.get(key) || path}`).toBe(`${key} :: ${path}`);
+        asked.set(key, path);
+      }
+    }
+  });
+});
+
 /* ── THE SITEMAP IS A FOURTH COPY OF THE ROUTE TABLE ─────────────────────
-   routeMeta.mjs already feeds the runtime router, the runtime <head>, and the
-   build-time prerender, so a new page reaches Google's crawler through three
-   of the four. public/sitemap.xml is hand-written, and a page missing from it
-   is invisible in exactly the way that leaves no symptom to notice: the site
-   works, the page renders, nothing 404s, it simply never gets crawled. The
-   project already stopped this class of drift twice — build-rules.mjs for the
-   security rules, prerender.mjs for the meta — and this is the third.
+   routeMeta.mjs feeds the runtime router, the runtime <head>, the build-time
+   prerender and — since scripts/gen-sitemap.mjs replaced the hand-written
+   file — public/sitemap.xml too. A page missing from the sitemap is invisible
+   in exactly the way that leaves no symptom to notice: the site works, the
+   page renders, nothing 404s, it simply never gets crawled. Generation makes
+   that unreachable; these tests are what catch someone editing the generated
+   file by hand and expecting it to survive the next build.
 ─────────────────────────────────────────────────────────────────────────── */
 describe("the sitemap and the route table say the same thing", () => {
   const sitemap = require("node:fs").readFileSync(
@@ -366,6 +473,25 @@ describe("the sitemap and the route table say the same thing", () => {
     expect(robots).toMatch(/Disallow:\s*\/t\//);
     expect(robots).toMatch(/Disallow:\s*\/\*\?room=/);
     expect(robots).toContain(`Sitemap: ${SITE_URL}/sitemap.xml`);
+  });
+
+  /* Private routes are not prerendered, so the host serves them the home
+     document — robots: index, follow and all. App.js rewrites that to noindex,
+     but not until React has hydrated, which is too late for every crawler that
+     does not run JavaScript. Both files have to cover them. */
+  test("private routes are blocked in robots.txt and by a header", () => {
+    const read = (...p) => require("node:fs").readFileSync(
+      require("node:path").join(__dirname, "..", ...p), "utf8");
+    const robots = read("public", "robots.txt");
+    const vercel = JSON.parse(read("vercel.json"));
+
+    for (const path of PRIVATE_PATHS) {
+      expect(robots).toMatch(new RegExp(`Disallow:\\s*${path}`));
+      const header = vercel.headers.find((h) => h.source === path);
+      expect(`${path}:${header?.headers.some(
+        (x) => x.key === "X-Robots-Tag" && x.value.includes("noindex"),
+      )}`).toBe(`${path}:true`);
+    }
   });
 });
 

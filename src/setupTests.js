@@ -15,3 +15,12 @@ import { webcrypto } from 'node:crypto';
 if (!globalThis.crypto?.getRandomValues) {
   globalThis.crypto = webcrypto;
 }
+
+/* Same shape of gap: jsdom declares window.scrollTo and then throws
+   "Not implemented" from it, so every test that follows an internal link logs
+   a stack trace for a call whose only job is to put a real browser back at the
+   top of the page. Nothing asserts on scroll position, so a no-op is the whole
+   behaviour — this silences the environment, not a product error. */
+if (typeof window !== "undefined") {
+  window.scrollTo = () => {};
+}

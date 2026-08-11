@@ -16,12 +16,13 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "node scripts/gen-ai-context.mjs && react-scripts build && node scripts/prerender.mjs",
+    "build": "node scripts/gen-ai-context.mjs && node scripts/gen-sitemap.mjs && react-scripts build && node scripts/prerender.mjs",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "build:rules": "node scripts/build-rules.mjs",
     "test:rules": "node scripts/build-rules.mjs && PATH=\"$(/usr/libexec/java_home -v 21 2>/dev/null)/bin:$PATH\" npx --yes firebase-tools emulators:exec --only database --project demo-pointpoker 'node scripts/rules-test.mjs'",
     "prerender": "node scripts/prerender.mjs",
+    "sitemap": "node scripts/gen-sitemap.mjs",
     "docs": "node scripts/gen-ai-context.mjs"
   },
   "eslintConfig": {

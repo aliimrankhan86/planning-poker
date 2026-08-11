@@ -821,3 +821,101 @@ and is registered in the admin dashboard's FEATURES list.
 it on every sheet needs CSS running headers (`position: running()`), which no
 browser supports; the repeating `thead` and the footer are what carry the brand
 onto later pages.
+
+### Session — 11 August 2026 (night)
+
+**Competitor SEO teardown, then three pages for the queries we answered nowhere.**
+
+Pulled the raw HTML of eight ranking competitors and harvested **854 real
+queries** from Google's autocomplete endpoint, alphabet-expanded across the head
+terms, rather than guessing at keywords. What the field actually ships:
+
+| Site | Home words | Schema | Verified free-tier limit |
+|---|---|---|---|
+| planningpokeronline.com | 553 | none | 9 votes + 5 issues per game |
+| kollabe.com | 1,733 | SoftwareApplication | 10 members per room |
+| planningpoker.live | 2,381 | WebApplication + AggregateRating | credits to create a room |
+| scrumpoker-online.org | 1,884 | FAQPage, 7× hreflang, a blog | ads on the free tier |
+| planitpoker.com | 248 | none, and no canonical | — |
+| pointingpoker.com | 449 | none | runs Google ads |
+
+Our plumbing was already ahead of most of them. The gap was coverage and depth.
+Three clusters had real volume and zero coverage here:
+
+- **The naming cluster.** `pointing poker`, `poker planning`, `sprint poker`,
+  `estimation poker`, `agile poker` — six names for one ceremony, ~40 harvested
+  queries, nothing ranking. Now `/pointing-poker`, **one** page, plus
+  `alternateName` on the SoftwareApplication schema. Five near-identical synonym
+  pages is the doorway-page pattern and demotes the set rather than ranking it.
+- **Story points to time.** `story points to hours`, `5 story points means how
+  many hours`, `story points to days`. One of the highest-volume clusters in the
+  space. Now `/story-points-to-hours`, which answers honestly — there is no
+  conversion rate, forecast with velocity — rather than inventing an
+  hours-per-point table.
+- **Tracker interop.** `planning poker jira`, `planning poker for teams`,
+  `planning poker slack`. Now `/planning-poker-jira`, which opens by saying
+  there is no Jira plugin. The pitch is that paste-in/CSV-out needs no admin
+  approval, and the page names the tradeoff it loses (no per-issue write-back).
+
+Home shell deepened **532 → 1,047 words**, which puts it in the competitive band.
+18 routes, 6,033 prerendered words in total.
+
+**One renderer, not three components.** `ContentPage` renders any `ROUTE_CONTENT`
+object through the existing `MarketingPageShell`, so the next landing page is a
+data object and a line in `STATIC_SCREEN_BY_PATH`, not eighty lines of JSX. Each
+data-driven route's screen name **is its own path** — if they shared one, React
+would skip the state update navigating between two of them and leave the
+previous page on screen. There is a test pinning that.
+
+**The sitemap is now generated** (`scripts/gen-sitemap.mjs`, `npm run sitemap`,
+also inside `npm run build`). It was hand-written with a `lastmod` hardcoded to
+whenever someone last remembered to touch it. `lastmod` now comes from the last
+git commit of `routeMeta.mjs`, so it moves when the copy moves — a date that
+ticks on every deploy is a spam signal, not a freshness one. Same value feeds
+JSON-LD `dateModified`. Dropped `<priority>` and `<changefreq>`: Google has said
+plainly it ignores both, so they were forty lines saying nothing.
+
+**Two real defects found on the way:**
+
+1. **`/admin` was indexable.** It is not prerendered, so Vercel served it the
+   home document — `robots: index, follow` and all. App.js does rewrite that to
+   noindex, but only after React hydrates, which is too late for every crawler
+   that does not run JS. Now blocked in `robots.txt` **and** by `X-Robots-Tag` in
+   `vercel.json`, matching what `/t/:slug` already did.
+2. **The `HowTo` schema name was hardcoded** to the home page's wording. Correct
+   while one page had steps; the moment the Jira page had its own, the structured
+   data was describing the wrong procedure to Google. Now `content.stepsTitle`,
+   with a test that fails if a page carries its own steps unnamed.
+
+**Deliberately not done, and why:**
+
+- **`AggregateRating`.** Two competitors get SERP stars from it. We have no
+  review data, so ours would be fabricated.
+- **Named AI-crawler groups in robots.txt.** A named `User-agent: GPTBot` group
+  *replaces* the wildcard rather than extending it, so adding them would have
+  silently un-blocked `/t/`, `/admin` and `?room=` for exactly those crawlers.
+  They are already allowed by `*`.
+- **`llms.txt`.** No answer engine is confirmed to consume it.
+- Softened an unverified claim in existing copy — it said competitor free tiers
+  cap at "seven participants" and that number could not be verified anywhere.
+  Replaced with limits actually checked on the day.
+
+**407 tests passing** (from 398). Lint clean. Build compiles with no warnings
+from our code; the one `DEP0176` is `react-dev-utils` and pre-existing. All 18
+prerendered documents validated: unique titles/descriptions/canonicals, valid
+JSON-LD, `dateModified` present, `canonical == og:url`, exact sitemap parity.
+Checked in-browser at mobile, tablet and desktop — no console errors, no
+horizontal overflow.
+
+**Honest caveat.** On-page we are now at or ahead of this field. Off-page —
+domain age and backlinks — is untouched and is what wins `planning poker`
+itself. The realistic wins are the long tail, where the competition is thin.
+
+**Largest remaining lever: translation.** `planning poker kostenlos`, `o que é
+planning poker`, `scrum poker en ligne` all have real demand and
+scrumpoker-online.org runs seven languages. Needs the app translated, not just
+the marketing pages, so it is a project rather than a follow-up.
+
+**Owner follow-up:** resubmit the sitemap in Search Console (15 → 18 URLs) and
+Request Indexing on the three new URLs. Do **not** delete and re-add the
+sitemap — the URL has not changed.
