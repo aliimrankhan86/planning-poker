@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 385 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 393 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 22 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 30 KB |
@@ -74,16 +74,16 @@ Do not split it without a reason that outweighs that.
 Every public route is prerendered at build time with its own title, description, canonical,
 Open Graph tags and JSON-LD. `src/App.test.js` fails if two routes ever share metadata.
 
-## Analytics events (27)
+## Analytics events (28)
 
 Anonymous daily counters at `/analytics/daily/{date}/{event}`. Integers only: no user IDs,
 no personal data, nothing that could identify a person or a room.
 
 | `consensus_first_vote` | `estimate_recorded` | `feature_copy` | `feature_csv` |
-| `feature_invite` | `feature_paste` | `feature_queue` | `feature_timer` |
-| `pricing_viewed` | `room_created` | `signup_completed` | `signup_started` |
-| `visit_new` | `visit_return` | `wtp_15` | `wtp_30` |
-| `wtp_5` | `wtp_dismissed` | `wtp_zero` |
+| `feature_invite` | `feature_paste` | `feature_pdf` | `feature_queue` |
+| `feature_timer` | `pricing_viewed` | `room_created` | `signup_completed` |
+| `signup_started` | `visit_new` | `visit_return` | `wtp_15` |
+| `wtp_30` | `wtp_5` | `wtp_dismissed` | `wtp_zero` |
 
 Bucketed (one counter per band, so the dashboard stays chartable):
 
@@ -115,7 +115,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 233 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 240 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -149,7 +149,7 @@ existing 10k-line file theme-aware without rewriting it.
 | Distinct font sizes in CSS | 22 | Target is the 8-step scale; the rest is unmigrated legacy |
 | Distinct padding pairs | 14 | Target is the 4px grid |
 | Legacy button classes in App.js | 3 | The button system is `Button` / `.pp-btn`; these are leftover skins |
-| Raw hex text colours left in App.js | 1 | All on a surface that is identical in both themes |
+| Raw hex text colours left in App.js | 3 | All on a surface that is identical in both themes |
 
 The bottom four are deliberately unflattering. They are the size of the remaining
 migration, and they should fall over time, never rise.
@@ -157,9 +157,9 @@ migration, and they should fall over time, never rise.
 `src/design-system/design-system.test.js` computes the actual WCAG contrast of
 every semantic role in both themes and fails if one drops below AA.
 
-## Components in App.js (32)
+## Components in App.js (33)
 
-`BrandMark`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
+`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
 
 ---
 

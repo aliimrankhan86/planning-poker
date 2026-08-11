@@ -770,3 +770,54 @@ at 375 or 1280.
 **Not done:** the `/trust` page has the same inverted `StatTile` that was fixed
 on `/support` — a big gold "Direct" above the support address squeezed into an
 uppercased caption. Left out of scope deliberately.
+
+---
+
+### Session — 11 August 2026 (late)
+
+**Exports now carry the brand, and printing works at all.**
+
+Printing any page was close to useless before this. The product is dark-first
+and a browser strips background colours when it prints, so the felt vanished
+and the cream text printed onto white paper as pale grey. There was no
+`@media print` rule anywhere in the codebase.
+
+- **Print stylesheet.** Paper white, ink black, whatever the on-screen theme
+  was. Room chrome, navigation and every control is dropped, because a printed
+  sheet cannot be clicked. Tables get `thead { display: table-header-group }`
+  so the column names repeat when a long backlog runs to a second sheet, and
+  `break-inside: avoid` keeps rows and cards whole.
+- **A printable report** (`PrintReport`) sits in the DOM hidden, and `@media
+  print` is the only thing that reveals it. That is what "Save as PDF"
+  produces: mark, "Point Poker", the domain, the session title, room code,
+  date, counts, the estimate table, and a signed footer. No popup window to be
+  blocked, no second route to keep in sync, no PDF library — `window.print()`
+  and the browser's own pipeline.
+- **Mono printers need no second asset.** The mark separates on luminance, not
+  hue: its dark green "P" against the gold diamond measures **8.2:1 in colour
+  and 8.46:1 converted to greyscale**, so it survives the conversion slightly
+  better than it looks in colour. Verified by rendering the report through a
+  `grayscale(1)` filter. `print-color-adjust: exact` is still set so a colour
+  printer is not asked to guess, and the mark is an `<img>` and never a
+  background-image, because a background is exactly what "do not print
+  background graphics" throws away.
+
+**Where the brand can and cannot go.** A CSV cannot hold a logo, and a branding
+row above the header would break the one thing the file is for: `/support` and
+`/remote-sprint-planning` both promise it imports straight into Jira, Linear
+and Azure DevOps, and every one of those readers takes row 1 as the column
+names. So the CSV is branded on the **filename** only —
+`Point-Poker-<room>-<date>.csv`, and `Point-Poker-analytics-<date>.csv` on the
+admin export — and the data stays machine-clean. A test fails if anyone adds a
+preamble row later. The clipboard summary is free text, so that one does sign
+itself with a closing "Estimated with Point Poker" line.
+
+New analytics event `feature_pdf`, which matches the rules' event-name pattern
+and is registered in the admin dashboard's FEATURES list.
+
+**398 tests passing** (from 391). Lint clean, zero warnings. Build 224.12 kB.
+
+**Known limit:** only the first printed sheet carries the logo header. Repeating
+it on every sheet needs CSS running headers (`position: running()`), which no
+browser supports; the repeating `thead` and the footer are what carry the brand
+onto later pages.

@@ -2024,6 +2024,102 @@ body::before {
   .dash-wrap { padding-block: var(--sp-5) var(--sp-16); }
   .dash-bar-row { grid-template-columns: minmax(70px, 1fr) 2fr auto; gap: 8px; }
 }
+
+/* ══════════════════════════ PRINT / PDF ══════════════════════════
+   Two problems, both of which made a printed page useless.
+
+   1. The product is dark-first. A browser strips background colours when it
+      prints, so the felt vanished and the cream text printed onto white
+      paper as pale grey on white. Every printed page was close to blank.
+   2. Nothing carried the brand. A summary handed round a room, or saved as a
+      PDF and attached to a ticket, had nothing on it saying where it came
+      from.
+
+   So print gets its own theme: paper white, ink black, and a brand header on
+   the sheet. The mark is an <img>, never a background-image, because a
+   background is exactly what "do not print background graphics" throws away.
+
+   Mono printers: the mark is safe without a second asset. Its dark green "P"
+   against the gold diamond measures 8.2:1 in colour and 8.46:1 converted to
+   greyscale — it separates on luminance, not on hue, so it survives the
+   conversion. print-color-adjust is still set to exact so a colour printer is
+   not asked to guess.
+════════════════════════════════════════════════════════════════ */
+@media print {
+  /* Paper, whatever the on-screen theme was. */
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  body { font-size: 11pt; }
+
+  /* Room chrome, navigation and anything that only makes sense as a control.
+     A printed sheet cannot be clicked. */
+  .navbar, .site-footer, .hdr, .toolbar, .pp-toast-region, .cookie-banner,
+  .summary-actions, .wtp-poll, .chip-logo, .pp-modal, .pp-modal-backdrop,
+  .join-side, .seo-section, .seo-faq, .legal-back, .btn-back,
+  button:not(.print-keep), .pp-btn {
+    display: none !important;
+  }
+
+  /* Cards and panels: no felt, no shadow, a hairline so the structure survives. */
+  .panel, .pp-card, .pp-alert, .pp-stat {
+    background: #fff !important;
+    color: #000 !important;
+    border: 1px solid #999 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  h1, h2, h3, h4, .ptitle, .pp-card__title, .pp-section-head__title {
+    color: #000 !important;
+    break-after: avoid;
+  }
+  p, li, td, th, .pp-card__body { color: #000 !important; }
+  a { color: #000 !important; text-decoration: underline; }
+  /* A printed link is dead, so spell the destination out once. */
+  .prose a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #999 !important; padding: 6pt 8pt; text-align: left; }
+  thead { display: table-header-group; }   /* repeat the header on every sheet */
+  tr { break-inside: avoid; }
+
+  @page { margin: 14mm; }
+}
+
+/* ── The printable report ──────────────────────────────────────────
+   Present in the DOM but never shown on screen. This is what a "Save as PDF"
+   actually produces, and the only place the brand is guaranteed to appear. */
+.print-report { display: none; }
+
+@media print {
+  .print-report { display: block !important; }
+  .print-report__head {
+    display: flex; align-items: center; gap: 10pt;
+    border-bottom: 2pt solid #000; padding-bottom: 8pt; margin-bottom: 14pt;
+  }
+  /* print-color-adjust keeps the mark's own colours on a colour printer.
+     Without it some browsers flatten an image inside a "no backgrounds" print. */
+  .print-report__mark {
+    width: 46pt; height: 46pt; flex: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-report__brand {
+    font-family: 'Outfit', sans-serif;
+    font-size: 17pt; font-weight: 700; color: #000; margin: 0; letter-spacing: -.01em;
+  }
+  .print-report__url { font-size: 9.5pt; color: #333; margin: 2pt 0 0; }
+  .print-report__title { font-size: 15pt; margin: 0 0 3pt; color: #000; }
+  .print-report__meta { font-size: 9.5pt; color: #333; margin: 0 0 12pt; }
+  .print-report__foot {
+    margin-top: 16pt; padding-top: 7pt; border-top: 1px solid #999;
+    font-size: 9pt; color: #333;
+  }
+  /* The report is one column of flowing content, so it should use the sheet.
+     Without this the table inherits whatever width the room layout left it. */
+  .print-report, .print-report table { width: 100%; max-width: none; }
+}
 `;
 
 /* ═══════════════════════ ROOM CONFIG ═══════════════════════ */
@@ -2139,6 +2235,56 @@ function BrandMark({ onClick, size = 44, label = "Point Poker, go to home" }) {
     >
       <img src="/brand-mark.png" alt="" />
     </button>
+  );
+}
+
+/* ═══════════════════════ PRINTABLE REPORT ═══════════════════════
+   What "Save as PDF" produces. It sits in the DOM, hidden on screen, and only
+   @media print reveals it — no popup window to be blocked, no second route to
+   keep in sync, and no PDF library.
+
+   The mark is an <img> with an empty alt: the wordmark beside it already says
+   "Point Poker", and this whole block is aria-hidden anyway because a screen
+   reader is already reading the same numbers off the table on screen.
+═══════════════════════════════════════════════════════════════════ */
+function PrintReport({ title, meta, columns, rows, note }) {
+  return (
+    <section className="print-report" aria-hidden="true">
+      <header className="print-report__head">
+        <img className="print-report__mark" src="/brand-mark.png" alt="" />
+        <div>
+          <p className="print-report__brand">Point Poker</p>
+          <p className="print-report__url">{SITE_URL.replace(/^https?:\/\//, "")}</p>
+        </div>
+      </header>
+
+      <h1 className="print-report__title">{title}</h1>
+      <p className="print-report__meta">{meta}</p>
+
+      <table>
+        {/* One header row, and it repeats on every sheet
+            (thead { display: table-header-group }). An earlier draft added a
+            second row carrying the brand so page 2 of a long list would still
+            be marked; it read as an empty broken row on the single page that
+            almost every report actually is. The head and foot carry the brand
+            instead. */}
+        <thead>
+          <tr>
+            {columns.map((c) => <th key={c}>{c}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>{r.map((cell, j) => <td key={j}>{cell}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+
+      <p className="print-report__foot">
+        {note ? `${note} · ` : ""}Generated by Point Poker, free planning poker
+        for agile teams — {SITE_URL.replace(/^https?:\/\//, "")}
+      </p>
+    </section>
   );
 }
 
@@ -7202,6 +7348,10 @@ function GameScreen({
     lines.push("");
     lines.push(`${estMode.plural}: ${summaryRows.length} · estimated: ${summarySized}`);
     if (summaryTotalPoints !== null) lines.push(`Total points: ${summaryTotalPoints}`);
+    // Pasted into Slack or a ticket, this text is the whole artefact, so it
+    // signs itself. Free text, unlike the CSV, so nothing downstream breaks.
+    lines.push("");
+    lines.push(`Estimated with Point Poker — ${SITE_URL.replace(/^https?:\/\//, "")}`);
     track("feature_copy");
     const ok = await copyText(lines.join("\n"));
     toast(ok ? "Summary copied to your clipboard." : "Copy blocked by the browser, use the CSV download instead.");
@@ -7218,13 +7368,28 @@ function GameScreen({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `pointpoker-${(code || "session").toLowerCase()}.csv`;
+    /* The brand rides on the filename, and only the filename. A CSV cannot hold
+       a logo, and a branded preamble row above the header would break the one
+       thing this file is for: /support and /remote-sprint-planning both promise
+       it imports straight into Jira, Linear and Azure DevOps, and every one of
+       those readers takes row 1 as the column names. Anyone who wants the mark
+       on the page wants the PDF button beside this one. */
+    a.download = `Point-Poker-${(code || "session").toLowerCase()}-${new Date()
+      .toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
     toast("⬇ CSV downloaded.");
   }, [summaryRows, code, toast]);
+
+  /* Print, or "Save as PDF" from the same dialog. The browser's own pipeline
+     rather than a PDF library: it already knows paper sizes, margins and the
+     user's printer, and it costs nothing in the bundle. */
+  const printSummary = useCallback(() => {
+    track("feature_pdf");
+    window.print();
+  }, []);
 
   // ── KEYBOARD SHORTCUTS ───────────────────────────────────────────
   // Numeric decks match on the card's actual value, so "5" plays 5 and not the
@@ -8251,7 +8416,26 @@ function GameScreen({
                 <Row className="summary-actions">
                   <Button size="sm" onClick={copySummary}><Icon name="copy" size={16} /> Copy</Button>
                   <Button size="sm" onClick={downloadSummaryCsv}><Icon name="arrowRight" size={16} /> CSV</Button>
+                  <Button size="sm" onClick={printSummary}>
+                    <Icon name="arrowRight" size={16} /> Print / PDF
+                  </Button>
                 </Row>
+                {/* Hidden on screen. This is what the Print / PDF button puts on
+                    paper, and the only export that can carry the mark. */}
+                <PrintReport
+                  title={summaryTitle}
+                  meta={`Room ${code || "—"} · ${new Date().toLocaleDateString("en-GB", {
+                    day: "numeric", month: "long", year: "numeric",
+                  })} · ${summarySized} of ${summaryRows.length} ${estMode.plural} sized${
+                    summaryTotalPoints !== null ? ` · ${summaryTotalPoints} points total` : ""
+                  }`}
+                  columns={["#", "Item", "Estimate"]}
+                  rows={summaryRows.map((r, i) => [
+                    String(i + 1),
+                    r.name,
+                    r.estimate != null ? String(r.estimate) : "not estimated",
+                  ])}
+                />
                 {showWtpPoll && <WtpPoll onDone={() => setWtpDone(true)} />}
               </div>
             )}

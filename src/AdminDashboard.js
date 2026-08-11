@@ -84,6 +84,7 @@ const FEATURES = [
   { key: "feature_invite", label: "Invite link copied" },
   { key: "feature_copy", label: "Summary copied" },
   { key: "feature_csv", label: "CSV downloaded" },
+  { key: "feature_pdf", label: "Printed / saved as PDF" },
 ];
 
 /* ── small presentational pieces ─────────────────────────────────────── */
@@ -258,7 +259,9 @@ export default function AdminDashboard({ currentUser, onBack }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `pointpoker-analytics-${iso(Date.now())}.csv`;
+    // Brand on the filename only; the rows stay machine-clean so a spreadsheet
+    // reads row 1 as the column names.
+    a.download = `Point-Poker-analytics-${iso(Date.now())}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
