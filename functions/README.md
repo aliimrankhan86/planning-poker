@@ -1,4 +1,4 @@
-# pointpoker notification functions
+# Point Poker notification functions
 
 This folder contains the backend notification layer for account signups and Pro activations.
 

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   pointpoker design system — base
+   Point Poker design system — base
 
    Deliberately thin. src/App.js already ships its own reset, heading rules and
    link styling, and this file is injected into <head> while App.js injects its

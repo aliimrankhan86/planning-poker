@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   pointpoker design system — theme
+   Point Poker design system — theme
 
    DARK IS THE DEFAULT and stays the default. tokens.css puts the dark roles on
    :root, so dark is what renders before this module has run at all: no-JS,

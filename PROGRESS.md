@@ -709,3 +709,64 @@ ever reversed.
 **382 tests passing** (from 373). Lint clean. Build 224.32 kB.
 
 **Not done:** no hard spend cap is available from Google for RTDB or Functions.
+
+---
+
+### Session — 11 August 2026 (evening)
+
+**Brand mark replaced.** A new card-stack render (gold diamond, "P", Fibonacci
+numbers up the edges) replaces the old mark everywhere. The master lives at
+`assets/brand-mark-master.png`, outside `public/` so it never ships, and
+`scripts/make-icons.py` regenerates all seven derivatives from it. Nothing is
+trimmed: the artwork already touches all four sides.
+
+- `brand-mark.png` is **176px, not 264px**. The largest any screen draws it is
+  56px (join hero; nav 44, footer 36, room header 34), so 176 is 3.1x the
+  biggest and still sharp at 3x DPR. That is 40.6 kB against the 90.6 kB a
+  264px source cost, and below the 62.2 kB the old mark cost. It is the only
+  icon on the page-load critical path, which is why it was worth measuring: at
+  56px the 176 and 264 sources differ by a mean of 0.62/255 per channel.
+- **Maskable icons added.** `logo192/512.png` were declared `"any maskable"`.
+  Android crops a maskable icon to a squircle, and the new art is edge-to-edge,
+  so its card corners were being cut off. Split into `purpose: "any"` plus new
+  `logo512-maskable.png` / `logo192-maskable.png`, which put the mark on a felt
+  plate inside the 80% safe zone.
+- `favicon.ico` trimmed from 70.3 kB to 10.5 kB by dropping the 256px entry no
+  browser asks an .ico for.
+- `public/favicon.svg` deleted: 164.7 kB of the *old* mark, referenced from
+  nowhere, shipped on every deploy.
+
+**og-image rebuilt** (`scripts/make-og-image.py`, brand fonts read straight from
+`public/fonts`). The old one still advertised "8 free participants. 20 on Pro."
+and carried a PRO badge — false since the product went free — and three of its
+pills were clipped by their own borders. Every string is measured before it is
+drawn now. 95.5 kB, down from 187.3 kB. The `og:image` URL carries `?v=2`
+because LinkedIn, Facebook, Slack and X key their unfurl cache on the URL and
+would otherwise keep serving the Pro-tier card.
+
+**Brand name normalised to "Point Poker"** — 101 replacements across App.js,
+routeMeta.mjs, index.html, manifest.json, prerender.mjs and the design system.
+Left lowercase on purpose, because they are identifiers rather than the brand:
+`pointpoker.app` and the address on it, the `pointpoker-*.csv` download slugs,
+and the `[pointpoker]` console tag. A test pins this.
+
+**Accessibility.** Three of the six `BrandMark` call sites pass no `onClick` and
+were still rendering a `<button>`: focusable, announced as a button, doing
+nothing. They render a plain image now. The navbar wordmark button had *no
+accessible name at all* — `aria-label` on the inner `<span>` is not exposed —
+so it was a nameless control duplicating the home link beside it; it is now
+`aria-hidden` with `tabIndex={-1}`, still clickable by pointer. Verified across
+seven routes: one h1 each, no heading-level skips, no missing alt attributes, no
+nameless controls, no aria-hidden focusable elements.
+
+**Footer gap.** `.site-footer` had `padding-top: 48px` but no margin, so the
+band sat flush on the section above — content ended and the footer's rule
+started on the next pixel. `margin-top: var(--sp-16)`. Measured at 64px on all
+15 routes, with no route pushed into a new scrollbar and no horizontal overflow
+at 375 or 1280.
+
+**391 tests passing** (from 382). Lint clean. Build 222.28 kB.
+
+**Not done:** the `/trust` page has the same inverted `StatTile` that was fixed
+on `/support` — a big gold "Direct" above the support address squeezed into an
+uppercased caption. Left out of scope deliberately.

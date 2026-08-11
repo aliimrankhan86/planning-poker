@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   pointpoker design system — icons
+   Point Poker design system — icons
 
    One stroke family: a 24px grid, 1.75 stroke, round caps and joins, drawn in
    currentColor. No icon font, no CDN set, no PNGs, and no emoji.

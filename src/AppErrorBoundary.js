@@ -47,7 +47,7 @@ export default class AppErrorBoundary extends React.Component {
           Something went wrong
         </h1>
         <p style={{ color: "var(--boot-fg-2)", marginBottom: "1.5rem" }}>
-          pointpoker hit an unexpected error and could not finish drawing the page.
+          Point Poker hit an unexpected error and could not finish drawing the page.
           Reloading usually fixes it. If you were in a room, your seat is still
           there — the room lives on the server, not in this tab.
         </p>

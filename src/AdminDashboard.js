@@ -272,7 +272,7 @@ export default function AdminDashboard({ currentUser, onBack }) {
           tone="danger"
           title="Dashboard is admin-only"
           className="dash-gate"
-          actions={<Button onClick={onBack}>← Back to pointpoker</Button>}
+          actions={<Button onClick={onBack}>← Back to Point Poker</Button>}
         >
           {currentUser
             ? <>Signed in as <strong>{currentUser.email}</strong>, but this account is not an admin.
@@ -309,7 +309,7 @@ export default function AdminDashboard({ currentUser, onBack }) {
     <div className="dash-wrap pp-container">
       <header className="dash-head">
         <div>
-          <Button variant="ghost" size="sm" className="dash-back" onClick={onBack}>← pointpoker</Button>
+          <Button variant="ghost" size="sm" className="dash-back" onClick={onBack}>← Point Poker</Button>
           <SectionHead
             align="start"
             as="h1"

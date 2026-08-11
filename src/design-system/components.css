@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   pointpoker design system — components
+   Point Poker design system — components
 
    Every class is `pp-` prefixed for two reasons: it cannot collide with the
    legacy class names still living in src/App.js during the migration, and a
@@ -478,6 +478,13 @@
 .pp-card--gold { border-color: var(--border-gold); }
 .pp-card--interactive { cursor: pointer; transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out); }
 .pp-card--interactive:hover { transform: translateY(-2px); box-shadow: var(--elev-2); border-color: var(--border-gold); }
+/* A whole card can be the link. Nothing here reset the UA's anchor styling, so
+   the related-pages cards rendered in browser link purple with an underline
+   struck through every line of body copy — the card, not the design system,
+   was doing the talking. The lift and the gold border are the affordance. */
+a.pp-card { color: var(--text-1); text-decoration: none; }
+a.pp-card:hover, a.pp-card:focus-visible { text-decoration: none; }
+a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-card--pad-sm { padding: var(--sp-4); }
 .pp-card--pad-lg { padding: var(--sp-8); }
 

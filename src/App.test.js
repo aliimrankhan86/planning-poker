@@ -10,6 +10,7 @@ import {
   PRIVATE_PATHS,
   ROUTE_CONTENT,
   SITE_URL,
+  SUPPORT_FAQ,
 } from "./routeMeta.mjs";
 
 // Firebase is a network dependency; the smoke test only cares that the shell renders.
@@ -91,6 +92,55 @@ describe("route metadata", () => {
     for (const [path, content] of Object.entries(ROUTE_CONTENT)) {
       expect(`${path}:${!!content.h1}`).toBe(`${path}:true`);
       expect(`${path}:${!!content.intro}`).toBe(`${path}:true`);
+    }
+  });
+
+  /* A route with a `faq` gets FAQPage JSON-LD from scripts/prerender.mjs.
+     Claiming answers the hydrated page never shows is how a rich result gets
+     pulled, so the support page has to render the same array the schema is
+     built from rather than a hand-copied second version of it. */
+  test("the support FAQ the schema advertises is the one the page renders", () => {
+    expect(ROUTE_CONTENT["/support"].faq).toBe(SUPPORT_FAQ);
+    expect(SUPPORT_FAQ.length).toBeGreaterThan(0);
+    for (const { q, a } of SUPPORT_FAQ) {
+      expect(q.endsWith("?")).toBe(true);
+      expect(a.length).toBeGreaterThan(80);
+    }
+
+    const source = readFileSync(join(__dirname, "App.js"), "utf8");
+    expect(source).toMatch(/SUPPORT_FAQ\.map\(/);
+  });
+
+  /* The brand had drifted to three spellings across the product. These are the
+     only places "pointpoker" may still appear lowercase, and each is an
+     identifier rather than the brand in prose:
+       • pointpoker.app        the domain, and the support address on it
+       • pointpoker-<thing>    download filenames
+       • [pointpoker]          the console log namespace
+     Anything else is the brand and reads "Point Poker". */
+  test("the brand is spelled Point Poker everywhere it is prose", () => {
+    const files = [
+      "App.js", "routeMeta.mjs", "AppErrorBoundary.js", "AdminDashboard.js",
+      "design-system/index.js",
+    ];
+    const allowed = /pointpoker(?=\.app|-)|\[pointpoker\]/g;
+    const offenders = [];
+    for (const f of files) {
+      const src = readFileSync(join(__dirname, f), "utf8").replace(allowed, "");
+      for (const line of src.split("\n")) {
+        if (/pointpoker|Point poker|point Poker/.test(line)) offenders.push(`${f}: ${line.trim().slice(0, 70)}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  test("support questions do not restate the home page's", () => {
+    // Two URLs answering the same query compete with each other. The home FAQ
+    // owns "is it free" and "do I need an account"; /support owns the
+    // troubleshooting ones.
+    const home = new Set(ROUTE_CONTENT["/"].faq.map((f) => f.q.toLowerCase()));
+    for (const { q } of SUPPORT_FAQ) {
+      expect(home.has(q.toLowerCase())).toBe(false);
     }
   });
 });

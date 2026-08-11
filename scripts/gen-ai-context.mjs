@@ -105,7 +105,7 @@ const out = `<!-- ════════════════════�
      spliced in at the bottom of this file untouched.
      ════════════════════════════════════════════════════════════════ -->
 
-# pointpoker: context for AI agents
+# Point Poker: context for AI agents
 
 Free planning poker for agile teams. React SPA, Firebase Realtime Database, hosted on Vercel.
 

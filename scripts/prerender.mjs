@@ -25,6 +25,7 @@ import {
   PRIVATE_PATHS,
   ROUTE_CONTENT,
   PRERENDER_LINKS,
+  SUPPORT_EMAIL,
 } from "../src/routeMeta.mjs";
 
 const BUILD_DIR = "build";
@@ -34,15 +35,24 @@ const esc = (s = "") =>
 const ORGANISATION = {
   "@type": "Organization",
   "@id": `${SITE_URL}/#organization`,
-  name: "pointpoker",
+  name: "Point Poker",
   url: `${SITE_URL}/`,
   logo: `${SITE_URL}/logo512.png`,
+  // A published, machine-readable way to reach a human. Google and the answer
+  // engines both read this as a trust signal, and it costs one object.
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    email: SUPPORT_EMAIL,
+    url: `${SITE_URL}/support`,
+    availableLanguage: "English",
+  },
 };
 
 const WEBSITE = {
   "@type": "WebSite",
   "@id": `${SITE_URL}/#website`,
-  name: "pointpoker",
+  name: "Point Poker",
   url: `${SITE_URL}/`,
   publisher: { "@id": `${SITE_URL}/#organization` },
   inLanguage: "en-GB",
@@ -51,7 +61,7 @@ const WEBSITE = {
 const SOFTWARE_APP = {
   "@type": "SoftwareApplication",
   "@id": `${SITE_URL}/#app`,
-  name: "pointpoker",
+  name: "Point Poker",
   applicationCategory: "BusinessApplication",
   applicationSubCategory: "Agile estimation",
   operatingSystem: "Web browser",
@@ -94,7 +104,9 @@ function breadcrumb(path, title) {
 function graphFor(path, m, content) {
   const nodes = [ORGANISATION, WEBSITE, breadcrumb(path, content?.h1 || m.title)];
   nodes.push({
-    "@type": "WebPage",
+    // /support is the page that tells you how to reach us, so it is a
+    // ContactPage as well as a WebPage. schema.org allows the array form.
+    "@type": path === "/support" ? ["WebPage", "ContactPage"] : "WebPage",
     "@id": `${SITE_URL}${path}#webpage`,
     url: `${SITE_URL}${path}`,
     name: m.title,
@@ -154,7 +166,7 @@ function shellFor(path, m, content) {
   const links = PRERENDER_LINKS.filter(([href]) => href !== path)
     .map(([href, label]) => `<li><a href="${href}">${esc(label)}</a></li>`)
     .join("");
-  parts.push(`<h2>More on pointpoker</h2><ul>${links}</ul>`);
+  parts.push(`<h2>More on Point Poker</h2><ul>${links}</ul>`);
   return parts.join("");
 }
 

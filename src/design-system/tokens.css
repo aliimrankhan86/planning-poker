@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   pointpoker design system — tokens
+   Point Poker design system — tokens
    The single source of truth for every colour, size, radius, shadow and
    duration in the product. Components reference SEMANTIC ROLES only
    (--surface-1, --text-2, --action); they never touch the raw palette.

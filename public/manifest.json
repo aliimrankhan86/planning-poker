@@ -1,6 +1,6 @@
 {
-  "short_name": "pointpoker",
-  "name": "pointpoker — Real-Time Estimation for Agile Teams",
+  "short_name": "Point Poker",
+  "name": "Point Poker — Real-Time Estimation for Agile Teams",
   "description": "Free online planning poker for agile and scrum teams with real-time voting and story point estimation.",
   "icons": [
     {
@@ -10,20 +10,32 @@
     },
     {
       "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
+      "sizes": "48x48 32x32 24x24 16x16",
       "type": "image/x-icon"
     },
     {
       "src": "logo192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "logo192-maskable.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "logo512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",

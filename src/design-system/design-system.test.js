@@ -452,6 +452,22 @@ describe("components say it in words, not only in colour", () => {
   });
 });
 
+describe("a card that is also a link still looks like a card", () => {
+  // The related-pages cards on /support render as <a>. Nothing reset the UA
+  // anchor styles, so every one of them came out in browser-default link
+  // purple with an underline through the body copy.
+  test("an anchor card takes the card's colour, not the browser's link colour", () => {
+    expect(components).toMatch(/a\.pp-card\s*\{[^}]*color:\s*var\(--text-1\)/);
+    expect(components).toMatch(/a\.pp-card\s*\{[^}]*text-decoration:\s*none/);
+  });
+
+  test("the hover affordance uses a token that is legible in both themes", () => {
+    // --brass-300 is a pale gold: fine on felt, fails 4.5:1 on the light
+    // theme's ivory card. --action-quiet is the per-theme gold-as-text token.
+    expect(components).toMatch(/a\.pp-card:hover \.pp-card__title\s*\{\s*color:\s*var\(--action-quiet\)/);
+  });
+});
+
 describe("Tabs follow the tablist pattern", () => {
   const TABS = [{ value: "a", label: "Room" }, { value: "b", label: "History" }];
 

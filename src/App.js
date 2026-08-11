@@ -53,6 +53,8 @@ import {
   STATIC_ROUTE_META,
   PRIVATE_PATHS,
   MAX_PARTICIPANTS,
+  SUPPORT_EMAIL,
+  SUPPORT_FAQ,
 } from "./routeMeta.mjs";
 import {
   tally,
@@ -1599,6 +1601,11 @@ body::before {
 }
 .chip-logo:hover  { transform: translateY(-1px) scale(1.03); filter: drop-shadow(0 0 14px var(--gold-glow)); }
 .chip-logo:active { transform: translateY(0) scale(1.01); }
+/* The decorative placements. No pointer, no lift, and no grown tap target,
+   because there is nothing here to tap. */
+.chip-logo--static { cursor: default; }
+.chip-logo--static::after { content: none; }
+.chip-logo--static:hover { transform: none; filter: none; }
 
 /* Nav auth buttons */
 /* .nav-btn-login and .nav-btn-register were a parallel button implementation:
@@ -1617,6 +1624,11 @@ body::before {
   border-top: 1px solid var(--border);
   padding: var(--sp-12) 0 0;
   flex-shrink: 0;
+  /* The footer is its own band, with its own felt and its own top rule, but it
+     was sitting flush on the section above: content ended and the rule started
+     on the very next pixel. The internal 48px only pushed the footer's own
+     contents down, it never separated the two bands. */
+  margin-top: var(--sp-16);
 }
 /* padding-block, not padding-bottom: the plan bar's rule above had 16px of its
    own padding on top of it and nothing under it, so the brand mark and the two
@@ -1679,7 +1691,7 @@ body::before {
 /* No text-align: right. The note is a flex item that wraps onto its own line
    below ~940px, and once it does, space-between puts its box on the LEFT while
    the right-alignment still ran inside it — three lines ragged down the left
-   edge with "affiliated with pointpoker." orphaned out to the right, directly
+   edge with "affiliated with Point Poker." orphaned out to the right, directly
    under a left-aligned copyright line. Right-aligning only ever read correctly
    in the one case where the two shared a row. Both are left-aligned now, which
    holds in both cases and needs no breakpoint to undo it. */
@@ -2100,17 +2112,32 @@ const getFounderDefaultDeck = (code) => getFounderRoomConfig(code)?.defaultDeck 
    containers in this file still rely on; it is not a second Icon. */
 const Icon = (props) => <DesignSystemIcon className="icon" {...props} />;
 
-/* ═══════════════════════ CASINO CHIP LOGO ═══════════════════════
-   SVG casino chip, 8-segment outer ring, gold inner border, "PP" text.
-   Used in NavBar (44px) and LoginModal (52px).
-   onClick: optional handler, e.g. navigate home.
-═══════════════════════════════════════════════════════════════════ */
-function BrandMark({ onClick, size = 44, label = "Go to home" }) {
+/* ═══════════════════════ BRAND MARK ═══════════════════════
+   The card-stack mark: public/brand-mark.png, regenerated from
+   assets/brand-mark-master.png by scripts/make-icons.py.
+
+   Interactive only when it is handed something to do. Three of the six call
+   sites pass no onClick, and those were still rendering a <button>: focusable,
+   announced as a button, and doing nothing when a keyboard user pressed it.
+   Those render a plain image instead.
+
+   label names the control when it is a button, and becomes the image alt when
+   it is not. Pass label="" where a wordmark sits beside the mark, so the brand
+   is not announced twice.
+═══════════════════════════════════════════════════════════════ */
+function BrandMark({ onClick, size = 44, label = "Point Poker, go to home" }) {
+  if (!onClick) {
+    return (
+      <span className="chip-logo chip-logo--static" style={{ width: size, height: size }}>
+        <img src="/brand-mark.png" alt={label} />
+      </span>
+    );
+  }
   return (
     <button className="chip-logo" onClick={onClick} aria-label={label}
       style={{ width: size, height: size }}
     >
-      <img src="/brand-mark.png" alt="" aria-hidden="true" />
+      <img src="/brand-mark.png" alt="" />
     </button>
   );
 }
@@ -2156,7 +2183,7 @@ function RouteLink({ href, onNavigate, className, children, ...props }) {
 
 /* ═══════════════════════ GLOBAL NAVBAR ═══════════════════════
    Persistent top bar shown on all screens.
-   - Left:  Brand mark + "pointpoker" brand name
+   - Left:  Brand mark + "Point Poker" brand name
    - Right: Account state + pricing CTA
 ═══════════════════════════════════════════════════════════════ */
 function NavBar({
@@ -2193,9 +2220,21 @@ function NavBar({
           <BrandMark
             onClick={onLogoClick}
             size={44}
-            label="pointpoker, go to home"
+            label="Point Poker, go to home"
           />
-          <button className="navbar-brand" onClick={onLogoClick}>
+          {/* The wordmark is the same home control as the mark beside it, and
+              it had no accessible name of its own: aria-label on the inner
+              <span> is not exposed, so a screen reader read it as an unlabelled
+              button. Rather than announce one destination twice, this stays
+              clickable for the pointer and is hidden from assistive tech, which
+              already has the labelled mark immediately before it. Removing it
+              from the tab order is what makes aria-hidden legal here. */}
+          <button
+            className="navbar-brand"
+            onClick={onLogoClick}
+            aria-hidden="true"
+            tabIndex={-1}
+          >
             <BrandWordmark />
           </button>
           {showMarketingNav && (
@@ -2295,7 +2334,8 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
         {/* Column 1, Brand */}
         <div className="footer-col-brand">
           <div className="footer-brand-row">
-            <BrandMark size={36} label="pointpoker"/>
+            {/* label="" — the wordmark beside it already says "Point Poker". */}
+            <BrandMark size={36} label=""/>
             <span className="footer-brand-name"><BrandWordmark /></span>
           </div>
           <p className="footer-brand-desc">
@@ -2333,7 +2373,7 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
           ) : (
             <>
               <RouteLink href="/" className="footer-link" onNavigate={onNavigate}>Free Planning Poker</RouteLink>
-              <RouteLink href="/about" className="footer-link" onNavigate={onNavigate}>About pointpoker</RouteLink>
+              <RouteLink href="/about" className="footer-link" onNavigate={onNavigate}>About Point Poker</RouteLink>
               <RouteLink href="/trust" className="footer-link" onNavigate={onNavigate}>Trust &amp; reliability</RouteLink>
               <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>Features</RouteLink>
               <RouteLink href="/pricing" className="footer-link" onNavigate={onNavigate}>Pricing &amp; plans</RouteLink>
@@ -2347,15 +2387,15 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
       {/* Bottom bar, copyright + legal note */}
       <div className="footer-bottom pp-container">
         <div className="footer-copy">
-          © {year} pointpoker. All rights reserved.
+          © {year} Point Poker. All rights reserved.
           Registered in England &amp; Wales.
         </div>
         <div className="footer-legal-note">
-          pointpoker is provided "as-is" without warranty of any kind.
+          Point Poker is provided "as-is" without warranty of any kind.
           Use is subject to our{" "}
           <button className="footer-link footer-link--inline" onClick={onNavTerms}>Terms of Service</button>
           . Firebase and Vercel are third-party services and
-          are not affiliated with pointpoker.
+          are not affiliated with Point Poker.
         </div>
       </div>
     </footer>
@@ -2410,7 +2450,7 @@ function LoginModal({
         : "Sign in";
 
   const subtitle = currentUser
-    ? "Everything on pointpoker is free. This account holds your two Team Rooms and your sprint history."
+    ? "Everything on Point Poker is free. This account holds your two Team Rooms and your sprint history."
     : mode === "register"
       ? teamRoomIntent
         ? "Team Rooms are free. The account exists so the room URL is yours and no other team can land in it."
@@ -2924,7 +2964,7 @@ export default function App() {
       await run();
       return true;
     } catch (err) {
-      console.error(`[pointpoker] ${failureMessage}`, err);
+      console.error(`[Point Poker] ${failureMessage}`, err);
       showToast(failureMessage);
       return false;
     }
@@ -2938,7 +2978,7 @@ export default function App() {
 
     if (PRIVATE_PATHS.includes(pathname)) {
       applyRouteMeta({
-        title: "Usage dashboard | pointpoker",
+        title: "Usage dashboard | Point Poker",
         description: "Owner-only usage analytics.",
         canonical: `${SITE_URL}/`,
         ogUrl: `${SITE_URL}/`,
@@ -2954,9 +2994,9 @@ export default function App() {
 
     if (teamSlug) {
       applyRouteMeta({
-        title: "Team Room | pointpoker",
+        title: "Team Room | Point Poker",
         description:
-          "Join a pointpoker Team Room to estimate stories live with your team. Team Room URLs are for active sessions and are not indexed.",
+          "Join a Point Poker Team Room to estimate stories live with your team. Team Room URLs are for active sessions and are not indexed.",
         canonical: `${SITE_URL}/`,
         ogUrl: `${SITE_URL}/t/${teamSlug}`,
         robots: "noindex, nofollow",
@@ -2966,9 +3006,9 @@ export default function App() {
 
     if (roomCode || screen === "game") {
       applyRouteMeta({
-        title: "Planning Poker Room | pointpoker",
+        title: "Planning Poker Room | Point Poker",
         description:
-          "Live pointpoker estimation room for sprint planning. Room URLs are for active sessions and are not indexed.",
+          "Live Point Poker estimation room for sprint planning. Room URLs are for active sessions and are not indexed.",
         canonical: `${SITE_URL}/`,
         ogUrl: roomCode ? `${SITE_URL}/?room=${encodeURIComponent(roomCode)}` : `${SITE_URL}/`,
         robots: "noindex, nofollow",
@@ -3283,7 +3323,7 @@ export default function App() {
         // chosen after, because write()'s own message would be overwritten by
         // the success line three statements later.
         const cleared = await remove(ref(db, `rooms/${code}`)).then(() => true).catch((err) => {
-          console.error("[pointpoker] expired room delete failed", err);
+          console.error("[Point Poker] expired room delete failed", err);
           return false;
         });
         setScreen("join");
@@ -3415,7 +3455,7 @@ export default function App() {
         players: { [myId]: { id: myId, name, role, voted: false, vote: null, online: true } },
       });
     } catch (err) {
-      console.error("[pointpoker] room creation failed", err);
+      console.error("[Point Poker] room creation failed", err);
       showToast("Could not create the room, check your connection and try again.");
       return;
     }
@@ -3441,7 +3481,7 @@ export default function App() {
        resolved and never rejected — the Join button stayed pressed for as long
        as the person was willing to wait. get() rejects, and the catch says so. */
     const snap = await get(ref(db, `rooms/${c}`)).catch((err) => {
-      console.error("[pointpoker] room lookup failed", err);
+      console.error("[Point Poker] room lookup failed", err);
       return null;
     });
     if (!snap) {
@@ -3466,7 +3506,7 @@ export default function App() {
         id: myId, name, role, voted: false, vote: null, online: true,
       });
     } catch (err) {
-      console.error("[pointpoker] join failed", err);
+      console.error("[Point Poker] join failed", err);
       showToast("Could not join that room, check your connection and try again.");
       return;
     }
@@ -3488,7 +3528,7 @@ export default function App() {
     // Same as handleJoin: onValue with an options object never rejects, so a
     // failed lookup hung the Open button rather than reporting anything.
     const snap = await get(ref(db, `rooms/${c}`)).catch((err) => {
-      console.error("[pointpoker] team room lookup failed", err);
+      console.error("[Point Poker] team room lookup failed", err);
       return null;
     });
     if (!snap) {
@@ -3544,7 +3584,7 @@ export default function App() {
         await update(ref(db), upd);
       }
     } catch (err) {
-      console.error("[pointpoker] team room entry failed", err);
+      console.error("[Point Poker] team room entry failed", err);
       showToast(`Could not open ${teamName}, check your connection and try again.`);
       return;
     }
@@ -3627,7 +3667,7 @@ export default function App() {
       }
       return true;
     } catch (err) {
-      console.error("[pointpoker] newRound write failed", err);
+      console.error("[Point Poker] newRound write failed", err);
       showToast("Could not save that estimate, check your connection and try again.");
       return false;
     }
@@ -3669,7 +3709,7 @@ export default function App() {
     } catch (err) {
       // A rejected queue write left the field cleared and the list unchanged,
       // which reads as "it swallowed my backlog".
-      console.error("[pointpoker] addStory write failed", err);
+      console.error("[Point Poker] addStory write failed", err);
       showToast(names.length > 1 ? "Could not add those items, check your connection and try again."
                                  : "Could not add that item, check your connection and try again.");
     }
@@ -3694,7 +3734,7 @@ export default function App() {
         [`rooms/${code}/activeStory`]: Math.min(activeIdx, next.length),
       });
     } catch (err) {
-      console.error("[pointpoker] removeStory write failed", err);
+      console.error("[Point Poker] removeStory write failed", err);
       showToast("Could not remove that item, check your connection and try again.");
     }
   }, [code, roomData, showToast]);
@@ -3739,7 +3779,7 @@ export default function App() {
       showToast(getEstMode(roomData?.estimationMode).toastNext);
       return true;
     } catch (err) {
-      console.error("[pointpoker] recordAndNextStory write failed", err);
+      console.error("[Point Poker] recordAndNextStory write failed", err);
       showToast("Could not save that estimate, check your connection and try again.");
       return false;
     }
@@ -3757,7 +3797,7 @@ export default function App() {
     } catch (err) {
       // Every other write in this file reports its failure; this one used to
       // reject into an unhandled promise and leave a half-reset room silent.
-      console.error("[pointpoker] resetSession write failed", err);
+      console.error("[Point Poker] resetSession write failed", err);
       showToast("Could not start a new sprint, check your connection and try again.");
     }
   }, [code, roomData, showToast]);
@@ -4195,7 +4235,6 @@ function MarketingRelatedLinks({ title, intro, links, onNavigate }) {
             as={RouteLink}
             href={link.href}
             onNavigate={onNavigate}
-            className="marketing-link-card"
             eyebrow={link.kicker}
             title={link.title}
           >
@@ -4261,7 +4300,7 @@ function PricingPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Pricing"
       title="Planning poker pricing: everything is free, for every team"
-      intro="There is no paid tier, no trial countdown and no credit card field anywhere on pointpoker. All three card decks, the countdown timer, facilitator analytics, story queues, CSV export and two fixed Team Rooms are free for everyone while we grow the user base."
+      intro="There is no paid tier, no trial countdown and no credit card field anywhere on Point Poker. All three card decks, the countdown timer, facilitator analytics, story queues, CSV export and two fixed Team Rooms are free for everyone while we grow the user base."
       highlights={[
         { value: "$0", label: "Every feature, every team, no card" },
         { value: `${MAX_PARTICIPANTS}`, label: "Participants per room, facilitators included" },
@@ -4364,9 +4403,9 @@ function PricingPage({ onNavigate }) {
 function AboutPage({ onNavigate }) {
   return (
     <MarketingPageShell
-      eyebrow="About pointpoker"
+      eyebrow="About Point Poker"
       title="A planning poker tool built to stay fast, trustworthy, and usable in real sprint planning"
-      intro="pointpoker exists for teams that want the useful parts of online estimation without the usual product bloat. The goal is simple: make it easy to open a room, invite the team, vote fairly, discuss clearly, and keep sprint planning moving."
+      intro="Point Poker exists for teams that want the useful parts of online estimation without the usual product bloat. The goal is simple: make it easy to open a room, invite the team, vote fairly, discuss clearly, and keep sprint planning moving."
       highlights={[
         { value: "Fast", label: "Browser-first estimation with minimal setup" },
         { value: "Clear", label: "Facilitator-led flow with explicit next steps" },
@@ -4379,8 +4418,8 @@ function AboutPage({ onNavigate }) {
       secondaryLabel="Get support"
     >
       <MarketingSection
-        title="Why pointpoker was built"
-        intro="A lot of planning poker tools feel like generic whiteboards or overbuilt agile suites. pointpoker takes the opposite approach: make the estimation ceremony faster, clearer, and easier to repeat."
+        title="Why Point Poker was built"
+        intro="A lot of planning poker tools feel like generic whiteboards or overbuilt agile suites. Point Poker takes the opposite approach: make the estimation ceremony faster, clearer, and easier to repeat."
       >
         <Grid min="280px">
           <Card title="Less friction to start">
@@ -4410,7 +4449,7 @@ function AboutPage({ onNavigate }) {
 
       <MarketingSection
         title="Trust and product signals"
-        intro="pointpoker is still growing, but the product already exposes the practical signals teams expect before using a lightweight SaaS tool in real ceremonies."
+        intro="Point Poker is still growing, but the product already exposes the practical signals teams expect before using a lightweight SaaS tool in real ceremonies."
       >
         <Grid min="280px">
           <Card title="Public legal and privacy pages">
@@ -4427,7 +4466,7 @@ function AboutPage({ onNavigate }) {
 
       <MarketingRelatedLinks
         title="Continue exploring"
-        intro="These pages explain the product from the pricing, feature, and remote-team angles so teams can evaluate pointpoker from the perspective that matters most to them."
+        intro="These pages explain the product from the pricing, feature, and remote-team angles so teams can evaluate Point Poker from the perspective that matters most to them."
         onNavigate={onNavigate}
         links={[
           { href: "/trust", kicker: "Trust", title: "Trust and reliability", copy: "Review the support posture, mail authentication, and product safeguards behind the live workflow." },
@@ -4441,72 +4480,61 @@ function AboutPage({ onNavigate }) {
 }
 
 function SupportPage({ onNavigate }) {
-  const support = process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
-
   return (
     <MarketingPageShell
       eyebrow="Support"
-      title="Get help with pointpoker, understand the workflow, and know where to go when your team has questions"
-      intro="pointpoker is designed to feel simple in the room, but good support still matters. This page answers the most common product questions and shows you how to reach a person directly."
+      title="Planning poker help and support"
+      intro="The questions below cover almost everything people write in about. If yours is not one of them, the email address on this page goes straight to a person."
       highlights={[
-        { value: "Email", label: support },
-        { value: "Free", label: "Normal room participation without account setup" },
-        { value: "$0", label: "Every feature, including Team Rooms and history" },
+        // A StatTile puts the label above the value, so the value has to be the
+        // datum. "Email" over an uppercased address read backwards: the big gold
+        // word said nothing and the address looked like a caption. The address
+        // gets its own section below, where it can stay lowercase.
+        { value: "5 hrs", label: "How long a room lasts before it is cleared" },
+        { value: "2", label: "Team Rooms per free account, on URLs that never change" },
+        { value: "$0", label: "Every feature, Team Rooms and sprint history included" },
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
       primaryLabel="Open the app"
       secondaryHref="/pricing"
-      secondaryLabel="Compare plans"
+      secondaryLabel="Why it is free"
     >
+      {/* The eight answers come from routeMeta so the FAQPage JSON-LD the
+          prerender emits describes text that is genuinely on the page. Same
+          Accordion as the home FAQ: answers stay in the DOM when collapsed,
+          so a crawler reads every word. */}
       <MarketingSection
-        title="Best place to start when something feels unclear"
-        intro="Most support questions fall into one of a few buckets. Starting with the right explanation usually resolves things fast."
+        title="Frequently asked questions"
+        intro="Ordered roughly by how often they come up."
       >
-        <Grid min="280px">
-          <Card title="Room join questions">
-              Free participation does not require an account. Guests can join a shared room with a real name and the correct role, then vote or facilitate straight away.
-              </Card>
-          <Card title="Account questions">
-              A free account exists for one reason: it reserves your two Team Room URLs so no other team can land in your room, and it keeps sprint history tied to you across devices. Everything else works without one.
-              </Card>
-          <Card title="Workflow questions">
-              When votes split, the facilitator can either run another vote or choose the final agreed estimate from the active deck. Averages are shown for discussion only and are not saved automatically.
-              </Card>
-        </Grid>
+        <Accordion
+          items={SUPPORT_FAQ.map(({ q, a }) => ({ question: q, answer: <p>{a}</p> }))}
+        />
       </MarketingSection>
 
       <MarketingSection
-        title="Contact support"
-        intro="If the product behaves unexpectedly or you need help with account access, Team Rooms, or sprint history, contact support directly."
+        title="Email support"
+        intro="For anything the answers above do not cover, including account access, a Team Room slug you cannot claim, or sprint history that looks wrong."
       >
-        <Alert tone="info" title={<>Support email: <a href={`mailto:${support}`} className="seo-inline-link">{support}</a></>}>
-          Include the room code or Team Room URL, what you expected to happen, and what you saw instead. That
-          makes it much easier to reproduce and fix the issue quickly.
+        <Alert
+          tone="info"
+          title={<>Write to <a href={`mailto:${SUPPORT_EMAIL}`} className="seo-inline-link">{SUPPORT_EMAIL}</a></>}
+        >
+          Three things make a bug reproducible first try: the room code or Team Room URL, what you expected
+          to happen, and what happened instead. A screenshot helps if the layout is the problem. Replies come
+          from one person, so they are not instant.
         </Alert>
-      </MarketingSection>
-
-      <MarketingSection
-        title="Helpful product guidance"
-        intro="These are the explanations that tend to reduce confusion fastest for teams using the product for the first time."
-      >
-        <ul className="marketing-list">
-          <li><strong>Free rooms are for fast ad-hoc estimation:</strong> create a room, invite the team, and run the ceremony without forcing everyone through accounts.</li>
-          <li><strong>Accounts are for repeatability:</strong> two fixed Team Rooms and sprint history help when the same team estimates together every sprint. Both are free.</li>
-          <li><strong>Facilitators do not need to vote:</strong> the facilitator role exists to manage reveal, re-vote, moderation, and final estimate capture.</li>
-          <li><strong>Real names are required:</strong> participants and facilitators must enter a genuine name so the room stays understandable to the whole team.</li>
-          <li><strong>Support questions are easier to solve with context:</strong> sharing the room code, team slug, or exact flow that failed usually shortens the back-and-forth significantly.</li>
-        </ul>
       </MarketingSection>
 
       <MarketingRelatedLinks
         title="Related pages"
-        intro="If the question is really about plan fit, workflow, or how the product is intended to be used, these pages cover that in more detail."
+        intro="If the question is less about a problem and more about how the product works, start here."
         onNavigate={onNavigate}
         links={[
-          { href: "/trust", kicker: "Trust", title: "Trust and reliability", copy: "Review the public trust signals, support posture, and product safeguards behind the workflow." },
-          { href: "/about", kicker: "About", title: "Why pointpoker exists", copy: "Understand the product philosophy and why the workflow is intentionally lightweight." },
-          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for everyone. Here is what that covers and how long it lasts." },
+          { href: "/trust", kicker: "Trust", title: "Trust and reliability", copy: "What happens to your data, why there are no ads or tracking cookies, and what the server checks before it accepts a vote." },
+          { href: "/about", kicker: "About", title: "Why Point Poker exists", copy: "Why this was built, and the features it deliberately leaves out." },
+          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for everyone. What that covers, and why it is not a trial." },
         ]}
       />
     </MarketingPageShell>
@@ -4520,7 +4548,7 @@ function TrustPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Trust and reliability"
       title="Trust signals for teams that want a lightweight planning poker tool without lightweight operating standards"
-      intro="pointpoker is intentionally simple on the surface, but teams still need to know the basics are handled properly. This page brings together the practical trust signals behind the product: clear support, public legal routes, authenticated email, no ads or tracking cookies, and room safeguards that keep live sessions understandable."
+      intro="Point Poker is intentionally simple on the surface, but teams still need to know the basics are handled properly. This page brings together the practical trust signals behind the product: clear support, public legal routes, authenticated email, no ads or tracking cookies, and room safeguards that keep live sessions understandable."
       highlights={[
         { value: "Direct", label: `Support at ${support}` },
         { value: "Verified", label: "SPF, DKIM, and DMARC now pass" },
@@ -4528,7 +4556,7 @@ function TrustPage({ onNavigate }) {
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
-      primaryLabel="Open pointpoker"
+      primaryLabel="Open Point Poker"
       secondaryHref="/support"
       secondaryLabel="Get support"
     >
@@ -4538,7 +4566,7 @@ function TrustPage({ onNavigate }) {
       >
         <Grid min="280px">
           <Card title="Public support and legal routes">
-              pointpoker publishes its support, privacy, and terms surfaces on the live domain so teams can see how the product is operated instead of hunting through a hidden help centre.
+              Point Poker publishes its support, privacy, and terms surfaces on the live domain so teams can see how the product is operated instead of hunting through a hidden help centre.
               </Card>
           <Card title="Authenticated support email">
               Outbound mail from <a href={`mailto:${support}`} className="seo-inline-link">{support}</a> now passes SPF, DKIM, and DMARC, which improves deliverability and makes support contact look less improvised.
@@ -4584,7 +4612,7 @@ function TrustPage({ onNavigate }) {
         intro="These pages explain the product philosophy, support path, and commercial fit in more detail."
         onNavigate={onNavigate}
         links={[
-          { href: "/about", kicker: "About", title: "Why pointpoker exists", copy: "See the product philosophy behind the lightweight workflow and focused upgrade path." },
+          { href: "/about", kicker: "About", title: "Why Point Poker exists", copy: "See the product philosophy behind the lightweight workflow and focused upgrade path." },
           { href: "/support", kicker: "Support", title: "Support and product guidance", copy: "See where to get help, what questions come up most often, and how the workflow is explained." },
           { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for everyone, and a straight answer on why and for how long." },
         ]}
@@ -4660,7 +4688,7 @@ function WhatIsPlanningPokerPage({ onNavigate }) {
 
       <MarketingRelatedLinks
         title="Go deeper"
-        intro="These guides explain how the method works online, how Fibonacci cards fit in, and how pointpoker supports the workflow in practice."
+        intro="These guides explain how the method works online, how Fibonacci cards fit in, and how Point Poker supports the workflow in practice."
         onNavigate={onNavigate}
         links={[
           { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "See how the product turns the ceremony into a browser-first, live estimation flow." },
@@ -4719,7 +4747,7 @@ function FibonacciStoryPointsPage({ onNavigate }) {
       </MarketingSection>
 
       <MarketingSection
-        title="How pointpoker handles Fibonacci estimation"
+        title="How Point Poker handles Fibonacci estimation"
         intro="The product is designed to reinforce good estimation habits rather than bypass them."
       >
         <Grid min="280px">
@@ -4754,7 +4782,7 @@ function AgileEstimationToolPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Agile estimation tool"
       title="An agile estimation tool should help the team reach clearer decisions, not just collect votes"
-      intro="pointpoker works as an agile estimation tool for sprint planning and backlog refinement because it gives teams a clear workflow: define the story, vote independently, reveal together, discuss the gap, and record the agreed estimate without losing momentum."
+      intro="Point Poker works as an agile estimation tool for sprint planning and backlog refinement because it gives teams a clear workflow: define the story, vote independently, reveal together, discuss the gap, and record the agreed estimate without losing momentum."
       highlights={[
         { value: "Realtime", label: "Votes, reveals, and room state stay in sync" },
         { value: "Facilitated", label: "Built for the person running the ceremony" },
@@ -4784,7 +4812,7 @@ function AgileEstimationToolPage({ onNavigate }) {
       </MarketingSection>
 
       <MarketingSection
-        title="Where pointpoker fits in the agile workflow"
+        title="Where Point Poker fits in the agile workflow"
         intro="The product is narrow by design. It supports the estimation portion of agile planning well, instead of trying to replace your backlog tool, ticketing system, or roadmap process."
       >
         <ul className="marketing-list">
@@ -4831,7 +4859,7 @@ function FeaturesPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Features"
       title="Everything an agile team needs to estimate clearly, reveal fairly, and keep sprint planning moving"
-      intro="pointpoker is built for live estimation, not static voting widgets. It gives facilitators structure, participants a frictionless join flow, and teams enough context to move from discussion to agreement quickly."
+      intro="Point Poker is built for live estimation, not static voting widgets. It gives facilitators structure, participants a frictionless join flow, and teams enough context to move from discussion to agreement quickly."
       highlights={[
         { value: "3", label: "Card decks: Fibonacci, T-Shirt, Powers of 2" },
         { value: "Live", label: "Realtime reveal, votes, and participant sync" },
@@ -4862,7 +4890,7 @@ function FeaturesPage({ onNavigate }) {
 
       <MarketingSection
         title="Designed for discussion, not just number collection"
-        intro="A good planning poker tool helps teams think better. pointpoker adds the structure that makes disagreement productive instead of noisy."
+        intro="A good planning poker tool helps teams think better. Point Poker adds the structure that makes disagreement productive instead of noisy."
       >
         <Grid min="280px">
           <Card title="Split-vote resolution">
@@ -4908,7 +4936,7 @@ function PlanningPokerOnlinePage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Planning poker online"
       title="Run planning poker online without slowing the team down with setup, sign-up friction, or awkward reveal flow"
-      intro="pointpoker is built for teams that want to open a room, share a link, vote together, and move through a backlog quickly. It works in any browser, so the whole team can join from desktop or mobile in seconds."
+      intro="Point Poker is built for teams that want to open a room, share a link, vote together, and move through a backlog quickly. It works in any browser, so the whole team can join from desktop or mobile in seconds."
       highlights={[
         { value: "10 sec", label: "Typical time to create and share a room" },
         { value: "Zero", label: "Install or account requirement for free sessions" },
@@ -4975,7 +5003,7 @@ function ScrumPokerPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Scrum poker"
       title="A scrum poker app that keeps sprint planning focused, fair, and easy to run with remote teams"
-      intro="Scrum teams often search for scrum poker when what they really need is a low-friction planning poker workflow. pointpoker supports that exact ceremony pattern: independent voting, reveal, discussion, agreement, then straight into the next story."
+      intro="Scrum teams often search for scrum poker when what they really need is a low-friction planning poker workflow. Point Poker supports that exact ceremony pattern: independent voting, reveal, discussion, agreement, then straight into the next story."
       highlights={[
         { value: "Scrum", label: "Built for backlog refinement and sprint planning" },
         { value: "Fair", label: "Votes reveal together to reduce anchoring" },
@@ -5035,7 +5063,7 @@ function StoryPointEstimationPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Story point estimation"
       title="Use story point estimation to drive better planning conversations, not false precision"
-      intro="pointpoker is built around the reality that estimates are a team decision, not a spreadsheet formula. The product helps teams vote independently, expose differences, discuss trade-offs, and record the final agreed value from the active deck."
+      intro="Point Poker is built around the reality that estimates are a team decision, not a spreadsheet formula. The product helps teams vote independently, expose differences, discuss trade-offs, and record the final agreed value from the active deck."
       highlights={[
         { value: "Fibonacci", label: "Default deck for effort and uncertainty" },
         { value: "3", label: "Deck options for different team habits" },
@@ -5101,7 +5129,7 @@ function RemoteSprintPlanningPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Remote sprint planning"
       title="Run remote sprint planning with one browser link, structured facilitation, and a room your team can actually reuse"
-      intro="Distributed teams need sprint planning tools that are fast to join, easy to facilitate, and reliable enough to reuse every sprint. pointpoker keeps the estimation part of the ceremony compact so the team can focus on scope and delivery decisions."
+      intro="Distributed teams need sprint planning tools that are fast to join, easy to facilitate, and reliable enough to reuse every sprint. Point Poker keeps the estimation part of the ceremony compact so the team can focus on scope and delivery decisions."
       highlights={[
         { value: "1 link", label: "Share in Slack, Teams, Zoom, or calendar invites" },
         { value: "Live", label: "Votes, reveals, and story flow sync in real time" },
@@ -5338,7 +5366,7 @@ function LegalPage({ title, lastUpdated, onBack, children }) {
 }
 
 /* ═══════════════════════ TERMS OF SERVICE ═══════════════════════
-   Governed by English law. Protects pointpoker and its operator
+   Governed by English law. Protects Point Poker and its operator
    from misuse, liability, and service abuse claims.
 ═══════════════════════════════════════════════════════════════ */
 function TermsPage({ onBack }) {
@@ -5347,8 +5375,8 @@ function TermsPage({ onBack }) {
     <LegalPage title="Terms of Service" lastUpdated="29 March 2026" onBack={onBack}>
       <h2>1. Agreement to Terms</h2>
       <p>
-        These Terms of Service ("Terms") govern your access to and use of the pointpoker service
-        ("Service"), operated by the pointpoker owner ("we", "us", "our"). By accessing or using
+        These Terms of Service ("Terms") govern your access to and use of the Point Poker service
+        ("Service"), operated by the Point Poker owner ("we", "us", "our"). By accessing or using
         the Service, you agree to be bound by these Terms. If you do not agree, you must not use
         the Service.
       </p>
@@ -5360,7 +5388,7 @@ function TermsPage({ onBack }) {
 
       <h2>2. Description of the Service</h2>
       <p>
-        pointpoker is a web-based planning poker tool designed to assist agile and Scrum teams in
+        Point Poker is a web-based planning poker tool designed to assist agile and Scrum teams in
         collaborative story-point estimation. The Service is currently provided free of charge to all
         users, with no paid tier and no payment taken. We may introduce paid features in future; if we
         do, we will say so in advance and the features available free at that time will remain free.
@@ -5532,7 +5560,7 @@ function PrivacyPage({ onBack }) {
     <LegalPage title="Privacy Policy" lastUpdated="29 March 2026" onBack={onBack}>
       <h2>1. Who We Are</h2>
       <p>
-        pointpoker ("we", "us", "our") is a planning poker service. The operator is the data controller
+        Point Poker ("we", "us", "our") is a planning poker service. The operator is the data controller
         responsible for your personal data processed in connection with the Service. For any
         data-related queries, contact us at <a href={`mailto:${support}`}>{support}</a>.
       </p>
@@ -6236,7 +6264,8 @@ function JoinScreen({
         <header className="join-hero">
           {!signedIn && (
             <div className="join-mark">
-              <BrandMark size={56} label="pointpoker"/>
+              {/* The only brand element above the join title, so it carries the name. */}
+              <BrandMark size={56} label="Point Poker"/>
             </div>
           )}
 
@@ -6543,7 +6572,7 @@ function JoinScreen({
       </div>
 
       {!signedIn && (
-      <Section className="seo-section" aria-label="About pointpoker">
+      <Section className="seo-section" aria-label="About Point Poker">
       {/* The band runs edge to edge; its content sits in the same container the
           header uses, so the headline below starts on the brand's left edge
           rather than 20px off the window. `flow` puts one gap between every
@@ -6551,7 +6580,7 @@ function JoinScreen({
       <Container flow>
         <SectionHead
           title="Free Online Planning Poker for Sprint Planning, Scrum Poker, and Remote Estimation"
-          subtitle="pointpoker gives agile teams a fast, low-friction way to run planning poker online. Create a room, share one link in Slack, Teams, or Zoom, and let everyone vote at the same time. No install, no training, no ads, and no account needed to play."
+          subtitle="Point Poker gives agile teams a fast, low-friction way to run planning poker online. Create a room, share one link in Slack, Teams, or Zoom, and let everyone vote at the same time. No install, no training, no ads, and no account needed to play."
         />
         <Prose>
           <p>
@@ -6809,7 +6838,7 @@ function WtpPoll({ onDone }) {
         <IconButton icon="close" size="sm" label="Dismiss this question" onClick={dismiss} />
       </Row>
       <p className="wtp-q" id="wtp-q">
-        pointpoker is free and staying free. If it were paid, what would this be worth to your team?
+        Point Poker is free and staying free. If it were paid, what would this be worth to your team?
       </p>
       <Stack gap="sm">
         {WTP_OPTIONS.map((o) => (

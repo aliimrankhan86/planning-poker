@@ -7,7 +7,7 @@ import "./base.css";
 import "./components.css";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   pointpoker design system — components
+   Point Poker design system — components
 
    The ten rules these are built to (the long form is in README.md):
 
@@ -57,18 +57,18 @@ export function Icon({ name, size = 20, title, className, ...rest }) {
   );
 }
 
-/** The pointpoker lockup: a brass card pip beside a lowercase wordmark. */
+/** The Point Poker lockup: a brass card pip beside a lowercase wordmark. */
 export function Logo({ size = "md", serif = false, onFelt = false, markOnly = false, as = "a", href = "/", className, ...rest }) {
   const Tag = as;
   return (
     <Tag
       className={cx("pp-logo", size !== "md" && `pp-logo--${size}`, serif && "pp-logo--serif", onFelt && "pp-logo--on-felt", className)}
       href={Tag === "a" ? href : undefined}
-      aria-label="pointpoker"
+      aria-label="Point Poker"
       {...rest}
     >
       <span className="pp-logo__mark" aria-hidden="true" />
-      {!markOnly && <span className="pp-logo__word">point<em>poker</em></span>}
+      {!markOnly && <span className="pp-logo__word">Point <em>Poker</em></span>}
     </Tag>
   );
 }

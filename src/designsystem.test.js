@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 /* A design system nobody checks is a document, not a system. These tests read
@@ -971,6 +971,52 @@ describe("the ground is the same colour everywhere it is written down", () => {
   test("the PWA manifest matches", () => {
     expect(manifest.theme_color.toLowerCase()).toBe(dark.toLowerCase());
     expect(manifest.background_color.toLowerCase()).toBe(dark.toLowerCase());
+  });
+});
+
+/* ── THE BRAND ASSETS EXIST AND ARE THE RIGHT SIZE ───────────────────────
+   Every icon is generated from assets/brand-mark-master.png by
+   scripts/make-icons.py, which is deliberately not wired into `npm run build`
+   (it needs Pillow, which is not a project dependency). That makes drift
+   possible: someone edits the manifest, or trims an asset, and nothing fails
+   until a browser asks for a file that is not there.
+──────────────────────────────────────────────────────────────────────── */
+describe("brand assets", () => {
+  const publicDir = join(__dirname, "..", "public");
+  const manifestJson = JSON.parse(readFileSync(join(publicDir, "manifest.json"), "utf8"));
+
+  test("every icon the manifest promises is actually shipped", () => {
+    for (const icon of manifestJson.icons) {
+      expect(`${icon.src}:${existsSync(join(publicDir, icon.src))}`).toBe(`${icon.src}:true`);
+    }
+  });
+
+  test("the manifest declares a maskable icon that is not also the 'any' icon", () => {
+    // One file marked "any maskable" gets its corners cropped by Android's
+    // mask. The edge-to-edge art needs a separate padded variant.
+    const maskable = manifestJson.icons.filter((i) => (i.purpose || "").includes("maskable"));
+    expect(maskable.length).toBeGreaterThan(0);
+    for (const i of maskable) expect(i.purpose).toBe("maskable");
+  });
+
+  test("the files index.html links to exist", () => {
+    const html = readFileSync(join(publicDir, "index.html"), "utf8");
+    const hrefs = [...html.matchAll(/<link[^>]+href="%PUBLIC_URL%\/([^"?]+)/g)].map((m) => m[1]);
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const h of hrefs) expect(`${h}:${existsSync(join(publicDir, h))}`).toBe(`${h}:true`);
+  });
+
+  test("the nav mark stays at least 3x the largest size any screen draws it", () => {
+    // PNG header: width and height are big-endian uint32 at byte 16 and 20.
+    const png = readFileSync(join(publicDir, "brand-mark.png"));
+    const width = png.readUInt32BE(16);
+    const app = readFileSync(join(__dirname, "App.js"), "utf8");
+    const drawn = [...app.matchAll(/<BrandMark[^>]*?size=\{(\d+)\}/gs)].map((m) => Number(m[1]));
+    // The default (no size prop) is the 44px nav mark.
+    const largest = Math.max(44, ...drawn);
+    expect(drawn.length).toBeGreaterThan(0); // the regex must still match the call sites
+    expect(`${width}px source for a ${largest}px mark`)
+      .toBe(`${Math.max(width, largest * 3)}px source for a ${largest}px mark`);
   });
 });
 

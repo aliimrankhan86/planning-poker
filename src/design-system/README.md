@@ -1,4 +1,4 @@
-# pointpoker design system
+# Point Poker design system
 
 The implementation of the *Point Poker Design System* handoff. Theme: **modern casino** —
 a felt-green table, one brass accent, ivory card faces, and a display serif for the words
