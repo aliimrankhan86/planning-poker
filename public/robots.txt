@@ -2,7 +2,11 @@ User-agent: *
 Allow: /
 
 # Live estimation rooms are per-session and hold no indexable content.
+# Two Team Room lines, not one: "/t/" does not match "/de/t/my-team", and a
+# German facilitator's invite link carries the locale prefix. "/*?room=" needs
+# no locale twin — the wildcard already covers "/de/?room=ABC12".
 Disallow: /t/
+Disallow: /*/t/
 Disallow: /*?room=
 
 # Owner-only usage dashboard. Not prerendered, so the host falls back to the

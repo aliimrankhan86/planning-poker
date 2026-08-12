@@ -1043,3 +1043,149 @@ the Jira page.
 `ストーリーポイントフィボナッチ` and `is planning poker nog wel relevant`. Japanese
 and Dutch searches are already reaching this site with no translated page to
 land on.
+
+---
+
+## Session — 12 August 2026 — seven languages, and the app translated with them
+
+The lever above, pulled. Not just the marketing pages: `CLAUDE.md` had flagged
+that translating those alone would land a German reader on a German page and
+then hand them an English room, and that is still true, so the app went too.
+
+### What shipped
+
+Seven languages — English plus **de, es, fr, pt-BR, nl, ja** — across **42
+prerendered documents**, each with its own `<html lang>`, canonical, `og:locale`,
+JSON-LD `inLanguage`, and a reciprocal hreflang cluster with `x-default`.
+
+| | |
+|---|---|
+| UI strings per language | 490 |
+| Translated pages per language | `/`, `/what-is-planning-poker`, `/fibonacci-story-points`, `/scrum-poker` |
+| Sitemap URLs | 18 → **42**, with `xhtml:link` alternates |
+| Tests | 411 → **428** |
+
+**Why those four pages and not all eighteen.** Six near-identical thin pages per
+language is the same doorway pattern the English site was pulled out of on
+11 Aug, and 35,000 words of translation nobody re-reads is how a site ends up
+contradicting itself in five languages. These four have evidence behind them:
+the home page carries "planning poker kostenlos / gratis / gratuit / 無料",
+`/what-is-planning-poker` owns the "was ist / qué es / o que é / wat is / とは"
+shape which is the single largest non-English query form, `ストーリーポイント
+フィボナッチ` is in our own query list, and "scrum poker en ligne" is the French
+evidence. Expanding is data-only: add a path to `LOCALIZED_PATHS`, add its
+content to six files, and the tests name whichever one you missed.
+
+**Legal stays English**, deliberately. A mistranslated liability clause is a real
+liability and the English text is the governing one. `/terms` and `/privacy`
+have no locale URL, and a note in the reader's language says so on any
+untranslated page.
+
+### The architecture, and why
+
+- **Locale is a property of the URL.** Read once at startup, module-level, not
+  React context — it cannot change without a navigation, so threading a `t` prop
+  through thirty components would have bought nothing.
+- **No Accept-Language sniffing.** Googlebot crawls as en-US from US IPs, so
+  sniffing would serve it English at the German URL and eventually cost the
+  whole folder.
+- **The language switcher is real `<a href>` links.** A client-side toggle is
+  invisible to a crawler and leaves the URL claiming a language the page has
+  stopped showing. It is already working: Search Console found `/ja/` by
+  following the switcher from `/es/`.
+- **Locale routes fold into the same three tables** the English ones live in
+  (`STATIC_SCREEN_BY_PATH`, `STATIC_ROUTE_META`, `ROUTE_CONTENT`), keyed by full
+  path, so the router, `applyRouteMeta`, `<ContentPage>`, the prerenderer and the
+  sitemap all handle them without knowing locales exist.
+- **`withLocale` returns the English path for an untranslated page**, so a German
+  footer links to `/pricing`, not to a `/de/pricing` with nothing behind it.
+- **One language per visitor.** Statically importing all seven put every
+  translation in the main bundle: **+114 kB gzip** for someone who reads one.
+  Each is behind its own dynamic import now, so webpack emits a chunk per
+  language and `src/index.js` awaits the active one before the first render.
+  English stays static — it is the default and the per-key fallback, so a chunk
+  request for it would be a round trip for what everyone needs anyway.
+  **Main bundle 351 → 243 kB; a German visitor adds 18 kB.** The wait before
+  render is not a blank screen: the prerendered HTML is already in `#root` and
+  stays there until React replaces it.
+
+### What the browser found that reading the source did not
+
+Opening an actual German room found seven English leaks a static sweep had
+missed — the timer panel, the Leave button, the theme switch (which lives in the
+design system), the delete dialog, and three banners — because they were JSX
+text wrapped across lines, where the line itself carries no tag.
+
+It also found that **the invite link a German facilitator copies had dropped the
+`/de/` prefix**, sending the whole team to the English app. Fixing that meant
+locale-prefixed Team Room URLs, which then needed a Vercel rewrite and an
+`X-Robots-Tag` header — without them `/de/t/my-team` was a hard 404, and an
+indexable live session if it had ever resolved.
+
+**Three tests now do that hunting.** One scans the translated screens for
+English prose that never reaches `t()`, and it tracks block comments rather than
+pattern-matching them, because the continuation lines look exactly like stray
+prose. It was verified by reintroducing a real leak and watching it fail. One
+pins `vercel.json`'s locale list to the locale table. One checks no locale
+contains characters from a writing system it does not use — a single Hangul
+syllable had landed inside a Japanese sentence and read as normal text to every
+English eye that passed it.
+
+### Two defects fixed on the way, both pre-existing
+
+1. **The home page's FAQPage schema did not describe the home page.** `HOME_FAQ`
+   fed the JSON-LD with nine questions while `FAQ_ITEMS` rendered eight
+   different ones — the schema claimed three answers ("Is scrum poker the same
+   as planning poker?", "Can we estimate in hours?", "Do I need a Jira plugin?")
+   that were nowhere on the page, and omitted two that were. Google requires the
+   answer to be visible. Both now come from one object; the two orphaned
+   questions were kept, and ~90 lines of duplicate JSX went.
+2. **`estMode.singular === "task"`** compared against a display string. Correct
+   in English, silently false in every other language.
+
+And `/what-is-planning-poker` was hand-written JSX whose `h1` disagreed with the
+one its own prerender and BreadcrumbList emitted, and whose six translations had
+a full FAQ the English original did not. A translation asserting more than its
+source is backwards, so the English page is data-driven too now, with the same
+five questions — 5,149 characters of JSX deleted.
+
+### Verified, not assumed
+
+All 28 localized URLs live: 200, correct `lang`, correct canonical, 8 hreflang
+links each, FAQPage schema on every one. Only the active language's chunk loads
+(checked on production: `/nl/` pulls `locale-nl` and nothing else). Zero console
+errors. No horizontal overflow at 375px, including Japanese, which has no spaces
+to break on. `/de/t/test-team` returns 200 with `X-Robots-Tag: noindex`.
+
+### Search Console, 12 Aug
+
+- Sitemap resubmitted — one row, Success, 42 URLs. Google had already re-read it
+  within minutes: `/fr/`, `/pt/`, `/ja/` and `/ja/fibonacci-story-points` all
+  showed "Discovered – currently not indexed" with the sitemap as referrer.
+- Indexing requested for `/de/`, `/es/`, `/fr/`, `/pt/`, `/nl/`, `/ja/` and
+  `/ja/fibonacci-story-points`. **Daily quota ran out** at that point; the rest
+  will come through the sitemap, which is the mechanism that matters anyway.
+- Manual actions: none. robots.txt: valid. Ownership: verified. 11 indexed,
+  3 not — still the apex/http redirect variants, still correct.
+- `robots.txt` gained `Disallow: /*/t/`: `/t/` does not match `/de/t/my-team`.
+  `/*?room=` needed no twin, the wildcard already covers `/de/?room=ABC12`.
+
+### What was deliberately not done
+
+- **The other 14 pages are English-only.** Evidence first; expanding is data.
+- **The app's own UI is translated, the admin dashboard is not.** Owner-only,
+  noindex, one user, English-speaking.
+- **No native-speaker review.** The copy is written as native marketing prose
+  rather than transliterated English, and agile vocabulary that these languages
+  genuinely borrow (`Story Points`, `Sprint`, `Backlog`, `Product Owner`) is
+  left borrowed because translating it reads wrong to a practitioner and nobody
+  searches for it. But it has not been read by a native speaker of any of the
+  six, and that is the one quality claim not being made here.
+
+### For the six-week re-pull
+
+The position baseline in the section above is still the comparison for English.
+For the new languages there is no baseline — they had no impressions to have a
+position. The first signal will be impressions appearing at all on `/de/`,
+`/es/`, `/fr/`, `/pt/`, `/nl/`, `/ja/`, and the query list picking up non-English
+terms beyond the two that prompted this work.
