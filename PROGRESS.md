@@ -1186,9 +1186,19 @@ to break on. `/de/t/test-team` returns 200 with `X-Robots-Tag: noindex`.
 
 The position baseline in the section above is still the comparison for English.
 For the new languages there is no baseline — they had no impressions to have a
-position. The first signal will be impressions appearing at all on `/de/`,
-`/es/`, `/fr/`, `/pt/`, `/nl/`, `/ja/`, and the query list picking up non-English
-terms beyond the two that prompted this work.
+position. **Superseded in part by the cut later the same day: only `/pt/` and
+`/ja/` remain.** The first signal will be impressions appearing at all on those
+two prefixes, and the query list picking up non-English terms beyond the two
+that prompted this work.
+
+Due around **23 September 2026**. What to pull:
+
+1. Position for the English baseline queries in the table above.
+2. Any impressions at all on `/pt/*` and `/ja/*` — Pages report filtered by URL.
+3. Whether the query list contains anything in Japanese or Portuguese script.
+4. Sitemap "Discovered pages" should read 26, not 42.
+5. "Page with redirect" should sit near 7 once `/de/`, `/es/`, `/fr/`, `/nl/`
+   are recrawled — that is the 301s landing, not a fault.
 
 ---
 
