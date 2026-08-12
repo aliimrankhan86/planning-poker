@@ -18,6 +18,8 @@
 import * as en from "./en.mjs";
 import * as de from "./de.mjs";
 import * as es from "./es.mjs";
+import * as fr from "./fr.mjs";
+import * as pt from "./pt.mjs";
 
 /* `prefix` is the URL segment. English deliberately has none: those URLs are
    already indexed and moving them to /en/ would throw away every ranking the
@@ -26,6 +28,8 @@ export const LOCALES = {
   en: { hreflang: "en",    ogLocale: "en_GB", inLanguage: "en-GB", label: "English",    prefix: "" },
   de: { hreflang: "de",    ogLocale: "de_DE", inLanguage: "de-DE", label: "Deutsch",    prefix: "/de" },
   es: { hreflang: "es",    ogLocale: "es_ES", inLanguage: "es-ES", label: "Español",    prefix: "/es" },
+  fr: { hreflang: "fr",    ogLocale: "fr_FR", inLanguage: "fr-FR", label: "Français",   prefix: "/fr" },
+  pt: { hreflang: "pt-BR", ogLocale: "pt_BR", inLanguage: "pt-BR", label: "Português",  prefix: "/pt" },
 };
 
 export const DEFAULT_LOCALE = "en";
@@ -60,7 +64,7 @@ export const LOCALIZED_PATHS = [
   "/scrum-poker",
 ];
 
-const MODULES = { en, de, es };
+const MODULES = { en, de, es, fr, pt };
 
 export const UI = Object.fromEntries(
   LOCALE_CODES.map((code) => [code, MODULES[code].ui]),
