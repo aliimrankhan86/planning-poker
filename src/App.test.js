@@ -644,6 +644,25 @@ describe("translations", () => {
     expect(words(UI.en["app.teamRoomTitle"])).toBeLessThan(5);
   });
 
+  /* A stray character from another writing system is invisible to anyone who
+     does not read the language — a single Hangul syllable sat inside a Japanese
+     sentence here and read as normal text to every English eye that passed it.
+     Cheap to check, impossible to spot by review. */
+  test("no locale contains characters from a writing system it does not use", () => {
+    const FOREIGN = /[\uAC00-\uD7A3\u1100-\u11FF\u0400-\u04FF\u0600-\u06FF]/g;
+    for (const code of LOCALE_CODES) {
+      const strays = Object.entries(UI[code])
+        .flatMap(([k, v]) => (String(Array.isArray(v) ? v.join(" ") : v).match(FOREIGN) || []).map((c) => `${k}:${c}`));
+      expect(`${code}: ${strays.join(", ")}`).toBe(`${code}: `);
+    }
+  });
+
+  test("Japanese is actually written in Japanese", () => {
+    // Guards the guard: proves the check above is looking at real content and
+    // not at an empty table.
+    expect(/[\u3040-\u30FF\u4E00-\u9FFF]/.test(UI.ja["nav.pricing"])).toBe(true);
+  });
+
   test("every locale has every localized page, with meta and content", () => {
     for (const code of LOCALE_CODES) {
       for (const base of LOCALIZED_PATHS) {
@@ -721,6 +740,85 @@ describe("translations", () => {
     }
     expect(withLocale("de", "/scrum-poker")).toBe("/de/scrum-poker");
     expect(withLocale("en", "/scrum-poker")).toBe("/scrum-poker");
+  });
+
+  /* Every leak found in this work was found by eye, in a browser, one at a
+     time: a timer label, a Leave button, the theme switch, a confirm dialog.
+     Reading the source is what finds the next one. The screens listed here are
+     the ones a non-English visitor actually touches — the marketing pages that
+     are not translated, and the legal pages that never will be, are excluded
+     deliberately rather than by accident. */
+  test("no translated screen still holds an English sentence in its source", () => {
+    const source = readFileSync(join(__dirname, "App.js"), "utf8");
+    const TRANSLATED_SCREENS = [
+      ["NavBar", "function NavBar({", "function SiteFooter({"],
+      ["SiteFooter", "function SiteFooter({", "function LoginModal({"],
+      ["CookieBanner", "function CookieBanner({", "export default function App()"],
+      ["ContentPage", "function ContentPage({", "function PricingPage({"],
+      ["HistoryModal", "function HistoryModal({", "function JoinScreen({"],
+      ["JoinScreen", "function JoinScreen({", "const WTP_STORAGE_KEY"],
+      ["RoomActionBar", "function RoomActionBar({", "function GameScreen({"],
+      ["GameScreen", "function GameScreen({", null],
+    ];
+    const offenders = [];
+    for (const [name, from, to] of TRANSLATED_SCREENS) {
+      const start = source.indexOf(from);
+      expect(`${name} found: ${start >= 0}`).toBe(`${name} found: true`);
+      const end = to ? source.indexOf(to, start) : source.length;
+      let inBlockComment = false;
+      for (const line of source.slice(start, end).split("\n")) {
+        /* Block comments have to be tracked, not pattern-matched: this file's
+           comments run to several lines and the continuation lines carry no
+           marker of their own, so they look exactly like stray prose. */
+        const opens = line.lastIndexOf("/*");
+        const closes = line.lastIndexOf("*/");
+        const wasInComment = inBlockComment;
+        if (opens > closes) inBlockComment = true;
+        else if (closes > opens) inBlockComment = false;
+        if (wasInComment || opens >= 0) continue;
+        if (/^\s*\/\//.test(line)) continue;                 // comments are for us, not users
+        if (/\bt\(|\btList\(/.test(line)) continue;         // already going through i18n
+        // A JSX text node or a label-ish prop holding three or more English
+        // words. Two words catches "Point Poker" and every deck face; three is
+        // the point at which it is prose somebody forgot.
+        const jsxText = [...line.matchAll(/>\s*([A-Za-z][^<>{}\n]{8,}?)\s*</g)].map((m) => m[1]);
+        const props = [...line.matchAll(/(?:placeholder|title|aria-label|ariaLabel|label|subtitle|hint|empty|caption)="([^"]{8,})"/g)].map((m) => m[1]);
+        /* The shape that hid every time: a JSX text node wrapped across lines,
+           so the line itself carries no tag at all — just an indented English
+           sentence. Matching only >text< missed all of them. */
+        const isObjectKey = /^\s*\w+:\s/.test(line);
+        const bare =
+          !isObjectKey && /^\s*[A-Za-z][^<>{}=()[\]`"':]{14,}[.!?]?$/.test(line)
+            ? [line.trim()]
+            : [];
+        for (const text of [...jsxText, ...props, ...bare]) {
+          if ((text.match(/[A-Za-z]{2,}/g) || []).length < 3) continue;
+          if (/^https?:|^[A-Z0-9_.]+$/.test(text)) continue;
+          offenders.push(`${name}: ${text.slice(0, 60)}`);
+        }
+      }
+    }
+    expect(offenders.join("\n")).toBe("");
+  });
+
+  /* Locale-prefixed Team Room URLs are handled by Vercel, not by a file on
+     disk: they need a rewrite to exist at all and a noindex header so a live
+     session never gets indexed. A language added here but not there is a hard
+     404 in production that no local test would otherwise see. */
+  test("vercel.json knows about every locale prefix", () => {
+    const vercel = JSON.parse(
+      readFileSync(join(__dirname, "..", "vercel.json"), "utf8"),
+    );
+    const prefixes = LOCALE_CODES.filter((c) => LOCALES[c].prefix).map((c) => c);
+    const teamRewrite = vercel.rewrites.find((r) => r.source.includes("/t/:slug") && r.source.includes(":locale"));
+    const teamHeader = vercel.headers.find((h) => h.source.includes("/t/:slug") && h.source.includes(":locale"));
+    expect(teamRewrite).toBeDefined();
+    expect(teamHeader).toBeDefined();
+    for (const code of prefixes) {
+      expect(`rewrite ${code}: ${teamRewrite.source.includes(code)}`).toBe(`rewrite ${code}: true`);
+      expect(`header ${code}: ${teamHeader.source.includes(code)}`).toBe(`header ${code}: true`);
+    }
+    expect(teamHeader.headers[0]).toEqual({ key: "X-Robots-Tag", value: "noindex, nofollow" });
   });
 
   /* The legal pages are deliberately English-only: a mistranslated liability

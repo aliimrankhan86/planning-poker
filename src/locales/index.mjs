@@ -16,10 +16,6 @@
    translation cannot ship.
 ═══════════════════════════════════════════════════════════════ */
 import * as en from "./en.mjs";
-import * as de from "./de.mjs";
-import * as es from "./es.mjs";
-import * as fr from "./fr.mjs";
-import * as pt from "./pt.mjs";
 
 /* `prefix` is the URL segment. English deliberately has none: those URLs are
    already indexed and moving them to /en/ would throw away every ranking the
@@ -30,6 +26,8 @@ export const LOCALES = {
   es: { hreflang: "es",    ogLocale: "es_ES", inLanguage: "es-ES", label: "Español",    prefix: "/es" },
   fr: { hreflang: "fr",    ogLocale: "fr_FR", inLanguage: "fr-FR", label: "Français",   prefix: "/fr" },
   pt: { hreflang: "pt-BR", ogLocale: "pt_BR", inLanguage: "pt-BR", label: "Português",  prefix: "/pt" },
+  nl: { hreflang: "nl",    ogLocale: "nl_NL", inLanguage: "nl-NL", label: "Nederlands", prefix: "/nl" },
+  ja: { hreflang: "ja",    ogLocale: "ja_JP", inLanguage: "ja-JP", label: "日本語",      prefix: "/ja" },
 };
 
 export const DEFAULT_LOCALE = "en";
@@ -64,18 +62,45 @@ export const LOCALIZED_PATHS = [
   "/scrum-poker",
 ];
 
-const MODULES = { en, de, es, fr, pt };
+/* ── ONE LANGUAGE PER VISITOR ────────────────────────────────────────
+   Statically importing all seven put every translation in the main bundle:
+   +114 kB gzip, of which a given visitor needs one seventh. Nobody reads
+   the site in six languages at once.
 
-export const UI = Object.fromEntries(
-  LOCALE_CODES.map((code) => [code, MODULES[code].ui]),
-);
+   Each translation is behind its own dynamic import, so webpack emits one
+   chunk per language and a visitor downloads only theirs. English is the
+   exception and stays static: it is the default locale, the fallback for
+   every missing key, and the language most visitors are already getting —
+   a chunk request for it would be a round trip to fetch what they always
+   need. src/index.js awaits the active locale before the first render, so
+   nothing ever renders half-translated.
+─────────────────────────────────────────────────────────────────── */
+const LOADERS = {
+  de: () => import(/* webpackChunkName: "locale-de" */ "./de.mjs"),
+  es: () => import(/* webpackChunkName: "locale-es" */ "./es.mjs"),
+  fr: () => import(/* webpackChunkName: "locale-fr" */ "./fr.mjs"),
+  pt: () => import(/* webpackChunkName: "locale-pt" */ "./pt.mjs"),
+  nl: () => import(/* webpackChunkName: "locale-nl" */ "./nl.mjs"),
+  ja: () => import(/* webpackChunkName: "locale-ja" */ "./ja.mjs"),
+};
 
-/* English content stays in routeMeta.mjs, which is the source language and the
-   thing every translation was made from. Only the translations live here. */
-export const CONTENT = Object.fromEntries(
-  TRANSLATED_LOCALES.map((code) => [code, MODULES[code].content]),
-);
+/* Filled in as languages arrive. English is present from the start, which is
+   what makes t()'s English fallback safe at any moment. */
+export const UI = { en: en.ui };
+export const CONTENT = {};
+export const META = {};
 
-export const META = Object.fromEntries(
-  TRANSLATED_LOCALES.map((code) => [code, MODULES[code].meta]),
-);
+export async function loadLocale(code) {
+  if (code === DEFAULT_LOCALE || UI[code]) return UI[code] ? code : DEFAULT_LOCALE;
+  const loader = LOADERS[code];
+  if (!loader) return DEFAULT_LOCALE;
+  const mod = await loader();
+  UI[code] = mod.ui;
+  CONTENT[code] = mod.content;
+  META[code] = mod.meta;
+  return code;
+}
+
+/* Build-time consumers — the prerenderer, the sitemap generator, the tests —
+   want every language at once, and none of them ships to a browser. */
+export const loadAllLocales = () => Promise.all(TRANSLATED_LOCALES.map(loadLocale));

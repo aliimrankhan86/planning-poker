@@ -24,3 +24,13 @@ if (!globalThis.crypto?.getRandomValues) {
 if (typeof window !== "undefined") {
   window.scrollTo = () => {};
 }
+
+/* Translations are loaded per language at runtime — a visitor downloads their
+   own and nothing else. Tests want them all, and they are the one consumer for
+   which the size is irrelevant, so every suite starts with the full set wired
+   into the route tables. */
+import { activateAllLocales } from "./routeMeta.mjs";
+
+beforeAll(async () => {
+  await activateAllLocales();
+});

@@ -1075,7 +1075,11 @@ describe("the theme switch survives every width", () => {
     /* They used to be two strings — "Dark" on screen, "Theme: Dark" to a
        screen reader — which satisfies WCAG 2.5.3 only for as long as nobody
        edits one of them. There is one now, and no aria-label to drift from. */
-    expect(dsIndex).toMatch(/label=\{<>\{word\}<span className="pp-theme-switch__suffix"> theme<\/span><\/>\}/);
+    expect(dsIndex).toMatch(
+      /label=\{<>\{word\}<span className="pp-theme-switch__suffix">\{t\("theme.suffix"\)\}<\/span><\/>\}/,
+    );
+    // …and the word itself is the translated one, not a hardcoded "Dark".
+    expect(dsIndex).toMatch(/const word = light \? t\("theme.light"\) : t\("theme.dark"\);/);
     expect(dsIndex.slice(dsIndex.indexOf("export function ThemeToggle"), dsIndex.indexOf("export function ThemeToggle") + 700))
       .not.toContain("aria-label");
   });
@@ -1131,7 +1135,7 @@ describe("a control is one rung above the thing it sits on", () => {
   test("Start countdown and Add take it, and neither takes primary", () => {
     /* The timer block renders behind !revealed and Add renders always, so
        either one as primary would put a second gold slab beside Reveal. */
-    const start = app.slice(app.indexOf("Start {tsel") - 400, app.indexOf("Start {tsel"));
+    const start = app.slice(app.indexOf('t("game.startCountdown"') - 500, app.indexOf('t("game.startCountdown"'));
     expect(start).toMatch(/variant="accent"/);
     const add = app.slice(app.indexOf("<Icon name=\"plus\" size={16} /> Add") - 260, app.indexOf("<Icon name=\"plus\" size={16} /> Add"));
     expect(add).toMatch(/variant="accent"/);
@@ -1192,7 +1196,7 @@ describe("the sized list can be corrected", () => {
 
   test("two ways out, and the safe one holds focus", () => {
     expect(modal).toMatch(/data-autofocus[\s\S]*?t\("game\.cancel"\)/);
-    expect(modal).toMatch(/Confirm delete/);
+    expect(modal).toMatch(/t\("game\.confirmDelete"\)/);
   });
 
   test("the delete button carries the row in its name, not just an X", () => {

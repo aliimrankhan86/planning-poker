@@ -29,8 +29,14 @@ import {
   SUPPORT_EMAIL,
   alternatesFor,
   localeUrl,
+  activateAllLocales,
 } from "../src/routeMeta.mjs";
 import { LOCALES, UI } from "../src/locales/index.mjs";
+
+/* Translations load per language in the browser; a build has to write every
+   one of them, so it pulls the whole set in first. Top-level await, because
+   the route tables have to be complete before the first document is rendered. */
+await activateAllLocales();
 
 const BUILD_DIR = "build";
 const esc = (s = "") =>

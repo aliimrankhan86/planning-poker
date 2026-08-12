@@ -9,6 +9,18 @@
       ],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "planning-poker-build",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "serve",
+        "build",
+        "-l",
+        "4173"
+      ],
+      "port": 4173
     }
   ]
 }

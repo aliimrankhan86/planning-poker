@@ -380,10 +380,27 @@ const ESTIMATION_MODES = {
 };
 const getEstMode = (mode) => ESTIMATION_MODES[mode] || ESTIMATION_MODES.stories;
 const INVALID_PLACEHOLDER_NAMES = new Set(["alex johnson", "e.g. alex johnson"]);
+/* Team Room URLs may carry a locale prefix, so the matcher has to allow one —
+   without it, /de/t/my-team fell through to the join screen. Built from the
+   real prefixes rather than a loose [a-z]{2}, so it stays in step with the
+   locale table and never claims a path that is not a language.
+
+   vercel.json carries the matching rewrite and the noindex header for the same
+   set; a prefix here without one there is a 404 in production. */
+const LOCALE_PREFIX_RE = LOCALE_CODES.map((c) => LOCALES[c].prefix)
+  .filter(Boolean)
+  .map((p) => p.replace("/", "\\/"))
+  .join("|");
+const TEAM_ROUTE = new RegExp(`^(?:${LOCALE_PREFIX_RE})?/t/([a-z0-9-]+)$`, "i");
 // Leaving a room in a German session lands on /de/, not on the English home.
 const homePath = () => withLocale(getLocale(), "/");
-const roomPath = (code) => `/?room=${encodeURIComponent(code)}`;
-const teamRoomPath = (teamNameOrCode) => `/t/${teamCode(teamNameOrCode)}`;
+/* Both carry the locale. A German facilitator who copies the invite link and
+   pastes it into the team chat was otherwise sending everyone to the English
+   app — the room worked, but the room was the one place the whole team ended
+   up, in the wrong language, because of a prefix the sharer never saw. */
+const roomPath = (code) => `${withLocale(getLocale(), "/")}?room=${encodeURIComponent(code)}`;
+const teamRoomPath = (teamNameOrCode) =>
+  `${LOCALES[getLocale()].prefix}/t/${teamCode(teamNameOrCode)}`;
 const countParticipants = (players = {}, excludeId = null) =>
   Object.entries(players)
     .filter(([playerId, player]) => !!player && playerId !== excludeId)
@@ -3201,7 +3218,7 @@ export default function App() {
     const handlePopState = () => {
       const pathname = window.location.pathname;
       const roomCode = new URLSearchParams(window.location.search).get("room");
-      const teamMatch = pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+      const teamMatch = pathname.match(TEAM_ROUTE);
       if (roomCode || teamMatch) return;
       setScreen(getScreenForPath(pathname));
     };
@@ -3221,7 +3238,7 @@ export default function App() {
   });
   const [prefillTeam, setPrefillTeam] = useState(() => {
     // Clean URL: /t/<slug>  e.g. /t/rpa-build-team
-    const pathMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+    const pathMatch = window.location.pathname.match(TEAM_ROUTE);
     if (pathMatch) return pathMatch[1];
     // Query param fallback: ?team=<name>
     const p = new URLSearchParams(window.location.search);
@@ -3263,7 +3280,7 @@ export default function App() {
   useEffect(() => {
     const pathname = window.location.pathname;
     const roomCode = new URLSearchParams(window.location.search).get("room");
-    const teamMatch = pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+    const teamMatch = pathname.match(TEAM_ROUTE);
     const teamSlug = teamMatch?.[1] || "";
 
     if (PRIVATE_PATHS.includes(pathname)) {
@@ -3399,7 +3416,7 @@ export default function App() {
   useEffect(() => {
     if (rejoinAttemptedRef.current) return;
     rejoinAttemptedRef.current = true;
-    const pathMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+    const pathMatch = window.location.pathname.match(TEAM_ROUTE);
     const roomCode = pathMatch?.[1] || new URLSearchParams(window.location.search).get("room");
     if (!roomCode) return;
     let cancelled = false;
@@ -4234,9 +4251,6 @@ export default function App() {
           {screen === "trust" && (
             <TrustPage onNavigate={navTo} />
           )}
-          {screen === "whatIsPlanningPoker" && (
-            <WhatIsPlanningPokerPage onNavigate={navTo} />
-          )}
           {screen === "agileEstimationTool" && (
             <AgileEstimationToolPage onNavigate={navTo} />
           )}
@@ -4981,85 +4995,6 @@ function TrustPage({ onNavigate }) {
           { href: "/about", kicker: "About", title: "Why Point Poker exists", copy: "See the product philosophy behind the lightweight workflow and focused upgrade path." },
           { href: "/support", kicker: "Support", title: "Support and product guidance", copy: "See where to get help, what questions come up most often, and how the workflow is explained." },
           { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for everyone, and a straight answer on why and for how long." },
-        ]}
-      />
-    </MarketingPageShell>
-  );
-}
-
-function WhatIsPlanningPokerPage({ onNavigate }) {
-  return (
-    <MarketingPageShell
-      eyebrow="What is planning poker?"
-      title="Planning poker is a lightweight way for agile teams to estimate work without letting the loudest voice decide first"
-      intro="Planning poker is an estimation method used in sprint planning and backlog refinement. Everyone picks a card privately, the votes reveal together, and the team discusses the spread before agreeing the final estimate. The point is not mathematical precision. The point is better shared understanding."
-      highlights={[
-        { value: "Fair", label: "Private first votes reduce anchoring bias" },
-        { value: "Fast", label: "The team sees disagreement early and discusses only where needed" },
-        { value: "Useful", label: "Better scope conversations before sprint commitment" },
-      ]}
-      onNavigate={onNavigate}
-      primaryHref="/"
-      primaryLabel="Try planning poker free"
-      secondaryHref="/planning-poker-online"
-      secondaryLabel="See the online workflow"
-    >
-      <MarketingSection
-        title="What planning poker actually does"
-        intro="The method is simple, but the impact comes from what it prevents: anchoring, hidden uncertainty, and fake consensus."
-      >
-        <Grid min="280px">
-          <Card title="Everyone estimates independently first">
-              Each voter picks a card before seeing anyone else’s choice. That keeps stronger personalities and senior voices from steering the estimate too early.
-              </Card>
-          <Card title="The reveal makes uncertainty visible">
-              When one person picks 3 and another picks 8, the disagreement is useful. It usually means the team sees different risk, scope, or implementation effort.
-              </Card>
-          <Card title="Discussion focuses on the gap, not the whole story">
-              Teams do not need to debate every item equally. Planning poker helps them spend energy where the spread tells them understanding is still uneven.
-              </Card>
-        </Grid>
-      </MarketingSection>
-
-      <MarketingSection
-        title="How the process normally works"
-        intro="A good planning poker session has a clear rhythm, especially when the facilitator keeps the room moving."
-      >
-        <Grid min="260px" className="marketing-steps">
-          {[
-            ["Read the story together", "Make sure everyone understands the scope, acceptance criteria, and what 'done' means before anyone votes."],
-            ["Vote privately", "Each voter chooses a card independently so the first visible estimate does not bias everyone else."],
-            ["Reveal the cards", "The team sees the spread, average, and median, but those numbers guide discussion rather than automatically becoming the answer."],
-            ["Discuss the difference", "Talk about why the estimates diverged: hidden complexity, dependencies, ambiguity, or assumptions."],
-            ["Either re-vote or agree a final estimate", "A facilitator can run another round or record the final agreed deck value once the team is aligned."],
-          ].map(([stepTitle, stepCopy], index) => (
-            <Card key={stepTitle} eyebrow={`Step ${index + 1}`} title={stepTitle}>
-              {stepCopy}
-            </Card>
-          ))}
-        </Grid>
-      </MarketingSection>
-
-      <MarketingSection
-        title="Why agile teams keep using planning poker"
-        intro="The method survives because it helps teams think together, not because the cards themselves are magical."
-      >
-        <ul className="marketing-list">
-          <li><strong>It improves backlog conversations:</strong> hidden ambiguity surfaces earlier, before it turns into sprint risk.</li>
-          <li><strong>It makes estimation more participatory:</strong> engineers, product, and delivery can all contribute to the final view of effort and uncertainty.</li>
-          <li><strong>It keeps velocity inputs more honest:</strong> final estimates come from agreement, not from a single person’s guess.</li>
-          <li><strong>It works well remotely:</strong> browser-based planning poker keeps the same ceremony pattern even when the team is fully distributed.</li>
-        </ul>
-      </MarketingSection>
-
-      <MarketingRelatedLinks
-        title="Go deeper"
-        intro="These guides explain how the method works online, how Fibonacci cards fit in, and how Point Poker supports the workflow in practice."
-        onNavigate={onNavigate}
-        links={[
-          { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "See how the product turns the ceremony into a browser-first, live estimation flow." },
-          { href: "/fibonacci-story-points", kicker: "Guide", title: "Fibonacci story points", copy: "Understand why agile teams use Fibonacci numbers and what to do when estimates split." },
-          { href: "/features", kicker: "Product", title: "Feature breakdown", copy: "See the facilitator controls, Team Alignment analytics, and Team Room workflow in context." },
         ]}
       />
     </MarketingPageShell>
@@ -6064,7 +5999,7 @@ function JoinScreen({
      the answer has to be visible on the page, so that markup was ineligible at
      best. One source also means every translation gets the FAQ for free. */
   const homeFaq = (ROUTE_CONTENT[withLocale(getLocale(), "/")] || ROUTE_CONTENT["/"]).faq;
-  const teamRouteMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
+  const teamRouteMatch = window.location.pathname.match(TEAM_ROUTE);
   const teamQuery = new URLSearchParams(window.location.search).get("team");
   const defaultName = currentUser?.displayName || deriveDisplayNameFallback(currentUser?.email || "");
   const accountDedicatedRooms = resolveDedicatedTeamRooms(accountProfile || {}, currentUser || {});
@@ -7366,7 +7301,7 @@ function GameScreen({
         <div className="hdr-in pp-container">
           <div className="hdr-l">
             <Button variant="ghost" size="sm" className="btn-back" onClick={onBack} aria-label={t("game.leaveAria")}>
-              ← Leave
+              {t("game.leave")}
             </Button>
             <BrandMark size={34} onClick={onBack} label={t("game.returnHome")}/>
           </div>
@@ -7375,7 +7310,7 @@ function GameScreen({
                 list came back empty and there was nothing to jump to. The
                 badges beside it are the visual version of the same fact. */}
             <VisuallyHidden as="h1">
-              Planning poker room {code}, round {round}
+              {t("game.roomAria", { code, round })}
             </VisuallyHidden>
             <Chip>{t("game.round", { n: round })}</Chip>
             {/* Same rule as the action bar's count: a gold "0 stories done"
@@ -7428,12 +7363,12 @@ function GameScreen({
               <Button variant="ghost" size="sm" onClick={() => setSoloBannerDismissed(true)}>{t("game.dismiss")}</Button>
             }
           >
-            Share the link once. It stays the same every sprint.
+            {t("game.teamRoomBody")}
           </Alert>
         )}
         {sessionWarning && (
           <Alert tone="warning" title={t("game.sessionEnds")} className="session-warn-banner">
-            This room closes in about 10 minutes. Finish the story you are on.
+            {t("game.sessionEndsBody")}
           </Alert>
         )}
 
@@ -7475,8 +7410,8 @@ function GameScreen({
                 matches importance. */}
             <div className="panel">
               <span className="ptitle">
-                <Icon name="clock" size={14} /> Estimation timer{" "}
-                <span className="ptitle-optional">optional</span>
+                <Icon name="clock" size={14} /> {t("game.timerTitle")}{" "}
+                <span className="ptitle-optional">{t("game.timerOptional")}</span>
               </span>
               {isObs ? (
                 <>
@@ -7505,9 +7440,9 @@ function GameScreen({
                           value={tsel}
                           onChange={(e) => setTsel(+e.target.value)}
                           options={[
-                            { value: 30, label: "30 seconds" },
-                            { value: 45, label: "45 seconds" },
-                            { value: 60, label: "1 minute" },
+                            { value: 30, label: t("game.timer30") },
+                            { value: 45, label: t("game.timer45") },
+                            { value: 60, label: t("game.timer60") },
                           ]}
                           aria-describedby="timer-length-hint"
                         />
@@ -7518,11 +7453,12 @@ function GameScreen({
                             this panel, one weight down from the action of the
                             room. */}
                         <Button variant="accent" onClick={() => onStart(tsel)}>
-                          <Icon name="play" size={18} /> Start {tsel === 60 ? "1 min" : `${tsel}s`} countdown
+                          <Icon name="play" size={18} />{" "}
+                          {t("game.startCountdown", { n: tsel === 60 ? t("game.oneMin") : `${tsel}s` })}
                         </Button>
                       </div>
                       <p className="pp-hint" id="timer-length-hint">
-                        The team can vote without this. Use it if you want to time-box the round.
+                        {t("game.timerHint")}
                       </p>
                     </>
                   )}
@@ -7539,7 +7475,7 @@ function GameScreen({
                         </div>
                         <div className="rhint">{t("game.autoReveal")}</div>
                         <Button variant="ghost" size="sm" className="btn-stop" onClick={onStop}>
-                          <Icon name="stop" size={16} /> Stop timer
+                          <Icon name="stop" size={16} /> {t("game.stopTimer")}
                         </Button>
                       </div>
                     </div>
@@ -7952,7 +7888,7 @@ function GameScreen({
               )}
               {players.length === 0 && (
                 <EmptyState title={t("game.nobodyYet")}>
-                  Share the invite link and the table fills up as people arrive.
+                  {t("game.nobodyYetBody")}
                 </EmptyState>
               )}
               {/* Rule 5: the brass ring on the avatar says "voted" and so does
@@ -8187,7 +8123,7 @@ function GameScreen({
                   {isTshirt && tshirtBreakdown.length > 0 && (
                     <div className="analytics-size-breakdown">
                       <div className="analytics-breakdown-title">
-                        T-Shirt size breakdown
+                        {t("game.sizeBreakdown")}
                       </div>
                       <Grid min="72px" className="analytics-size-grid">
                         {tshirtBreakdown.map(({ size, count }) => (
@@ -8373,13 +8309,12 @@ function GameScreen({
                 });
               }}
             >
-              <Icon name="close" size={16} /> Confirm delete
+              <Icon name="close" size={16} /> {t("game.confirmDelete")}
             </Button>
           </>
         }
       >
-        It comes off the sized list and out of the sprint totals. Estimating it
-        again means running another round.
+        {t("game.deleteBody")}
       </Modal>
     </>
   );

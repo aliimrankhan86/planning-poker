@@ -16,6 +16,8 @@ import {
   LOCALIZED_PATHS,
   CONTENT as LOCALE_CONTENT,
   META as LOCALE_META,
+  loadLocale,
+  loadAllLocales,
 } from "./locales/index.mjs";
 
 export const SITE_URL = "https://www.pointpoker.app";
@@ -48,7 +50,6 @@ export const STATIC_SCREEN_BY_PATH = {
   "/about": "about",
   "/support": "support",
   "/trust": "trust",
-  "/what-is-planning-poker": "whatIsPlanningPoker",
   "/agile-estimation-tool": "agileEstimationTool",
   "/pricing": "pricing",
   "/features": "features",
@@ -63,6 +64,7 @@ export const STATIC_SCREEN_BY_PATH = {
      path means there is no second name to invent, no inverse lookup, and no
      per-page line in the render switch. Nothing else in the app uses a screen
      name starting with "/". */
+  "/what-is-planning-poker": "/what-is-planning-poker",
   "/pointing-poker": "/pointing-poker",
   "/story-points-to-hours": "/story-points-to-hours",
   "/planning-poker-jira": "/planning-poker-jira",
@@ -572,15 +574,88 @@ export const ROUTE_CONTENT = {
       "Facilitator analytics show consensus rate, spread, distribution, and re-votes, so retro conversations about estimation quality have data behind them.",
     ],
   },
+  /* Converted from a hand-written component, which had drifted from this
+     object in two directions at once: its h1 was a 110-character sentence
+     where the prerender and the BreadcrumbList both said "What Is Planning
+     Poker?", and its three sections were invisible to every crawler that does
+     not run JavaScript. The six translations of this page were written with a
+     full FAQ, so leaving the English one without meant the source language was
+     the thinnest of the seven — and a translation asserting more than its
+     original is backwards. */
   "/what-is-planning-poker": {
+    eyebrow: "Guide",
     h1: "What Is Planning Poker?",
     intro:
-      "Planning poker is a consensus estimation technique where every team member privately picks a card representing effort, then everyone reveals at the same time.",
-    body: [
-      "The simultaneous reveal is the whole mechanism. If people call out numbers in sequence, the first number anchors everyone after it, and the estimate becomes a measure of seniority rather than complexity.",
-      "When the cards disagree, the highest and lowest voters explain their reasoning. That conversation — not the arithmetic — is where the value is, because it surfaces hidden assumptions and missing acceptance criteria before the sprint starts.",
+      "Planning poker is a consensus estimation technique where every team member privately picks a card representing effort, then everyone reveals at the same time. Consensus comes out of the conversation about the differences, not out of the average.",
+    highlights: [
+      { value: "Private", label: "Everyone estimates before anyone sees a number" },
+      { value: "Together", label: "The cards all turn over at once" },
+      { value: "Relative", label: "Size compared, not hours counted" },
     ],
+    body: [
+      "The simultaneous reveal is the whole mechanism. If people call out numbers in sequence, the first number anchors everyone after it, and the estimate becomes a measure of seniority rather than complexity. When the table turns over at once, there is no anchor.",
+      "When the cards disagree, the highest and lowest voters explain what they are each looking at. That conversation — not the arithmetic — is where the value is, because it surfaces hidden assumptions and missing acceptance criteria before the sprint starts rather than halfway through it.",
+    ],
+    sections: [
+      {
+        title: "Where the method came from",
+        body: [
+          "James Grenning described the technique in 2002, during an estimation meeting that was getting away from him. Mike Cohn's Agile Estimating and Planning put the name in front of most of the industry three years later. The Scrum Guide does not require it anywhere — it says only that the Developers size the work. Planning poker is therefore a widely used convention that fits Scrum well, not a rule you are breaking by estimating some other way.",
+          "The name comes from the cards and the simultaneous reveal, not from betting. Each player holds a hand of numbered cards, plays one face down, and the whole table turns over together. Nothing is wagered and there is no winner.",
+        ],
+      },
+      {
+        title: "Why relative size rather than hours",
+        intro: "An estimate in hours promises a precision nobody has at the moment of estimating.",
+        bullets: [
+          "People are bad at estimating absolute durations and good at comparing two things. Story points use the ability that actually works.",
+          "Hours are attached to a person. \"Two days\" is two days for whom? Relative size holds for the team and stays comparable when somebody else picks the work up.",
+          "The uncertainty is inside the size. A 13 is large partly because nobody is sure what is in it, and an hours figure hides that.",
+          "The date comes later, from measured velocity: points completed per sprint. That sharpens every sprint, where a conversion table drifts further from reality the longer it is used.",
+        ],
+      },
+      {
+        title: "How a round runs",
+        intro: "The same in a room or across six time zones.",
+        bullets: [
+          "The Product Owner reads the item out and answers questions, but does not usually vote — they are not estimating their own effort.",
+          "Everyone who will do the work picks a card privately. Development and QA both vote.",
+          "All cards reveal at the same time.",
+          "If everyone is within one card of each other, record the number and move on.",
+          "If not, the highest and lowest voters explain briefly, then re-vote. Two minutes of context beats ten of debate.",
+          "If a second round still splits the table, the item is usually too large or too vague. Splitting it is a better outcome than a middle number nobody believes.",
+        ],
+      },
+    ],
+    stepsTitle: "Planning poker in six steps",
     steps: HOW_TO_STEPS,
+    faq: [
+      {
+        q: "What is planning poker in simple terms?",
+        a: "Planning poker is an estimation technique for agile teams: everyone privately picks a card carrying a number for the effort of a piece of work, then everyone reveals at the same time. Where the numbers differ the team discusses briefly and votes again, until they agree. Picking privately is what stops everyone converging on the first number said out loud.",
+      },
+      {
+        q: "How does a round of planning poker work?",
+        a: "The Product Owner presents the item and answers questions. Everyone who will do the work picks a card privately. All the cards reveal at once. If they are close, the number is recorded. If not, the highest and lowest voters explain what they are seeing and the team re-votes. With a little practice each item takes one to two minutes.",
+      },
+      {
+        q: "Who takes part in planning poker?",
+        a: "Everyone who will do the work: development, QA, and anyone else contributing. The Product Owner answers questions about intent but does not usually vote. The Scrum Master facilitates and stays out of the voting, so they can watch the spread rather than add to it.",
+      },
+      {
+        q: "What numbers are used in planning poker?",
+        a: "Most often the Fibonacci sequence: 1, 2, 3, 5, 8, 13, 21 and 34, almost always with a ? card meaning \"I cannot size this from what I have been told\". The gaps widen on purpose, because uncertainty grows with size. T-shirt sizes (XS to XXL) and powers of 2 are common alternatives and work just as well.",
+      },
+      {
+        q: "What do you do when the team cannot agree?",
+        a: "Ask the highest and lowest voters to explain what they are each picturing — almost always they are looking at different work. Then re-vote. If a second round still splits the table, the story is usually too vague or too large, and splitting it beats settling on a middle number nobody stands behind.",
+      },
+    ],
+    related: [
+      { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "How the product turns the ceremony into a browser-first, live estimation flow." },
+      { href: "/fibonacci-story-points", kicker: "Deck", title: "Fibonacci story points", copy: "Why the gaps widen, and what a 21 or a 34 is really telling you." },
+      { href: "/scrum-poker", kicker: "Ceremony", title: "Scrum poker", copy: "Where the method gets used: refinement and sprint planning." },
+    ],
   },
   "/fibonacci-story-points": {
     eyebrow: "Fibonacci story points",
@@ -957,14 +1032,27 @@ for (const path of LOCALIZED_PATHS) {
   STATIC_ROUTE_META[path] = { ...STATIC_ROUTE_META[path], locale: "en", basePath: path };
 }
 
+/* The router has to recognise every locale URL from the first render, or a
+   direct hit on /de/scrum-poker falls through to the join screen before the
+   German chunk has landed. These are just path-to-path strings — no
+   translation involved — so they are installed eagerly and cost nothing.
+
+   The home page is the app, so its locale URL renders JoinScreen. Every other
+   localized page is prose, and its screen is its own path — the same trick
+   STATIC_SCREEN_BY_PATH already uses for the English data pages. */
 for (const code of TRANSLATED_LOCALES) {
+  for (const path of LOCALIZED_PATHS) {
+    STATIC_SCREEN_BY_PATH[localeUrl(code, path)] = path === "/" ? "join" : localeUrl(code, path);
+  }
+}
+
+/* The words arrive with the language chunk. Idempotent, so calling it twice —
+   which the tests and the prerenderer both do — is harmless. */
+export function installLocaleRoutes(code) {
+  if (!LOCALE_CONTENT[code] || !LOCALE_META[code]) return false;
   for (const path of LOCALIZED_PATHS) {
     const url = localeUrl(code, path);
     const m = LOCALE_META[code][path];
-    // The home page is the app, so its locale URL renders JoinScreen. Every
-    // other localized page is prose, and its screen is its own path — the same
-    // trick STATIC_SCREEN_BY_PATH already uses for the English data pages.
-    STATIC_SCREEN_BY_PATH[url] = path === "/" ? "join" : url;
     ROUTE_CONTENT[url] = fillVars(LOCALE_CONTENT[code][path]);
     STATIC_ROUTE_META[url] = {
       title: fillVars(m.title),
@@ -976,6 +1064,22 @@ for (const code of TRANSLATED_LOCALES) {
       basePath: path,
     };
   }
+  return true;
+}
+
+/* Fetch a language and wire its pages into the route tables. This is what
+   src/index.js awaits before the first render. */
+export async function activateLocale(code) {
+  const resolved = await loadLocale(code);
+  installLocaleRoutes(resolved);
+  return resolved;
+}
+
+/* Every language at once, for the prerenderer, the sitemap generator and the
+   tests. None of those ships to a browser, so the size does not matter there. */
+export async function activateAllLocales() {
+  await loadAllLocales();
+  TRANSLATED_LOCALES.forEach(installLocaleRoutes);
 }
 
 /* Every URL a path exists at, including its own — reciprocal by construction,

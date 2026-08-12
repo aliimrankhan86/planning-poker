@@ -25,7 +25,11 @@ import {
   PRIVATE_PATHS,
   DEFAULT_META,
   alternatesFor,
+  activateAllLocales,
 } from "../src/routeMeta.mjs";
+
+// The locale URLs only exist in the route table once their language is loaded.
+await activateAllLocales();
 
 /* Last time the page copy actually changed, as a date rather than a timestamp.
    Answer engines weight recency, but a date that moves on every deploy is a

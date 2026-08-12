@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { ICON_PATHS, FILLED_ICONS } from "./icons.js";
 import { useTheme } from "./theme.js";
+/* The one string the design system owns that a user reads. Everything else in
+   here is passed in by the caller, which is why this is the only import of the
+   app's i18n runtime from inside the design system. */
+import { t } from "../i18n.mjs";
 
 import "./tokens.css";
 import "./base.css";
@@ -185,12 +189,12 @@ export function SegmentedControl({ options, value, onChange, block = false, aria
 export function ThemeToggle({ className }) {
   const [theme, set] = useTheme();
   const light = theme === "light";
-  const word = light ? "Light" : "Dark";
+  const word = light ? t("theme.light") : t("theme.dark");
   const onChange = useCallback((e) => set(e.target.checked ? "light" : "dark"), [set]);
   return (
     <Switch
       className={cx("pp-theme-switch", className)}
-      label={<>{word}<span className="pp-theme-switch__suffix"> theme</span></>}
+      label={<>{word}<span className="pp-theme-switch__suffix">{t("theme.suffix")}</span></>}
       checked={light}
       onChange={onChange}
     />
