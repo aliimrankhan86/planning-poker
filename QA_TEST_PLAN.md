@@ -1,4 +1,9 @@
 # pointpoker — Comprehensive End-to-End QA Test Plan
+> **Historical pre-pivot plan — do not execute as current QA.** This document
+> tests retired Free/Pro, pricing, Stripe, and licence flows. Point Poker became
+> free for everyone in August 2026. Use `QA_PROMPT.md` for the current
+> production smoke test; keep this file only as historical regression context.
+
 <!-- Share with any QA agent (ChatGPT, Codex, Claude) at the start of a QA session -->
 <!-- Test against: https://www.pointpoker.app -->
 <!-- Report format: PASS / FAIL / PARTIAL + exact observation -->

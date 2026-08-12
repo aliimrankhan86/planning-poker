@@ -1,4 +1,9 @@
 # Live QA Audit — Progress Notes
+> **Historical record — not an active blocker list.** The Pro activation flow,
+> test licence, and rules diagnosis below belong to the retired paid-tier
+> implementation. The `/licenses` client path and Pro notification trigger were
+> removed in August 2026. Current QA lives in `QA_PROMPT.md`.
+
 **Date:** 6 April 2026
 **Tester:** Claude (automated)
 **Session:** Resuming from earlier context

@@ -1,70 +1,64 @@
-# pointpoker — Reusable Atlas QA Prompt
+# Point Poker — reusable production QA prompt
 
-Paste this into ChatGPT Atlas after a release. Replace the bracketed credential placeholders before running.
+Use this after a release. Replace credential placeholders only when account flows are in scope.
 
 ```text
-Run a focused QA pass on the live pointpoker app and report only observed behaviour.
+Run a focused QA pass on https://www.pointpoker.app and report observed behaviour only.
 
-Product:
-- URL: https://www.pointpoker.app
-- Free test account: [FREE_EMAIL] / [FREE_PASSWORD]
-- Pro test account: [PRO_EMAIL] / [PRO_PASSWORD]
+Current product truth:
+- Everything is free. There is no Pro tier, upgrade flow, Stripe checkout, or licence key.
+- Rooms support 20 people including facilitators.
+- No account is needed for a one-off room or to join a shared Team Room.
+- A free account reserves two Team Room URLs and keeps sprint history.
+- Live languages: English, Portuguese (/pt/), Japanese (/ja/).
 
-Check these areas:
-1. Landing page and navbar
-- Brand/logo visible
-- `Plans` and `FAQ` nav items visible and understandable
-- `Plans` scrolls to the on-page plans section
-- `FAQ` scrolls to the FAQ section
-- Pricing CTA still opens the pricing modal
+Check:
 
-2. Auth workflow
-- Log in modal copy is clear
-- Create account vs Sign in vs Reset password are easy to distinguish
-- Starting upgrade while signed out sends the user into account creation/sign-in cleanly
-- After auth, the user returns to pricing instead of getting stranded
-- Signed-in account state clearly shows Free vs Pro
+1. Public landing and navigation
+- Brand/logo, Pricing, Features, Support, Trust, and guides are reachable.
+- /pricing clearly says everything is free and contains no upgrade CTA.
+- No page advertises Pro, a trial, card payment, or a lower free-tier cap.
 
-3. Free account behaviour
-- Sign in with the free account
-- Navbar shows free account state correctly
-- History button is not shown for free
-- Upgrade CTA still appears for free
+2. One-off room, signed out
+- Create as Facilitator, copy invite, join in another tab as Participant.
+- Vote, reveal, split-vote resolution, re-vote, record, new sprint, and end session.
+- Test one queued story and one no-queue round.
 
-4. Pro account behaviour
-- Sign in with the Pro account
-- Navbar shows Pro state clearly
-- History button is visible
-- Team Room access works without upgrade friction
-- Pricing modal reflects active Pro state correctly
+3. Account and Team Rooms
+- Sign in with [ACCOUNT_EMAIL] / [ACCOUNT_PASSWORD].
+- Two stable Team Room URLs and sprint history are available.
+- A guest can join a shared Team Room without signing in.
+- Sign out leaves account-only history unavailable without breaking room joining.
 
-5. Room flow regressions
-- Create room, join room, team room
-- Voting, reveal, re-vote, new round
-- Leave room / end session
-- Mobile/touch card selection still behaves correctly
+4. Deck and mode coverage
+- Fibonacci + User Stories.
+- T-shirt + Tasks.
+- Saved estimates always belong to the active deck.
 
-6. UX consistency
-- Look for confusing labels, dead ends, mixed messaging, awkward transitions, or navigation friction
-- Call out any mismatch between pricing/account copy and actual behaviour
+5. Locales and routing
+- /pt/ and /ja/ render in the URL language.
+- Their translated guide links remain within that locale when a translation exists.
+- /de/, /es/, /fr/, and /nl/ permanently redirect to English.
+- Probe routing changes with and without a trailing slash.
 
-Return results in this format:
+6. Responsive/accessibility smoke
+- 390px and desktop; dark and light themes.
+- Keyboard focus, dialog close/restore, no horizontal overflow, no console errors.
 
-POINTPOKER QA RESULTS
+Return:
+
+POINT POKER QA RESULTS
 
 PASS/FAIL BY AREA
-- Landing/nav:
-- Auth workflow:
-- Free account:
-- Pro account:
-- Room flow:
-- UX consistency:
+- Public/navigation:
+- One-off room:
+- Account/Team Rooms:
+- Decks/modes:
+- Locales/routing:
+- Responsive/accessibility:
 
 FINDINGS
-- Severity: [blocker/high/medium/low] — [issue] — [exact observed behaviour]
-
-NOTES
-- Anything suspicious but not confirmed as a bug
+- Severity: blocker/high/medium/low — issue — exact observed behaviour
 
 OVERALL
 - Ready / Needs fixes

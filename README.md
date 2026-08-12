@@ -1,51 +1,39 @@
-# pointpoker
+# Point Poker
 
-A free online planning poker tool for agile and scrum teams. Run story points estimation sessions in seconds — no account required.
+Free online planning poker for agile and Scrum teams. Start a real-time estimation room without an account, or create a free account for two reusable Team Room URLs and sprint history.
 
-**Production domain:** [www.pointpoker.app](https://www.pointpoker.app)
+**Production:** [www.pointpoker.app](https://www.pointpoker.app)
 
----
+## Product
 
-## Features
+- Up to 20 people per room, facilitators included
+- Fibonacci, T-shirt sizing, and Powers of 2 decks
+- Story or task queues, bulk paste, timer, simultaneous reveal, and re-voting
+- Facilitator analytics plus clipboard, CSV, and PDF export
+- Free accounts for two permanent Team Rooms and sprint history
+- English, Portuguese (`/pt/`), and Japanese (`/ja/`)
+- No paid tier, advertising, or card fields
 
-- **Instant sessions** — create a room and share the link, no signup needed
-- **Multiple card decks** — Fibonacci (1–34), T-shirt sizing (XS–XXL), Powers of 2
-- **Story queue** — add your full backlog and estimate each story in sequence
-- **Real-time voting** — votes update live for all participants
-- **Built-in timer** — countdown timer to keep rounds focused
-- **Session summary** — copy all story point estimates at the end of a session
-- **Team Room (Pro)** — persistent room with a fixed, shareable URL your team reuses every sprint
-- **Results panel** — average, median, min, max, and spread displayed after reveal
-- **Free tier** — up to 6 participants, all decks, full story queue
-- **Pro tier** — up to 20 participants, Team Room, session export
+## Stack
 
----
+- React 19 single-page application
+- Firebase Realtime Database and Email/Password Auth
+- Firebase Functions for signup notifications and stale-room cleanup
+- Vercel hosting and prerendered marketing routes
+- Outfit, self-hosted
 
-## Tech Stack
+## Local development
 
-- **Frontend:** React (single-page app)
-- **Database:** Firebase Realtime Database
-- **Hosting:** Vercel
-- **Fonts:** Cormorant Garamond + Outfit (self-hosted)
-
----
-
-## Local Development
-
-**Prerequisites:** Node.js 18+, npm
+Requires Node.js 22 and npm.
 
 ```bash
-git clone <repo-url>
-cd planning-poker
 npm install
 npm start
 ```
 
-The app runs at `http://localhost:3000`.
+Create `.env.local` with the Firebase web configuration:
 
-**Environment variables** (create `.env.local`):
-
-```
+```text
 REACT_APP_FIREBASE_API_KEY=...
 REACT_APP_FIREBASE_AUTH_DOMAIN=...
 REACT_APP_FIREBASE_DATABASE_URL=...
@@ -53,34 +41,37 @@ REACT_APP_FIREBASE_PROJECT_ID=...
 REACT_APP_FIREBASE_STORAGE_BUCKET=...
 REACT_APP_FIREBASE_MESSAGING_SENDER_ID=...
 REACT_APP_FIREBASE_APP_ID=...
-REACT_APP_SUPPORT_EMAIL=support@pointpoker.app
 ```
 
----
+`REACT_APP_SUPPORT_EMAIL` is optional; the app defaults to `support@pointpoker.app`.
+
+## Verification
+
+```bash
+CI=true npm test -- --runInBand --watchAll=false
+npm run test:rules
+npm run build
+```
+
+The build regenerates the AI context, sitemap, production bundle, and 26 prerendered route documents.
 
 ## Deployment
 
-The app deploys automatically to Vercel on every push to `main`.
+Pushing `main` deploys the web app through Vercel. Firebase changes are separate:
 
-Set the environment variables above in your Vercel project settings (**Settings → Environment Variables**).
+```bash
+npx firebase-tools deploy --only database
+npx firebase-tools deploy --only functions
+```
 
----
+Database rules and both functions were deployed and production-verified on 11 August 2026. After any future Firebase deployment, verify live state rather than treating a successful local command as proof.
 
-## Firebase Security Rules
+## Project context
 
-Deploy `database.rules.json` to Firebase Console → Realtime Database → Rules before going live.
-
----
-
-## Before Launch Checklist
-
-- [ ] Set `REACT_APP_SUPPORT_EMAIL` in Vercel environment variables
-- [ ] Connect `www.pointpoker.app` to Vercel and verify production routing
-- [ ] Deploy `database.rules.json` to Firebase Console
-- [ ] Submit sitemap to Google Search Console
-- [ ] Create `public/og-image.png` (1200×630px) for social media previews
-
----
+- `docs/AI-CONTEXT.md` — generated current facts; read first
+- `CLAUDE.md` — operational decisions and traps (gitignored)
+- `PROGRESS.md` — dated session history and future checkpoints
+- `PROJECT.md` — project overview plus the authoritative pending-work queue
 
 ## Licence
 

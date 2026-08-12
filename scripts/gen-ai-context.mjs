@@ -38,8 +38,18 @@ const events = [...new Set([
 ])].sort();
 const bucketEvents = [...new Set(grab(app, /"(table_[a-z0-9_]+|session_[a-z0-9_]+)"/g))].sort();
 const maxParticipants = (routeMeta.match(/MAX_PARTICIPANTS = (\d+)/) || [])[1];
-const decks = grab(app, /^\s{2}([a-z]+):\s*\{\n\s*label:/gm);
+const deckBlock = app.slice(
+  app.indexOf("const DECK_DEFINITIONS = {"),
+  app.indexOf("const DECK_KEYS =", app.indexOf("const DECK_DEFINITIONS = {")),
+);
+const decks = grab(deckBlock, /^\s{2}([a-z]+):\s*\{/gm);
 const components = grab(app, /^function ([A-Z]\w+)\(/gm);
+if (!maxParticipants) {
+  throw new Error("Could not derive MAX_PARTICIPANTS for docs/AI-CONTEXT.md.");
+}
+if (!decks.length) {
+  throw new Error("Could not derive card decks for docs/AI-CONTEXT.md.");
+}
 /* One level deep, because the design system keeps its tests beside itself. A
    flat readdir here silently under-reported the suite the moment src/ grew a
    subdirectory. */
@@ -148,7 +158,9 @@ Do not split it without a reason that outweighs that.
 - **An account is needed only to host a Team Room** (the URL slug is derived from the account
   name, so without one two different teams could collide on the same room) and to keep sprint
   history. Joining any room, including a Team Room someone shared, never needs an account.
-- **Rooms are disposable.** Deleted when everyone leaves; idle rooms are swept after an hour.
+- **Rooms are disposable.** Players marked offline for an hour are removed; rooms reach their
+  hard session limit after five hours, and the scheduled reaper deletes expired one-off rooms
+  or resets expired Team Rooms to a reusable shell.
 
 ## Routes (${routes.length})
 

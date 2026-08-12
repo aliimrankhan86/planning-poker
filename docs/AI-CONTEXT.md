@@ -46,11 +46,13 @@ Do not split it without a reason that outweighs that.
   implying otherwise is a bug.
 - **Room capacity: 20 people**, facilitators included. One constant,
   `MAX_PARTICIPANTS` in `src/routeMeta.mjs`, used by both the enforcement and the marketing copy.
-- **Card decks:** .
+- **Card decks:** fibonacci, tshirt, powers.
 - **An account is needed only to host a Team Room** (the URL slug is derived from the account
   name, so without one two different teams could collide on the same room) and to keep sprint
   history. Joining any room, including a Team Room someone shared, never needs an account.
-- **Rooms are disposable.** Deleted when everyone leaves; idle rooms are swept after an hour.
+- **Rooms are disposable.** Players marked offline for an hour are removed; rooms reach their
+  hard session limit after five hours, and the scheduled reaper deletes expired one-off rooms
+  or resets expired Team Rooms to a reusable shell.
 
 ## Routes (19)
 
@@ -568,13 +570,14 @@ email to the owner and a Pro welcome email to themselves. Deleting the code clos
 that off and took 201 lines of Pro-era email builders and team-room helpers with
 it. Do not reintroduce a plan-watching trigger without a plan to watch.
 
-**Two things in the live database that are not in the rules.** `/licenses` still
-holds data from before the product went free; the node has no rule any more so
-it falls to the `$other` deny-all and no client can reach it. `/ops` is written
-by Cloud Functions through the admin SDK, which bypasses rules entirely, so the
-deny-all does not affect it. Do not "tidy" either by adding rules for them.
+**`/licenses` is retired and `/ops` is admin-only.** The two dead licence flags
+were backed up and removed from the live database on 11 August 2026. The node
+has no rule, falls through to `$other`, and must stay inaccessible; do not
+re-create it from an old Pro-era note. `/ops` is written by Cloud Functions
+through the Admin SDK, which bypasses rules, so the client deny-all does not
+affect it and no public rule should be added for convenience.
 
-**The Firebase rules are the source of truth and they must be redeployed by hand.**
+**The Firebase rules are the source of truth and require an explicit deploy.**
 Editing `database.rules.json` changes nothing in production until someone pastes
 `database.rules.publish.json` into the Firebase console or runs
 `npx firebase-tools deploy --only database`. `npm run test:rules` now runs the real

@@ -15,8 +15,9 @@
 
         // ── WRITE ─────────────────────────────────────────────────────────
         // Room participation stays auth-optional so guests can join instantly.
-        // Writes remain open at room paths, but data integrity and Pro-room
-        // creation constraints are enforced by the validation rules below.
+        // Writes remain open at room paths, while the validation rules below
+        // enforce data integrity, the free-only room plan, deck-valid values,
+        // and the exact founder-room allowlist.
         ".write": true,
 
         // ── ROOT VALIDATION ───────────────────────────────────────────────

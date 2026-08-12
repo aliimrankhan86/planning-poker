@@ -1,7 +1,37 @@
 # pointpoker — Launch Progress Tracker
 <!-- Share this file at the start of every session so Claude knows exactly where we are -->
 
-## Current Truth Snapshot
+## Authoritative status — 12 August 2026
+
+- Repository handover was clean and fully pushed at `ff7d8cb`.
+- 429 Jest tests pass; production build succeeds; sitemap and prerender both
+  contain 26 URLs/documents.
+- Product is free for everyone: 20 people per room, no paid tier, Stripe,
+  licences, Pro gating, trial clock, card fields, or ads.
+- Live languages are English, Portuguese (`/pt/`), and Japanese (`/ja/`). The
+  retired `/de/`, `/es/`, `/fr/`, and `/nl/` prefixes permanently redirect to
+  English and must remain in `vercel.json`.
+- Firebase rules and both Cloud Functions were deployed and
+  production-verified on 11 August 2026.
+- Nothing is blocking and no code feature is half-finished.
+
+### Open actions
+
+1. **13 August, after Search Console quota resets:** request indexing for
+   `/pt/what-is-planning-poker`, `/pt/scrum-poker`,
+   `/pt/fibonacci-story-points`, `/ja/what-is-planning-poker`, and
+   `/ja/scrum-poker`.
+2. **Before 23 September:** obtain native-speaker reviews of the four
+   Portuguese and four Japanese pages. Automated translation checks do not
+   validate naturalness or practitioner vocabulary.
+3. **Around 23 September:** run the exact Search Console checklist under “For
+   the six-week re-pull”. Compare positions and first impressions, not clicks
+   alone.
+
+Expected movement needs no intervention: sitemap discovered pages 42 → 26 and
+redirect pages 3 → roughly 7 as retired locales are recrawled.
+
+## Historical Current Truth Snapshot — superseded by the status above
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
 - Support email: `support@pointpoker.app`
@@ -280,9 +310,9 @@ Treat this section as the fastest current-status read. Historical session notes 
 ---
 
 ## 📍 Current Status
-**Phase:** 2 — SEO growth, with the design system now the working surface for product polish
-**Active step:** monitor `/pricing`, `/support` and `/trust` indexing in Search Console; publish the current `database.rules.json` to the Firebase Console; continue additive trust/proof content
-**Remaining:** trust/proof content, Search Console recrawl verification, Firebase rules publish, a broader production E2E sweep if desired. Monetisation stays parked — the product is free for everyone.
+**Phase:** SEO/localisation measurement
+**Active step:** wait for the 13 August Search Console quota reset, then submit the five unrequested Portuguese/Japanese URLs
+**Remaining:** native-speaker review before the six-week re-pull; Search Console evidence pull around 23 September 2026
 
 ## Update Rule
 - Any AI that completes a meaningful task must update this file in the same task.
@@ -1179,8 +1209,8 @@ to break on. `/de/t/test-team` returns 200 with `X-Robots-Tag: noindex`.
   rather than transliterated English, and agile vocabulary that these languages
   genuinely borrow (`Story Points`, `Sprint`, `Backlog`, `Product Owner`) is
   left borrowed because translating it reads wrong to a practitioner and nobody
-  searches for it. But it has not been read by a native speaker of any of the
-  six, and that is the one quality claim not being made here.
+  searches for it. But the Portuguese and Japanese copy has not been read by a
+  native speaker, and that is the one quality claim not being made here.
 
 ### For the six-week re-pull
 
@@ -1335,3 +1365,40 @@ happily passed a redirect rule that did not work, because all it could check was
 that the rule existed. Anything routing-shaped has to be probed on the live
 deployment, per URL form — with and without the trailing slash — and the probe
 belongs in the same session as the change, not the next one.
+
+---
+
+## Session — 12 August 2026 (handover consolidation)
+
+Closed everything that could be done without waiting for an external clock or
+human reviewer.
+
+- Reconciled the repo notes with the August free-for-everyone pivot. The
+  authoritative sections of `PROJECT.md`, `PROGRESS.md`, `CLAUDE.md`,
+  `AGENTS.md`, and `README.md` now say there is no paid tier, Stripe task,
+  licence flow, Pro gate, or undeployed Firebase work.
+- Removed “server-side founder entitlement” from the pending list. Founder
+  detection now only selects defaults and allows the two established URLs to
+  bootstrap without an account; Firebase whitelists `founderRoom: true` to
+  those exact slugs, and no privileged tier exists to steal.
+- Replaced the stale pending backlog with three dated actions: five Search
+  Console requests after the 13 August quota reset, native Portuguese/Japanese
+  review before 23 September, and the six-week Search Console pull around 23
+  September.
+- Marked expected Search Console changes (42 → 26 discovered pages and 3 → ~7
+  redirects) as observation-only so a future AI does not “fix” correct 301s.
+- Updated the public README and marked the old QA plans/progress as historical
+  where appropriate.
+- Fixed `scripts/gen-ai-context.mjs`: getter-based deck labels had made the
+  generated “Card decks” field empty, and its lifecycle summary incorrectly
+  said rooms were swept after one hour. The generated context now names all
+  three decks and distinguishes one-hour player cleanup from the five-hour room
+  limit and scheduled reaper.
+
+Deferred work cannot be completed in this session for explicit reasons:
+
+- Search Console's daily indexing quota does not reset until 13 August.
+- Translation quality requires native speakers; structural automated checks are
+  already complete and another machine pass would not answer the open question.
+- The SEO evidence window needs roughly six weeks of crawl/ranking data and is
+  due around 23 September.

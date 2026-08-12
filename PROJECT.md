@@ -12,9 +12,36 @@
 
 ---
 
-## § Current Truth Snapshot
+## § Authoritative Current Truth — 12 August 2026
 
-This section is the fastest, highest-priority handoff summary for any AI.
+- Point Poker is live at `https://www.pointpoker.app/`.
+- The product is free for everyone. There is no paid tier, Stripe checkout,
+  licence-key flow, Pro gate, advertising, or trial clock.
+- Every room supports up to 20 people including facilitators.
+- An account is optional for one-off rooms. A free account reserves two Team
+  Room URLs and retains sprint history; guests can join shared rooms without an
+  account.
+- English lives at root; Portuguese at `/pt/`; Japanese at `/ja/`. Only `/`,
+  `/what-is-planning-poker`, `/scrum-poker`, and
+  `/fibonacci-story-points` are localised.
+- `/de/`, `/es/`, `/fr/`, and `/nl/` are retired and permanently redirect to
+  English. Keep the two redirect rules in `vercel.json`, including the
+  `:path(.*)` form that covers trailing slashes.
+- Firebase rules and both Cloud Functions were deployed and
+  production-verified on 11 August 2026.
+- Quality gate at handover: 429 Jest tests pass, build succeeds, sitemap has 26
+  URLs, and prerender writes 26 route documents.
+- There is no blocking or half-finished code work.
+
+The only open work is time- or human-gated and is listed in
+[§ Pending Work](#-pending-work). `docs/AI-CONTEXT.md` is generated from the
+code and is the first source for current structure and constants. Historical
+sections below preserve how the product reached this state; old Pro/Stripe,
+capacity, deployment, and launch-checklist claims are not current tasks.
+
+## § Historical Snapshot — superseded by the section above
+
+This section is retained as dated history. It is not a current handoff summary.
 
 - Brand: `pointpoker`
 - Production domain: `https://www.pointpoker.app/`
@@ -241,11 +268,11 @@ If older historical notes below conflict with this section, treat this snapshot 
 | Field | Value |
 |---|---|
 | **Product name** | pointpoker |
-| **Purpose** | Free real-time planning poker for agile and Scrum teams. Sign-up optional for free use; required for account-based Pro billing. |
+| **Purpose** | Free real-time planning poker for agile and Scrum teams. Sign-up is optional for one-off rooms and required only for persistent Team Rooms and sprint history. |
 | **Target audience** | Product Owners, Scrum Masters, developers on distributed teams |
-| **Business model** | Freemium — Free tier (8 participants incl. facilitator) + Pro tier (20 participants, two dedicated team rooms) |
+| **Business model** | Free for everyone; no paid tier or advertising. Future add-ons may be considered only after real usage evidence, without removing currently free features. |
 | **Jurisdiction** | England & Wales |
-| **Current status** | Deployed on Vercel. Pre-revenue. Analytics tracking live. Firebase Auth is enabled and privacy policy updated; Stripe activation still pending. |
+| **Current status** | Live on Vercel. Analytics, Firebase Auth, database rules, notifications, and stale-room cleanup are deployed. SEO/localisation measurement is in progress. |
 | **Founder room** | `rpa-build-team` (encoded in `_FC` array as `btoa` value) |
 
 ---
@@ -260,7 +287,7 @@ If older historical notes below conflict with this section, treat this snapshot 
 | Performance | Vercel Speed Insights | latest | Installed in `src/index.js` for production field-performance monitoring |
 | Build tool | react-scripts | 5.0.1 | CRA — no custom webpack config |
 | Fonts | Outfit v15 | — | **Self-hosted** in `public/fonts/` — sole active font family |
-| Payments | Stripe | — | Account-aware checkout UI in place; real Stripe links/webhook still pending |
+| Payments | None | — | The paid tier and Stripe/licence flow were removed in the August 2026 free-for-everyone pivot |
 | Auth | Firebase Auth | SDK 12.10.0 | Email/Password UI implemented in app and provider enabled in Firebase Console |
 | CI/CD | GitHub → Vercel | — | Push to `main` = live deploy |
 
@@ -321,10 +348,10 @@ planning-poker/
 │   ├── index.js            # React root mount
 │   ├── index.css           # Minimal reset (most styles are CSS-in-JS in App.js)
 │   └── App.css             # Unused — do not add styles here
-├── database.rules.json     # Firebase security rules — deploy manually in Console
+├── database.rules.json     # Firebase security rules — source of truth; deployed 11 Aug 2026
 ├── firebase.json           # Firebase Functions source mapping
 ├── functions/
-│   ├── index.js            # Signup / Pro-notification backend triggers
+│   ├── index.js            # Signup notification + scheduled stale-room reaper
 │   ├── package.json        # Firebase Functions runtime deps
 │   ├── .env.example        # Required notification env vars (example only)
 │   └── README.md           # Deployment + verification notes for notifications
@@ -339,6 +366,10 @@ The entire application — CSS, all components, all logic — lives in `src/App.
 ---
 
 ## § Design System
+
+Current tokens and component rules live in `src/design-system/README.md` and
+`docs/AI-CONTEXT.md`. Values below are retained only where they still match the
+live token files.
 
 ### Colour palette (CSS custom properties)
 
@@ -370,9 +401,9 @@ The entire application — CSS, all components, all logic — lives in `src/App.
 
 ### Typography
 
-- **Headings / brand**: `Cormorant Garamond` (serif) — weight 400/600/700
-- **UI / body**: `Outfit` (sans-serif) — weight 300/400/500/600/700
-- Both fonts are **self-hosted** — loaded from `public/fonts/` in `index.html`
+- **All text:** Outfit, self-hosted, weights 300/400/500/600/700
+- Display contexts use Outfit 700 with tight negative tracking
+- Old Cormorant files remain in `public/fonts/` but are not referenced
 
 ### Animation keyframes defined
 
@@ -382,20 +413,22 @@ The entire application — CSS, all components, all logic — lives in `src/App.
 
 ## § Component Inventory
 
+For the generated current list, use `docs/AI-CONTEXT.md`. The table below is a
+historical inventory and may name components removed during the August pivot.
+
 All components are functions in `src/App.js`. Listed in render order:
 
 | Component | Description |
 |---|---|
-| `CasinoChip` | SVG casino chip — 8-segment dashed rim, inner felt, gold rings, "PP" logotype. Props: `onClick`, `size` (default 44), `label`. Used at 34/44/52/56px. |
-| `NavBar` | Global sticky nav (z-index: 200). Left: chip + brand. Right: account badge/log out when signed in, otherwise Log in + Get Pro. Props: `onLogoClick`, `onLogin`, `onRegister`, `currentUser`, `currentPlan`, `onLogout`. |
+| `BrandMark` | Approved card-stack image mark used across app chrome. |
+| `NavBar` | Global sticky nav with public links, account state, and theme control; no upgrade CTA exists. |
 | `RouteLink` | Crawlable internal anchor helper — preserves real `href` values for SEO while using SPA navigation on click. |
 | `SiteFooter` | 3-column footer — brand desc, Legal links, Product links. Bottom bar: copyright + legal disclaimer. Props: `onCookieSettings`. |
-| `LoginModal` | Account modal. Supports sign in, create account, password reset, and Pro key activation against Firebase `/licenses/`. Props: `onClose`, `onAuthSuccess`, `onProActivated`, `currentUser`. |
+| `LoginModal` | Account modal for sign in, account creation, password reset, and verification-email state. |
 | `CookieBanner` | GDPR consent bar — shown until `pp_cookie_ok = "1"` in localStorage. Props: `onAccept`. |
 | `App` | Root — manages all screen state, Firebase subscriptions, room lifecycle. |
 | `Confetti` | Pure-canvas confetti burst — no external deps. Props: `onDone`, `big`. |
-| `PricingModal` | Monthly/annual billing toggle, GBP/USD/EUR currency, account-aware Pro checkout CTA, collapsible key activation. Props: `onClose`, `onProActivated`, `currentUser`, `currentPlan`, `onRequireLogin`. |
-| `PricingPage` / `FeaturesPage` / keyword pages | Dedicated indexable marketing routes used for Phase 2 SEO discovery. |
+| `PricingPage` / `FeaturesPage` / keyword pages | Dedicated indexable routes; `/pricing` explains that every feature is free. |
 | `JoinScreen` | Landing/workspace form — Create/Join/Team Room tabs, role selector, deck picker, signed-in workspace state, and on-page SEO content. |
 | `GameScreen` | Full estimation room UI — timer, playing cards, results, facilitator controls, analytics. Props: see § GameScreen Props. |
 
@@ -409,7 +442,24 @@ onStart, onStop, onAddStory, onRecordStory, sessionWarning, toast
 
 ---
 
-## § Key Constants & Logic
+## § Key Constants & Logic — August 2026 override
+
+The Pro/Stripe constants and flows shown later in this historical section were
+deleted. Current invariants are:
+
+```js
+MAX_PARTICIPANTS = 20
+SESSION_MAX_MS = 5 * 60 * 60 * 1000
+```
+
+All new rooms use `plan: "free"`. Team Rooms are free; hosting a new one needs
+an account except for the two established founder URLs, while joining an
+existing shared Team Room stays open to guests. Sprint history is free for any
+signed-in account. Analytics uses atomic `set(ref, increment(1))`, not
+`runTransaction`.
+
+The remaining pre-August examples below are retained as migration history and
+must not be used to implement current behaviour.
 
 ```js
 FREE_MAX_PLAYERS = 6
@@ -497,6 +547,10 @@ Read via Firebase Console → Realtime Database only (client read is blocked by 
 
 ## § Firebase Schema
 
+`database.rules.json` is the schema authority. `/licenses` is deliberately
+absent and denied. Legacy plan/billing fields may remain on old user profiles
+but grant no capability.
+
 ### `/rooms/{roomCode}`
 
 ```json
@@ -576,6 +630,9 @@ Integer counter. Client write only. Admin read only via Firebase Console.
 
 ## § URL Routing
 
+The current route table is generated into `docs/AI-CONTEXT.md` from
+`src/routeMeta.mjs`; use that list instead of the older examples below.
+
 CRA single-page app — no React Router. Routing is handled via state + `window.history.replaceState`.
 
 | URL pattern | Behaviour |
@@ -607,18 +664,17 @@ T-shirt deck: story points are non-numeric — `avgSP`, `totalSP`, and estimate 
 
 | Document | Location | Status |
 |---|---|---|
-| Terms of Service | `public/terms.html` | Live — 15 clauses, England & Wales |
-| Privacy Policy | `public/privacy.html` | Live — UK GDPR / DPA 2018 |
+| Terms of Service | `TermsPage` in `src/App.js`, route `/terms` | Live — England & Wales; service is free |
+| Privacy Policy | `PrivacyPage` in `src/App.js`, route `/privacy` | Live — UK GDPR / DPA 2018; Firebase and Vercel processors |
 | Cookie Banner | `src/App.js` — `CookieBanner` | Live — functional storage + anonymous counts only |
 | Cookie Settings | Footer → `resetCookieBanner()` | Live — re-shows consent banner |
 
 ### Key legal positions (do not weaken without legal review)
 
-- Liability cap: amount paid in the preceding 12 months, or £10 — whichever is greater
+- Service is free; no consumer purchase, refund, or cancellation rights arise from using it
 - Service provided "as-is" — no SLA, no uptime guarantee
-- No refunds except 14-day trial cancellation (monthly) / pro-rated (annual) — **Stripe not yet wired**
 - Governing law: England & Wales; courts of England & Wales have exclusive jurisdiction
-- Third-party disclosures: Firebase (Google LLC), Vercel Inc., Stripe Inc.
+- Third-party processor disclosures: Firebase (Google LLC) and Vercel Inc.
 - Data: account email + display name are now stored for signed-in users; session names/votes remain session-scoped
 
 **Support contact chosen**: `support@pointpoker.app`
@@ -911,46 +967,54 @@ Listed chronologically newest-first.
 
 ## § Pending Work
 
-Items are grouped by dependency. Do not mark complete until fully deployed/verified.
+Nothing is blocked in the repository and no feature is half-finished. These are
+the complete open actions as of 12 August 2026.
 
-### DOMAIN / LAUNCH CONFIG
+### 13 August 2026 — Search Console quota reset
 
-- [ ] Monitor Google Search Console indexing status and query performance for the homepage plus the new marketing routes
-- [ ] Continue Phase 3 trust/proof content beyond the initial `/about`, `/support`, and `/trust` pages
-- [ ] Verify live signup-owner notifications and Pro owner/user emails end-to-end now that the Firebase Functions notification layer is deployed
+- [ ] Request indexing for `/pt/what-is-planning-poker`.
+- [ ] Request indexing for `/pt/scrum-poker`.
+- [ ] Request indexing for `/pt/fibonacci-story-points`.
+- [ ] Request indexing for `/ja/what-is-planning-poker`.
+- [ ] Request indexing for `/ja/scrum-poker`.
 
-### BLOCKED ON: Stripe account setup
+The sitemap already contains all five. These requests only accelerate discovery.
+Do not retry before the daily quota resets.
 
-- [ ] Create 6 Stripe Payment Links:
-  - Monthly GBP £6/mo
-  - Monthly USD $8/mo
-  - Monthly EUR €7/mo
-  - Annual GBP £5/mo (billed annually = £60/yr)
-  - Annual USD $6/mo (billed annually = $72/yr)
-  - Annual EUR €6/mo (billed annually = €72/yr)
-- [ ] Replace all 6 `#upgrade` values in the `STRIPE_LINKS` constant in `src/App.js`
-- [ ] Optional: Vercel serverless function `api/stripe-webhook.js` — on payment complete → write `{ active: true }` to `/licenses/{generated_key}` in Firebase
-- [ ] Replace temporary checkout-intent-only flow with real Stripe success/cancel handling once links or Checkout are live
+### Before 23 September 2026 — human language review
 
-### PHASE 2 — Teams plan (B2B)
+- [ ] Have a native Portuguese speaker review the four `/pt/` pages.
+- [ ] Have a native Japanese speaker review the four `/ja/` pages.
 
-- [ ] Teams plan: company billing, multiple named team rooms, admin seat management
-- [ ] Stripe annual invoice flow for teams
-- [ ] Server-side player count enforcement (Firebase rules + plan field)
-- [ ] Firebase App Check — prevents API abuse from unknown clients
+Review naturalness and the agile vocabulary practitioners actually use. Tests
+already enforce key parity, placeholders, writing systems, and absence of
+English leakage; another machine pass does not satisfy this task.
 
-### PHASE 3 — Infrastructure
+### Around 23 September 2026 — six-week SEO evidence pull
 
-- [ ] Room auto-expiry (requires Blaze plan — Firebase scheduled functions)
-- [ ] Split `src/App.js` into components folder when next major feature is added
-- [ ] Firebase Storage for og-image and future assets
+- [ ] Compare current English query positions with the recorded baseline.
+- [ ] Filter the Pages report for impressions on `/pt/*` and `/ja/*`.
+- [ ] Check the Queries report for Japanese or Portuguese script.
+- [ ] Confirm sitemap “Discovered pages” has settled at 26.
+- [ ] Confirm “Page with redirect” is near 7 after `/de/`, `/es/`, `/fr/`, and
+  `/nl/` are recrawled.
 
-### REVENUE — Ads (low effort)
+Use position and first impressions as the early signal. At an average position
+near 56, zero clicks is expected and is not enough to reject a locale.
 
-- [ ] Enable Google AdSense on join/home page only (not inside rooms)
-  - **Requires**: Update `public/privacy.html` to disclose advertising cookies
-  - **Requires**: Update `CookieBanner` to add Accept/Reject choice (not just Accept)
-  - **Requires**: Remove "No advertising cookies" statement — currently factually accurate but becomes false on Ads activation
+### Expected recrawl movement — do not act
+
+- Sitemap discovered pages moving from 42 to 26.
+- Redirected pages moving from 3 to roughly 7.
+- Retired locale prefixes appearing in redirect reports.
+
+These are the intended result of shrinking the sitemap and landing the 301s.
+
+### Future ideas — not committed work
+
+Distribution, premium add-ons, App Check, and further component extraction are
+ideas only. Do not treat them as pending or start them without a new product
+decision. Everything currently free must remain free.
 
 ---
 
@@ -958,25 +1022,25 @@ Items are grouped by dependency. Do not mark complete until fully deployed/verif
 
 ### Where to read the data
 
-Firebase Console → Realtime Database → `/analytics/daily/`
+Use the owner-only `/admin` dashboard. Raw counters live at
+`/analytics/daily/`; client reads require `/admins/{uid}: true`.
 
 ### Key ratios to watch
 
 | Metric | Formula | What it tells you |
 |---|---|---|
-| Conversion rate | `pro_activated / pricing_opened` | Value proposition clarity |
-| Pricing interest rate | `pricing_opened / room_created_free` | Awareness of Pro |
-| Invite virality | `invite_copied / room_created_free` | How often hosts share the link |
-| Timer adoption | `timer_used / room_created_free` | Feature awareness |
-| Queue adoption | `story_queue_used / room_created_free` | Feature awareness |
-| Team engagement | `stories_estimated / player_joined` | Session depth |
+| Signup completion | `signup_completed / signup_started` | Account-flow completion; compare only from 9 Aug 2026 because earlier intent counts were polluted |
+| Invite use | `feature_invite / room_created` | How often hosts share the room |
+| Timer adoption | `feature_timer / room_created` | Timer discovery and usefulness |
+| Queue adoption | `feature_queue / room_created` | Structured-session adoption |
+| Team-room return | `team_room_reentered / room_created_team` | Whether permanent rooms create repeat use |
+| Session depth | `estimate_recorded / room_created` | Estimates completed per created room |
 
-### Revenue decision logic
+### Adoption decision logic
 
-If `pricing_opened` is high but `pro_activated` is low → price or value perception problem.
-If `pricing_opened` is low → users don't know Pro exists → improve feature marketing.
-If `timer_used` or `story_queue_used` is high → consider gating those behind Pro to increase conversion.
-If `room_created_free` grows but `pricing_opened` stays flat → add in-room upsell prompts.
+The current decision is adoption, not monetisation. Use the dashboard to learn
+whether rooms are created, shared, revisited, and used deeply enough to justify
+further investment. Do not rebuild a paid funnel from legacy counter names.
 
 ---
 
@@ -1003,9 +1067,9 @@ f5323af  feat: branded favicon/icons + privacy policy + manifest copy update
 
 | Issue | Status | Notes |
 |---|---|---|
-| Stripe links are `#upgrade` placeholders | Pending Stripe setup | PricingModal is account-aware but cannot open a real paid checkout yet |
-| Pro key must be manually added to Firebase | Temporary | Stripe webhook will automate in Phase 3 |
-| App.js is ~6400 lines | Acceptable | Split into components at next major feature milestone |
+| Portuguese/Japanese translation naturalness | Unverified | Native-speaker review required before the 23 Sep SEO re-pull |
+| Non-English demand | Unvalidated | First evidence comes from the six-week Search Console re-pull |
+| App.js is large | Accepted architecture | Split only when a concrete change benefits enough to justify it |
 | `startedBy` in timer not validated by Firebase rules | Low risk | Internal field, not exploitable |
 
 ---

@@ -2304,10 +2304,12 @@ async function sweepAwayPlayers(code, players) {
 // own occupants end it at five hours (SESSION EXPIRY CHECK below) and remove
 // players who have been away for an hour (sweepAwayPlayers above).
 
-// ── FOUNDER DETECTION ────────────────────────────────────────
-// Stored encoded so the team codes are not readable as plain text
-// in the compiled bundle. Not a guarantee, but raises the bar.
-// Encoded values are: btoa("<teamCode>") — never commit the raw names.
+// ── FOUNDER ROOM DEFAULTS ─────────────────────────────────────
+// These client-visible values select the intended default deck and let the two
+// established team URLs bootstrap without an account. They are not an
+// entitlement or security boundary: every feature is free, and Firebase only
+// accepts founderRoom:true for these exact room IDs. The encoding merely keeps
+// raw internal team names out of casual source searches.
 const FOUNDER_ROOM_CONFIG = [
   { hash: "cnBhLWJ1aWxkLXRlYW0=", defaultDeck: "fibonacci" },
   { hash: "cnBhLWRpc2NvdmVyeS10ZWFt", defaultDeck: "tshirt" },
