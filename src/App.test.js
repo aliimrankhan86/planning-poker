@@ -12,6 +12,7 @@ import {
   SITE_URL,
   SUPPORT_FAQ,
 } from "./routeMeta.mjs";
+import { splitLocalePath, withLocale } from "./i18n.mjs";
 
 // Firebase is a network dependency; the smoke test only cares that the shell renders.
 jest.mock("./firebase", () => ({ auth: { currentUser: null }, db: {} }));
@@ -332,8 +333,13 @@ describe("the story-queue cap", () => {
    serving perfect HTML to crawlers and nothing at all to a person.
 ─────────────────────────────────────────────────────────────────────────── */
 describe("pages rendered from route data", () => {
+  /* English data-driven routes only. The translated ones are reached from the
+     language switcher, from hreflang, and from the sitemap — deliberately not
+     from the footer, which would put twenty-four extra links on every page in a
+     language the reader did not ask for. Their discovery is covered by the
+     hreflang and sitemap tests below. */
   const dataDriven = Object.entries(STATIC_SCREEN_BY_PATH)
-    .filter(([, s]) => s.startsWith("/"))
+    .filter(([path, s]) => s.startsWith("/") && splitLocalePath(path).locale === "en")
     .map(([path]) => path);
 
   /* Every test here navigates. jsdom keeps one location for the whole file, so
@@ -413,7 +419,13 @@ describe("pages rendered from route data", () => {
     for (const [path, content] of Object.entries(ROUTE_CONTENT)) {
       // Pages reusing the shared HOW_TO_STEPS are describing the same
       // procedure, so the default name is the correct one for them.
-      if (!content.steps?.length || content.steps === ROUTE_CONTENT["/"].steps) continue;
+      /* Pages running the generic six steps are describing the same procedure
+         as their language's home page, so the schema's default name is the
+         correct one for them. Compared by value rather than by identity: a
+         translated page is a different array holding the same procedure. */
+      if (!content.steps?.length) continue;
+      const home = ROUTE_CONTENT[withLocale(splitLocalePath(path).locale, "/")];
+      if (JSON.stringify(content.steps) === JSON.stringify(home?.steps)) continue;
       expect(`${path}:${!!content.stepsTitle}`).toBe(`${path}:true`);
     }
   });

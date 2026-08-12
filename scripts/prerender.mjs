@@ -27,7 +27,10 @@ import {
   ROUTE_CONTENT,
   PRERENDER_LINKS,
   SUPPORT_EMAIL,
+  alternatesFor,
+  localeUrl,
 } from "../src/routeMeta.mjs";
+import { LOCALES, UI } from "../src/locales/index.mjs";
 
 const BUILD_DIR = "build";
 const esc = (s = "") =>
@@ -117,6 +120,7 @@ function breadcrumb(path, title) {
 }
 
 function graphFor(path, m, content) {
+  const lang = LOCALES[m.locale || "en"].inLanguage;
   const nodes = [ORGANISATION, WEBSITE, breadcrumb(path, content?.h1 || m.title)];
   nodes.push({
     // /support is the page that tells you how to reach us, so it is a
@@ -127,10 +131,13 @@ function graphFor(path, m, content) {
     name: m.title,
     description: m.description,
     isPartOf: { "@id": `${SITE_URL}/#website` },
-    inLanguage: "en-GB",
+    inLanguage: lang,
     dateModified: CONTENT_MODIFIED,
   });
-  if (path === "/") nodes.push(SOFTWARE_APP);
+  // Every locale's home page describes the same application, in its own words.
+  if ((m.basePath || path) === "/") {
+    nodes.push({ ...SOFTWARE_APP, description: m.description });
+  }
   if (content?.faq?.length) {
     nodes.push({
       "@type": "FAQPage",
@@ -162,10 +169,48 @@ function graphFor(path, m, content) {
   return JSON.stringify({ "@context": "https://schema.org", "@graph": nodes });
 }
 
+/* The link block at the foot of every shell. On a translated page the four
+   pages that exist in that language link to their own locale; everything else
+   links to its English URL, because that is the only URL those pages have.
+   Sending a German reader to /de/pricing — which has no document — would be a
+   soft 404 authored on purpose. */
+function shellLinks(path, locale) {
+  const ui = UI[locale] || UI.en;
+  const label = (href, fallback) => {
+    const key = {
+      "/": "footer.home",
+      "/features": "footer.features",
+      "/pricing": "nav.pricing",
+      "/planning-poker-online": "footer.ppOnline",
+      "/scrum-poker": "footer.guideScrum",
+      "/story-point-estimation": "footer.guideEstimation",
+      "/remote-sprint-planning": "footer.guideRemote",
+      "/agile-estimation-tool": "footer.guideAgile",
+      "/what-is-planning-poker": "footer.guideWhatIs",
+      "/fibonacci-story-points": "footer.guideFib",
+      "/pointing-poker": "footer.guidePointing",
+      "/story-points-to-hours": "footer.guideHours",
+      "/planning-poker-jira": "footer.guideJira",
+      "/about": "footer.about",
+      "/trust": "footer.trustRel",
+      "/support": "footer.support",
+    }[href];
+    return (key && ui[key]) || fallback;
+  };
+  return PRERENDER_LINKS.filter(([href]) => localeUrl(locale, href) !== path)
+    .map(
+      ([href, fallback]) =>
+        `<li><a href="${localeUrl(locale, href)}">${esc(label(href, fallback))}</a></li>`,
+    )
+    .join("");
+}
+
 function shellFor(path, m, content) {
   if (!content) {
     return `<h1>${esc(m.title.split("|")[0].trim())}</h1><p>${esc(m.description)}</p>`;
   }
+  const locale = m.locale || "en";
+  const ui = UI[locale] || UI.en;
   const parts = [`<h1>${esc(content.h1)}</h1>`, `<p>${esc(content.intro)}</p>`];
   (content.body || []).forEach((p) => parts.push(`<p>${esc(p)}</p>`));
   if (content.bullets?.length) {
@@ -182,19 +227,16 @@ function shellFor(path, m, content) {
     }
   });
   if (content.steps?.length) {
-    parts.push(`<h2>${esc(content.stepsTitle || "How it works")}</h2>`);
+    parts.push(`<h2>${esc(content.stepsTitle || ui["page.howItWorks"])}</h2>`);
     parts.push(`<ol>${content.steps.map((b) => `<li>${esc(b)}</li>`).join("")}</ol>`);
   }
   if (content.faq?.length) {
-    parts.push("<h2>Frequently asked questions</h2>");
+    parts.push(`<h2>${esc(ui["page.faqTitle"])}</h2>`);
     content.faq.forEach((f) => {
       parts.push(`<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`);
     });
   }
-  const links = PRERENDER_LINKS.filter(([href]) => href !== path)
-    .map(([href, label]) => `<li><a href="${href}">${esc(label)}</a></li>`)
-    .join("");
-  parts.push(`<h2>More on Point Poker</h2><ul>${links}</ul>`);
+  parts.push(`<h2>${esc(ui["page.relatedTitle"])}</h2><ul>${shellLinks(path, locale)}</ul>`);
   return parts.join("");
 }
 
@@ -202,7 +244,13 @@ function render(template, path, m) {
   const content = ROUTE_CONTENT[path];
   const ogImage = m.ogImage || DEFAULT_OG_IMAGE;
   const url = m.canonical || `${SITE_URL}${path}`;
+  const locale = m.locale || "en";
   let html = template;
+
+  // The document's own language. Left at "en" on a German page it tells every
+  // screen reader to pronounce German with English phonemes, and tells Google
+  // the page is English regardless of what the hreflang says.
+  html = html.replace(/<html lang="[^"]*"/i, `<html lang="${LOCALES[locale].hreflang}"`);
 
   const setMeta = (attr, key, value) => {
     const re = new RegExp(`(<meta\\s+${attr}="${key}"\\s+content=")[^"]*(")`, "i");
@@ -224,10 +272,29 @@ function render(template, path, m) {
   setMeta("name", "twitter:description", m.description);
   setMeta("name", "twitter:url", m.ogUrl || url);
   setMeta("name", "twitter:image", ogImage);
+  setMeta("property", "og:locale", LOCALES[locale].ogLocale);
   html = html.replace(
     /<link rel="canonical"[^>]*>/i,
     `<link rel="canonical" href="${esc(url)}" />`,
   );
+
+  /* hreflang. Only the pages that genuinely exist in more than one language
+     get a cluster — advertising an alternate that is really the English page
+     under a different URL is how a whole language folder gets dropped.
+     x-default points at English, which is the fallback for every language we
+     have not translated. */
+  const alternates = alternatesFor(m.basePath || path);
+  if (alternates.length) {
+    const tags = alternates
+      .map((a) => `    <link rel="alternate" hreflang="${a.hreflang}" href="${esc(a.url)}" />`)
+      .concat(
+        `    <link rel="alternate" hreflang="x-default" href="${esc(
+          alternates.find((a) => a.code === "en").url,
+        )}" />`,
+      )
+      .join("\n");
+    html = html.replace("</head>", `${tags}\n  </head>`);
+  }
 
   // Replace every build-time JSON-LD block with one graph for this page.
   html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/gi, "");

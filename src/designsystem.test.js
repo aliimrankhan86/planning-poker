@@ -20,6 +20,11 @@ const dsIndex = readFileSync(join(__dirname, "design-system", "index.js"), "utf8
 const dsIcons = readFileSync(join(__dirname, "design-system", "icons.js"), "utf8");
 const dsCss = readFileSync(join(__dirname, "design-system", "components.css"), "utf8");
 
+/* The UI copy moved out of App.js when the app was translated: App.js now holds
+   t("key") and src/locales/en.mjs holds the English words. Assertions about
+   *wording* read this; assertions about *structure* still read app. */
+const strings = readFileSync(join(__dirname, "locales", "en.mjs"), "utf8");
+
 describe("design tokens exist", () => {
   const required = [
     // Type scale: eight steps, no more.
@@ -292,7 +297,7 @@ describe("irreversible choices say so", () => {
        every vote is validated against the room's deck. The client agrees:
        setDeck exists only in JoinScreen. Nothing told the user, so the only way
        to discover it was to want a different deck mid-session and fail. */
-    expect(app).toMatch(/fixed for this room|cannot be changed after|can't be changed after/i);
+    expect(strings).toMatch(/fixed for this room|cannot be changed after|can't be changed after/i);
   });
 });
 
@@ -660,7 +665,7 @@ describe("headings and reading measure", () => {
     // The three that head a panel or a column rather than a band.
     const admin = readFileSync(join(__dirname, "AdminDashboard.js"), "utf8");
     expect(admin.match(/align="start"/g)).toHaveLength(2);
-    expect(app).toContain('align="start"\n              title="Your Team Rooms"');
+    expect(app).toContain('align="start"\n              title={t("join.yourTeamRooms")}');
   });
 
   test("prose keeps the reading cap and centres under it", () => {
@@ -717,8 +722,11 @@ describe("a finished round has one set of controls", () => {
 
   test("the confirm dialogs are written once each", () => {
     // Three copies of the new-sprint confirm string drifted apart before.
-    expect(app.match(/Start a new sprint\? This clears/g) || []).toHaveLength(1);
-    expect(app.match(/End the session\? This disconnects/g) || []).toHaveLength(1);
+    expect(strings.match(/Start a new sprint\? This clears/g) || []).toHaveLength(1);
+    expect(strings.match(/End the session\? This disconnects/g) || []).toHaveLength(1);
+    // …and each is reached from exactly one call site.
+    expect(app.match(/t\("game\.confirmReset"\)/g) || []).toHaveLength(1);
+    expect(app.match(/t\("game\.confirmEnd"\)/g) || []).toHaveLength(1);
   });
 });
 
@@ -836,11 +844,11 @@ describe("the results card states each number once", () => {
     expect(hero).toBeTruthy();
     const range = app.match(/<Grid min="110px" className="avg-hero-range">[\s\S]*?<\/Grid>/);
     expect(range).not.toBeNull();
-    for (const label of ["Min", "Median", "Max"]) {
-      expect(range[0]).toContain(`label="${label}"`);
+    for (const key of ["game.min", "game.median", "game.max"]) {
+      expect(range[0]).toContain(`label={t("${key}")}`);
     }
     // avgDisp is already printed, six lines up, at 5.5rem.
-    expect(range[0]).not.toContain('label="Average"');
+    expect(range[0]).not.toContain('t("game.average")');
   });
 });
 
@@ -1183,19 +1191,20 @@ describe("the sized list can be corrected", () => {
   });
 
   test("two ways out, and the safe one holds focus", () => {
-    expect(modal).toMatch(/data-autofocus[\s\S]*?Cancel/);
+    expect(modal).toMatch(/data-autofocus[\s\S]*?t\("game\.cancel"\)/);
     expect(modal).toMatch(/Confirm delete/);
   });
 
   test("the delete button carries the row in its name, not just an X", () => {
-    expect(app).toMatch(/label=\{`Delete the \$\{st\.estimate\} estimate for \$\{st\.name\}`\}/);
+    expect(app).toMatch(/label=\{t\("game\.deleteEstimateAria", \{ estimate: st\.estimate, name: st\.name \}\)\}/);
+    expect(strings).toMatch(/"game\.deleteEstimateAria": "Delete the \{estimate\} estimate for \{name\}"/);
   });
 
   test("the action column's heading is hidden, never dropped", () => {
     /* An empty heading breaks the stacked layout under 760px, which prints
        every heading in front of its cell — the button would sit on a line
        with nothing naming it. */
-    expect(app).toMatch(/\{ key: "remove", label: "Remove", hideLabel: true \}/);
+    expect(app).toMatch(/\{ key: "remove", label: t\("game\.colRemove"\), hideLabel: true \}/);
     expect(dsIndex).toMatch(/c\.hideLabel \? <span className="pp-visually-hidden">/);
   });
 
@@ -1292,7 +1301,9 @@ describe("printed and downloaded exports", () => {
     // else. A branding preamble here silently breaks every importer.
     const csvFn = app.match(/const downloadSummaryCsv = useCallback\(\(\) => \{[\s\S]*?\n {2}\}/)?.[0] || "";
     expect(csvFn).toBeTruthy();
-    expect(csvFn).toMatch(/const rows = \[\["#", "Item", "Estimate"\]\]/);
+    expect(csvFn).toMatch(
+      /const rows = \[\[t\("game\.colIndex"\), t\("game\.colItem"\), t\("game\.colEstimate"\)\]\]/,
+    );
     expect(csvFn).not.toMatch(/Point Poker.*\], *\[/s);
   });
 });

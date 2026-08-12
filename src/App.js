@@ -56,7 +56,18 @@ import {
   SUPPORT_EMAIL,
   SUPPORT_FAQ,
   ROUTE_CONTENT,
+  alternatesFor,
 } from "./routeMeta.mjs";
+import {
+  t,
+  tList,
+  getLocale,
+  withLocale,
+  splitLocalePath,
+  LOCALES,
+  LOCALE_CODES,
+  LOCALIZED_PATHS,
+} from "./i18n.mjs";
 import {
   tally,
   showNum,
@@ -230,9 +241,39 @@ function upsertLink(selector, attrs) {
   Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
 }
 
+/* hreflang has to follow client-side navigation too. The prerendered document
+   arrives with the correct cluster for the page it was built as; without this,
+   navigating from /de/ to /de/scrum-poker would leave the home page's
+   alternates in the head, pointing four URLs at the wrong page. */
+function applyAlternates(basePath) {
+  document.head
+    .querySelectorAll('link[rel="alternate"][hreflang]')
+    .forEach((node) => node.remove());
+  const alternates = alternatesFor(basePath);
+  if (!alternates.length) return;
+  const add = (hreflang, href) => {
+    const node = document.createElement("link");
+    node.setAttribute("rel", "alternate");
+    node.setAttribute("hreflang", hreflang);
+    node.setAttribute("href", href);
+    document.head.appendChild(node);
+  };
+  alternates.forEach((a) => add(a.hreflang, a.url));
+  add("x-default", alternates.find((a) => a.code === "en").url);
+}
+
 function applyRouteMeta(meta) {
   const next = { ...DEFAULT_META, ...meta };
   document.title = next.title;
+  /* meta.basePath, not next.basePath: DEFAULT_META carries "/" and the spread
+     would hand the home page's four alternates to every noindex room URL. */
+  applyAlternates(meta.basePath);
+  upsertMeta(
+    'meta[property="og:locale"]',
+    "meta",
+    { property: "og:locale" },
+    LOCALES[meta.locale || getLocale()].ogLocale,
+  );
   upsertMeta('meta[name="description"]', "meta", { name: "description" }, next.description);
   upsertMeta('meta[name="robots"]', "meta", { name: "robots" }, next.robots);
   upsertMeta('meta[property="og:title"]', "meta", { property: "og:title" }, next.title);
@@ -252,8 +293,8 @@ function applyRouteMeta(meta) {
 // see the same cards automatically.
 const DECK_DEFINITIONS = {
   fibonacci: {
-    label: "Fibonacci",
-    desc: "1, 2, 3, 5, 8, 13, 21, 34, ?",
+    get label() { return t("deck.fibonacci"); },
+    get desc() { return t("deck.fibonacci.desc"); },
     cards: [
       { val: "1",  suit: "♠", red: false },
       { val: "2",  suit: "♣", red: false },
@@ -267,8 +308,8 @@ const DECK_DEFINITIONS = {
     ],
   },
   tshirt: {
-    label: "T-Shirt",
-    desc: "XS, S, M, L, XL, XXL",
+    get label() { return t("deck.tshirt"); },
+    get desc() { return t("deck.tshirt.desc"); },
     cards: [
       { val: "XS",  suit: "♠", red: false },
       { val: "S",   suit: "♣", red: false },
@@ -280,8 +321,8 @@ const DECK_DEFINITIONS = {
     ],
   },
   powers: {
-    label: "Powers of 2",
-    desc: "1, 2, 4, 8, 16, 32, ?",
+    get label() { return t("deck.powers"); },
+    get desc() { return t("deck.powers.desc"); },
     cards: [
       { val: "1",  suit: "♠", red: false },
       { val: "2",  suit: "♣", red: false },
@@ -304,42 +345,43 @@ const getCards = (deckKey) =>
 const ESTIMATION_MODES = {
   stories: {
     key: "stories",
-    label: "User Stories",
-    desc: "Estimate each story as a whole",
-    singular: "story",
-    plural: "stories",
-    queueTitle: "Story Queue",
-    progressLabel: "Story",
-    bannerLabel: "Estimating",
-    allDoneText: "stories estimated",
-    backlogLabel: "Sprint backlog",
-    toastDone: "Story estimated. Vote on the next story.",
-    toastNext: "Estimate recorded. Voting on the next story.",
-    placeholder: "e.g. User login flow, PROJ-42…",
-    hintText: "Add stories to track estimates by name, or just start voting without them. Both work.",
-    recordNext: "& Estimate Next Story",
+    get label() { return t("mode.stories.label"); },
+    get desc() { return t("mode.stories.desc"); },
+    get singular() { return t("mode.stories.singular"); },
+    get plural() { return t("mode.stories.plural"); },
+    get queueTitle() { return t("mode.stories.queueTitle"); },
+    get progressLabel() { return t("mode.stories.progressLabel"); },
+    get bannerLabel() { return t("mode.stories.bannerLabel"); },
+    get allDoneText() { return t("mode.stories.allDoneText"); },
+    get backlogLabel() { return t("mode.stories.backlogLabel"); },
+    get toastDone() { return t("mode.stories.toastDone"); },
+    get toastNext() { return t("mode.stories.toastNext"); },
+    get placeholder() { return t("mode.stories.placeholder"); },
+    get hintText() { return t("mode.stories.hintText"); },
+    get recordNext() { return t("mode.stories.recordNext"); },
   },
   tasks: {
     key: "tasks",
-    label: "Tasks",
-    desc: "Estimate tasks within stories",
-    singular: "task",
-    plural: "tasks",
-    queueTitle: "Task Queue",
-    progressLabel: "Task",
-    bannerLabel: "Estimating task",
-    allDoneText: "tasks estimated",
-    backlogLabel: "Task list",
-    toastDone: "Task estimated. Vote on the next task.",
-    toastNext: "Estimate recorded. Voting on the next task.",
-    placeholder: "e.g. Build login API, Write unit tests, PROJ-42-1…",
-    hintText: "Add tasks to track estimates by name, or just start voting without them. Both work.",
-    recordNext: "& Estimate Next Task",
+    get label() { return t("mode.tasks.label"); },
+    get desc() { return t("mode.tasks.desc"); },
+    get singular() { return t("mode.tasks.singular"); },
+    get plural() { return t("mode.tasks.plural"); },
+    get queueTitle() { return t("mode.tasks.queueTitle"); },
+    get progressLabel() { return t("mode.tasks.progressLabel"); },
+    get bannerLabel() { return t("mode.tasks.bannerLabel"); },
+    get allDoneText() { return t("mode.tasks.allDoneText"); },
+    get backlogLabel() { return t("mode.tasks.backlogLabel"); },
+    get toastDone() { return t("mode.tasks.toastDone"); },
+    get toastNext() { return t("mode.tasks.toastNext"); },
+    get placeholder() { return t("mode.tasks.placeholder"); },
+    get hintText() { return t("mode.tasks.hintText"); },
+    get recordNext() { return t("mode.tasks.recordNext"); },
   },
 };
 const getEstMode = (mode) => ESTIMATION_MODES[mode] || ESTIMATION_MODES.stories;
 const INVALID_PLACEHOLDER_NAMES = new Set(["alex johnson", "e.g. alex johnson"]);
-const homePath = () => "/";
+// Leaving a room in a German session lands on /de/, not on the English home.
+const homePath = () => withLocale(getLocale(), "/");
 const roomPath = (code) => `/?room=${encodeURIComponent(code)}`;
 const teamRoomPath = (teamNameOrCode) => `/t/${teamCode(teamNameOrCode)}`;
 const countParticipants = (players = {}, excludeId = null) =>
@@ -1689,6 +1731,30 @@ body::before {
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-weight: 300;
   line-height: 1.5;
 }
+/* Language switcher. flex-basis: 100% so it takes its own row above the two
+   legal blocks rather than becoming a third column that squeezes them at
+   940px. Plain links, because they are plain links. */
+.lang-switcher {
+  flex-basis: 100%;
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sp-2);
+  margin-block-end: var(--sp-3);
+}
+.lang-switcher-label {
+  font-size: var(--fs-1); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-3); font-weight: 500;
+}
+.lang-switcher ul {
+  display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3);
+  list-style: none; margin: 0; padding: 0;
+}
+.lang-link {
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  color: var(--text-2); text-decoration: none; font-weight: 300;
+}
+.lang-link:hover { color: var(--gold2); text-decoration: underline; }
+/* The current language is a link to the page you are already on. Marked, not
+   removed: taking it out makes the row jump as you move between languages. */
+.lang-link.is-current { color: var(--gold2); font-weight: 500; cursor: default; }
 /* No text-align: right. The note is a flex item that wraps onto its own line
    below ~940px, and once it does, space-between puts its box on the LEFT while
    the right-alignment still ran inside it — three lines ragged down the left
@@ -1879,6 +1945,12 @@ body::before {
   color: var(--text-2);
 }
 .marketing-prose:last-child { margin-bottom: 0; }
+/* Sits under the back button on a page that has no translation, in the
+   reader's language. Quiet: it is an explanation, not a warning. */
+.marketing-lang-note {
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  color: var(--text-3); margin-block: var(--sp-2) 0;
+}
 /* Ordered steps keep their numbers. .marketing-list replaces the marker with a
    ♦, which is right for an unordered list and wrong for a sequence. */
 ol.marketing-list { list-style: decimal; padding-left: 22px; counter-reset: none; }
@@ -2331,10 +2403,13 @@ function NavLinkButton({ children, onClick, ariaLabel }) {
   );
 }
 
+/* The rendered href is the locale one so a crawler following it stays in the
+   language it was reading; onNavigate is still handed the plain English path,
+   because navTo does the prefixing and doing it twice would produce /de/de/. */
 function RouteLink({ href, onNavigate, className, children, ...props }) {
   return (
     <a
-      href={href}
+      href={withLocale(getLocale(), href)}
       className={className}
       onClick={(e) => {
         if (!onNavigate) return;
@@ -2380,14 +2455,14 @@ function NavBar({
     <nav
       className={`navbar${currentUser ? " authenticated" : ""}`}
       role="navigation"
-      aria-label="Main navigation"
+      aria-label={t("nav.aria")}
     >
       <div className="navbar-inner pp-container">
         <div className="navbar-left">
           <BrandMark
             onClick={onLogoClick}
             size={44}
-            label="Point Poker, go to home"
+            label={t("nav.brandHome")}
           />
           {/* The wordmark is the same home control as the mark beside it, and
               it had no accessible name of its own: aria-label on the inner
@@ -2405,18 +2480,18 @@ function NavBar({
             <BrandWordmark />
           </button>
           {showMarketingNav && (
-            <div className="navbar-links" aria-label="Marketing sections">
-              <NavLinkButton onClick={onPlans} ariaLabel="Go to pricing">
-                Pricing
+            <div className="navbar-links" aria-label={t("nav.sections")}>
+              <NavLinkButton onClick={onPlans} ariaLabel={t("nav.toPricing")}>
+                {t("nav.pricing")}
               </NavLinkButton>
-              <NavLinkButton onClick={onSupport} ariaLabel="Go to support">
-                Support
+              <NavLinkButton onClick={onSupport} ariaLabel={t("nav.toSupport")}>
+                {t("nav.support")}
               </NavLinkButton>
-              <NavLinkButton onClick={onTrust} ariaLabel="Go to trust and reliability">
-                Trust
+              <NavLinkButton onClick={onTrust} ariaLabel={t("nav.toTrust")}>
+                {t("nav.trust")}
               </NavLinkButton>
-              <NavLinkButton onClick={onFaq} ariaLabel="Go to frequently asked questions">
-                FAQ
+              <NavLinkButton onClick={onFaq} ariaLabel={t("nav.toFaq")}>
+                {t("nav.faq")}
               </NavLinkButton>
             </div>
           )}
@@ -2433,22 +2508,22 @@ function NavBar({
                 size="sm"
                 className="nav-btn-history"
                 onClick={onHistory}
-                aria-label="View sprint history"
+                aria-label={t("nav.viewHistory")}
               >
-                <Icon name="chart" /> History
+                <Icon name="chart" /> {t("nav.history")}
               </Button>
-              <div className="nav-account" aria-label="Signed-in account">
+              <div className="nav-account" aria-label={t("nav.account")}>
                 <span className="nav-account-name">{accountLabel}</span>
-                <span className="nav-account-plan">Free</span>
+                <span className="nav-account-plan">{t("nav.plan")}</span>
               </div>
               {onAdmin && (
-                <IconButton icon="chart" size="sm" label="Usage dashboard" onClick={onAdmin} />
+                <IconButton icon="chart" size="sm" label={t("nav.dashboard")} onClick={onAdmin} />
               )}
-              <Button variant="ghost" size="sm" className="nav-btn-login" onClick={onLogout}>Sign out</Button>
+              <Button variant="ghost" size="sm" className="nav-btn-login" onClick={onLogout}>{t("nav.signOut")}</Button>
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" className="nav-btn-login" onClick={onLogin}>Sign in</Button>
+              <Button variant="ghost" size="sm" className="nav-btn-login" onClick={onLogin}>{t("nav.signIn")}</Button>
               {!inRoom && (
                 <Button
                   variant={onJoinScreen ? "secondary" : "primary"}
@@ -2456,13 +2531,53 @@ function NavBar({
                   className="nav-btn-register"
                   onClick={onStartFree}
                 >
-                  Start a free room
+                  {t("nav.startFree")}
                 </Button>
               )}
             </>
           )}
         </div>
       </div>
+    </nav>
+  );
+}
+
+/* ═══════════════════════ LANGUAGE SWITCHER ═══════════════════════
+   Real anchors doing real navigations, deliberately. A client-side language
+   toggle is invisible to a crawler — it would never find /de/ at all — and it
+   would leave the URL saying English while the page said German, which is the
+   one thing hreflang cannot survive.
+
+   Each link points at the same page in the target language when that page is
+   translated, and at that language's home page when it is not, so the control
+   never offers a URL that has no document behind it.
+═══════════════════════════════════════════════════════════════ */
+function LanguageSwitcher() {
+  const current = getLocale();
+  const { path } = splitLocalePath(window.location.pathname);
+  // Translated page → the same page in the target language. Anything else —
+  // /pricing, /terms, a live room — → that language's home page, because that
+  // is the only URL which exists in it.
+  const target = (code) =>
+    LOCALIZED_PATHS.includes(path) ? withLocale(code, path) : withLocale(code, "/");
+  return (
+    <nav className="lang-switcher" aria-label={t("lang.aria")}>
+      <span className="lang-switcher-label">{t("lang.label")}</span>
+      <ul>
+        {LOCALE_CODES.map((code) => (
+          <li key={code}>
+            <a
+              href={target(code)}
+              hrefLang={LOCALES[code].hreflang}
+              lang={LOCALES[code].hreflang}
+              className={`lang-link${code === current ? " is-current" : ""}`}
+              aria-current={code === current ? "true" : undefined}
+            >
+              {LOCALES[code].label}
+            </a>
+          </li>
+        ))}
+      </ul>
     </nav>
   );
 }
@@ -2477,22 +2592,18 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
   const signedIn = !!currentUser;
 
   return (
-    <footer className="site-footer" aria-label="Site footer">
+    <footer className="site-footer" aria-label={t("footer.aria")}>
 
       {/* ── Free-for-everyone bar ── */}
       <div className="footer-plan-bar pp-container">
         <div className="footer-plan-item">
           <Chip tone="gold">$0</Chip>
-          <span className="footer-plan-text">
-            Every feature, every team, no card. Up to {MAX_PARTICIPANTS} people per room, unlimited rounds, unlimited stories, no ads.
-          </span>
+          <span className="footer-plan-text">{t("footer.freeText")}</span>
         </div>
         <div className="footer-plan-divider" aria-hidden="true" />
         <div className="footer-plan-item">
-          <Chip tone="on-felt">Later</Chip>
-          <span className="footer-plan-text">
-            Paid add-ons may arrive once the tool has a real user base. Everything listed here stays free.
-          </span>
+          <Chip tone="on-felt">{t("footer.laterChip")}</Chip>
+          <span className="footer-plan-text">{t("footer.laterText")}</span>
         </div>
       </div>
 
@@ -2506,46 +2617,41 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
             <span className="footer-brand-name"><BrandWordmark /></span>
           </div>
           <p className="footer-brand-desc">
-            {signedIn
-              ? "Your workspace is live. Reuse either Team Room, share the invite link, and keep sprint history attached to your account."
-              : "Free, real-time planning poker for agile and Scrum teams. No sign-up required. Works in any browser."}
+            {signedIn ? t("footer.descSignedIn") : t("footer.descGuest")}
           </p>
           {!signedIn && (
-            <p className="footer-brand-desc" style={{ marginTop: 4 }}>
-              Built for Product Owners, Scrum Masters, and distributed teams
-              who need fast, structured story-point consensus.
-            </p>
+            <p className="footer-brand-desc" style={{ marginTop: 4 }}>{t("footer.descGuest2")}</p>
           )}
         </div>
 
         {/* Column 2, Legal */}
         <div className="footer-col-links">
-          <div className="footer-col-title">Legal</div>
-          <button className="footer-link" onClick={onNavTerms}>Terms of Service</button>
-          <button className="footer-link" onClick={onNavPrivacy}>Privacy Policy</button>
-          <button className="footer-link" onClick={onCookieSettings}>Cookie Settings</button>
-          <button className="footer-link" onClick={onNavPrivacy}>Data &amp; GDPR</button>
+          <div className="footer-col-title">{t("footer.legal")}</div>
+          <button className="footer-link" onClick={onNavTerms}>{t("footer.terms")}</button>
+          <button className="footer-link" onClick={onNavPrivacy}>{t("footer.privacy")}</button>
+          <button className="footer-link" onClick={onCookieSettings}>{t("footer.cookies")}</button>
+          <button className="footer-link" onClick={onNavPrivacy}>{t("footer.gdpr")}</button>
         </div>
 
         {/* Column 3, Product */}
         <div className="footer-col-links">
-          <div className="footer-col-title">{signedIn ? "Account" : "Product"}</div>
+          <div className="footer-col-title">{signedIn ? t("footer.account") : t("footer.product")}</div>
           {signedIn ? (
             <>
-              <span className="footer-link footer-link--static">Workspace active · Free</span>
-              <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>Features</RouteLink>
-              <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>Support</RouteLink>
-              <a href={`mailto:${support}`} className="footer-link">Email support</a>
+              <span className="footer-link footer-link--static">{t("footer.workspaceActive")}</span>
+              <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>{t("footer.features")}</RouteLink>
+              <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>{t("footer.support")}</RouteLink>
+              <a href={`mailto:${support}`} className="footer-link">{t("footer.emailSupport")}</a>
             </>
           ) : (
             <>
-              <RouteLink href="/" className="footer-link" onNavigate={onNavigate}>Free Planning Poker</RouteLink>
-              <RouteLink href="/about" className="footer-link" onNavigate={onNavigate}>About Point Poker</RouteLink>
-              <RouteLink href="/trust" className="footer-link" onNavigate={onNavigate}>Trust &amp; reliability</RouteLink>
-              <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>Features</RouteLink>
-              <RouteLink href="/pricing" className="footer-link" onNavigate={onNavigate}>Pricing &amp; plans</RouteLink>
-              <RouteLink href="/planning-poker-online" className="footer-link" onNavigate={onNavigate}>Planning poker online</RouteLink>
-              <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>Support &amp; contact</RouteLink>
+              <RouteLink href="/" className="footer-link" onNavigate={onNavigate}>{t("footer.home")}</RouteLink>
+              <RouteLink href="/about" className="footer-link" onNavigate={onNavigate}>{t("footer.about")}</RouteLink>
+              <RouteLink href="/trust" className="footer-link" onNavigate={onNavigate}>{t("footer.trustRel")}</RouteLink>
+              <RouteLink href="/features" className="footer-link" onNavigate={onNavigate}>{t("footer.features")}</RouteLink>
+              <RouteLink href="/pricing" className="footer-link" onNavigate={onNavigate}>{t("footer.pricingPlans")}</RouteLink>
+              <RouteLink href="/planning-poker-online" className="footer-link" onNavigate={onNavigate}>{t("footer.ppOnline")}</RouteLink>
+              <RouteLink href="/support" className="footer-link" onNavigate={onNavigate}>{t("footer.supportContact")}</RouteLink>
             </>
           )}
         </div>
@@ -2557,31 +2663,27 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
             internal link equity. A footer column costs one row of markup and
             links every one of them from every page. */}
         <div className="footer-col-links">
-          <div className="footer-col-title">Guides</div>
-          <RouteLink href="/what-is-planning-poker" className="footer-link" onNavigate={onNavigate}>What is planning poker?</RouteLink>
-          <RouteLink href="/pointing-poker" className="footer-link" onNavigate={onNavigate}>Pointing &amp; poker planning</RouteLink>
-          <RouteLink href="/fibonacci-story-points" className="footer-link" onNavigate={onNavigate}>Fibonacci story points</RouteLink>
-          <RouteLink href="/story-points-to-hours" className="footer-link" onNavigate={onNavigate}>Story points to hours</RouteLink>
-          <RouteLink href="/story-point-estimation" className="footer-link" onNavigate={onNavigate}>Story point estimation</RouteLink>
-          <RouteLink href="/planning-poker-jira" className="footer-link" onNavigate={onNavigate}>Planning poker with Jira</RouteLink>
-          <RouteLink href="/scrum-poker" className="footer-link" onNavigate={onNavigate}>Scrum poker</RouteLink>
-          <RouteLink href="/remote-sprint-planning" className="footer-link" onNavigate={onNavigate}>Remote sprint planning</RouteLink>
-          <RouteLink href="/agile-estimation-tool" className="footer-link" onNavigate={onNavigate}>Agile estimation tool</RouteLink>
+          <div className="footer-col-title">{t("footer.guides")}</div>
+          <RouteLink href="/what-is-planning-poker" className="footer-link" onNavigate={onNavigate}>{t("footer.guideWhatIs")}</RouteLink>
+          <RouteLink href="/pointing-poker" className="footer-link" onNavigate={onNavigate}>{t("footer.guidePointing")}</RouteLink>
+          <RouteLink href="/fibonacci-story-points" className="footer-link" onNavigate={onNavigate}>{t("footer.guideFib")}</RouteLink>
+          <RouteLink href="/story-points-to-hours" className="footer-link" onNavigate={onNavigate}>{t("footer.guideHours")}</RouteLink>
+          <RouteLink href="/story-point-estimation" className="footer-link" onNavigate={onNavigate}>{t("footer.guideEstimation")}</RouteLink>
+          <RouteLink href="/planning-poker-jira" className="footer-link" onNavigate={onNavigate}>{t("footer.guideJira")}</RouteLink>
+          <RouteLink href="/scrum-poker" className="footer-link" onNavigate={onNavigate}>{t("footer.guideScrum")}</RouteLink>
+          <RouteLink href="/remote-sprint-planning" className="footer-link" onNavigate={onNavigate}>{t("footer.guideRemote")}</RouteLink>
+          <RouteLink href="/agile-estimation-tool" className="footer-link" onNavigate={onNavigate}>{t("footer.guideAgile")}</RouteLink>
         </div>
       </div>
 
       {/* Bottom bar, copyright + legal note */}
       <div className="footer-bottom pp-container">
-        <div className="footer-copy">
-          © {year} Point Poker. All rights reserved.
-          Registered in England &amp; Wales.
-        </div>
+        <LanguageSwitcher />
+        <div className="footer-copy">{t("footer.copyright", { year })}</div>
         <div className="footer-legal-note">
-          Point Poker is provided "as-is" without warranty of any kind.
-          Use is subject to our{" "}
-          <button className="footer-link footer-link--inline" onClick={onNavTerms}>Terms of Service</button>
-          . Firebase and Vercel are third-party services and
-          are not affiliated with Point Poker.
+          {t("footer.legalNote1")}{" "}
+          <button className="footer-link footer-link--inline" onClick={onNavTerms}>{t("footer.terms")}</button>
+          {t("footer.legalNote2")}
         </div>
       </div>
     </footer>
@@ -2628,22 +2730,22 @@ function LoginModal({
   }, [mode]);
 
   const title = currentUser
-    ? "Your account"
+    ? t("login.yourAccount")
     : mode === "register"
-      ? "Create your free account"
+      ? t("login.createTitle")
       : mode === "reset"
-        ? "Reset your password"
-        : "Sign in";
+        ? t("login.resetTitle")
+        : t("login.signInTitle");
 
   const subtitle = currentUser
-    ? "Everything on Point Poker is free. This account holds your two Team Rooms and your sprint history."
+    ? t("login.subAccount")
     : mode === "register"
       ? teamRoomIntent
-        ? "Team Rooms are free. The account exists so the room URL is yours and no other team can land in it."
-        : "Free, no card, about thirty seconds. You get two permanent Team Room links and your sprint history."
+        ? t("login.subTeamRoom")
+        : t("login.subRegister")
       : mode === "reset"
-        ? "Enter your account email and we’ll send a password reset link."
-        : "Welcome back. Your Team Rooms and sprint history are waiting.";
+        ? t("login.subReset")
+        : t("login.subSignIn");
   const isRegisterTransition =
     mode === "register" &&
     (authStatus === "loading" ||
@@ -2674,7 +2776,7 @@ function LoginModal({
   const handleResendVerification = async () => {
     const targetUser = auth.currentUser || currentUser;
     if (!targetUser?.email) {
-      setAuthError("This account does not have an email address available for verification.");
+      setAuthError(t("auth.noEmailForVerify"));
       return;
     }
     setAuthStatus("verify_resending");
@@ -2700,7 +2802,7 @@ function LoginModal({
 
   const handleSignIn = async () => {
     if (!emailInput.trim() || !passInput) {
-      setAuthError("Enter your email and password.");
+      setAuthError(t("auth.enterEmailPassword"));
       return;
     }
     setAuthStatus("loading");
@@ -2717,11 +2819,11 @@ function LoginModal({
 
   const handleRegister = async () => {
     if (!nameInput.trim()) {
-      setAuthError("Enter your name so teammates can recognise you.");
+      setAuthError(t("auth.enterName"));
       return;
     }
     if (!emailInput.trim() || !passInput) {
-      setAuthError("Enter your email and password.");
+      setAuthError(t("auth.enterEmailPassword"));
       return;
     }
     setAuthStatus("loading");
@@ -2759,7 +2861,7 @@ function LoginModal({
 
   const handleReset = async () => {
     if (!emailInput.trim()) {
-      setAuthError("Enter your email and we'll send a reset link.");
+      setAuthError(t("auth.enterEmailForReset"));
       return;
     }
     setAuthStatus("loading");
@@ -2775,7 +2877,7 @@ function LoginModal({
 
   const handleSignedInReset = async () => {
     if (!currentUser?.email) {
-      setAuthError("This account does not have a password reset email available.");
+      setAuthError(t("auth.noResetAvailable"));
       return;
     }
     setAuthStatus("loading");
@@ -2795,15 +2897,15 @@ function LoginModal({
   const statusAlert = authError
     ? { tone: "danger", text: authError }
     : authStatus === "ok" && mode !== "register"
-      ? { tone: "success", text: "Signed in." }
+      ? { tone: "success", text: t("auth.signedIn") }
       : authStatus === "verify"
-        ? { tone: "success", text: `Account created. Check ${registerSuccess?.email || "your email"} to verify your address.` }
+        ? { tone: "success", text: t("auth.accountCreatedVerify", { email: registerSuccess?.email || t("auth.yourEmail") }) }
         : authStatus === "verify_resent"
-          ? { tone: "success", text: `Verification email resent to ${registerSuccess?.email || "your inbox"}.` }
+          ? { tone: "success", text: t("auth.verifyResent", { email: registerSuccess?.email || t("auth.yourInbox") }) }
           : authStatus === "verify_error"
-            ? { tone: "warning", text: "Account created, but we could not send the verification email yet. Use resend below." }
+            ? { tone: "warning", text: t("auth.accountCreatedNoMail") }
             : authStatus === "reset"
-              ? { tone: "success", text: "Password reset email sent." }
+              ? { tone: "success", text: t("auth.resetSent") }
               : null;
 
   return (
@@ -2822,12 +2924,12 @@ function LoginModal({
           {currentUser ? (
             <Stack gap="sm">
               <Row between>
-                <span className="account-status-label">Signed in as</span>
+                <span className="account-status-label">{t("login.signedInAs")}</span>
                 <strong>{currentUser.displayName || currentUser.email || "Current account"}</strong>
               </Row>
               <Row between>
                 <span className="account-status-label">Plan</span>
-                <Chip tone="gold">Free, everything unlocked</Chip>
+                <Chip tone="gold">{t("login.everythingUnlocked")}</Chip>
               </Row>
             </Stack>
           ) : (
@@ -2842,21 +2944,21 @@ function LoginModal({
           <>
             <SegmentedControl
               block
-              ariaLabel="What you want to do"
+              ariaLabel={t("login.tabsAria")}
               value={mode}
               onChange={(next) => { setMode(next); resetMessages(); }}
               options={[
-                { value: "signin", label: "Sign in" },
-                { value: "register", label: "Create account" },
-                { value: "reset", label: "Reset password" },
+                { value: "signin", label: t("login.tabSignIn") },
+                { value: "register", label: t("login.tabRegister") },
+                { value: "reset", label: t("login.tabReset") },
               ]}
             />
 
             {mode === "register" && (
               <TextField
                 id="auth-name"
-                label="Full name"
-                placeholder="Alex Johnson"
+                label={t("login.fullName")}
+                placeholder={t("login.namePlaceholder")}
                 value={nameInput}
                 onChange={(e) => { setNameInput(e.target.value); resetMessages(); }}
                 maxLength={40}
@@ -2867,9 +2969,9 @@ function LoginModal({
 
             <TextField
               id="auth-email"
-              label={mode === "reset" ? "Account email" : "Email"}
+              label={mode === "reset" ? t("login.accountEmail") : t("login.email")}
               type="email"
-              placeholder="you@company.com"
+              placeholder={t("login.emailPlaceholder")}
               value={emailInput}
               onChange={(e) => { setEmailInput(e.target.value); resetMessages(); }}
               autoComplete="email"
@@ -2879,9 +2981,9 @@ function LoginModal({
             {mode !== "reset" && (
               <TextField
                 id="auth-password"
-                label="Password"
+                label={t("login.password")}
                 type="password"
-                placeholder={mode === "register" ? "Minimum 6 characters" : "Your password"}
+                placeholder={mode === "register" ? t("login.passwordMin") : t("login.passwordYour")}
                 value={passInput}
                 onChange={(e) => { setPassInput(e.target.value); resetMessages(); }}
                 onKeyDown={(e) => e.key === "Enter" && (mode === "register" ? handleRegister() : handleSignIn())}
@@ -2893,18 +2995,18 @@ function LoginModal({
 
             {mode === "signin" && (
               <Button variant="primary" block onClick={handleSignIn} disabled={authStatus === "loading"}>
-                {authStatus === "loading" ? "Signing in…" : "Sign in"}
+                {authStatus === "loading" ? t("login.signingIn") : t("login.signInTitle")}
               </Button>
             )}
             {mode === "register" && !registerComplete && (
               <Button variant="primary" block onClick={handleRegister} disabled={authStatus === "loading"}>
-                {authStatus === "loading" ? "Creating account…" : teamRoomIntent ? "Create account & claim my Team Rooms" : "Create free account"}
+                {authStatus === "loading" ? t("login.creating") : teamRoomIntent ? t("login.createClaim") : t("login.createFree")}
               </Button>
             )}
             {mode === "register" && registerComplete && (
               <>
                 <Button variant="primary" block onClick={handleRegisterContinue}>
-                  {teamRoomIntent ? "Continue to my Team Rooms" : "Continue to workspace"}
+                  {teamRoomIntent ? t("login.continueTeamRooms") : t("login.continueWorkspace")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -2918,7 +3020,7 @@ function LoginModal({
             )}
             {mode === "reset" && (
               <Button variant="primary" block onClick={handleReset} disabled={authStatus === "loading"}>
-                {authStatus === "loading" ? "Sending reset…" : "Send reset link"}
+                {authStatus === "loading" ? t("login.sendingReset") : t("login.sendReset")}
               </Button>
             )}
           </>
@@ -2936,7 +3038,7 @@ function LoginModal({
             {!currentUser?.emailVerified && (
               <Alert
                 tone="warning"
-                title="Your email address is not verified yet"
+                title={t("login.notVerified")}
                 actions={
                   <Button
                     size="sm"
@@ -2952,7 +3054,7 @@ function LoginModal({
             )}
 
             <Button block onClick={handleSignedInReset} disabled={authStatus === "loading"}>
-              {authStatus === "loading" ? "Sending reset…" : "Send password reset email"}
+              {authStatus === "loading" ? t("login.sendingReset") : t("login.sendResetLong")}
             </Button>
           </>
         )}
@@ -2960,23 +3062,20 @@ function LoginModal({
         <Card
           variant="gold"
           pad="sm"
-          title={currentUser ? "What this account gives you" : "What an account adds"}
+          title={currentUser ? t("login.whatAccountGives") : t("login.whatAccountAdds")}
           footer={
             currentUser ? null : (
               <span className="login-upgrade-note">
-                <strong>Everything else is already free without an account.</strong> Rooms, all card decks,{" "}
-                {MAX_PARTICIPANTS} participants, the queue, timer, analytics, and export work for anyone with the link.
+                <strong>{t("login.elseFree")}</strong> {t("login.elseFreeBody")}
               </span>
             )
           }
         >
-          {currentUser
-            ? "Two permanent Team Room links and your sprint history, both already active on this account."
-            : "Two permanent Team Room links that never change, plus sprint history so you can see velocity and alignment over time. Both free."}
+          {currentUser ? t("login.accountActive") : t("login.accountAdds")}
         </Card>
 
         <p className="login-modal-upgrade">
-          Something not working? <a href={`mailto:${support}`}>Email support ↗</a>
+          {t("login.notWorking")} <a href={`mailto:${support}`}>{t("login.emailSupport")}</a>
         </p>
       </Stack>
     </Modal>
@@ -2992,21 +3091,20 @@ function CookieBanner({ onAccept }) {
     return () => clearTimeout(t);
   }, [onAccept]);
   return (
-    <div className="cookie-banner" role="note" aria-label="Storage notice">
+    <div className="cookie-banner" role="note" aria-label={t("cookie.aria")}>
       <Alert
         tone="info"
-        title="Essential browser storage only"
+        title={t("cookie.title")}
         className="cookie-inner"
         actions={
           <>
-            <Button size="sm" href="/privacy" target="_blank" rel="noopener noreferrer">Privacy</Button>
-            <Button size="sm" href="/terms" target="_blank" rel="noopener noreferrer">Terms</Button>
-            <Button variant="primary" size="sm" onClick={onAccept}>Got it</Button>
+            <Button size="sm" href="/privacy" target="_blank" rel="noopener noreferrer">{t("cookie.privacy")}</Button>
+            <Button size="sm" href="/terms" target="_blank" rel="noopener noreferrer">{t("cookie.terms")}</Button>
+            <Button variant="primary" size="sm" onClick={onAccept}>{t("cookie.gotIt")}</Button>
           </>
         }
       >
-        Firebase keeps your session; your display name and this notice are remembered locally.
-        No advertising, tracking, or third-party analytics cookies, nothing to opt out of.
+        {t("cookie.body")}
       </Alert>
     </div>
   );
@@ -3056,9 +3154,15 @@ export default function App() {
   // ── SPA NAVIGATION ────────────────────────────────────────────────
   // Navigate within the SPA without a full-page reload.
   // Used by footer links and the back button on legal pages.
+  /* Callers pass the English path — "/pricing", "/scrum-poker" — and this is
+     the one place it becomes a real URL. withLocale prefixes it when the page
+     exists in the active language and leaves it alone when it does not, so a
+     German session's footer link to /pricing goes to the English page that
+     actually exists rather than to a /de/pricing that does not. */
   const navTo = (path) => {
-    window.history.pushState({}, "", path);
-    setScreen(getScreenForPath(path));
+    const url = withLocale(getLocale(), path);
+    window.history.pushState({}, "", url);
+    setScreen(getScreenForPath(url));
     window.scrollTo({ top: 0, behavior: "auto" });
   };
   const openLoginModal = useCallback((initialMode = "signin", entryIntent = "general") => {
@@ -3164,8 +3268,8 @@ export default function App() {
 
     if (PRIVATE_PATHS.includes(pathname)) {
       applyRouteMeta({
-        title: "Usage dashboard | Point Poker",
-        description: "Owner-only usage analytics.",
+        title: t("app.dashboardTitle"),
+        description: t("app.dashboardDesc"),
         canonical: `${SITE_URL}/`,
         ogUrl: `${SITE_URL}/`,
         robots: "noindex, nofollow",
@@ -3180,9 +3284,8 @@ export default function App() {
 
     if (teamSlug) {
       applyRouteMeta({
-        title: "Team Room | Point Poker",
-        description:
-          "Join a Point Poker Team Room to estimate stories live with your team. Team Room URLs are for active sessions and are not indexed.",
+        title: t("app.teamRoomTitle"),
+        description: t("app.teamRoomDesc"),
         canonical: `${SITE_URL}/`,
         ogUrl: `${SITE_URL}/t/${teamSlug}`,
         robots: "noindex, nofollow",
@@ -3192,9 +3295,8 @@ export default function App() {
 
     if (roomCode || screen === "game") {
       applyRouteMeta({
-        title: "Planning Poker Room | Point Poker",
-        description:
-          "Live Point Poker estimation room for sprint planning. Room URLs are for active sessions and are not indexed.",
+        title: t("app.roomTitle"),
+        description: t("app.roomDesc"),
         canonical: `${SITE_URL}/`,
         ogUrl: roomCode ? `${SITE_URL}/?room=${encodeURIComponent(roomCode)}` : `${SITE_URL}/`,
         robots: "noindex, nofollow",
@@ -3681,7 +3783,7 @@ export default function App() {
     const data = snap.val();
     const currentCount = countParticipants(data.players || {}, myId);
     if (currentCount >= MAX_PARTICIPANTS) {
-      showToast(`This room is full. ${MAX_PARTICIPANTS} people are already in, including the facilitator. Ask the host to start a second room.`);
+      showToast(t("toast.roomFull"));
       return;
     }
     setMyRole(role);
@@ -3734,7 +3836,7 @@ export default function App() {
       ? countParticipants(existingRoom.players || {}, myId)
       : 0;
     if (currentCount >= MAX_PARTICIPANTS) {
-      showToast(`This Team Room is full. ${MAX_PARTICIPANTS} people are already in.`);
+      showToast(t("toast.teamRoomFull"));
       return;
     }
     setMyRole(role);
@@ -4091,7 +4193,7 @@ export default function App() {
 
       {/* ── Global shell, NavBar → content → Footer ── */}
       <div className={`page-shell${screen === "game" ? " in-room" : ""}`}>
-        <a className="skip-link" href="#main">Skip to main content</a>
+        <a className="skip-link" href="#main">{t("skip.main")}</a>
         <NavBar
           onLogoClick={() => {
             if (screen === "game") { goBack(); return; }
@@ -4178,7 +4280,7 @@ export default function App() {
             <div className="loading">
               <div className="spinner" />
               <div style={{ color: "rgba(239,242,247,.62)", fontSize: "var(--fs-2)" }}>
-                Connecting…
+                {t("app.connecting")}
               </div>
             </div>
           )}
@@ -4235,11 +4337,11 @@ export default function App() {
               track("signup_completed");
               showToast(
                 event?.verificationSent
-                  ? "Account created, check your email to verify the address."
-                  : "Account created. Verification email could not be sent yet.",
+                  ? t("toast.accountCreated")
+                  : t("toast.accountCreatedNoMail"),
               );
             } else {
-              showToast("Signed in.");
+              showToast(t("toast.signedIn"));
             }
             if (wantedTeamRoom) setProSetupFocusToken((v) => v + 1);
           }}
@@ -4433,18 +4535,24 @@ function MarketingPageShell({
   intro,
   highlights,
   primaryHref = "/",
-  primaryLabel = "Start free room",
+  primaryLabel,
   secondaryHref = "/pricing",
-  secondaryLabel = "View pricing",
+  secondaryLabel,
   onNavigate,
   children,
 }) {
+  /* Reading a German site and landing on a page that is English only is
+     confusing unless somebody says so. The translated set is deliberately
+     small; this is the one line that keeps the rest from feeling broken. */
+  const englishOnly =
+    getLocale() !== "en" && !LOCALIZED_PATHS.includes(splitLocalePath(window.location.pathname).path);
   return (
     <div className="marketing-page">
       <Container>
         <Button variant="ghost" size="sm" className="legal-back" onClick={() => onNavigate("/")}>
-          ← Back to home
+          {t("page.back")}
         </Button>
+        {englishOnly && <p className="marketing-lang-note">{t("footer.englishOnly")}</p>}
       </Container>
       <Hero
         paper
@@ -4456,10 +4564,10 @@ function MarketingPageShell({
             {/* Rule 2: one primary per screen. It is the one that opens a room —
                 the reason the page exists. */}
             <Button variant="primary" as={RouteLink} href={primaryHref} onNavigate={onNavigate}>
-              {primaryLabel}
+              {primaryLabel || t("page.startFree")}
             </Button>
             <Button as={RouteLink} href={secondaryHref} onNavigate={onNavigate}>
-              {secondaryLabel}
+              {secondaryLabel || t("page.viewPricing")}
             </Button>
           </>
         }
@@ -4500,9 +4608,9 @@ function ContentPage({ path, onNavigate }) {
       highlights={c.highlights}
       onNavigate={onNavigate}
       primaryHref="/"
-      primaryLabel="Start a free room"
+      primaryLabel={t("page.startFree")}
       secondaryHref="/features"
-      secondaryLabel="See all features"
+      secondaryLabel={t("page.seeFeatures")}
     >
       {c.body?.length > 0 && (
         <Section tight flow className="marketing-section">
@@ -4522,7 +4630,7 @@ function ContentPage({ path, onNavigate }) {
       ))}
 
       {c.steps?.length > 0 && (
-        <MarketingSection title={c.stepsTitle || "How it works"} intro={c.stepsIntro}>
+        <MarketingSection title={c.stepsTitle || t("page.howItWorks")} intro={c.stepsIntro}>
           <ol className="marketing-list">
             {c.steps.map((s) => <li key={s}>{s}</li>)}
           </ol>
@@ -4534,8 +4642,8 @@ function ContentPage({ path, onNavigate }) {
           actually read on the page. */}
       {c.faq?.length > 0 && (
         <MarketingSection
-          title="Frequently asked questions"
-          intro="The questions people actually type into a search box, answered straight."
+          title={t("page.faqTitle")}
+          intro={t("page.faqIntro")}
         >
           <Accordion items={c.faq.map(({ q, a }) => ({ question: q, answer: <p>{a}</p> }))} />
         </MarketingSection>
@@ -4543,8 +4651,8 @@ function ContentPage({ path, onNavigate }) {
 
       {c.related?.length > 0 && (
         <MarketingRelatedLinks
-          title="Related pages"
-          intro="Where to go next, depending on whether you want the theory or the room."
+          title={t("page.relatedTitle")}
+          intro={t("page.relatedIntro")}
           onNavigate={onNavigate}
           links={c.related}
         />
@@ -4566,9 +4674,9 @@ function PricingPage({ onNavigate }) {
       ]}
       onNavigate={onNavigate}
       primaryHref="/"
-      primaryLabel="Start a free room"
+      primaryLabel={t("page.startFree")}
       secondaryHref="/features"
-      secondaryLabel="See all features"
+      secondaryLabel={t("page.seeFeatures")}
     >
       <MarketingSection
         title="One plan. It costs nothing."
@@ -5241,32 +5349,32 @@ function RemoteSprintPlanningPage({ onNavigate }) {
 function getAuthErrorMessage(error) {
   switch (error?.code) {
     case "auth/email-already-in-use":
-      return "That email address already has an account.";
+      return t("auth.emailInUse");
     case "auth/invalid-email":
-      return "Enter a valid email address.";
+      return t("auth.invalidEmail");
     case "auth/user-not-found":
     case "auth/wrong-password":
     case "auth/invalid-credential":
-      return "Email or password not recognised.";
+      return t("auth.badCredentials");
     case "auth/weak-password":
-      return "Password must be at least 6 characters.";
+      return t("auth.weakPassword");
     case "auth/too-many-requests":
-      return "Too many attempts. Wait a moment and try again.";
+      return t("auth.tooMany");
     default:
-      return "Could not complete that request. Try again.";
+      return t("auth.generic");
   }
 }
 
 function getVerificationErrorMessage(error) {
   switch (error?.code) {
     case "auth/too-many-requests":
-      return "Too many verification attempts. Wait a moment and try again.";
+      return t("auth.verifyTooMany");
     case "auth/unauthorized-continue-uri":
     case "auth/invalid-continue-uri":
     case "auth/missing-continue-uri":
-      return "We could not send the verification email from this domain right now. Try again shortly or contact support.";
+      return t("auth.verifyDomain");
     default:
-      return "We could not send the verification email right now. Try again.";
+      return t("auth.verifyGeneric");
   }
 }
 
@@ -5856,7 +5964,11 @@ function HistoryModal({ onClose, history }) {
 
   const fmtDate = (ts) => {
     if (!ts) return "—";
-    return new Date(ts).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    // The reader's locale, not a hardcoded en-GB: "12 Aug 2026" is not a date
+    // format a Japanese or German reader recognises at a glance.
+    return new Date(ts).toLocaleDateString(LOCALES[getLocale()].inLanguage, {
+      day: "numeric", month: "short", year: "numeric",
+    });
   };
   const fmtDuration = (start, end) => {
     if (!start || !end) return "";
@@ -5869,56 +5981,53 @@ function HistoryModal({ onClose, history }) {
     <Modal
       open
       wide
-      title="Sprint history"
+      title={t("history.title")}
       subtitle={totalSprints === 0
-        ? "No sprint sessions recorded yet"
-        : `${totalSprints} session${totalSprints !== 1 ? "s" : ""} recorded`}
+        ? t("history.none")
+        : t(totalSprints === 1 ? "history.count" : "history.countPlural", { n: totalSprints })}
       onClose={onClose}
     >
       {totalSprints === 0 ? (
-        <EmptyState title="Your sprint archive is ready">
-          Finish a session while signed in and it will appear here automatically. Sprint history is saved when
-          you end a session, or when a room auto-expires after five hours.
-        </EmptyState>
+        <EmptyState title={t("history.emptyTitle")}>{t("history.emptyBody")}</EmptyState>
       ) : (
         <Stack gap="lg">
           {/* Rule 9: a sprint with no numeric points has no velocity, so the
               tile says what would appear there instead of printing a nought. */}
           <Grid min="150px">
             <StatTile
-              label="Avg velocity"
+              label={t("history.avgVelocity")}
               value={avgVelocity > 0 ? avgVelocity : null}
-              meta="pts / sprint"
-              empty="Appears once a sprint records points"
+              meta={t("history.ptsPerSprint")}
+              empty={t("history.appearsOnce")}
             />
             <StatTile
-              label="Best sprint"
+              label={t("history.bestSprint")}
               value={bestSprint > 0 ? bestSprint : null}
-              meta="story pts"
-              empty="Appears once a sprint records points"
+              meta={t("history.storyPts")}
+              empty={t("history.appearsOnce")}
             />
-            <StatTile label="Team alignment" value={`${avgConsensus}%`} meta="avg consensus" gold />
+            <StatTile label={t("history.teamAlignment")} value={`${avgConsensus}%`} meta={t("history.avgConsensus")} gold />
             <StatTile
-              label="Velocity trend"
+              label={t("history.velocityTrend")}
               value={trend ? `${trend.icon} ${trend.label}` : null}
-              meta={trend ? "recent half vs earlier half" : undefined}
-              empty="Needs two or more sprints"
+              meta={trend ? t("history.trendMeta") : undefined}
+              empty={t("history.needsTwo")}
             />
           </Grid>
 
           <ResultsTable
-            caption="Most recent session first."
+            caption={t("history.caption")}
             columns={[
-              { key: "sprint", label: "Sprint" },
-              { key: "date", label: "Ended" },
-              { key: "points", label: "Points", numeric: true },
-              { key: "stories", label: "Stories", numeric: true },
-              { key: "consensus", label: "Consensus", numeric: true },
-              { key: "duration", label: "Duration", numeric: true },
+              { key: "sprint", label: t("history.colSprint") },
+              { key: "date", label: t("history.colEnded") },
+              { key: "points", label: t("history.colPoints"), numeric: true },
+              { key: "stories", label: t("history.colStories"), numeric: true },
+              { key: "consensus", label: t("history.colConsensus"), numeric: true },
+              { key: "duration", label: t("history.colDuration"), numeric: true },
             ]}
             rows={history.map((h, i) => ({
               id: h.id || i,
-              sprint: h.teamName ? h.teamName : `Sprint ${totalSprints - i}`,
+              sprint: h.teamName ? h.teamName : t("history.sprintN", { n: totalSprints - i }),
               date: fmtDate(h.endedAt),
               points: h.totalPoints,
               stories: h.storiesDone,
@@ -5947,6 +6056,14 @@ function JoinScreen({
   onNavigate,
 }) {
   const signedIn = !!currentUser;
+  /* The FAQ the page shows and the FAQ the prerenderer turns into FAQPage
+     JSON-LD are now one object. They were two: the schema advertised three
+     answers ("Is scrum poker the same as planning poker?", "Can we estimate in
+     hours?", "Do I need a Jira plugin?") that were nowhere on the page, and the
+     page showed two the schema never mentioned. Google's FAQPage rule is that
+     the answer has to be visible on the page, so that markup was ineligible at
+     best. One source also means every translation gets the FAQ for free. */
+  const homeFaq = (ROUTE_CONTENT[withLocale(getLocale(), "/")] || ROUTE_CONTENT["/"]).faq;
   const teamRouteMatch = window.location.pathname.match(/^\/t\/([a-z0-9-]+)$/i);
   const teamQuery = new URLSearchParams(window.location.search).get("team");
   const defaultName = currentUser?.displayName || deriveDisplayNameFallback(currentUser?.email || "");
@@ -5956,14 +6073,12 @@ function JoinScreen({
   const dedicatedTeamRooms = [
     {
       key: "primary",
-      label: "Dedicated Team Room 1",
-      shortLabel: "Room 1",
+      shortLabel: t("join.room1"),
       name: accountDedicatedRooms.primary,
     },
     {
       key: "secondary",
-      label: "Dedicated Team Room 2",
-      shortLabel: "Room 2",
+      shortLabel: t("join.room2"),
       name: accountDedicatedRooms.secondary,
     },
   ].map((room) => ({
@@ -5989,9 +6104,9 @@ function JoinScreen({
      panel already presents. The tab returns for a shared link, which is the one
      case where the form has a room to enter that the panel does not list. */
   const TABS = [
-    { key: "create", label: "Create" },
-    { key: "join", label: "Join" },
-    ...(signedIn && !isSharedTeamRoomEntry ? [] : [{ key: "team", label: "Team" }]),
+    { key: "create", label: t("join.tabCreate") },
+    { key: "join", label: t("join.tabJoin") },
+    ...(signedIn && !isSharedTeamRoomEntry ? [] : [{ key: "team", label: t("join.tabTeam") }]),
   ];
   // Signing in while the team tab is open would otherwise strand the form on a
   // branch with no tab left to switch away from.
@@ -6080,18 +6195,16 @@ function JoinScreen({
      it is a description of a flow that no longer exists. */
   // Live preview of the room code a team name would produce
   const previewCode = teamName.trim() ? teamCode(teamName.trim()) : null;
-  const teamPrimaryLabel = canEnterTeamRoom
-    ? "Join Team Room →"
-    : "Create a free account for 2 Team Rooms →";
+  const teamPrimaryLabel = canEnterTeamRoom ? t("join.joinTeamRoom") : t("join.needAccount");
   const resolveEnteredName = useCallback(
     () => (nameInputRef.current?.value || nameValueRef.current || "").trim(),
     [],
   );
   const validateEnteredName = useCallback(() => {
     const enteredName = resolveEnteredName();
-    if (!enteredName) return { ok: false, message: "Please enter your name." };
+    if (!enteredName) return { ok: false, message: t("join.errName") };
     if (INVALID_PLACEHOLDER_NAMES.has(enteredName.toLowerCase())) {
-      return { ok: false, message: "Please enter your real name before joining." };
+      return { ok: false, message: t("join.errRealName") };
     }
     const name = enteredName.slice(0, 40);
     rememberName(name);
@@ -6198,7 +6311,7 @@ function JoinScreen({
     if (activeTab === "create") {
       onCreate(enteredName, role, deck, estMode);
     } else if (activeTab === "join") {
-      if (!rc.trim()) { fail("Please enter a room code", "code"); return; }
+      if (!rc.trim()) { fail(t("join.errCode"), "code"); return; }
       onJoin(enteredName, role, cleanRoomCode(rc));
     } else {
       // team room — hosting one needs a free account for a unique URL
@@ -6206,7 +6319,7 @@ function JoinScreen({
         onRequireAccount?.();
         return;
       }
-      if (!teamName.trim()) { fail("Please enter your team name", "team"); return; }
+      if (!teamName.trim()) { fail(t("join.errTeam"), "team"); return; }
       onTeamRoom(enteredName, role, teamName.trim(), deck, estMode);
     }
   };
@@ -6215,7 +6328,7 @@ function JoinScreen({
     if (!currentUser?.uid) return;
     const nextLabel = dedicatedRoomLabel.replace(/\s+/g, " ").trim();
     if (!nextLabel) {
-      fail("Choose a name for your Team Rooms.", "rename");
+      fail(t("join.errRenameEmpty"), "rename");
       setDedicatedRoomLabelStatus("error");
       return;
     }
@@ -6235,7 +6348,7 @@ function JoinScreen({
       setDedicatedRoomLabelDirty(false);
       setDedicatedRoomLabelStatus("saved");
     } catch {
-      fail("Could not save your Team Room names right now. Try again.", "rename");
+      fail(t("join.errRenameSave"), "rename");
       setDedicatedRoomLabelStatus("error");
     } finally {
       setSavingDedicatedRoomLabel(false);
@@ -6244,15 +6357,15 @@ function JoinScreen({
   };
 
   const ROLES = [
-    { r: "voter",    icon: "cards", l: "Participant", s: "Votes on each story" },
-    { r: "observer", icon: "eye", l: "Facilitator", s: "Runs the session and does not vote" },
+    { r: "voter",    icon: "cards", l: t("join.roleVoter"), s: t("join.roleVoterDesc") },
+    { r: "observer", icon: "eye", l: t("join.roleObserver"), s: t("join.roleObserverDesc") },
   ];
 
   const copyTeamUrl = async (room) => {
     if (!room?.url) return;
     const ok = await copyText(room.url);
     if (!ok) {
-      fail("Your browser blocked the copy. Select the link and copy it manually.", "copy");
+      fail(t("join.errCopy"), "copy");
       return;
     }
     setCopiedDedicatedRoomKey(room.key);
@@ -6325,20 +6438,20 @@ function JoinScreen({
 
           <h1 className="join-title">
             {signedIn
-              ? `Welcome back${defaultName ? `, ${defaultName.split(" ")[0]}` : ""}`
-              : "Free Planning Poker for Agile Teams"}
+              ? (defaultName
+                  ? t("join.welcomeBackNamed", { name: defaultName.split(" ")[0] })
+                  : t("join.welcomeBack"))
+              : t("join.title")}
           </h1>
           <p className={`join-sub${signedIn ? " workspace" : ""}`}>
-            {signedIn
-              ? "Open a fixed Team Room for recurring planning, or set up a one-off session."
-              : "Deal a room, share the link, everyone reveals at once. Every feature is free, and you do not need an account to play."}
+            {signedIn ? t("join.subSignedIn") : t("join.sub")}
           </p>
           {!signedIn && (
-            <ul className="trust-strip" aria-label="What you get">
-              <li>♠ Free for everyone</li>
-              <li>♥ No sign-up to play</li>
-              <li>♦ Up to {MAX_PARTICIPANTS} at the table</li>
-              <li>♣ No ads</li>
+            <ul className="trust-strip" aria-label={t("join.trustAria")}>
+              <li>♠ {t("join.trust1")}</li>
+              <li>♥ {t("join.trust2")}</li>
+              <li>♦ {t("join.trust3")}</li>
+              <li>♣ {t("join.trust4")}</li>
             </ul>
           )}
         </header>
@@ -6352,8 +6465,8 @@ function JoinScreen({
           <Section as="section" tight className="workspace-panel" aria-labelledby="team-rooms-heading">
             <SectionHead
               align="start"
-              title="Your Team Rooms"
-              subtitle="Two fixed URLs tied to your account. Share them once and reuse them every sprint."
+              title={t("join.yourTeamRooms")}
+              subtitle={t("join.yourTeamRoomsSub")}
             />
 
             <Stack>
@@ -6365,7 +6478,7 @@ function JoinScreen({
                   className="workspace-room-card"
                   footer={
                     <Button block onClick={() => openDedicatedRoom(room)}>
-                      Open {room.shortLabel} →
+                      {t("join.openRoom", { room: room.shortLabel })}
                     </Button>
                   }
                 >
@@ -6376,7 +6489,7 @@ function JoinScreen({
                   <div className="workspace-team-url">
                     <code title={room.url}>{room.url}</code>
                     <Button size="sm" onClick={() => copyTeamUrl(room)}>
-                      {copiedDedicatedRoomKey === room.key ? "Link copied" : "Copy link"}
+                      {copiedDedicatedRoomKey === room.key ? t("join.linkCopied") : t("join.copyLink")}
                     </Button>
                   </div>
                 </Card>
@@ -6390,12 +6503,12 @@ function JoinScreen({
               open={renameOpen}
               onToggle={(e) => setRenameOpen(e.currentTarget.open)}
             >
-              <summary className="workspace-rename-summary">Rename both rooms</summary>
+              <summary className="workspace-rename-summary">{t("join.renameBoth")}</summary>
               <Stack gap="sm" className="workspace-rename-body">
                 <TextField
                   id="workspace-rename-input"
                   ref={workspaceRoomEditorInputRef}
-                  label="Shared room name"
+                  label={t("join.sharedRoomName")}
                   type="text"
                   value={dedicatedRoomLabel}
                   onChange={(e) => {
@@ -6405,7 +6518,7 @@ function JoinScreen({
                     clearErr();
                   }}
                   maxLength={60}
-                  placeholder="e.g. Product Planning"
+                  placeholder={t("join.renamePlaceholder")}
                   error={err && errField === "rename" ? err : undefined}
                   hint={
                     <>
@@ -6419,11 +6532,11 @@ function JoinScreen({
                     onClick={saveDedicatedRoomLabel}
                     disabled={savingDedicatedRoomLabel || !dedicatedRoomLabelDirty}
                   >
-                    {savingDedicatedRoomLabel ? "Saving…" : "Save"}
+                    {savingDedicatedRoomLabel ? t("join.saving") : t("join.save")}
                   </Button>
                 </TextField>
                 <p className="workspace-rename-status" role="status">
-                  {dedicatedRoomLabelStatus === "saved" ? "Saved. Share the new links with your team." : ""}
+                  {dedicatedRoomLabelStatus === "saved" ? t("join.renameSaved") : ""}
                 </p>
               </Stack>
             </details>
@@ -6440,7 +6553,7 @@ function JoinScreen({
             "Create Room →" — so the noun does not need saying twice. */}
         <SegmentedControl
           block
-          ariaLabel="What you want to do"
+          ariaLabel={t("join.tabsAria")}
           value={activeTab}
           onChange={(key) => { setTab(key); clearErr(); }}
           options={TABS.map(({ key, label }) => ({ value: key, label }))}
@@ -6454,8 +6567,8 @@ function JoinScreen({
           id="join-name"
           key={`name-${nameSeedKey}`}
           ref={nameInputRef}
-          label="Your name"
-          placeholder="e.g. Alex Johnson"
+          label={t("join.yourName")}
+          placeholder={t("join.namePlaceholder")}
           defaultValue={nameDraft}
           autoComplete="name"
           onInput={(e) => syncEnteredName(e.currentTarget.value)}
@@ -6466,14 +6579,14 @@ function JoinScreen({
           }}
           onKeyDown={(e) => e.key === "Enter" && go()}
           error={err && errField === "name" ? err : undefined}
-          hint={signedIn ? "The name the rest of the table sees. Changing it here does not change your account." : undefined}
+          hint={signedIn ? t("join.nameHint") : undefined}
         />
 
         {activeTab === "join" && (
           <TextField
             id="join-room-code"
-            label="Room code"
-            placeholder="e.g. A1B2C"
+            label={t("join.roomCode")}
+            placeholder={t("join.roomCodePlaceholder")}
             value={rc}
             /* Sanitised on the way in, not on the way out: this field is the
                trust boundary, and everything downstream of it — the prefill,
@@ -6497,29 +6610,28 @@ function JoinScreen({
           <Stack gap="sm">
             <TextField
               id="join-team-name"
-              label="Team name"
-              placeholder="e.g. Product Team"
+              label={t("join.teamName")}
+              placeholder={t("join.teamNamePlaceholder")}
               value={teamName}
               onChange={(e) => { setTeamName(e.target.value); clearErr(); }}
               onKeyDown={(e) => e.key === "Enter" && go()}
               readOnly={isSharedTeamRoomEntry || signedIn}
               error={err && errField === "team" ? err : undefined}
-              hint={previewCode ? <>Room code <code className="tcp-code">{previewCode}</code></> : undefined}
+              hint={previewCode ? <>{t("join.roomCode")} <code className="tcp-code">{previewCode}</code></> : undefined}
             />
             {!canEnterTeamRoom ? (
               <Alert
                 tone="gold"
-                title="Team Rooms are free"
+                title={t("join.teamRoomsFree")}
                 actions={
-                  <Button size="sm" onClick={() => onRequireAccount?.()}>Create a free account →</Button>
+                  <Button size="sm" onClick={() => onRequireAccount?.()}>{t("join.createFreeAccount")}</Button>
                 }
               >
-                They need a free account so that nobody else can claim your room URL, which takes about thirty seconds.
+                {t("join.teamRoomsFreeBody")}
               </Alert>
             ) : (
               <p className="join-note">
-                This team's room is ready. Add your name, choose your role, and join the live session
-                {signedIn ? "." : ", no account needed."}
+                {signedIn ? t("join.teamReady") : t("join.teamReadyGuest")}
               </p>
             )}
           </Stack>
@@ -6529,7 +6641,7 @@ function JoinScreen({
             heading is a span with role="group" on the row, not a <label>
             pointing at nothing. */}
         <Stack gap="sm">
-          <span className="pp-label" id="join-role-label">Your role</span>
+          <span className="pp-label" id="join-role-label">{t("join.yourRole")}</span>
           <ChoiceRow role="group" aria-labelledby="join-role-label">
             {ROLES.map(({ r, icon, l, s }) => (
               <Choice
@@ -6555,7 +6667,7 @@ function JoinScreen({
                 times, once under every deck the user did not pick. */}
             <div className="session-grid">
               <Stack gap="sm" className="session-field">
-                <span className="pp-label" id="join-deck-label">Card deck</span>
+                <span className="pp-label" id="join-deck-label">{t("join.cardDeck")}</span>
                 <ChoiceGrid cols={3} role="group" aria-labelledby="join-deck-label">
                   {DECK_KEYS.map((k) => {
                     const d = DECK_DEFINITIONS[k];
@@ -6574,7 +6686,7 @@ function JoinScreen({
               </Stack>
 
               <Stack gap="sm" className="session-field">
-                <span className="pp-label" id="join-estmode-label">Estimating</span>
+                <span className="pp-label" id="join-estmode-label">{t("join.estimating")}</span>
                 <ChoiceGrid role="group" aria-labelledby="join-estmode-label">
                   {Object.values(ESTIMATION_MODES).map((m) => (
                     <Choice
@@ -6595,7 +6707,7 @@ function JoinScreen({
               <span>
                 <span className="session-summary-cards">{DECK_DEFINITIONS[deck].desc}</span>
                 {" — "}
-                {ESTIMATION_MODES[estMode].desc.toLowerCase()}. Both are fixed for this room once created.
+                {ESTIMATION_MODES[estMode].desc.toLowerCase()}. {t("join.permanence")}
               </span>
             </p>
           </>
@@ -6603,146 +6715,111 @@ function JoinScreen({
 
         {err && !errField && <Alert tone="danger" id="join-error">{err}</Alert>}
         <Button variant="primary" size="lg" block onClick={go}>
-          {activeTab === "create" ? "Create Room →"
-            : activeTab === "join" ? "Join Room →"
+          {activeTab === "create" ? t("join.createRoom")
+            : activeTab === "join" ? t("join.joinRoom")
             : teamPrimaryLabel}
         </Button>
         {!signedIn && activeTab === "create" && (
-          <p className="join-note join-note--centred">
-            Free · Up to {MAX_PARTICIPANTS} at the table · Live in ten seconds
-          </p>
+          <p className="join-note join-note--centred">{t("join.noteCreate")}</p>
         )}
         {!signedIn && activeTab === "join" && (
-          <p className="join-note join-note--centred">
-            Got a link instead? Open it and you'll join straight away.
-          </p>
+          <p className="join-note join-note--centred">{t("join.noteJoin")}</p>
         )}
         {!signedIn && activeTab === "team" && (
-          <p className="join-note join-note--centred">
-            Two fixed Team Rooms per account. Same links, every sprint, free.
-          </p>
+          <p className="join-note join-note--centred">{t("join.noteTeam")}</p>
         )}
       </Stack>
       </div>
 
       {!signedIn && (
-      <Section className="seo-section" aria-label="About Point Poker">
+      <Section className="seo-section" aria-label={t("home.aria")}>
       {/* The band runs edge to edge; its content sits in the same container the
           header uses, so the headline below starts on the brand's left edge
           rather than 20px off the window. `flow` puts one gap between every
           block in it — heading, prose, card grid, subsection. */}
       <Container flow>
-        <SectionHead
-          title="Free Online Planning Poker for Sprint Planning, Scrum Poker, and Remote Estimation"
-          subtitle="Point Poker gives agile teams a fast, low-friction way to run planning poker online. Create a room, share one link in Slack, Teams, or Zoom, and let everyone vote at the same time. No install, no training, no ads, and no account needed to play."
-        />
+        <SectionHead title={t("home.h2")} subtitle={t("home.h2sub")} />
         <Prose>
           <p>
-            <strong>Everything is free right now, every feature, for every team.</strong> Other planning poker
-            tools cap your free sessions at a handful of votes, seven participants, or hide the timer and averages
-            behind a paid plan. Here you get {MAX_PARTICIPANTS} people per room, unlimited voting rounds,
-            unlimited stories, all three card decks, the timer, full analytics, and export, for $0. We are
-            focused on being genuinely useful to as many teams as possible first. If paid add-ons ever arrive,
-            everything listed on this page stays free.
+            <strong>{t("home.freeLead")}</strong> {t("home.freeBody")}
           </p>
         </Prose>
 
         <Grid min="300px" className="seo-grid">
-          <Card title="Why simultaneous reveal matters">
-            Every team member votes independently before estimates are shown. Cards reveal all at once,
-            which reduces anchoring bias and leads to better story-point conversations. You get clearer
-            estimates, faster discussions, and fewer meetings dominated by the loudest voice.
-          </Card>
-          <Card title="How it works">
+          <Card title={t("home.revealTitle")}>{t("home.revealBody")}</Card>
+          <Card title={t("home.howTitle")}>
             <ol className="seo-ol">
-              <li>Create a room or join one from a shared link</li>
-              <li>Add the item you are estimating, a user story or a specific task within one</li>
-              <li>Vote with Fibonacci, T-Shirt sizing, or Powers of 2</li>
-              <li>Reveal cards together and discuss only when estimates differ</li>
-              <li>Let the facilitator record the final agreed estimate or run another vote</li>
-              <li>Move straight to the next item without resetting the room</li>
+              {tList("home.howSteps").map((step) => <li key={step}>{step}</li>)}
             </ol>
           </Card>
         </Grid>
 
-        <Section flow className="scroll-target" id="plans" tabIndex="-1" aria-label="Pricing overview">
-          <SectionHead
-            as="h3"
-            title="What it costs: nothing"
-            subtitle="One product, free for every team, while we find out how many of you there are. No tiers, no trial clock, no card."
-          />
+        <Section flow className="scroll-target" id="plans" tabIndex="-1" aria-label={t("home.plansAria")}>
+          <SectionHead as="h3" title={t("home.plansTitle")} subtitle={t("home.plansSub")} />
           <Grid min="280px">
-            <Card variant="gold" eyebrow="Everyone" title="$0">
+            <Card variant="gold" eyebrow={t("home.planEveryone")} title="$0">
               <ul className="seo-plan-list">
-                <li>Up to {MAX_PARTICIPANTS} participants including facilitators</li>
-                <li>Unlimited rounds and unlimited stories per session</li>
-                <li>All card decks, story or task queue, countdown timer</li>
-                <li>Facilitator mode, live analytics, clipboard and CSV export</li>
-                <li>Two fixed Team Rooms and sprint history with a free account</li>
+                {tList("home.planFreeList").map((item) => <li key={item}>{item}</li>)}
               </ul>
             </Card>
-            <Card eyebrow="Compared with" title="$20–30/mo">
+            <Card eyebrow={t("home.planComparedWith")} title="$20–30/mo">
               <ul className="seo-plan-list">
-                <li>Common free caps elsewhere: 7 participants, or 9 votes per game</li>
-                <li>Timers and averages often sit behind a paid tier</li>
-                <li>Some free tools are ad-supported</li>
-                <li>Per-facilitator pricing adds up fast for one ceremony a sprint</li>
+                {tList("home.planOtherList").map((item) => <li key={item}>{item}</li>)}
               </ul>
             </Card>
           </Grid>
           <Row className="seo-plan-actions">
             <Button as={RouteLink} href="/pricing" onNavigate={onNavigate}>
-              Read the full pricing promise
+              {t("home.pricingCta")}
             </Button>
           </Row>
         </Section>
 
         <Section flow className="seo-features">
-          <SectionHead as="h3" title="What makes this planning poker tool different" />
+          <SectionHead as="h3" title={t("home.diffTitle")} />
           <ul className="seo-ul">
-            <li><strong>Zero setup, every time:</strong> create a room and share the link in under 10 seconds, no account needed</li>
-            <li><strong>Simultaneous vote reveal:</strong> prevents anchoring bias so every estimate is honest and independent</li>
-            <li><strong>Three card decks:</strong> Fibonacci (1 to 34), T-shirt sizing (XS to XXL), or Powers of 2, whichever matches how your team thinks</li>
-            <li><strong>Story or task estimation:</strong> choose whether you are sizing user stories as a whole or individual tasks within them; the queue, banners, and analytics all adapt to your choice</li>
-            <li><strong>Item queue:</strong> load your full sprint backlog or task list and work through it in order, one item at a time</li>
-            <li><strong>Team Alignment analytics:</strong> facilitators see live consensus rate, total story points, estimate distribution, and re-vote patterns</li>
-            <li><strong>Estimation Spree:</strong> a live streak counter celebrates when the team aligns consistently, reinforcing good backlog clarity</li>
-            <li><strong>Built-in countdown timer:</strong> keep each estimation round time-boxed and the whole session on track</li>
-            <li><strong>Session summary:</strong> copy every estimate to the clipboard or download a CSV for Jira, Linear, Azure DevOps, or a spreadsheet</li>
-            <li><strong>Facilitator mode:</strong> join without a vote card and manage reveal, re-votes, participant moderation, and session flow from the analytics view</li>
-            <li><strong>Team Rooms:</strong> two fixed URLs your teams reuse every sprint, no fresh setup each time. Free with a free account</li>
-            <li><strong>Keyboard shortcuts:</strong> press 1–9 to vote, R to reveal, N for the next item; the whole ceremony without touching the mouse</li>
-            <li><strong>No ads and no tracking cookies:</strong> nothing to block, nothing sold, nothing following your team around</li>
+            {tList("home.diffList").map((item) => {
+              // "Label: rest" — the lead-in is bold in every language, and the
+              // split has to be on the string rather than on markup, or each
+              // translation would have to carry its own <strong> tags.
+              const [lead, ...rest] = item.split(": ");
+              return rest.length ? (
+                <li key={item}><strong>{lead}:</strong> {rest.join(": ")}</li>
+              ) : (
+                <li key={item}>{item}</li>
+              );
+            })}
           </ul>
           <Prose>
             <p>
-              Explore the dedicated pages for{" "}
-              <RouteLink href="/features" onNavigate={onNavigate} className="seo-inline-link">features</RouteLink>
+              {t("home.exploreLead")}{" "}
+              <RouteLink href="/features" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkFeatures")}</RouteLink>
               {", "}
-              <RouteLink href="/planning-poker-online" onNavigate={onNavigate} className="seo-inline-link">planning poker online</RouteLink>
+              <RouteLink href="/planning-poker-online" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkOnline")}</RouteLink>
               {", "}
-              <RouteLink href="/scrum-poker" onNavigate={onNavigate} className="seo-inline-link">Scrum poker</RouteLink>
+              <RouteLink href="/scrum-poker" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkScrum")}</RouteLink>
               {", "}
-              <RouteLink href="/story-point-estimation" onNavigate={onNavigate} className="seo-inline-link">story point estimation</RouteLink>
+              <RouteLink href="/story-point-estimation" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkEstimation")}</RouteLink>
               {", "}
-              <RouteLink href="/what-is-planning-poker" onNavigate={onNavigate} className="seo-inline-link">what planning poker is</RouteLink>
+              <RouteLink href="/what-is-planning-poker" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkWhatIs")}</RouteLink>
               {", "}
-              <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">Fibonacci story points</RouteLink>
+              <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkFib")}</RouteLink>
               {", "}
-              <RouteLink href="/agile-estimation-tool" onNavigate={onNavigate} className="seo-inline-link">agile estimation tools</RouteLink>
-              {", and "}
-              <RouteLink href="/trust" onNavigate={onNavigate} className="seo-inline-link">trust and reliability</RouteLink>
-              {" to learn how the workflow fits your team."}
+              <RouteLink href="/agile-estimation-tool" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkAgile")}</RouteLink>
+              {", "}
+              <RouteLink href="/trust" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkTrust")}</RouteLink>
+              {" "}
+              {t("home.exploreTail")}
             </p>
           </Prose>
         </Section>
 
         <Section flow className="seo-faq scroll-target" id="faq" tabIndex="-1">
-          <SectionHead as="h3" title="Frequently asked questions" />
+          <SectionHead as="h3" title={t("home.faqTitle")} />
           {/* Accordion, not eight open blocks: the answers stay in the DOM
               (hidden, never unmounted) so a crawler still reads every word,
               while the page stops being a wall of text on a phone. */}
-          <Accordion items={FAQ_ITEMS(onNavigate)} />
+          <Accordion items={homeFaq.map(({ q, a }) => ({ question: q, answer: <p>{a}</p> }))} />
         </Section>
       </Container>
       </Section>
@@ -6750,100 +6827,6 @@ function JoinScreen({
     </div>
   );
 }
-
-/* The home FAQ. Kept beside the screen that renders it, and shaped for
-   <Accordion> so the answers are one list rather than eight hand-built blocks
-   whose headings had drifted apart. */
-const FAQ_ITEMS = (onNavigate) => [
-  {
-    question: "Is this planning poker tool actually free?",
-    answer: (
-      <p>
-        Yes, everything, for everyone, right now. Up to {MAX_PARTICIPANTS} participants, unlimited
-        voting rounds, unlimited stories, all three card decks, the queue, the countdown timer,
-        facilitator analytics, CSV and clipboard export, and two fixed Team Rooms. No credit card,
-        no trial clock, no ads. We are concentrating on growing a real user base first; if paid
-        add-ons arrive later, everything described here stays free.
-      </p>
-    ),
-  },
-  {
-    question: "Do I need to create an account?",
-    answer: (
-      <p>
-        No. Enter your name, create a room, share the link, that is the whole flow. A free account
-        only exists so we can reserve two permanent Team Room URLs to you (so no other team can land
-        in your room) and keep your sprint history across devices.
-      </p>
-    ),
-  },
-  {
-    question: "Why use Fibonacci numbers for story points?",
-    answer: (
-      <p>
-        Fibonacci (1, 2, 3, 5, 8, 13, 21, 34) reflects how estimation uncertainty grows with
-        complexity. The widening gaps between numbers make it easy for teams to distinguish
-        small, medium, and large effort without false precision, and force a real conversation
-        when two people are far apart. See the{" "}
-        <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">full Fibonacci guide</RouteLink>
-        {" "}for the reasoning in more depth.
-      </p>
-    ),
-  },
-  {
-    question: "Does this work for remote and distributed teams?",
-    answer: (
-      <p>
-        Yes. Paste the room link into Slack, Teams, or Zoom and everyone joins from any browser in seconds.
-        It works across desktop and mobile, and the facilitator can keep the room moving without asking the
-        team to install anything.
-      </p>
-    ),
-  },
-  {
-    question: "What is the Team Alignment score?",
-    answer: (
-      <p>
-        The Team Alignment score (visible to facilitators) tracks the percentage of stories
-        that reached first-round consensus, where every voter picked the same card.
-        A high score means your backlog is well-defined. A low score flags stories that
-        need more acceptance criteria before the sprint begins.
-      </p>
-    ),
-  },
-  {
-    question: "How many people can join a planning poker session?",
-    answer: (
-      <p>
-        Up to {MAX_PARTICIPANTS} people per room, counting facilitators as well as voters. That covers
-        a large scrum team plus product, design, and QA in the same session. Bigger group? Run two rooms
-        in parallel and merge the results.
-      </p>
-    ),
-  },
-  {
-    question: "How is this different from other free planning poker tools?",
-    answer: (
-      <p>
-        Most free planning poker apps cap something that matters: seven participants, nine votes per
-        game, five issues per session, or they show ads and hide the timer and averages behind a paid
-        tier. Nothing here is capped or ad-supported. You also get facilitator analytics —
-        consensus rate, spread, outlier highlighting, and re-vote tracking, that normally only
-        appears in paid tiers.
-      </p>
-    ),
-  },
-  {
-    question: "What happens to my session data?",
-    answer: (
-      <p>
-        Rooms are temporary. When everyone leaves, the room and its votes are deleted, and any room
-        left idle is swept automatically. No advertising or third-party analytics cookies are used.
-        Sprint history is only stored if you are signed in, and only for you.
-      </p>
-    ),
-  },
-];
 
 /* ═══════════════════════ WILLINGNESS-TO-PAY POLL ═══════════════════════
    Usage counters can tell you how much a free product is used. They cannot
@@ -6858,10 +6841,10 @@ const FAQ_ITEMS = (onNavigate) => [
 ═══════════════════════════════════════════════════════════════════════ */
 const WTP_STORAGE_KEY = "pp_wtp_answered";
 const WTP_OPTIONS = [
-  { key: "wtp_zero",  label: "Nothing, free is the reason we use it" },
-  { key: "wtp_5",     label: "Up to $5 a month for the team" },
-  { key: "wtp_15",    label: "$6–15 a month for the team" },
-  { key: "wtp_30",    label: "More than $15 a month for the team" },
+  { key: "wtp_zero",  labelKey: "wtp.zero" },
+  { key: "wtp_5",     labelKey: "wtp.5" },
+  { key: "wtp_15",    labelKey: "wtp.15" },
+  { key: "wtp_30",    labelKey: "wtp.30" },
 ];
 
 function WtpPoll({ onDone }) {
@@ -6881,25 +6864,25 @@ function WtpPoll({ onDone }) {
   if (answered) {
     return (
       <Alert tone="success" role="status" className="wtp-panel">
-        Thank you, that genuinely shapes what gets built next.
+        {t("wtp.thanks")}
       </Alert>
     );
   }
   return (
     <Card variant="flat" pad="sm" className="wtp-panel" role="group" aria-labelledby="wtp-q">
       <Row between nowrap>
-        <Eyebrow>One question, then never again</Eyebrow>
-        <IconButton icon="close" size="sm" label="Dismiss this question" onClick={dismiss} />
+        <Eyebrow>{t("wtp.eyebrow")}</Eyebrow>
+        <IconButton icon="close" size="sm" label={t("wtp.dismiss")} onClick={dismiss} />
       </Row>
       <p className="wtp-q" id="wtp-q">
-        Point Poker is free and staying free. If it were paid, what would this be worth to your team?
+        {t("wtp.question")}
       </p>
       <Stack gap="sm">
         {WTP_OPTIONS.map((o) => (
-          <Choice key={o.key} label={o.label} onSelect={() => answer(o.key)} />
+          <Choice key={o.key} label={t(o.labelKey)} onSelect={() => answer(o.key)} />
         ))}
       </Stack>
-      <span className="pp-hint">Anonymous. No email, no follow-up, no change to your access.</span>
+      <span className="pp-hint">{t("wtp.note")}</span>
     </Card>
   );
 }
@@ -6941,13 +6924,13 @@ function RoomActionBar({
            used to hold a disabled "Reveal everyone's cards" — the loudest
            control on the screen, doing nothing — while the action that
            actually mattered sat in a dismissible banner below it. */
-        label: inviteCopied ? "Invite link copied" : "Copy the invite link",
+        label: inviteCopied ? t("action.inviteCopied") : t("action.copyInvite"),
         icon: inviteCopied ? "check" : "link",
         onClick: onInvite,
         disabled: false,
       }
     : {
-        label: "Reveal everyone's cards",
+        label: t("action.reveal"),
         icon: "eye",
         onClick: onReveal,
         disabled: votedCount === 0,
@@ -6957,29 +6940,29 @@ function RoomActionBar({
   // sitting alone is not "waiting for votes"; there is nobody who could vote.
   const hint = revealed
     ? needsManualEstimate
-      ? "Votes are split. Agree a number below, then record it."
-      : "Round complete. The round's actions are under the estimate below."
+      ? t("action.hintSplit")
+      : t("action.hintDone")
     : voterCount === 0
       // The button above now says "Copy the invite link", so this says what
       // happens after rather than repeating the instruction.
-      ? "Send it to your team. They join in one tap, no account needed."
+      ? t("action.hintEmpty")
       : votedCount === 0
-        ? `Waiting for the first card from ${voterCount === 1 ? "your voter" : `your ${voterCount} voters`}.`
+        ? t(voterCount === 1 ? "action.hintFirstOne" : "action.hintFirstMany", { count: voterCount })
         : everyoneVoted
-          ? "Everyone is in. Reveal when you are ready."
-          : "Reveal early if the room has stopped thinking.";
+          ? t("action.hintAllIn")
+          : t("action.hintEarly");
 
   return (
-    <Card variant="raised" as="section" className="action-bar" aria-label="Session controls">
+    <Card variant="raised" as="section" className="action-bar" aria-label={t("action.aria")}>
       <Row between nowrap>
         <span className="action-bar-title">
-          {revealed ? "Cards are up" : roomIsEmpty ? "Waiting for the table" : "Round in progress"}
+          {revealed ? t("action.cardsUp") : roomIsEmpty ? t("action.waiting") : t("action.inProgress")}
         </span>
         {/* "0 of 0 voted" over an empty bar is state that has not happened.
             Zeroes read as data. Neither renders until someone can vote. */}
         {voterCount > 0 && (
           <Chip tone={everyoneVoted ? "success" : undefined} count>
-            {votedCount} of {voterCount} voted
+            {t("action.voted", { done: votedCount, total: voterCount })}
           </Chip>
         )}
       </Row>
@@ -6987,7 +6970,7 @@ function RoomActionBar({
         <Progress
           value={votedCount}
           max={voterCount}
-          label={`${votedCount} of ${voterCount} voters have played a card`}
+          label={t("action.progressAria", { done: votedCount, total: voterCount })}
           className={everyoneVoted ? "is-complete" : undefined}
         />
       )}
@@ -7092,10 +7075,10 @@ function GameScreen({
   const timer = rd.timer || { running: false, duration: 30, remaining: 30 };
   const hasVotes = voters.some((p) => p.voted);
   const isPersistentRoom = !!rd.teamName;
-  const inviteLabel = isPersistentRoom ? "Dedicated Team Room link" : "Temporary room link";
+  const inviteLabel = isPersistentRoom ? t("game.linkPersistent") : t("game.linkTemporary");
   const inviteHelper = isPersistentRoom
-    ? "Share once and reuse it every sprint."
-    : "Share it while this session is active.";
+    ? t("game.linkPersistentHint")
+    : t("game.linkTemporaryHint");
   const votedCount = voters.filter((p) => p.voted).length;
   const notVoted = voters.filter((p) => !p.voted);
 
@@ -7107,17 +7090,17 @@ function GameScreen({
   // Four controls in one row, so each label is the verb and its object, not a
   // sentence. The estimate is in the label because the button commits it.
   const recordButtonLabel = !chosenFinalEstimate
-    ? "Pick the agreed estimate"
+    ? t("game.pickAgreed")
     : hasStories && !allStoriesDone
-      ? `Record ${chosenFinalEstimate} & next item`
-      : `Record ${chosenFinalEstimate} & next round`;
+      ? t("game.recordNextItem", { value: chosenFinalEstimate })
+      : t("game.recordNextRound", { value: chosenFinalEstimate });
   const revealedVotesSummary = voted.map((p) => p.vote).join(" • ");
-  const revealHeroLabel = allSame ? "Agreed estimate" : "Average vote";
+  const revealHeroLabel = allSame ? t("game.agreedEstimate") : t("game.averageVote");
   const revealHeroHelper = allSame
-    ? "Everyone who voted picked the same card."
+    ? t("game.allSameHint")
     : unanimousUnknown
-      ? "Everyone played ?. Nobody has enough to size this yet, clarify the item, then re-vote."
-      : "Use the range below to guide the discussion. The facilitator records the final agreed estimate next.";
+      ? t("game.allUnknownHint")
+      : t("game.spreadHint");
 
   /* One record path, not two. The split-vote path had its own copy that hard-
      coded `false` for the consensus flag — which is what `isFullTableAgreement`
@@ -7135,11 +7118,11 @@ function GameScreen({
   const confirmNewSprint = useCallback(() => {
     // Names what actually goes and what stays. "Clears all votes and rounds"
     // was true of the counters and false of the estimates, which survived.
-    if (window.confirm("Start a new sprint? This clears every vote, estimate and round for everyone in the room. Your story queue is kept.")) onReset();
+    if (window.confirm(t("game.confirmReset"))) onReset();
   }, [onReset]);
 
   const confirmEndSession = useCallback(() => {
-    if (window.confirm("End the session? This disconnects everyone and permanently deletes all session data.")) onEndSession();
+    if (window.confirm(t("game.confirmEnd"))) onEndSession();
   }, [onEndSession]);
 
   useEffect(() => {
@@ -7196,7 +7179,7 @@ function GameScreen({
   const handleCopyLink = useCallback(async () => {
     const ok = await copyText(shareUrl);
     track("feature_invite");
-    toast(ok ? "Invite link copied." : "Copy blocked by the browser, select the link above and copy it.");
+    toast(ok ? t("toast.inviteCopied") : t("toast.copyBlockedLink"));
     if (!ok) return;
     setHeaderLinkCopied(true);
     clearTimeout(copyFeedbackRef.current);
@@ -7218,7 +7201,7 @@ function GameScreen({
     if (names.length > 1) track("feature_paste");
     onAddStory(names);
     setStoryInput("");
-    if (names.length > 1) toast(`${names.length} ${estMode.plural} added to the queue.`);
+    if (names.length > 1) toast(t("game.queueAdded", { n: names.length, plural: estMode.plural }));
   }, [onAddStory, toast, estMode.plural]);
 
   // ── SESSION SUMMARY ──────────────────────────────────────────────
@@ -7239,7 +7222,7 @@ function GameScreen({
     ? summaryNumeric.reduce((a, b) => a + b, 0)
     : null;
 
-  const summaryTitle = rd.teamName ? `${rd.teamName} — estimates` : "Sprint estimation summary";
+  const summaryTitle = rd.teamName ? t("game.summaryTitleTeam", { team: rd.teamName }) : t("game.summaryTitle");
 
   // Ask about price only once the facilitator has got real value out of a session.
   const [wtpDone, setWtpDone] = useState(false);
@@ -7254,20 +7237,20 @@ function GameScreen({
       lines.push(`${i + 1}. ${r.name}  →  ${r.estimate != null ? r.estimate : "not estimated"}`);
     });
     lines.push("");
-    lines.push(`${estMode.plural}: ${summaryRows.length} · estimated: ${summarySized}`);
-    if (summaryTotalPoints !== null) lines.push(`Total points: ${summaryTotalPoints}`);
+    lines.push(t("game.summaryCounts", { plural: estMode.plural, total: summaryRows.length, sized: summarySized }));
+    if (summaryTotalPoints !== null) lines.push(t("game.summaryTotal", { n: summaryTotalPoints }));
     // Pasted into Slack or a ticket, this text is the whole artefact, so it
     // signs itself. Free text, unlike the CSV, so nothing downstream breaks.
     lines.push("");
-    lines.push(`Estimated with Point Poker — ${SITE_URL.replace(/^https?:\/\//, "")}`);
+    lines.push(t("game.summaryFooter", { domain: SITE_URL.replace(/^https?:\/\//, "") }));
     track("feature_copy");
     const ok = await copyText(lines.join("\n"));
-    toast(ok ? "Summary copied to your clipboard." : "Copy blocked by the browser, use the CSV download instead.");
+    toast(ok ? t("toast.summaryCopied") : t("toast.copyBlockedCsv"));
   }, [summaryRows, summarySized, summaryTotalPoints, summaryTitle, estMode.plural, toast]);
 
   const downloadSummaryCsv = useCallback(() => {
     track("feature_csv");
-    const rows = [["#", "Item", "Estimate"]].concat(
+    const rows = [[t("game.colIndex"), t("game.colItem"), t("game.colEstimate")]].concat(
       summaryRows.map((r, i) => [String(i + 1), r.name, r.estimate != null ? String(r.estimate) : ""]),
     );
     const csv = rows.map((cols) => cols.map(csvCell).join(",")).join("\r\n");
@@ -7372,7 +7355,7 @@ function GameScreen({
         <div className="consensus-overlay" aria-live="polite">
           <div className="consensus-burst">
             <span className="consensus-burst-emoji">🎉</span>
-            <div className="consensus-burst-text">Perfect Consensus!</div>
+            <div className="consensus-burst-text">{t("game.perfectConsensus")}</div>
             <div className="consensus-burst-sub">
               All {voted.length} voters picked {voted[0].vote} — the team agrees
             </div>
@@ -7382,10 +7365,10 @@ function GameScreen({
       <header className="hdr" role="banner">
         <div className="hdr-in pp-container">
           <div className="hdr-l">
-            <Button variant="ghost" size="sm" className="btn-back" onClick={onBack} aria-label="Leave room and return to home">
+            <Button variant="ghost" size="sm" className="btn-back" onClick={onBack} aria-label={t("game.leaveAria")}>
               ← Leave
             </Button>
-            <BrandMark size={34} onClick={onBack} label="Return to home"/>
+            <BrandMark size={34} onClick={onBack} label={t("game.returnHome")}/>
           </div>
           <div className="hdr-c">
             {/* The room had no heading at all, so a screen reader's heading
@@ -7394,21 +7377,21 @@ function GameScreen({
             <VisuallyHidden as="h1">
               Planning poker room {code}, round {round}
             </VisuallyHidden>
-            <Chip>Round {round}</Chip>
+            <Chip>{t("game.round", { n: round })}</Chip>
             {/* Same rule as the action bar's count: a gold "0 stories done"
                 chip on a room that has not started reads as a score, and the
                 only score it can report is nothing. It appears once there is
                 something to report. */}
             {storiesDone > 0 && (
               <Chip tone="gold">
-                <Icon name="cards" size={16} /> {storiesDone} <span className="badge-long">{storiesDone === 1 ? estMode.singular : estMode.plural} </span>done
+                <Icon name="cards" size={16} /> {storiesDone} <span className="badge-long">{storiesDone === 1 ? estMode.singular : estMode.plural} </span>{t("game.doneBadge")}
               </Chip>
             )}
             {code && <Chip className="room-code-chip">{code}</Chip>}
           </div>
           <div className="hdr-r">
             <ThemeToggle />
-            <div className="hdr-invite" aria-label="Invite team">
+            <div className="hdr-invite" aria-label={t("game.inviteAria")}>
               <div className="hdr-invite-copy">
                 <span className="hdr-invite-label">{inviteLabel}</span>
                 <span className="hdr-invite-helper">{inviteHelper}</span>
@@ -7418,10 +7401,10 @@ function GameScreen({
                   code, the icon says "link", and 160px of nowrap label was
                   pushing the header 24px off a 375px screen. The accessible
                   name is on the button either way. */}
-              <Button size="sm" className="hdr-copy" onClick={handleCopyLink} aria-label="Copy invite link to clipboard">
+              <Button size="sm" className="hdr-copy" onClick={handleCopyLink} aria-label={t("game.copyInviteAria")}>
                 <Icon name={headerLinkCopied ? "check" : "link"} size={16} />
                 <span className="hdr-copy-label">
-                  {headerLinkCopied ? "Invite link copied" : "Copy invite link"}
+                  {headerLinkCopied ? t("game.inviteCopied") : t("game.copyInvite")}
                 </span>
               </Button>
             </div>
@@ -7439,17 +7422,17 @@ function GameScreen({
         {players.length === 1 && isPersistentRoom && !solobannerDismissed && (
           <Alert
             tone="gold"
-            title="Team Room ready"
+            title={t("game.teamRoomReady")}
             className="solo-invite-banner"
             actions={
-              <Button variant="ghost" size="sm" onClick={() => setSoloBannerDismissed(true)}>Dismiss</Button>
+              <Button variant="ghost" size="sm" onClick={() => setSoloBannerDismissed(true)}>{t("game.dismiss")}</Button>
             }
           >
             Share the link once. It stays the same every sprint.
           </Alert>
         )}
         {sessionWarning && (
-          <Alert tone="warning" title="Session ends soon" className="session-warn-banner">
+          <Alert tone="warning" title={t("game.sessionEnds")} className="session-warn-banner">
             This room closes in about 10 minutes. Finish the story you are on.
           </Alert>
         )}
@@ -7457,13 +7440,13 @@ function GameScreen({
         {/* Current item banner, visible to all players */}
         {activeStory && !allStoriesDone && (
           <Card variant="gold" pad="sm" className="story-name-banner">
-            <Eyebrow>Now estimating · {estMode.progressLabel} {activeStoryIdx + 1} of {stories.length}</Eyebrow>
+            <Eyebrow>{t("game.nowEstimating", { label: estMode.progressLabel, n: activeStoryIdx + 1, total: stories.length })}</Eyebrow>
             <p className="story-name-text">{activeStory.name}</p>
           </Card>
         )}
         {allStoriesDone && (
           <Alert tone="success" title={estMode.backlogLabel} className="story-name-banner">
-            All {stories.length} {estMode.plural} estimated.
+            {t("game.allEstimated", { n: stories.length, plural: estMode.plural })}
           </Alert>
         )}
 
@@ -7518,7 +7501,7 @@ function GameScreen({
                       <div className="timer-setup">
                         <Select
                           id="timer-length"
-                          label="Countdown length"
+                          label={t("game.countdownLength")}
                           value={tsel}
                           onChange={(e) => setTsel(+e.target.value)}
                           options={[
@@ -7552,9 +7535,9 @@ function GameScreen({
                       <Timer secondsLeft={timer.remaining} total={timer.duration} urgent={urgent} />
                       <div className="rtxt">
                         <div className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}>
-                          {urgent ? "Time's almost up!" : warn ? "Wrapping up…" : "Estimating…"}
+                          {urgent ? t("game.timeUp") : warn ? t("game.wrappingUp") : t("game.estimating")}
                         </div>
-                        <div className="rhint">Cards auto-reveal on zero</div>
+                        <div className="rhint">{t("game.autoReveal")}</div>
                         <Button variant="ghost" size="sm" className="btn-stop" onClick={onStop}>
                           <Icon name="stop" size={16} /> Stop timer
                         </Button>
@@ -7564,8 +7547,8 @@ function GameScreen({
                   {revealed && (
                     <div className="waiting-hint">
                       {requiresManualFinalEstimate
-                        ? "Votes are split, discuss briefly, then confirm the agreed estimate."
-                        : "Round complete, record it from the row under the estimate when you are ready to continue."}
+                        ? t("game.splitHint")
+                        : t("game.doneHint")}
                     </div>
                   )}
                 </>
@@ -7576,9 +7559,9 @@ function GameScreen({
                       <Timer secondsLeft={timer.remaining} total={timer.duration} urgent={urgent} />
                       <div className="rtxt">
                         <div className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}>
-                          {urgent ? "Pick a card, NOW!" : warn ? "Last few seconds!" : "Pick your card!"}
+                          {urgent ? t("game.pickNow") : warn ? t("game.lastSeconds") : t("game.pickYourCard")}
                         </div>
-                        <div className="rhint">Facilitator reveals the cards</div>
+                        <div className="rhint">{t("game.facilitatorReveals")}</div>
                       </div>
                     </div>
                   ) : (
@@ -7589,7 +7572,7 @@ function GameScreen({
                           : "✓ Cards revealed, review the spread below"
                         : myVote
                           ? "✓ Card played. The cards flip once everyone has voted."
-                          : "Play your card whenever you are ready. The timer is optional, and the cards flip once everyone has voted."}
+                          : t("game.playWhenReady")}
                     </div>
                   )}
                 </>
@@ -7599,7 +7582,7 @@ function GameScreen({
             {/* Cards */}
             {!isObs && (
             <div className="panel">
-              <span className="ptitle">Your Estimate</span>
+              <span className="ptitle">{t("game.yourEstimate")}</span>
               {false ? null : (
                 <div className="cards-grid">
                   {cards.map((c, i) => {
@@ -7618,7 +7601,7 @@ function GameScreen({
                         // that silently do nothing (WCAG 4.1.2).
                         aria-disabled={revealed}
                         aria-pressed={sel}
-                        aria-label={`Vote ${c.val}`}
+                        aria-label={t("game.voteAria", { value: c.val })}
                         onClick={() => {
                           if (revealed) return;
                           setOptimisticVote(c.val);
@@ -7654,8 +7637,8 @@ function GameScreen({
               {!isObs && !revealed && (
                 <div className="kbd-hint">
                   {numericDeck
-                    ? <>Tip: type the value you want. <kbd>3</kbd>, <kbd>8</kbd>, <kbd>13</kbd>, or <kbd>?</kbd> for the wild card.</>
-                    : <>Tip: press <kbd>1</kbd>–<kbd>{Math.min(9, cards.length)}</kbd> for the sizes in order, or <kbd>?</kbd>.</>}
+                    ? <>{t("game.tipNumericLead")} <kbd>3</kbd>, <kbd>8</kbd>, <kbd>13</kbd>{t("game.tipNumericTail")} <kbd>?</kbd> {t("game.tipNumericEnd")}</>
+                    : <>{t("game.tipOrderLead")} <kbd>1</kbd>–<kbd>{Math.min(9, cards.length)}</kbd> {t("game.tipOrderTail")} <kbd>?</kbd>.</>}
                 </div>
               )}
               <div
@@ -7666,18 +7649,18 @@ function GameScreen({
               >
                 {revealed
                   ? allSame
-                    ? "Consensus reached. The facilitator records it and moves on."
-                    : "Cards are up. Discuss the spread while the facilitator confirms the estimate."
+                    ? t("game.consensusReached")
+                    : t("game.cardsUpDiscuss")
                   : myVote
-                    ? `You picked ${myVote}. Waiting for the rest of the table.`
-                    : "Pick a card to cast your vote."}
+                    ? t("game.youPicked", { value: myVote })
+                    : t("game.pickToVote")}
               </div>
             </div>
             )}
 
             {/* Results */}
             {revealed && (
-              <div className="panel panel-gold" role="region" aria-live="polite" aria-label="Vote results">
+              <div className="panel panel-gold" role="region" aria-live="polite" aria-label={t("game.resultsAria")}>
                 {voted.length > 0 && (
                   <>
                     <div className="avg-hero">
@@ -7687,7 +7670,7 @@ function GameScreen({
                       <div className="avg-hero-num">{avgDisp}</div>
                       {allSame ? (
                         <div className="avg-hero-consensus">
-                          {isRealConsensus ? `All ${voted.length} voters picked` : "Everyone who voted picked"} {voted[0].vote}
+                          {isRealConsensus ? t("game.allPicked", { count: voted.length }) : t("game.everyonePicked")} {voted[0].vote}
                         </div>
                       ) : (
                         <div className="avg-hero-sub">
@@ -7703,13 +7686,13 @@ function GameScreen({
                               row exists to show. The helper above calls this
                               "the range", and an average is not part of one. */}
                           <Grid min="110px" className="avg-hero-range">
-                            <StatTile label="Min" value={minV} />
-                            <StatTile label="Median" value={medianDisp} />
-                            <StatTile label="Max" value={maxV} />
+                            <StatTile label={t("game.min")} value={minV} />
+                            <StatTile label={t("game.median")} value={medianDisp} />
+                            <StatTile label={t("game.max")} value={maxV} />
                           </Grid>
                           {spread > 0 && (
                             <p className="avg-hero-sub">
-                              Spread: {spread} point{spread !== 1 ? "s" : ""} — discuss, then record one final deck value
+                              {t(spread === 1 ? "game.spreadSub" : "game.spreadSubPlural", { n: spread })}
                             </p>
                           )}
                         </>
@@ -7717,7 +7700,7 @@ function GameScreen({
                     </div>
 
                     <div className="who-section">
-                      <span className="ptitle">Who Picked What</span>
+                      <span className="ptitle">{t("game.whoPickedWhat")}</span>
                     </div>
                     <div className="revealed-grid">
                       {voted.map((p, i) => {
@@ -7750,15 +7733,15 @@ function GameScreen({
                             <div className="rv-name">{p.name}</div>
                             {isMe && <span className="rv-you-tag">you</span>}
                             {isHigh && (
-                              <span className="outlier-tag high">Highest</span>
+                              <span className="outlier-tag high">{t("game.highest")}</span>
                             )}
                             {isLow && (
-                              <span className="outlier-tag low">Lowest</span>
+                              <span className="outlier-tag low">{t("game.lowest")}</span>
                             )}
                             {/* Rule 5 again: the tick is a second signal beside
                                 the card's gold border, and it says the word too
                                 rather than leaving a bare glyph to carry it. */}
-                            {allSame && <Chip tone="gold">Agreed</Chip>}
+                            {allSame && <Chip tone="gold">{t("game.agreed")}</Chip>}
                           </div>
                         );
                       })}
@@ -7768,36 +7751,34 @@ function GameScreen({
                         variant="gold"
                         className="inline-final-decision"
                         role="group"
-                        aria-label="Facilitator choose final estimate"
-                        eyebrow="Facilitator decision"
+                        aria-label={t("game.facilitatorAria")}
+                        eyebrow={t("game.facilitatorDecision")}
                         title={unanimousUnknown
-                          ? "Nobody could size this one"
-                          : "Choose the agreed estimate for this item"}
+                          ? t("game.nobodyCouldSize")
+                          : t("game.chooseAgreed")}
                       >
                         <p>
-                          {unanimousUnknown
-                            ? "Every voter played ?. That is a signal the item needs clearer acceptance criteria, not a number. Clarify it and re-vote, or record a placeholder and come back to it."
-                            : "The votes are mixed. Select the estimate your team agrees to record, then move straight to the next item. The summary above is only for discussion."}
+                          {unanimousUnknown ? t("game.allUnknownBody") : t("game.mixedBody")}
                         </p>
                         <Grid min="130px" className="inline-final-summary">
-                          <StatTile label="Votes shown" value={revealedVotesSummary || null} empty="Nobody has voted yet" />
-                          <StatTile label="Average" value={avgDisp} gold />
+                          <StatTile label={t("game.votesShown")} value={revealedVotesSummary || null} empty={t("game.nobodyVoted")} />
+                          <StatTile label={t("game.average")} value={avgDisp} gold />
                           <StatTile
-                            label="Spread"
-                            value={spread !== null ? `${spread} point${spread !== 1 ? "s" : ""}` : "Different votes"}
+                            label={t("game.spread")}
+                            value={spread !== null ? t(spread === 1 ? "game.spreadPoints" : "game.spreadPointsPlural", { n: spread }) : t("game.differentVotes")}
                           />
                         </Grid>
                         {/* Selection is aria-pressed on a Choice, not an .active
                             class: a class lets the visual state and the state a
                             screen reader announces disagree. */}
-                        <ChoiceGrid cols={5} role="group" aria-label="Choose final estimate">
+                        <ChoiceGrid cols={5} role="group" aria-label={t("game.chooseFinalAria")}>
                           {finalEstimateOptions.map((val) => (
                             <Choice
                               key={val}
                               compact
                               label={val}
                               selected={finalEstimate === val}
-                              aria-label={`Record ${val} as the agreed estimate`}
+                              aria-label={t("game.recordValueAria", { value: val })}
                               onSelect={() => setFinalEstimate(val)}
                             />
                           ))}
@@ -7819,7 +7800,7 @@ function GameScreen({
                     that — so deciding meant scrolling past the estimate to
                     find the button that commits it. */}
                 {isObs && (
-                  <Row className="round-actions" role="group" aria-label="Round actions">
+                  <Row className="round-actions" role="group" aria-label={t("game.roundActionsAria")}>
                     <Button
                       variant="primary"
                       size="lg"
@@ -7858,9 +7839,9 @@ function GameScreen({
                     className="story-add-row"
                     /* Not the panel heading again — the heading names the
                        queue, this names what typing here does. */
-                    label={`Add ${estMode.singular === "task" ? "a task" : "an item"}`}
+                    label={estMode.key === "tasks" ? t("game.addTask") : t("game.addItem")}
                     placeholder={estMode.placeholder}
-                    hint={`Paste a whole list, one ${estMode.singular} per line, and every line gets queued at once.`}
+                    hint={t("game.addHint", { unit: estMode.singular })}
                     value={storyInput}
                     onChange={(e) => setStoryInput(e.target.value)}
                     onPaste={(e) => {
@@ -7886,7 +7867,7 @@ function GameScreen({
                     <>
                       <div className="story-progress">
                         {estMode.progressLabel} {Math.min(activeStoryIdx + 1, stories.length)} of {stories.length}
-                        {allStoriesDone ? ` — all ${estMode.plural} estimated!` : ""}
+                        {allStoriesDone ? t("game.allEstimatedTail", { plural: estMode.plural }) : ""}
                       </div>
                       <div className="story-list">
                         {stories.map((s, i) => {
@@ -7907,8 +7888,8 @@ function GameScreen({
                                   icon="close"
                                   size="sm"
                                   className="story-item-remove"
-                                  label={`Remove ${s.name} from the queue`}
-                                  title="Remove from queue"
+                                  label={t("game.removeNamed", { name: s.name })}
+                                  title={t("game.removeFromQueue")}
                                   onClick={() => onRemoveStory?.(i)}
                                 />
                               )}
@@ -7954,7 +7935,7 @@ function GameScreen({
           <div className="rcol">
             {/* Players */}
             <div className="panel">
-              <span className="ptitle">At the Table</span>
+              <span className="ptitle">{t("game.atTheTable")}</span>
               {voters.length > 0 && !revealed && (
                 <>
                   <Row between className="vp-head" role="status" aria-live="polite">
@@ -7970,7 +7951,7 @@ function GameScreen({
                 </>
               )}
               {players.length === 0 && (
-                <EmptyState title="Nobody here yet">
+                <EmptyState title={t("game.nobodyYet")}>
                   Share the invite link and the table fills up as people arrive.
                 </EmptyState>
               )}
@@ -7987,9 +7968,9 @@ function GameScreen({
                       </div>
                       <div className="prole">
                         {p.voted ? (
-                          <span className="voted-label">Voted</span>
+                          <span className="voted-label">{t("game.votedLabel")}</span>
                         ) : (
-                          <span className="waiting-label">Hasn't voted yet</span>
+                          <span className="waiting-label">{t("game.notVoted")}</span>
                         )}
                       </div>
                     </div>
@@ -7999,7 +7980,7 @@ function GameScreen({
                         <Button
                           variant="ghost"
                           size="sm"
-                          aria-label={`Remove ${p.name} from the room`}
+                          aria-label={t("game.removeFromRoom", { name: p.name })}
                           onClick={() => onRemoveParticipant(p.id, p.name)}
                         >
                           Remove
@@ -8016,14 +7997,14 @@ function GameScreen({
                         {p.name}
                         {p.id === myId ? " (you)" : ""}
                       </div>
-                      <div className="prole">Facilitator · No vote</div>
+                      <div className="prole">{t("game.facilitatorNoVote")}</div>
                     </div>
                     <Row nowrap className="prow-actions">
                       {isObs && p.id !== myId && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          aria-label={`Remove ${p.name} from the room`}
+                          aria-label={t("game.removeFromRoom", { name: p.name })}
                           onClick={() => onRemoveParticipant(p.id, p.name)}
                         >
                           Remove
@@ -8085,15 +8066,21 @@ function GameScreen({
 
               // alignLabel: suppress until meaningful sample size (2+ stories); avoid judgmental "Needs work"
               const alignLabel = (consensusRate === null || storiesDone < 2) ? null
-                : consensusRate >= 80 ? "Excellent"
-                : consensusRate >= 60 ? "Good"
-                : consensusRate >= 40 ? "Fair"
-                : "Low consensus";
+                : consensusRate >= 80 ? t("game.alignExcellent")
+                : consensusRate >= 60 ? t("game.alignGood")
+                : consensusRate >= 40 ? t("game.alignFair")
+                : t("game.alignLow");
 
               const alignSub = consensusRate === null
-                ? "Record your first story to start tracking alignment."
-                : `${consensusCount} of ${storiesDone} ${storiesDone === 1 ? "story" : "stories"} agreed first vote`
-                  + (extraRounds > 0 ? ` · ${extraRounds} re-vote${extraRounds !== 1 ? "s" : ""}` : "");
+                ? t("game.recordFirst")
+                : t("game.alignSub", {
+                    done: consensusCount,
+                    total: storiesDone,
+                    unit: storiesDone === 1 ? estMode.singular : estMode.plural,
+                  })
+                  + (extraRounds > 0
+                    ? t(extraRounds === 1 ? "game.alignRevote" : "game.alignRevotePlural", { n: extraRounds })
+                    : "");
 
               // Deck breakdown — frequency map across all sized stories/rounds
               const freqMap = {};
@@ -8108,10 +8095,10 @@ function GameScreen({
               const tshirtBreakdown = isTshirt
                 ? tshirtOrder.map((size) => ({ size, count: freqMap[size] || 0 }))
                 : [];
-              const deckLabel = deck === "fibonacci" ? "Fibonacci"
-                : deck === "tshirt" ? "T-Shirt sizes"
-                : "Powers of 2";
-              const unitLabel = isTshirt ? "" : " sp";
+              const deckLabel = deck === "fibonacci" ? t("deck.fibonacci")
+                : deck === "tshirt" ? t("game.deckTshirtSizes")
+                : t("deck.powers");
+              const unitLabel = isTshirt ? "" : t("game.unitPoints");
 
               // Per-item list — queue names when available, fallback to mode label + index
               const listedStories = sizedStories.map((s, i) => ({
@@ -8143,10 +8130,9 @@ function GameScreen({
               if (storiesDone === 0 && sizedStories.length === 0) {
                 return (
                   <div className="panel">
-                    <span className="ptitle">Sprint Analytics</span>
-                    <EmptyState title="Nothing recorded yet">
-                      Consensus rate, spread, and {estMode.singular} totals appear here after the first
-                      recorded estimate.
+                    <span className="ptitle">{t("game.sprintAnalytics")}</span>
+                    <EmptyState title={t("game.nothingRecorded")}>
+                      {t("game.analyticsEmpty", { singular: estMode.singular })}
                     </EmptyState>
                   </div>
                 );
@@ -8154,7 +8140,7 @@ function GameScreen({
 
               return (
                 <div className="panel">
-                  <span className="ptitle">Sprint Analytics</span>
+                  <span className="ptitle">{t("game.sprintAnalytics")}</span>
 
                   {/* ── Section 1: Sprint Snapshot ──
                       A stack, not a Grid: three tiles auto-fitted two-up in a
@@ -8165,21 +8151,21 @@ function GameScreen({
                       value={storiesDone}
                     />
                     <StatTile
-                      label={isTshirt ? "Most used size" : "Sprint scope"}
+                      label={isTshirt ? t("game.mostUsedSize") : t("game.sprintScope")}
                       value={(isTshirt ? tshirtMostCommon : scopeDisp) === "—" ? null : isTshirt ? tshirtMostCommon : scopeDisp}
-                      empty="After the first estimate"
+                      empty={t("game.afterFirst")}
                     />
                     <StatTile
-                      label={isTshirt ? "Size mix" : `Avg / ${estMode.singular}`}
+                      label={isTshirt ? t("game.sizeMix") : t("game.avgPer", { unit: estMode.singular })}
                       value={(isTshirt ? tshirtSizeMix : avgDisp2) === "—" ? null : isTshirt ? tshirtSizeMix : avgDisp2}
-                      empty="After the first estimate"
+                      empty={t("game.afterFirst")}
                     />
                   </div>
 
                   {/* ── Section 2: Team Alignment ── */}
                   <div className="a-align">
                     <Row between className="a-align-head">
-                      <span className="a-align-title">Team Alignment</span>
+                      <span className="a-align-title">{t("game.teamAlignment")}</span>
                       {/* Rule 5: the bar's colour band is a second signal, never
                           the only one — the word says the same thing. */}
                       {consensusRate !== null && (
@@ -8190,11 +8176,11 @@ function GameScreen({
                     </Row>
                     <Progress
                       value={consensusRate ?? 0}
-                      label={`Team alignment ${consensusRate ?? 0} per cent`}
+                      label={t("game.teamAlignmentAria", { n: consensusRate ?? 0 })}
                       className={`a-align-bar ${fillClass}`}
                     />
                     <div className="a-align-sub">{alignSub}</div>
-                    <div className="a-align-note">% of {estMode.plural} where all voters agreed on the first vote</div>
+                    <div className="a-align-note">{t("game.alignNote", { plural: estMode.plural })}</div>
                   </div>
 
                   {/* ── Section 3: T-shirt size breakdown ── */}
@@ -8219,22 +8205,22 @@ function GameScreen({
                   {/* ── Section 4: Sized this sprint ── */}
                   <div className="a-stories" ref={sizedListRef} tabIndex={-1}>
                     <div className="a-section-title">
-                      {estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized{listedStories.length > 0 ? ` (${listedStories.length})` : ""}
+                      {t("game.pluralSized", { plural: estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1) })}{listedStories.length > 0 ? ` (${listedStories.length})` : ""}
                     </div>
                     {listedStories.length > 0 ? (
                       <ResultsTable
                         className="a-story-list"
                         columns={[
-                          { key: "idx", label: "#", numeric: true },
+                          { key: "idx", label: t("game.colIndex"), numeric: true },
                           { key: "name", label: estMode.singular.charAt(0).toUpperCase() + estMode.singular.slice(1) },
-                          { key: "estimate", label: "Estimate", numeric: true },
+                          { key: "estimate", label: t("game.colEstimate"), numeric: true },
                           /* A real column heading, not a blank one — the
                              stacked layout under 760px prints every heading in
                              front of its cell, so an empty string would leave a
                              button on a line with nothing naming it. Hidden at
                              table widths, where 81px of the rail's 343 went to
                              a word that three ✕ buttons had already said. */
-                          { key: "remove", label: "Remove", hideLabel: true },
+                          { key: "remove", label: t("game.colRemove"), hideLabel: true },
                         ]}
                         rows={listedStories.map((st, i) => ({
                           id: i,
@@ -8246,17 +8232,17 @@ function GameScreen({
                               icon="close"
                               size="sm"
                               className="a-story-delete"
-                              label={`Delete the ${st.estimate} estimate for ${st.name}`}
+                              label={t("game.deleteEstimateAria", { estimate: st.estimate, name: st.name })}
                               onClick={() => { rememberDialogOpener(); setPendingDelete(st); }}
                             />
                           ),
                         }))}
                       />
                     ) : (
-                      <EmptyState title={`No ${estMode.plural} sized yet`}>
+                      <EmptyState title={t("game.noneSized", { plural: estMode.plural })}>
                         {storiesDone > 0
-                          ? `Add ${estMode.singular} names to the queue to track estimates here.`
-                          : `Estimates appear here after the first recorded round.`}
+                          ? t("game.addNamesHint", { singular: estMode.singular })
+                          : t("game.estimatesAppear")}
                       </EmptyState>
                     )}
                   </div>
@@ -8290,30 +8276,30 @@ function GameScreen({
                     <span className="streak-fire" aria-hidden="true">
                       {"\u2666".repeat(streak >= 5 ? 3 : streak >= 3 ? 2 : 1)}
                     </span>{" "}
-                    {streak === 1 ? "Estimation spree!" : `${streak}-round spree!`}
+                    {streak === 1 ? t("game.spree") : t("game.spreeN", { n: streak })}
                   </>
                 }
               >
                 {streak >= 5
-                  ? "Unstoppable. The team is perfectly aligned."
+                  ? t("game.spree4")
                   : streak >= 3
-                  ? "Team is locked in, great backlog clarity"
+                  ? t("game.spree3")
                   : streak === 2
-                  ? "Two in a row, team understands the work"
-                  : "First consensus, everyone on the same page"}
+                  ? t("game.spree2")
+                  : t("game.spree1")}
               </Alert>
             )}
 
             {/* Session summary, works with or without a named queue */}
             {summaryRows.length > 0 && (
               <div className="panel">
-                <span className="ptitle">Sprint Summary</span>
+                <span className="ptitle">{t("game.sprintSummary")}</span>
                 <ResultsTable
                   className="summary-rows"
                   caption={`${summarySized} of ${summaryRows.length} sized${summaryTotalPoints !== null ? ` · ${summaryTotalPoints} points total` : ""}`}
                   columns={[
-                    { key: "name", label: "Item" },
-                    { key: "estimate", label: "Estimate", numeric: true },
+                    { key: "name", label: t("game.colItem") },
+                    { key: "estimate", label: t("game.colEstimate"), numeric: true },
                   ]}
                   rows={summaryRows.map((row, i) => ({
                     id: i,
@@ -8332,16 +8318,22 @@ function GameScreen({
                     paper, and the only export that can carry the mark. */}
                 <PrintReport
                   title={summaryTitle}
-                  meta={`Room ${code || "—"} · ${new Date().toLocaleDateString("en-GB", {
-                    day: "numeric", month: "long", year: "numeric",
-                  })} · ${summarySized} of ${summaryRows.length} ${estMode.plural} sized${
-                    summaryTotalPoints !== null ? ` · ${summaryTotalPoints} points total` : ""
-                  }`}
-                  columns={["#", "Item", "Estimate"]}
+                  meta={t("game.reportMeta", {
+                    code: code || "—",
+                    date: new Date().toLocaleDateString(LOCALES[getLocale()].inLanguage, {
+                      day: "numeric", month: "long", year: "numeric",
+                    }),
+                    sized: summarySized,
+                    total: summaryRows.length,
+                    plural: estMode.plural,
+                  }) + (summaryTotalPoints !== null
+                    ? t("game.reportPointsTotal", { n: summaryTotalPoints })
+                    : "")}
+                  columns={[t("game.colIndex"), t("game.colItem"), t("game.colEstimate")]}
                   rows={summaryRows.map((r, i) => [
                     String(i + 1),
                     r.name,
-                    r.estimate != null ? String(r.estimate) : "not estimated",
+                    r.estimate != null ? String(r.estimate) : t("game.notEstimated"),
                   ])}
                 />
                 {showWtpPoll && <WtpPoll onDone={() => setWtpDone(true)} />}
@@ -8362,11 +8354,11 @@ function GameScreen({
       <Modal
         open={!!pendingDelete}
         onClose={() => setPendingDelete(null)}
-        title={`Delete this ${estMode.singular}?`}
+        title={t("game.deleteConfirm", { unit: estMode.singular })}
         subtitle={pendingDelete ? `${pendingDelete.name} — recorded at ${pendingDelete.estimate}` : undefined}
         footer={
           <>
-            <Button data-autofocus onClick={() => setPendingDelete(null)}>Cancel</Button>
+            <Button data-autofocus onClick={() => setPendingDelete(null)}>{t("game.cancel")}</Button>
             <Button
               variant="danger-strong"
               onClick={() => {

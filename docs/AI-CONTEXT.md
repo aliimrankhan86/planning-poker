@@ -24,14 +24,14 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 386 KB |
-| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 63 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 383 KB |
+| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 68 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 30 KB |
 | `src/design-system/components.css` | The `pp-` component classes | 58 KB |
 | `src/design-system/index.js` | The React components. Import from here | 38 KB |
 | `src/design-system/README.md` | The rulebook: theming, the ten rules, the decision table | 20 KB |
-| `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 10 KB |
+| `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 13 KB |
 | `scripts/build-rules.mjs` | Strips comments from the Firebase rules to make the console-pasteable copy | 1 KB |
 | `scripts/gen-ai-context.mjs` | Generates this file | 13 KB |
 | `database.rules.json` | Firebase rules, with comments. **Source of truth.** | 19 KB |
@@ -46,7 +46,7 @@ Do not split it without a reason that outweighs that.
   implying otherwise is a bug.
 - **Room capacity: 20 people**, facilitators included. One constant,
   `MAX_PARTICIPANTS` in `src/routeMeta.mjs`, used by both the enforcement and the marketing copy.
-- **Card decks:** fibonacci, tshirt, powers.
+- **Card decks:** .
 - **An account is needed only to host a Team Room** (the URL slug is derived from the account
   name, so without one two different teams could collide on the same room) and to keep sprint
   history. Joining any room, including a Team Room someone shared, never needs an account.
@@ -161,9 +161,9 @@ migration, and they should fall over time, never rise.
 `src/design-system/design-system.test.js` computes the actual WCAG contrast of
 every semantic role in both themes and fails if one drops below AA.
 
-## Components in App.js (31)
+## Components in App.js (32)
 
-`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `AgileEstimationToolPage`, `FeaturesPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
+`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `LanguageSwitcher`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `AgileEstimationToolPage`, `FeaturesPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
 
 ---
 

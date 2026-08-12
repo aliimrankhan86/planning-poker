@@ -9,6 +9,15 @@
    homepage title, description, and canonical on all fourteen routes.
 ═══════════════════════════════════════════════════════════════ */
 
+import {
+  LOCALES,
+  LOCALE_CODES,
+  TRANSLATED_LOCALES,
+  LOCALIZED_PATHS,
+  CONTENT as LOCALE_CONTENT,
+  META as LOCALE_META,
+} from "./locales/index.mjs";
+
 export const SITE_URL = "https://www.pointpoker.app";
 // ?v=2 is a cache-buster, not a real query. LinkedIn, Facebook, Slack and X all
 // key their unfurl cache on the image URL, so replacing og-image.png in place
@@ -224,6 +233,17 @@ const HOME_FAQ = [
   {
     q: "Do I need a Jira plugin to use this?",
     a: "No, and there isn't one. Paste your issues into the room queue in a single go, estimate together, then export the agreed points as CSV and bulk-update Jira, Linear or Azure DevOps from the file. Nothing to install and no admin approval needed.",
+  },
+  /* These two were rendered on the home page but were missing from this list,
+     so the FAQPage schema and the page disagreed in both directions at once.
+     The page now renders this array, which is the only way the two can agree. */
+  {
+    q: "What is the Team Alignment score?",
+    a: "The Team Alignment score, which only facilitators see, is the percentage of stories that reached consensus on the first vote — every voter playing the same card. A high score means the backlog is well defined. A low one flags stories that need clearer acceptance criteria before the sprint starts, which is more useful than it sounds.",
+  },
+  {
+    q: "What happens to my session data?",
+    a: "Rooms are temporary. A room and its votes are deleted when the session ends, and idle rooms are swept automatically. There is no advertising and there are no third-party analytics cookies. Sprint history is stored only if you are signed in, and only for you.",
   },
 ];
 
@@ -890,3 +910,81 @@ export const ROUTE_CONTENT = {
 };
 
 export const PRERENDER_LINKS = ALL_LINKS;
+
+/* ── LOCALE ROUTES ──────────────────────────────────────────────────
+   The translated pages are folded into the same three tables the English
+   ones live in, keyed by their full path ("/de/scrum-poker"). Everything
+   downstream — the router, applyRouteMeta, <ContentPage>, the prerenderer,
+   the sitemap — then works on them without knowing locales exist.
+
+   `locale` and `basePath` ride along on each meta entry so the prerenderer
+   can emit the right <html lang>, og:locale, JSON-LD inLanguage and the
+   hreflang set without re-parsing the URL it was handed.
+─────────────────────────────────────────────────────────────────── */
+
+// The translations are written with {max} and {email} rather than a literal
+// 20 and a literal address, so the participant cap the Firebase rules enforce
+// cannot drift away from the cap six languages of marketing copy advertise.
+const VARS = { max: MAX_PARTICIPANTS, email: SUPPORT_EMAIL };
+const fillVars = (node) => {
+  if (typeof node === "string") {
+    return node.replace(/\{(\w+)\}/g, (m, k) => (k in VARS ? String(VARS[k]) : m));
+  }
+  if (Array.isArray(node)) return node.map(fillVars);
+  if (node && typeof node === "object") {
+    return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, fillVars(v)]));
+  }
+  return node;
+};
+
+export const localeUrl = (code, path) => {
+  const { prefix } = LOCALES[code];
+  if (!prefix) return path;
+  return path === "/" ? `${prefix}/` : `${prefix}${path}`;
+};
+
+/* English pages in the translated set need the same alternates the translated
+   ones carry, or the hreflang cluster is one-directional and Google ignores it.
+
+   "/" is deliberately not written into STATIC_ROUTE_META: sitemapPaths()
+   builds ["/", ...Object.keys(STATIC_ROUTE_META)], so adding it here would
+   put the home page in the sitemap twice. It carries its tags on DEFAULT_META
+   instead, which is the object every consumer already falls back to. */
+DEFAULT_META.locale = "en";
+DEFAULT_META.basePath = "/";
+for (const path of LOCALIZED_PATHS) {
+  if (path === "/") continue;
+  STATIC_ROUTE_META[path] = { ...STATIC_ROUTE_META[path], locale: "en", basePath: path };
+}
+
+for (const code of TRANSLATED_LOCALES) {
+  for (const path of LOCALIZED_PATHS) {
+    const url = localeUrl(code, path);
+    const m = LOCALE_META[code][path];
+    // The home page is the app, so its locale URL renders JoinScreen. Every
+    // other localized page is prose, and its screen is its own path — the same
+    // trick STATIC_SCREEN_BY_PATH already uses for the English data pages.
+    STATIC_SCREEN_BY_PATH[url] = path === "/" ? "join" : url;
+    ROUTE_CONTENT[url] = fillVars(LOCALE_CONTENT[code][path]);
+    STATIC_ROUTE_META[url] = {
+      title: fillVars(m.title),
+      description: fillVars(m.description),
+      canonical: `${SITE_URL}${url}`,
+      ogUrl: `${SITE_URL}${url}`,
+      robots: "index, follow",
+      locale: code,
+      basePath: path,
+    };
+  }
+}
+
+/* Every URL a path exists at, including its own — reciprocal by construction,
+   which is the condition Google puts on honouring any hreflang at all. */
+export const alternatesFor = (basePath) =>
+  LOCALIZED_PATHS.includes(basePath)
+    ? LOCALE_CODES.map((code) => ({
+        code,
+        hreflang: LOCALES[code].hreflang,
+        url: `${SITE_URL}${localeUrl(code, basePath)}`,
+      }))
+    : [];
