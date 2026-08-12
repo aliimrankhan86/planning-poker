@@ -743,6 +743,50 @@ describe("translations", () => {
     expect(withLocale("en", "/scrum-poker")).toBe("/scrum-poker");
   });
 
+  describe("header language selector", () => {
+    afterEach(() => window.history.pushState({}, "", "/"));
+
+    const openSelector = () => {
+      const trigger = screen.getByRole("button", { name: /choose a language\. current:/i });
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      return { trigger, menu: document.getElementById("header-language-options") };
+    };
+
+    test("is visible in the header and offers every live language", () => {
+      render(<App />);
+      const { menu } = openSelector();
+      expect(menu).not.toBeNull();
+      const links = within(menu).getAllByRole("link");
+      expect(links.map((link) => link.textContent)).toEqual(
+        LOCALE_CODES.map((code) => LOCALES[code].label),
+      );
+      expect(links.map((link) => link.getAttribute("href"))).toEqual(["/", "/pt/", "/ja/"]);
+      expect(links[0]).toHaveAttribute("aria-current", "page");
+    });
+
+    test("keeps the equivalent translated page when switching", () => {
+      window.history.pushState({}, "", "/scrum-poker");
+      render(<App />);
+      const { menu } = openSelector();
+      expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+        "/scrum-poker",
+        "/pt/scrum-poker",
+        "/ja/scrum-poker",
+      ]);
+    });
+
+    test("closes on Escape and returns focus to its trigger", () => {
+      render(<App />);
+      const { trigger } = openSelector();
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(document.getElementById("header-language-options")).not.toBeInTheDocument();
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      expect(document.activeElement).toBe(trigger);
+    });
+  });
+
   /* Every leak found in this work was found by eye, in a browser, one at a
      time: a timer label, a Leave button, the theme switch, a confirm dialog.
      Reading the source is what finds the next one. The screens listed here are

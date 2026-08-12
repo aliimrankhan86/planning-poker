@@ -23,13 +23,15 @@
   account.
 - English lives at root; Portuguese at `/pt/`; Japanese at `/ja/`. Only `/`,
   `/what-is-planning-poker`, `/scrum-poker`, and
-  `/fibonacci-story-points` are localised.
+  `/fibonacci-story-points` are localised. A compact language selector is
+  visible in the global header and preserves the equivalent translated page;
+  the footer retains the always-visible language links.
 - `/de/`, `/es/`, `/fr/`, and `/nl/` are retired and permanently redirect to
   English. Keep the two redirect rules in `vercel.json`, including the
   `:path(.*)` form that covers trailing slashes.
 - Firebase rules and both Cloud Functions were deployed and
   production-verified on 11 August 2026.
-- Quality gate at handover: 429 Jest tests pass, build succeeds, sitemap has 26
+- Quality gate after the header language selector: 432 Jest tests pass, build succeeds, sitemap has 26
   URLs, and prerender writes 26 route documents.
 - There is no blocking or half-finished code work.
 

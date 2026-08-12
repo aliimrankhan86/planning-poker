@@ -66,9 +66,9 @@ import * as en from "./en.mjs";
    locale is not enough on its own — those URLs were submitted to Search
    Console, and an unmatched path on Vercel is a bare 404. */
 export const LOCALES = {
-  en: { hreflang: "en",    ogLocale: "en_GB", inLanguage: "en-GB", label: "English",   prefix: "" },
-  pt: { hreflang: "pt-BR", ogLocale: "pt_BR", inLanguage: "pt-BR", label: "Português", prefix: "/pt" },
-  ja: { hreflang: "ja",    ogLocale: "ja_JP", inLanguage: "ja-JP", label: "日本語",     prefix: "/ja" },
+  en: { hreflang: "en",    ogLocale: "en_GB", inLanguage: "en-GB", label: "English",   shortLabel: "EN", prefix: "" },
+  pt: { hreflang: "pt-BR", ogLocale: "pt_BR", inLanguage: "pt-BR", label: "Português", shortLabel: "PT", prefix: "/pt" },
+  ja: { hreflang: "ja",    ogLocale: "ja_JP", inLanguage: "ja-JP", label: "日本語",     shortLabel: "JA", prefix: "/ja" },
 };
 
 export const DEFAULT_LOCALE = "en";

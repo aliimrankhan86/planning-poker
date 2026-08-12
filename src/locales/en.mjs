@@ -14,6 +14,7 @@ export const ui = {
   /* ── Language switcher ── */
   "lang.label": "Language",
   "lang.aria": "Choose a language",
+  "lang.current": "Choose a language. Current: {language}",
 
   /* ── Global chrome ── */
   "skip.main": "Skip to main content",
@@ -36,6 +37,7 @@ export const ui = {
   "nav.signOut": "Sign out",
   "nav.signIn": "Sign in",
   "nav.startFree": "Start a free room",
+  "nav.startShort": "Start",
 
   /* ── Footer ── */
   "footer.aria": "Site footer",

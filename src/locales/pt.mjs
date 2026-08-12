@@ -13,6 +13,7 @@
 export const ui = {
   "lang.label": "Idioma",
   "lang.aria": "Escolher idioma",
+  "lang.current": "Escolher idioma. Atual: {language}",
 
   "skip.main": "Pular para o conteúdo principal",
   "nav.aria": "Navegação principal",
@@ -34,6 +35,7 @@ export const ui = {
   "nav.signOut": "Sair",
   "nav.signIn": "Entrar",
   "nav.startFree": "Criar uma sala grátis",
+  "nav.startShort": "Criar",
 
   "footer.aria": "Rodapé do site",
   "footer.freeText":

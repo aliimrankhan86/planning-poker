@@ -18,6 +18,7 @@
 export const ui = {
   "lang.label": "言語",
   "lang.aria": "言語を選ぶ",
+  "lang.current": "言語を選ぶ。現在：{language}",
 
   "skip.main": "本文へスキップ",
   "nav.aria": "メインナビゲーション",
@@ -39,6 +40,7 @@ export const ui = {
   "nav.signOut": "ログアウト",
   "nav.signIn": "ログイン",
   "nav.startFree": "無料でルームを作る",
+  "nav.startShort": "作る",
 
   "footer.aria": "フッター",
   "footer.freeText":

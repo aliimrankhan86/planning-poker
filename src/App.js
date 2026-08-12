@@ -1584,6 +1584,49 @@ body::before {
 }
 .navbar-left  { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
 .navbar-right { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 0 auto; }
+.header-language { position: relative; flex: none; }
+.header-language__trigger.pp-btn {
+  min-width: var(--tap-min);
+  padding-inline: var(--sp-3);
+  gap: var(--sp-2);
+}
+.header-language__code {
+  color: inherit; font-weight: var(--fw-bold); letter-spacing: .08em;
+  font-variant-numeric: normal;
+}
+.header-language__chevron {
+  width: var(--sp-2); height: var(--sp-2); flex: none;
+  border-right: var(--bw-thick) solid currentColor;
+  border-bottom: var(--bw-thick) solid currentColor;
+  transform: translateY(-25%) rotate(45deg);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.header-language__trigger[aria-expanded="true"] .header-language__chevron {
+  transform: translateY(25%) rotate(225deg);
+}
+.header-language__menu {
+  position: absolute; z-index: var(--z-overlay);
+  top: calc(100% + var(--sp-2)); right: 0;
+  min-width: calc(var(--sp-20) * 2);
+  padding: var(--sp-2);
+  list-style: none;
+  background: var(--surface-2); border: var(--bw-hair) solid var(--border-strong);
+  border-radius: var(--r-md); box-shadow: var(--shadow-soft);
+}
+.header-language__link {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: var(--tap-min); padding-inline: var(--sp-3);
+  border-radius: var(--r-sm); color: var(--text-2);
+  font-size: var(--fs-2); font-weight: var(--fw-medium);
+  text-decoration: none; white-space: nowrap;
+}
+.header-language__link:hover {
+  color: var(--text-1); background: var(--tint-raise-2);
+}
+.header-language__link[aria-current="page"] {
+  color: var(--action-quiet); background: var(--gold-fill-1);
+}
+.nav-start-free-short { display: none; }
 /* Links scroll horizontally on narrow screens instead of being clipped
    behind the right-hand actions. Scrollbar hidden — the fade edge hints at it. */
 .navbar-links {
@@ -2069,16 +2112,25 @@ ol.marketing-list li::marker {
   .footer-inner { grid-template-columns: 1fr; }
   /* text-align: left used to be undone here — the base rule no longer needs it. */
   .footer-legal-note { max-width: 100%; }
-  .navbar-inner { gap: var(--sp-2); }
-  .navbar-right { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .navbar-inner {
+    height: auto; min-height: var(--sp-16); padding-block: var(--sp-2);
+    gap: var(--sp-2);
+  }
+  .navbar-left { flex: 0 0 auto; }
+  .navbar-right {
+    flex: 1 1 auto; gap: 6px; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .header-language__trigger.pp-btn {
+    padding-inline: var(--sp-2); gap: var(--sp-1);
+  }
   /* Narrow bars buy width by tightening horizontal padding and dropping to the
      small type role. The 44px tap floor from pp-btn is deliberately untouched:
      a phone is where it matters most. */
   /* "Sign in" used to be hidden here, which left a signed-out phone with no
-     route to an account at all — the footer only grows an Account column once
-     you already have one. Measured at 320px, the narrowest phone still sold:
-     logo 44 + toggle 36 + Sign in 66 + Start a free room 130 + gaps = 288 in a
-     288px content box, on one row, no overflow. It fits; it stays. */
+     route to an account at all. The language control makes the full CTA label
+     too wide at this size, so its visible label shortens while its accessible
+     name stays complete. Authenticated controls may wrap; the bar grows with
+     them instead of clipping a language or account action. */
   .navbar .nav-btn-login,
   .navbar .nav-btn-history,
   .navbar .nav-btn-register {
@@ -2096,6 +2148,8 @@ ol.marketing-list li::marker {
   .navbar.authenticated .nav-account-name { max-width: 104px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
   .navbar.authenticated .nav-account-plan { font-size: var(--fs-1); padding: 3px 8px; letter-spacing: .1em; }
   .navbar:not(.authenticated) .nav-account { display: none; }
+  .nav-start-free-long { display: none; }
+  .nav-start-free-short { display: inline; }
   .footer-plan-item:last-of-type .footer-plan-text { display: none; }
 }
 /* ══════════════════════ REDUCED MOTION (WCAG 2.3.3) ══════════════════════ */
@@ -2526,6 +2580,7 @@ function NavBar({
           )}
         </div>
         <div className="navbar-right">
+          <HeaderLanguageSwitcher />
           {/* Dark is the default and stays the default; this is the only way to
               leave it, and the choice is remembered. It sits before the account
               controls so it never competes with the one primary action. */}
@@ -2559,8 +2614,10 @@ function NavBar({
                   size="sm"
                   className="nav-btn-register"
                   onClick={onStartFree}
+                  aria-label={t("nav.startFree")}
                 >
-                  {t("nav.startFree")}
+                  <span className="nav-start-free-long">{t("nav.startFree")}</span>
+                  <span className="nav-start-free-short" aria-hidden="true">{t("nav.startShort")}</span>
                 </Button>
               )}
             </>
@@ -2568,6 +2625,73 @@ function NavBar({
         </div>
       </div>
     </nav>
+  );
+}
+
+const languageTarget = (code, pathname = window.location.pathname) => {
+  const { path } = splitLocalePath(pathname);
+  return LOCALIZED_PATHS.includes(path) ? withLocale(code, path) : withLocale(code, "/");
+};
+
+/* The footer carries the crawlable, always-open list. The header carries this
+   compact disclosure so choosing a language is visible before someone has
+   read the whole page. Both use real links and the same target helper, keeping
+   the URL and document language in agreement. */
+function HeaderLanguageSwitcher() {
+  const current = getLocale();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const closeOutside = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      rootRef.current?.querySelector("button")?.focus();
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div className="header-language" ref={rootRef}>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="header-language__trigger"
+        aria-label={t("lang.current", { language: LOCALES[current].label })}
+        aria-expanded={open}
+        aria-controls="header-language-options"
+        onClick={() => setOpen((shown) => !shown)}
+      >
+        <span className="header-language__code" aria-hidden="true">{LOCALES[current].shortLabel}</span>
+        <span className="header-language__chevron" aria-hidden="true" />
+      </Button>
+      {open && (
+        <ul id="header-language-options" className="header-language__menu" aria-label={t("lang.aria")}>
+          {LOCALE_CODES.map((code) => (
+            <li key={code}>
+              <a
+                href={languageTarget(code)}
+                hrefLang={LOCALES[code].hreflang}
+                lang={LOCALES[code].hreflang}
+                className="header-language__link"
+                aria-current={code === current ? "page" : undefined}
+              >
+                {LOCALES[code].label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -2583,12 +2707,6 @@ function NavBar({
 ═══════════════════════════════════════════════════════════════ */
 function LanguageSwitcher() {
   const current = getLocale();
-  const { path } = splitLocalePath(window.location.pathname);
-  // Translated page → the same page in the target language. Anything else —
-  // /pricing, /terms, a live room — → that language's home page, because that
-  // is the only URL which exists in it.
-  const target = (code) =>
-    LOCALIZED_PATHS.includes(path) ? withLocale(code, path) : withLocale(code, "/");
   return (
     <nav className="lang-switcher" aria-label={t("lang.aria")}>
       <span className="lang-switcher-label">{t("lang.label")}</span>
@@ -2596,7 +2714,7 @@ function LanguageSwitcher() {
         {LOCALE_CODES.map((code) => (
           <li key={code}>
             <a
-              href={target(code)}
+              href={languageTarget(code)}
               hrefLang={LOCALES[code].hreflang}
               lang={LOCALES[code].hreflang}
               className={`lang-link${code === current ? " is-current" : ""}`}

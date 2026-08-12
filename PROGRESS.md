@@ -4,13 +4,16 @@
 ## Authoritative status — 12 August 2026
 
 - Repository handover was clean and fully pushed at `ff7d8cb`.
-- 429 Jest tests pass; production build succeeds; sitemap and prerender both
+- 432 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
 - Product is free for everyone: 20 people per room, no paid tier, Stripe,
   licences, Pro gating, trial clock, card fields, or ads.
 - Live languages are English, Portuguese (`/pt/`), and Japanese (`/ja/`). The
   retired `/de/`, `/es/`, `/fr/`, and `/nl/` prefixes permanently redirect to
   English and must remain in `vercel.json`.
+- The global header now exposes a compact language selector on desktop and
+  mobile. It keeps the equivalent translated page where one exists and falls
+  back to the selected language's home page for English-only routes.
 - Firebase rules and both Cloud Functions were deployed and
   production-verified on 11 August 2026.
 - Nothing is blocking and no code feature is half-finished.
@@ -1404,3 +1407,30 @@ Deferred work cannot be completed in this session for explicit reasons:
   already complete and another machine pass would not answer the open question.
 - The SEO evidence window needs roughly six weeks of crawl/ranking data and is
   due around 23 September.
+
+---
+
+## Session — 12 August 2026 — header language selector
+
+Closed the navigation gap between the three live languages.
+
+- Added a compact `EN` / `PT` / `JA` selector to the persistent global header,
+  using the existing design-system button, tokens, focus treatment, and 44px
+  touch-target rules.
+- Kept real links rather than swapping copy client-side, so each choice changes
+  the URL and remains valid for crawlers, canonicals, and `hreflang`.
+- Reused one target resolver in both header and footer: translated pages keep
+  their equivalent path, while English-only pages lead to the selected
+  language's home page rather than a nonexistent localized route.
+- Added Escape-to-close with focus return, outside-click dismissal, current
+  language state, full native language names in the menu, and localized
+  accessible labels.
+- Tightened the narrow header so the selector, theme control, account entry,
+  and room action remain reachable; verified English at 320px, Portuguese at
+  375px, Japanese at 320px, and English at 1440px in a real Chromium render.
+- Added three interaction/mapping tests. Full verification is 432 Jest tests,
+  81 Firebase rules assertions, 6 Functions tests, and a successful production
+  build with 26 sitemap URLs and 26 prerendered documents.
+
+The dated Search Console and native-review actions above remain unchanged; this
+session creates no new deferred work.

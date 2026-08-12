@@ -11,7 +11,7 @@ Free online planning poker for agile and Scrum teams. Start a real-time estimati
 - Story or task queues, bulk paste, timer, simultaneous reveal, and re-voting
 - Facilitator analytics plus clipboard, CSV, and PDF export
 - Free accounts for two permanent Team Rooms and sprint history
-- English, Portuguese (`/pt/`), and Japanese (`/ja/`)
+- English, Portuguese (`/pt/`), and Japanese (`/ja/`), with a header language selector
 - No paid tier, advertising, or card fields
 
 ## Stack
