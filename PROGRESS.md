@@ -1004,3 +1004,42 @@ impressions), `/agile-estimation-tool` (~45), `/remote-sprint-planning`,
 `/about`, `/trust`, `/features`, `/pricing`. Same conversion applies when the
 demand justifies it. `/terms` and `/privacy` are 38 and 45 words and should
 stay that way.
+
+**One correction to the read above.** The Pages report is dated 7 Aug and its
+indexed sample lags. `/support` looked unindexed there but URL Inspection —
+which queries the live index — says it is indexed. Only
+`/planning-poker-online` was genuinely missing, and that was confirmed live
+("Discovered – currently not indexed") before anything was requested. Trust
+URL Inspection over the Pages report when the two disagree.
+
+### Baseline for the 6-week comparison
+
+Average position, 10 May – 9 Aug 2026, before any of today's work is crawled.
+This is the number to re-pull, not clicks — at position 50+ clicks stay zero
+whatever we do, so movement in position is the only early signal.
+
+| Query | Impr | Position | Page that owns it |
+|-------|-----:|---------:|-------------------|
+| scrum poker | 553 | 58.7 | `/scrum-poker` |
+| pointing poker | 253 | 63.0 | `/pointing-poker` |
+| planning poker | 204 | 80.4 | `/planning-poker-online` |
+| point poker *(brand)* | 153 | 12.7 | `/` |
+| scrumpoker | 134 | 36.4 | `/scrum-poker` |
+| poker planning | 96 | 80.7 | `/pointing-poker` |
+| sprint poker | 68 | 59.6 | `/pointing-poker` |
+| story points fibonacci | 60 | 56.4 | `/fibonacci-story-points` |
+| fibonacci estimation template | 34 | 86.9 | `/fibonacci-story-points` |
+
+**What the long tail confirms.** Fibonacci is the deepest cluster we have —
+dozens of variants including "why use fibonacci for story points" (57.3) and
+"why do story points use fibonacci" (50.0), which the new "Why the gaps widen"
+section answers directly. "fibonacci story points to hours" (65.8) and
+"…to days" (62.0) bridge to `/story-points-to-hours`, now linked from that
+page. Microsoft Teams demand is real ("planning poker teams", "planning poker
+in teams", "scrum poker teams") and currently answered only by an FAQ entry on
+the Jira page.
+
+**And the translation lever is no longer theoretical:** the query list contains
+`ストーリーポイントフィボナッチ` and `is planning poker nog wel relevant`. Japanese
+and Dutch searches are already reaching this site with no translated page to
+land on.
