@@ -1291,3 +1291,37 @@ Ship the research before the translation, not after. Seven languages cost a day
 and produced two that are worth keeping — the four cuts were free only because
 the URLs had not been indexed yet. The same mistake made a week later is a
 permanent redirect table.
+
+### Correction, same session — the redirect that only half worked
+
+The first version of the retired-locale redirects used `:path*`:
+
+```
+/:locale(de|es|fr|nl)/:path*  →  /:path*
+```
+
+Live on Vercel, that redirects `/de` and `/de/scrum-poker` and **not** `/de/`.
+Vercel compiles redirect sources in strict mode, so the repeat modifier will not
+match an empty remainder after a trailing slash.
+
+`/de/` is precisely the form that was submitted to Search Console this morning.
+And the failure mode is worse than a 404: an unmatched path falls through to
+Vercel's SPA fallback, so `/de/` returned **200 with the English home page** —
+a soft 404 on the exact URLs the rule was written to handle. Only the canonical
+tag pointing at `/` kept it from being an outright duplicate-content problem.
+
+Fixed by spelling the remainder `(.*)`, which does match empty:
+
+```
+/:locale(de|es|fr|nl)/:path(.*)  →  /:path
+```
+
+Verified against production per URL form: `/de` redirect, `/de/` redirect,
+`/de/scrum-poker` redirect, `/es/` redirect, `/fr/what-is-planning-poker`
+redirect, `/nl/` redirect; `/ja/` and `/pt/` still 200.
+
+**The lesson worth keeping:** no local test sees Vercel's router. The test suite
+happily passed a redirect rule that did not work, because all it could check was
+that the rule existed. Anything routing-shaped has to be probed on the live
+deployment, per URL form — with and without the trailing slash — and the probe
+belongs in the same session as the change, not the next one.

@@ -12,8 +12,8 @@
       "permanent": true
     },
     {
-      "source": "/:locale(de|es|fr|nl)/:path*",
-      "destination": "/:path*",
+      "source": "/:locale(de|es|fr|nl)/:path(.*)",
+      "destination": "/:path",
       "permanent": true
     },
     {

@@ -843,11 +843,22 @@ describe("translations", () => {
     for (const code of RETIRED) expect(LOCALE_CODES).not.toContain(code);
 
     const rules = vercel.redirects.filter((r) => RETIRED.every((c) => r.source.includes(c)));
-    /* Two rules, not one: ":path*" does not match the bare prefix, so /de/
-       would 404 while /de/scrum-poker redirected. */
+    /* Two rules and these exact two patterns, both of which were arrived at the
+       hard way against the live deployment:
+
+         /:locale(de|es|fr|nl)            matches the bare "/de"
+         /:locale(de|es|fr|nl)/:path(.*)  matches "/de/" and "/de/scrum-poker"
+
+       ":path*" looks like the natural spelling of the second and is wrong.
+       Vercel compiles sources in strict mode, so ":path*" matches "/de" and
+       "/de/scrum-poker" but not "/de/" — and "/de/" is the form that was
+       submitted to Search Console. With ":path*" the retired home pages
+       silently fell through to the SPA fallback and returned 200 with the
+       English home page: a soft 404 on exactly the URLs this rule exists for.
+       "(.*)" matches an empty remainder, which is what closes that gap. */
     expect(rules.map((r) => r.source).sort()).toEqual([
       "/:locale(de|es|fr|nl)",
-      "/:locale(de|es|fr|nl)/:path*",
+      "/:locale(de|es|fr|nl)/:path(.*)",
     ]);
     for (const rule of rules) expect(rule.permanent).toBe(true);
   });
