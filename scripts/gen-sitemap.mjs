@@ -39,7 +39,7 @@ await activateAllLocales();
    checkout; Vercel builds from a real clone, so the git path is the one that
    runs in production. */
 export const CONTENT_SOURCE = new URL("../src/routeMeta.mjs", import.meta.url).pathname;
-/* The translations are page copy too. Left out, editing a German page would
+/* The translations are page copy too. Left out, editing a Japanese page would
    leave lastmod and dateModified pointing at whenever routeMeta.mjs last
    changed — a freshness signal that misses the edit that actually happened. */
 const LOCALE_SOURCE = new URL("../src/locales/", import.meta.url).pathname;

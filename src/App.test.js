@@ -724,21 +724,22 @@ describe("translations", () => {
   });
 
   test("a locale prefix only matches a whole path segment", () => {
-    // /designers is not German, and /esbuild is not Spanish.
-    expect(splitLocalePath("/designers").locale).toBe("en");
-    expect(splitLocalePath("/de/scrum-poker")).toEqual({ locale: "de", path: "/scrum-poker" });
-    expect(splitLocalePath("/de")).toEqual({ locale: "de", path: "/" });
+    // /japanese is not Japanese, and /ptolemy is not Portuguese.
+    expect(splitLocalePath("/japanese").locale).toBe("en");
+    expect(splitLocalePath("/ptolemy").locale).toBe("en");
+    expect(splitLocalePath("/ja/scrum-poker")).toEqual({ locale: "ja", path: "/scrum-poker" });
+    expect(splitLocalePath("/ja")).toEqual({ locale: "ja", path: "/" });
     expect(splitLocalePath("/")).toEqual({ locale: "en", path: "/" });
   });
 
   test("an untranslated page keeps its English URL in every language", () => {
-    // Otherwise a German footer links to /de/pricing, which has no document,
+    // Otherwise a Japanese footer links to /ja/pricing, which has no document,
     // no sitemap entry and nothing but the English page behind it.
     for (const code of LOCALE_CODES) {
       expect(withLocale(code, "/pricing")).toBe("/pricing");
       expect(withLocale(code, "/terms")).toBe("/terms");
     }
-    expect(withLocale("de", "/scrum-poker")).toBe("/de/scrum-poker");
+    expect(withLocale("ja", "/scrum-poker")).toBe("/ja/scrum-poker");
     expect(withLocale("en", "/scrum-poker")).toBe("/scrum-poker");
   });
 
@@ -819,6 +820,36 @@ describe("translations", () => {
       expect(`header ${code}: ${teamHeader.source.includes(code)}`).toBe(`header ${code}: true`);
     }
     expect(teamHeader.headers[0]).toEqual({ key: "X-Robots-Tag", value: "noindex, nofollow" });
+    // Exact set, not merely "contains": a prefix left in vercel.json after its
+    // language was deleted routes /de/t/slug to a locale that no longer loads.
+    for (const source of [teamRewrite.source, teamHeader.source]) {
+      const listed = source.slice(source.indexOf("(") + 1, source.indexOf(")")).split("|");
+      expect(listed.sort()).toEqual([...prefixes].sort());
+    }
+  });
+
+  /* Five languages shipped on 12 Aug 2026 and four were cut the same day — the
+     reasoning is in the WHY ONLY THESE TWO block in src/locales/index.mjs.
+     Their URLs had already been submitted to Search Console by then, and an
+     unmatched path on Vercel is a bare 404, so the cut prefixes need a 301 onto
+     the English page that replaced them. This test exists to stop a later
+     tidy-up deleting those redirects on the grounds that nothing links there
+     any more — Google's index is the thing that still links there. */
+  test("the retired locale prefixes 301 instead of 404ing", () => {
+    const vercel = JSON.parse(
+      readFileSync(join(__dirname, "..", "vercel.json"), "utf8"),
+    );
+    const RETIRED = ["de", "es", "fr", "nl"];
+    for (const code of RETIRED) expect(LOCALE_CODES).not.toContain(code);
+
+    const rules = vercel.redirects.filter((r) => RETIRED.every((c) => r.source.includes(c)));
+    /* Two rules, not one: ":path*" does not match the bare prefix, so /de/
+       would 404 while /de/scrum-poker redirected. */
+    expect(rules.map((r) => r.source).sort()).toEqual([
+      "/:locale(de|es|fr|nl)",
+      "/:locale(de|es|fr|nl)/:path*",
+    ]);
+    for (const rule of rules) expect(rule.permanent).toBe(true);
   });
 
   /* The legal pages are deliberately English-only: a mistranslated liability

@@ -2,9 +2,9 @@ User-agent: *
 Allow: /
 
 # Live estimation rooms are per-session and hold no indexable content.
-# Two Team Room lines, not one: "/t/" does not match "/de/t/my-team", and a
-# German facilitator's invite link carries the locale prefix. "/*?room=" needs
-# no locale twin — the wildcard already covers "/de/?room=ABC12".
+# Two Team Room lines, not one: "/t/" does not match "/ja/t/my-team", and a
+# Japanese facilitator's invite link carries the locale prefix. "/*?room="
+# needs no locale twin — the wildcard already covers "/ja/?room=ABC12".
 Disallow: /t/
 Disallow: /*/t/
 Disallow: /*?room=

@@ -178,8 +178,8 @@ function graphFor(path, m, content) {
 /* The link block at the foot of every shell. On a translated page the four
    pages that exist in that language link to their own locale; everything else
    links to its English URL, because that is the only URL those pages have.
-   Sending a German reader to /de/pricing — which has no document — would be a
-   soft 404 authored on purpose. */
+   Sending a Japanese reader to /ja/pricing — which has no document — would be
+   a soft 404 authored on purpose. */
 function shellLinks(path, locale) {
   const ui = UI[locale] || UI.en;
   const label = (href, fallback) => {
@@ -253,8 +253,8 @@ function render(template, path, m) {
   const locale = m.locale || "en";
   let html = template;
 
-  // The document's own language. Left at "en" on a German page it tells every
-  // screen reader to pronounce German with English phonemes, and tells Google
+  // The document's own language. Left at "en" on a Japanese page it tells every
+  // screen reader to pronounce Japanese with English phonemes, and tells Google
   // the page is English regardless of what the hreflang says.
   html = html.replace(/<html lang="[^"]*"/i, `<html lang="${LOCALES[locale].hreflang}"`);
 

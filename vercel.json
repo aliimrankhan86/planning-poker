@@ -10,6 +10,16 @@
       ],
       "destination": "https://www.pointpoker.app/:path*",
       "permanent": true
+    },
+    {
+      "source": "/:locale(de|es|fr|nl)/:path*",
+      "destination": "/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:locale(de|es|fr|nl)",
+      "destination": "/",
+      "permanent": true
     }
   ],
   "headers": [
@@ -23,7 +33,7 @@
       ]
     },
     {
-      "source": "/:locale(de|es|fr|pt|nl|ja)/t/:slug",
+      "source": "/:locale(pt|ja)/t/:slug",
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -86,7 +96,7 @@
       "destination": "/"
     },
     {
-      "source": "/:locale(de|es|fr|pt|nl|ja)/t/:slug",
+      "source": "/:locale(pt|ja)/t/:slug",
       "destination": "/:locale/"
     }
   ]

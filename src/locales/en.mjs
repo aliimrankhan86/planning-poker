@@ -4,7 +4,7 @@
    shipping half-translated.
 
    `{max}` and `{email}` are filled by i18n.mjs from MAX_PARTICIPANTS and
-   SUPPORT_EMAIL, so the participant cap in six languages of marketing copy and
+   SUPPORT_EMAIL, so the participant cap in the translated marketing copy and
    the cap the Firebase rules actually enforce cannot drift apart.
 
    English page *content* is not here — it stays in routeMeta.mjs, which is the

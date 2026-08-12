@@ -1189,3 +1189,105 @@ For the new languages there is no baseline — they had no impressions to have a
 position. The first signal will be impressions appearing at all on `/de/`,
 `/es/`, `/fr/`, `/pt/`, `/nl/`, `/ja/`, and the query list picking up non-English
 terms beyond the two that prompted this work.
+
+---
+
+## Session — 12 August 2026 (later) — cut seven languages down to three
+
+Seven languages shipped this morning. Four were cut this afternoon. That is not
+a reversal — it is the research that should have run before the translation,
+run afterwards, and acted on while acting was still free.
+
+### The question
+
+"Which of the languages I implemented are actually in demand, and if I keep two
+or three, which?"
+
+### What the data said
+
+Twelve months of Search Console, grouped by language:
+
+| Language | Impressions | Clicks | EF EPI 2025 | Native-tool competition |
+|----------|------------:|-------:|-------------|-------------------------|
+| Dutch    | ~610 | 0 | 624 — #1 in the world | one multi-locale template site |
+| German   | ~500 | 0 | 615 — #4 | dense: 5+ dedicated German tools |
+| Portuguese | 192 | 0 | 482 — Low | **none** — articles only |
+| Spanish  | ~95  | 0 | 540 — Moderate | not researched |
+| Japanese | 85   | 0 | 446 — Very low | hobby-grade, fragmented |
+| French   | ~82  | 0 | 539 — Moderate | not researched |
+
+Impression counts alone say "keep Dutch and German". That is the trap. The
+query drill-down is what actually decided it: **26 of 26 Dutch queries and 33 of
+33 German queries are English loanwords** — "planning poker" 231, "scrum poker"
+136/180. Cross-referenced against the EF English Proficiency Index the pattern
+stops looking like a coincidence: the Netherlands is ranked first in the world
+for English and Germany fourth. Those markets are already arriving at the
+English pages. A Dutch translation is a second door into a room they are
+already standing in.
+
+Japan and Brazil invert it. Japan has the weakest English of any market that
+reaches this site (446, "Very low"), and the only non-English query ever
+recorded in this property is Japanese — `ストーリーポイントフィボナッチ`. Brazil
+pairs low English proficiency with the largest open competitive gap found: no
+dedicated Portuguese planning-poker tool appears to exist, only articles.
+
+German was the hardest cut and stayed cut. It is the one market with real
+incumbents, and develappers.de sells specifically on "hosted in Germany, no
+tracking to the USA" — not an objection a Firebase + Vercel app can answer.
+
+**The caveat, recorded because it is the thing a later session will forget:**
+Search Console only reports queries a page actually got an impression for, and
+this site was English-only for its entire life. Native-language demand is
+systematically under-counted by that data. Absence of German queries is not
+evidence of absent German demand. The proficiency split carries the argument;
+the impressions only corroborate it.
+
+### What shipped
+
+- `src/locales/{de,es,fr,nl}.mjs` deleted; `LOCALES` and `LOADERS` down to
+  `en`, `pt`, `ja`.
+- A `WHY ONLY THESE TWO` block at the top of `src/locales/index.mjs` carrying
+  the numbers, the reasoning and the caveat, so the next session does not
+  re-derive it or re-add German on the strength of the traffic column.
+- **Two 301 rules in `vercel.json`** for `/de`, `/es`, `/fr`, `/nl` and
+  everything under them. This is the part that is easy to miss: those URLs had
+  already been submitted to Search Console this morning, and an unmatched path
+  on Vercel is a bare 404. Two rules and not one, because `:path*` does not
+  match the bare prefix — without the second, `/de/` would 404 while
+  `/de/scrum-poker` redirected.
+- The team-room locale regex narrowed to `(pt|ja)` in both the rewrite and the
+  `X-Robots-Tag` header.
+- The existing vercel parity test tightened from "contains every live prefix" to
+  **exact set equality** — the old version would not have noticed a dead prefix
+  left behind. Plus one new test pinning the 301s, so a later tidy-up cannot
+  delete them on the grounds that nothing links there any more. Google's index
+  is the thing that still links there.
+- Comment examples throughout (`/de/pricing`, "a German reader", "six languages
+  of marketing copy") rewritten to a locale that still exists. A comment that
+  documents a deleted route is worse than no comment.
+
+### Verification
+
+- 429 tests pass, up one from 428.
+- Build clean, no warnings. Main bundle 243.63 kB gzip, **down 267 B**; only
+  `locale-ja` (22.26 kB) and `locale-pt` (17.77 kB) chunks remain.
+- 26 prerendered route documents, down from 42. `build/de`, `build/es`,
+  `build/fr`, `build/nl` gone.
+- hreflang clusters down to four links (en, pt-BR, ja, x-default) and reciprocal
+  in both directions.
+- Sitemap 26 URLs, no duplicates.
+
+### Search Console
+
+Sitemap resubmitted at the new count. The four retired locale homes were
+inspected to confirm they now serve a 301 to the English page rather than a
+404 — they had been submitted for indexing hours earlier, so leaving them
+unmatched would have handed Google four dead URLs it had been explicitly asked
+to crawl.
+
+### Standing lesson
+
+Ship the research before the translation, not after. Seven languages cost a day
+and produced two that are worth keeping — the four cuts were free only because
+the URLs had not been indexed yet. The same mistake made a week later is a
+permanent redirect table.

@@ -392,9 +392,9 @@ const LOCALE_PREFIX_RE = LOCALE_CODES.map((c) => LOCALES[c].prefix)
   .map((p) => p.replace("/", "\\/"))
   .join("|");
 const TEAM_ROUTE = new RegExp(`^(?:${LOCALE_PREFIX_RE})?/t/([a-z0-9-]+)$`, "i");
-// Leaving a room in a German session lands on /de/, not on the English home.
+// Leaving a room in a Japanese session lands on /ja/, not on the English home.
 const homePath = () => withLocale(getLocale(), "/");
-/* Both carry the locale. A German facilitator who copies the invite link and
+/* Both carry the locale. A Japanese facilitator who copies the invite link and
    pastes it into the team chat was otherwise sending everyone to the English
    app — the room worked, but the room was the one place the whole team ended
    up, in the wrong language, because of a prefix the sharer never saw. */
@@ -2561,8 +2561,8 @@ function NavBar({
 
 /* ═══════════════════════ LANGUAGE SWITCHER ═══════════════════════
    Real anchors doing real navigations, deliberately. A client-side language
-   toggle is invisible to a crawler — it would never find /de/ at all — and it
-   would leave the URL saying English while the page said German, which is the
+   toggle is invisible to a crawler — it would never find /ja/ at all — and it
+   would leave the URL saying English while the page said Japanese, which is the
    one thing hreflang cannot survive.
 
    Each link points at the same page in the target language when that page is
@@ -3174,8 +3174,8 @@ export default function App() {
   /* Callers pass the English path — "/pricing", "/scrum-poker" — and this is
      the one place it becomes a real URL. withLocale prefixes it when the page
      exists in the active language and leaves it alone when it does not, so a
-     German session's footer link to /pricing goes to the English page that
-     actually exists rather than to a /de/pricing that does not. */
+     Japanese session's footer link to /pricing goes to the English page that
+     actually exists rather than to a /ja/pricing that does not. */
   const navTo = (path) => {
     const url = withLocale(getLocale(), path);
     window.history.pushState({}, "", url);
@@ -4555,7 +4555,7 @@ function MarketingPageShell({
   onNavigate,
   children,
 }) {
-  /* Reading a German site and landing on a page that is English only is
+  /* Reading a Japanese site and landing on a page that is English only is
      confusing unless somebody says so. The translated set is deliberately
      small; this is the one line that keeps the rest from feeling broken. */
   const englishOnly =
@@ -5900,7 +5900,7 @@ function HistoryModal({ onClose, history }) {
   const fmtDate = (ts) => {
     if (!ts) return "—";
     // The reader's locale, not a hardcoded en-GB: "12 Aug 2026" is not a date
-    // format a Japanese or German reader recognises at a glance.
+    // format a Japanese or Brazilian reader recognises at a glance.
     return new Date(ts).toLocaleDateString(LOCALES[getLocale()].inLanguage, {
       day: "numeric", month: "short", year: "numeric",
     });

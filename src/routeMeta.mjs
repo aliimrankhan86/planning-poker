@@ -988,7 +988,7 @@ export const PRERENDER_LINKS = ALL_LINKS;
 
 /* ── LOCALE ROUTES ──────────────────────────────────────────────────
    The translated pages are folded into the same three tables the English
-   ones live in, keyed by their full path ("/de/scrum-poker"). Everything
+   ones live in, keyed by their full path ("/ja/scrum-poker"). Everything
    downstream — the router, applyRouteMeta, <ContentPage>, the prerenderer,
    the sitemap — then works on them without knowing locales exist.
 
@@ -999,7 +999,7 @@ export const PRERENDER_LINKS = ALL_LINKS;
 
 // The translations are written with {max} and {email} rather than a literal
 // 20 and a literal address, so the participant cap the Firebase rules enforce
-// cannot drift away from the cap six languages of marketing copy advertise.
+// cannot drift away from the cap the translated marketing copy advertises.
 const VARS = { max: MAX_PARTICIPANTS, email: SUPPORT_EMAIL };
 const fillVars = (node) => {
   if (typeof node === "string") {
@@ -1033,8 +1033,8 @@ for (const path of LOCALIZED_PATHS) {
 }
 
 /* The router has to recognise every locale URL from the first render, or a
-   direct hit on /de/scrum-poker falls through to the join screen before the
-   German chunk has landed. These are just path-to-path strings — no
+   direct hit on /ja/scrum-poker falls through to the join screen before the
+   Japanese chunk has landed. These are just path-to-path strings — no
    translation involved — so they are installed eagerly and cost nothing.
 
    The home page is the app, so its locale URL renders JoinScreen. Every other

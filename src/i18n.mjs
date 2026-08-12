@@ -4,10 +4,10 @@
    The locale is a property of the URL, not of the browser, not of a cookie,
    and not of a toggle in the corner. That is the whole design:
 
-     • a crawler asking for /de/ gets German, every time, with no JavaScript
+     • a crawler asking for /ja/ gets Japanese, every time, with no JavaScript
      • one URL is one language, so hreflang and canonical mean what they say
      • Accept-Language sniffing would serve Googlebot (which crawls as en-US
-       from US IPs) the English page at the German URL, which is the classic
+       from US IPs) the English page at the Japanese URL, which is the classic
        way to get an entire language folder dropped from the index
 
    Because the locale can only change by navigating, it is a module-level
@@ -36,12 +36,12 @@ const PREFIXES = LOCALE_CODES.filter((c) => LOCALES[c].prefix).map((c) => [
   c,
 ]);
 
-/* "/de/scrum-poker" → { locale: "de", path: "/scrum-poker" }
+/* "/ja/scrum-poker" → { locale: "ja", path: "/scrum-poker" }
    "/scrum-poker"    → { locale: "en", path: "/scrum-poker" }
-   "/de"             → { locale: "de", path: "/" }
+   "/ja"             → { locale: "ja", path: "/" }
 
-   A prefix only counts when it is a whole segment, so /designers never reads
-   as German. */
+   A prefix only counts when it is a whole segment, so /japanese never reads
+   as Japanese. */
 export function splitLocalePath(pathname = "/") {
   for (const [prefix, code] of PREFIXES) {
     if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
@@ -52,8 +52,8 @@ export function splitLocalePath(pathname = "/") {
 }
 
 /* The inverse, with one rule that matters: a path with no translation returns
-   its English URL. Without that, a German page's footer would link to
-   /de/pricing — a URL that has no document, no entry in the sitemap, and
+   its English URL. Without that, a Japanese page's footer would link to
+   /ja/pricing — a URL that has no document, no entry in the sitemap, and
    nothing but the English page behind it. Linking straight to /pricing is
    both honest and the only version that resolves. */
 export function withLocale(locale, path = "/") {
@@ -93,7 +93,7 @@ export function initLocaleFromPath(pathname) {
 /* Substitutions the strings may use. Only two, and both are single-sourced
    elsewhere — the participant cap that the room rules actually enforce, and
    the support address that the JSON-LD ContactPoint advertises. Writing "20"
-   into six languages of marketing copy is how the cap and the copy drift. */
+   into every language of marketing copy is how the cap and the copy drift. */
 const VARS = { max: MAX_PARTICIPANTS, email: SUPPORT_EMAIL };
 
 const fill = (s, vars) =>

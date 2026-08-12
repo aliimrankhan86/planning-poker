@@ -29,7 +29,7 @@ const start = () =>
    wait is not a blank screen — the prerendered HTML is already in #root and
    stays there until React replaces it, so the reader sees the finished page
    throughout. Rendering first and translating after would have been the worse
-   trade: an English flash on a German URL, and a second layout pass.
+   trade: an English flash on a Japanese URL, and a second layout pass.
 
    A failed chunk still renders, in English, because that beats a blank page —
    and t() falls back to English key by key, so nothing shows a raw key. */
