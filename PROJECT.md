@@ -1047,6 +1047,7 @@ further investment. Do not rebuild a paid funnel from legacy counter names.
 ## § Commit History Summary
 
 ```
+bae6695  docs: reconcile handover with current product state
 cff462a  docs: update PROGRESS.md with UX/IA improvements from current session
 bf7ee1d  ux: fix Team Room gate UX, 1-click workspace actions, solo invite banner
 54c64b2  feat: anonymous usage analytics + firebase rules + privacy update

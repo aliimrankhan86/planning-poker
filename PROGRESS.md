@@ -1373,6 +1373,8 @@ belongs in the same session as the change, not the next one.
 Closed everything that could be done without waiting for an external clock or
 human reviewer.
 
+**Implementation commit:** `bae6695` (`docs: reconcile handover with current product state`).
+
 - Reconciled the repo notes with the August free-for-everyone pivot. The
   authoritative sections of `PROJECT.md`, `PROGRESS.md`, `CLAUDE.md`,
   `AGENTS.md`, and `README.md` now say there is no paid tier, Stripe task,
