@@ -11,8 +11,10 @@ import {
   ROUTE_CONTENT,
   SITE_URL,
   SUPPORT_FAQ,
+  alternatesFor,
 } from "./routeMeta.mjs";
 import { splitLocalePath, withLocale } from "./i18n.mjs";
+import { UI, LOCALE_CODES, LOCALES, LOCALIZED_PATHS } from "./locales/index.mjs";
 
 // Firebase is a network dependency; the smoke test only cares that the shell renders.
 jest.mock("./firebase", () => ({ auth: { currentUser: null }, db: {} }));
@@ -566,5 +568,170 @@ describe("no Firebase write fails silently", () => {
     // get() rejects. Three of these existed.
     expect(source).not.toMatch(/new Promise\([^)]*\)\s*=>\s*\n?\s*onValue\(/);
     expect(source).not.toMatch(/onValue\([^;]*\{\s*onlyOnce:\s*true\s*\}/);
+  });
+});
+
+/* ═══════════════════════ TRANSLATIONS ═══════════════════════
+   A half-translated language is worse than an untranslated one: the reader
+   gets a page that switches language mid-sentence and a crawler gets an
+   hreflang cluster pointing at a page that is really English. These tests are
+   what make "complete" a build condition rather than a promise.
+═══════════════════════════════════════════════════════════════ */
+describe("translations", () => {
+  const enKeys = Object.keys(UI.en);
+
+  test("every locale defines exactly the English key set", () => {
+    for (const code of LOCALE_CODES) {
+      const keys = Object.keys(UI[code]);
+      const missing = enKeys.filter((k) => !keys.includes(k));
+      const extra = keys.filter((k) => !enKeys.includes(k));
+      expect(`${code} missing: ${missing.join(", ")}`).toBe(`${code} missing: `);
+      expect(`${code} extra: ${extra.join(", ")}`).toBe(`${code} extra: `);
+    }
+  });
+
+  test("a value that is a list in English is a list of the same length everywhere", () => {
+    for (const key of enKeys) {
+      if (!Array.isArray(UI.en[key])) continue;
+      for (const code of LOCALE_CODES) {
+        expect(`${code}/${key}: ${UI[code][key]?.length}`).toBe(`${code}/${key}: ${UI.en[key].length}`);
+      }
+    }
+  });
+
+  /* A dropped {max} silently un-sources the participant cap: the sentence still
+     reads, and it quietly stops matching what the Firebase rules enforce. */
+  test("every placeholder in an English string survives translation", () => {
+    const holders = (v) =>
+      [...String(v).matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
+    for (const key of enKeys) {
+      if (Array.isArray(UI.en[key])) continue;
+      const want = holders(UI.en[key]);
+      if (!want) continue;
+      for (const code of LOCALE_CODES) {
+        expect(`${code}/${key}: ${holders(UI[code][key])}`).toBe(`${code}/${key}: ${want}`);
+      }
+    }
+  });
+
+  /* A key whose translation is byte-identical to English is usually a key
+     somebody forgot — but plenty of short labels are legitimately the same
+     word: the brand, the deck faces, and the agile vocabulary that these
+     languages genuinely borrow ("Sprint", "Scrum poker", "Planning poker
+     online", "pts / sprint", and "Legal", which is already Spanish).
+
+     Counting words rather than listing exceptions is what makes this hold as
+     languages are added: a forgotten *sentence* is always five words or more,
+     and a borrowed *term* never is. No allowlist to keep in sync, and a real
+     omission still fails the build. */
+  const words = (v) => (String(v).match(/[A-Za-zÀ-ÿ]{2,}/g) || []).length;
+
+  test("no locale left an English sentence sitting in a translated table", () => {
+    for (const code of LOCALE_CODES) {
+      if (code === "en") continue;
+      const untranslated = enKeys.filter(
+        (k) => typeof UI.en[k] === "string" && UI[code][k] === UI.en[k] && words(UI.en[k]) >= 5,
+      );
+      expect(`${code}: ${untranslated.join(", ")}`).toBe(`${code}: `);
+    }
+  });
+
+  test("the rule is tight enough to catch a real omission", () => {
+    // Guards the guard: if `words` ever stopped counting, the test above would
+    // pass vacuously on a locale that was a straight copy of English.
+    expect(words(UI.en["home.freeBody"])).toBeGreaterThanOrEqual(5);
+    expect(words(UI.en["deck.tshirt"])).toBeLessThan(5);
+    expect(words(UI.en["app.teamRoomTitle"])).toBeLessThan(5);
+  });
+
+  test("every locale has every localized page, with meta and content", () => {
+    for (const code of LOCALE_CODES) {
+      for (const base of LOCALIZED_PATHS) {
+        const url = code === "en" ? base : `${LOCALES[code].prefix}${base === "/" ? "/" : base}`;
+        expect(`${url} content`).toBe(`${url}${ROUTE_CONTENT[url] ? " content" : ""}`);
+        const meta = url === "/" ? DEFAULT_META : STATIC_ROUTE_META[url];
+        expect(`${url} meta`).toBe(`${url}${meta ? " meta" : ""}`);
+        // Same limits the English route table is held to.
+        expect(`${url}:${meta.title.length <= 70}`).toBe(`${url}:true`);
+        expect(`${url}:${meta.description.length >= 70 && meta.description.length <= 320}`)
+          .toBe(`${url}:true`);
+      }
+    }
+  });
+
+  test("titles and descriptions are unique across every language", () => {
+    const titles = new Map();
+    const descriptions = new Map();
+    for (const [path, m] of [["/", DEFAULT_META], ...Object.entries(STATIC_ROUTE_META)]) {
+      if (PRIVATE_PATHS.includes(path)) continue;
+      expect(`${path} title dup of ${titles.get(m.title) || ""}`).toBe(`${path} title dup of `);
+      expect(`${path} desc dup of ${descriptions.get(m.description) || ""}`)
+        .toBe(`${path} desc dup of `);
+      titles.set(m.title, path);
+      descriptions.set(m.description, path);
+    }
+  });
+
+  /* Google honours an hreflang cluster only when every page in it points back
+     at every other, including itself. One missing return link and the whole
+     set is discarded — silently. */
+  test("the hreflang cluster is reciprocal and carries an x-default", () => {
+    for (const base of LOCALIZED_PATHS) {
+      const alternates = alternatesFor(base);
+      expect(`${base}: ${alternates.length}`).toBe(`${base}: ${LOCALE_CODES.length}`);
+      for (const a of alternates) {
+        // Each alternate must list the identical set, this page included.
+        const back = alternatesFor(base).map((x) => x.url).sort();
+        expect(back).toContain(a.url);
+      }
+      expect(alternates.some((a) => a.code === "en")).toBe(true);
+    }
+    // And a path with no translation advertises none at all, rather than
+    // claiming an alternate that is really the English page again.
+    expect(alternatesFor("/pricing")).toEqual([]);
+    expect(alternatesFor(undefined)).toEqual([]);
+  });
+
+  test("every localized URL is in the sitemap, and nothing is listed twice", () => {
+    const xml = readFileSync(join(__dirname, "..", "public", "sitemap.xml"), "utf8");
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+    expect(new Set(locs).size).toBe(locs.length);
+    for (const code of LOCALE_CODES) {
+      for (const base of LOCALIZED_PATHS) {
+        const url = `${SITE_URL}${code === "en" ? base : `${LOCALES[code].prefix}${base === "/" ? "/" : base}`}`;
+        expect(locs).toContain(url);
+      }
+    }
+  });
+
+  test("a locale prefix only matches a whole path segment", () => {
+    // /designers is not German, and /esbuild is not Spanish.
+    expect(splitLocalePath("/designers").locale).toBe("en");
+    expect(splitLocalePath("/de/scrum-poker")).toEqual({ locale: "de", path: "/scrum-poker" });
+    expect(splitLocalePath("/de")).toEqual({ locale: "de", path: "/" });
+    expect(splitLocalePath("/")).toEqual({ locale: "en", path: "/" });
+  });
+
+  test("an untranslated page keeps its English URL in every language", () => {
+    // Otherwise a German footer links to /de/pricing, which has no document,
+    // no sitemap entry and nothing but the English page behind it.
+    for (const code of LOCALE_CODES) {
+      expect(withLocale(code, "/pricing")).toBe("/pricing");
+      expect(withLocale(code, "/terms")).toBe("/terms");
+    }
+    expect(withLocale("de", "/scrum-poker")).toBe("/de/scrum-poker");
+    expect(withLocale("en", "/scrum-poker")).toBe("/scrum-poker");
+  });
+
+  /* The legal pages are deliberately English-only: a mistranslated liability
+     clause is a real liability, and the English text is the governing one. */
+  test("the legal pages are not translated", () => {
+    for (const path of ["/terms", "/privacy"]) {
+      expect(LOCALIZED_PATHS).not.toContain(path);
+      for (const code of LOCALE_CODES) {
+        if (code === "en") continue;
+        expect(STATIC_ROUTE_META[`${LOCALES[code].prefix}${path}`]).toBeUndefined();
+      }
+    }
   });
 });

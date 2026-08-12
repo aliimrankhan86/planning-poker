@@ -6,6 +6,7 @@
     <lastmod>2026-08-12</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/" />
     <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/" />
   </url>
   <url>
     <loc>https://www.pointpoker.app/about</loc>
@@ -24,12 +25,14 @@
     <lastmod>2026-08-12</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/what-is-planning-poker" />
     <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/what-is-planning-poker" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/what-is-planning-poker" />
   </url>
   <url>
     <loc>https://www.pointpoker.app/fibonacci-story-points</loc>
     <lastmod>2026-08-12</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/fibonacci-story-points" />
     <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/fibonacci-story-points" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/fibonacci-story-points" />
   </url>
   <url>
     <loc>https://www.pointpoker.app/agile-estimation-tool</loc>
@@ -52,6 +55,7 @@
     <lastmod>2026-08-12</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/scrum-poker" />
     <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/scrum-poker" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/scrum-poker" />
   </url>
   <url>
     <loc>https://www.pointpoker.app/story-point-estimation</loc>
@@ -86,23 +90,55 @@
     <lastmod>2026-08-12</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/" />
     <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/" />
   </url>
   <url>
     <loc>https://www.pointpoker.app/de/what-is-planning-poker</loc>
     <lastmod>2026-08-12</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/what-is-planning-poker" />
     <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/what-is-planning-poker" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/what-is-planning-poker" />
   </url>
   <url>
     <loc>https://www.pointpoker.app/de/fibonacci-story-points</loc>
     <lastmod>2026-08-12</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/fibonacci-story-points" />
     <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/fibonacci-story-points" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/fibonacci-story-points" />
   </url>
   <url>
     <loc>https://www.pointpoker.app/de/scrum-poker</loc>
     <lastmod>2026-08-12</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/scrum-poker" />
     <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/scrum-poker" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/scrum-poker" />
+  </url>
+  <url>
+    <loc>https://www.pointpoker.app/es/</loc>
+    <lastmod>2026-08-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/" />
+  </url>
+  <url>
+    <loc>https://www.pointpoker.app/es/what-is-planning-poker</loc>
+    <lastmod>2026-08-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/what-is-planning-poker" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/what-is-planning-poker" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/what-is-planning-poker" />
+  </url>
+  <url>
+    <loc>https://www.pointpoker.app/es/fibonacci-story-points</loc>
+    <lastmod>2026-08-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/fibonacci-story-points" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/fibonacci-story-points" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/fibonacci-story-points" />
+  </url>
+  <url>
+    <loc>https://www.pointpoker.app/es/scrum-poker</loc>
+    <lastmod>2026-08-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.pointpoker.app/scrum-poker" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://www.pointpoker.app/de/scrum-poker" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.pointpoker.app/es/scrum-poker" />
   </url>
 </urlset>

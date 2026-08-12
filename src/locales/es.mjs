@@ -1,0 +1,955 @@
+/* ═══════════════════════ SPANISH ═══════════════════════
+   Tratamiento: "tú". Las herramientas para equipos de desarrollo en español
+   (Slack, GitHub, Linear, Jira) tutean, y el original en inglés también es
+   informal.
+
+   El vocabulario ágil se queda en inglés porque así lo dicen los equipos:
+   story points, sprint, backlog, Scrum Master, Product Owner, planning poker,
+   Team Room. Traducirlo ("puntos de historia") suena a traducción automática y
+   además nadie lo busca así. Se traduce lo que sí se dice en español: sala,
+   ronda, estimación, consenso, dispersión, facilitador.
+═══════════════════════════════════════════════════════════════ */
+export const ui = {
+  "lang.label": "Idioma",
+  "lang.aria": "Elegir idioma",
+
+  "skip.main": "Saltar al contenido principal",
+  "nav.aria": "Navegación principal",
+  "nav.brandHome": "Point Poker, ir al inicio",
+  "nav.sections": "Otras páginas",
+  "nav.pricing": "Precios",
+  "nav.support": "Ayuda",
+  "nav.trust": "Privacidad",
+  "nav.faq": "Preguntas frecuentes",
+  "nav.toPricing": "Ir a precios",
+  "nav.toSupport": "Ir a la ayuda",
+  "nav.toTrust": "Ir a privacidad y fiabilidad",
+  "nav.toFaq": "Ir a las preguntas frecuentes",
+  "nav.history": "Historial",
+  "nav.viewHistory": "Ver el historial de sprints",
+  "nav.account": "Cuenta con sesión iniciada",
+  "nav.plan": "Gratis",
+  "nav.dashboard": "Panel de uso",
+  "nav.signOut": "Cerrar sesión",
+  "nav.signIn": "Iniciar sesión",
+  "nav.startFree": "Crear una sala gratis",
+
+  "footer.aria": "Pie de página",
+  "footer.freeText":
+    "Todas las funciones, para todos los equipos, sin tarjeta. Hasta {max} personas por sala, rondas ilimitadas, historias ilimitadas, sin anuncios.",
+  "footer.laterChip": "Más adelante",
+  "footer.laterText":
+    "Puede que lleguen complementos de pago cuando la herramienta tenga una base real de usuarios. Todo lo que aparece aquí seguirá siendo gratis.",
+  "footer.descSignedIn":
+    "Tu espacio está activo. Reutiliza cualquiera de tus dos Team Rooms, comparte el enlace de invitación y el historial de sprints se queda en tu cuenta.",
+  "footer.descGuest":
+    "Planning poker gratis y en tiempo real para equipos ágiles y de Scrum. Sin registro. Funciona en cualquier navegador.",
+  "footer.descGuest2":
+    "Hecho para Product Owners, Scrum Masters y equipos distribuidos que necesitan llegar rápido a un consenso claro sobre los story points.",
+  "footer.legal": "Legal",
+  "footer.terms": "Términos del servicio",
+  "footer.privacy": "Política de privacidad",
+  "footer.cookies": "Configuración de cookies",
+  "footer.gdpr": "Datos y RGPD",
+  "footer.product": "Producto",
+  "footer.account": "Cuenta",
+  "footer.workspaceActive": "Espacio activo · Gratis",
+  "footer.features": "Funciones",
+  "footer.support": "Ayuda",
+  "footer.emailSupport": "Soporte por correo",
+  "footer.home": "Planning poker gratis",
+  "footer.about": "Sobre Point Poker",
+  "footer.trustRel": "Privacidad y fiabilidad",
+  "footer.pricingPlans": "Precios y planes",
+  "footer.ppOnline": "Planning poker online",
+  "footer.supportContact": "Ayuda y contacto",
+  "footer.guides": "Guías",
+  "footer.guideWhatIs": "¿Qué es el planning poker?",
+  "footer.guidePointing": "Pointing poker y poker planning",
+  "footer.guideFib": "Story points de Fibonacci",
+  "footer.guideHours": "De story points a horas",
+  "footer.guideEstimation": "Estimación con story points",
+  "footer.guideJira": "Planning poker con Jira",
+  "footer.guideScrum": "Scrum poker",
+  "footer.guideRemote": "Sprint planning en remoto",
+  "footer.guideAgile": "Herramienta de estimación ágil",
+  "footer.copyright":
+    "© {year} Point Poker. Todos los derechos reservados. Registrada en Inglaterra y Gales.",
+  "footer.legalNote1":
+    "Point Poker se ofrece «tal cual», sin garantía de ningún tipo. Su uso está sujeto a nuestros",
+  "footer.legalNote2":
+    ". Firebase y Vercel son servicios de terceros y no están afiliados a Point Poker.",
+  "footer.englishOnly": "Las páginas legales solo están disponibles en inglés.",
+
+  "cookie.aria": "Aviso sobre almacenamiento",
+  "cookie.title": "Solo almacenamiento imprescindible",
+  "cookie.body":
+    "Firebase mantiene tu sesión; tu nombre visible y este aviso se guardan localmente. Sin cookies de publicidad, seguimiento ni analítica de terceros: no hay nada que rechazar.",
+  "cookie.privacy": "Privacidad",
+  "cookie.terms": "Términos",
+  "cookie.gotIt": "Entendido",
+
+  "page.back": "← Volver al inicio",
+  "page.startFree": "Crear una sala gratis",
+  "page.seeFeatures": "Ver todas las funciones",
+  "page.viewPricing": "Ver precios",
+  "page.howItWorks": "Cómo funciona",
+  "page.faqTitle": "Preguntas frecuentes",
+  "page.faqIntro": "Las preguntas que la gente escribe de verdad en el buscador, respondidas sin rodeos.",
+  "page.relatedTitle": "Páginas relacionadas",
+  "page.relatedIntro": "A dónde ir ahora, según quieras la teoría o la sala.",
+
+  "join.welcomeBack": "Bienvenido de nuevo",
+  "join.welcomeBackNamed": "Bienvenido de nuevo, {name}",
+  "join.title": "Planning poker gratis para equipos ágiles",
+  "join.subSignedIn":
+    "Abre un Team Room fijo para la planificación recurrente, o crea una sesión puntual.",
+  "join.sub":
+    "Reparte una sala, comparte el enlace y todos revelan a la vez. Todas las funciones son gratis y no necesitas cuenta para jugar.",
+  "join.trustAria": "Lo que incluye",
+  "join.trust1": "Gratis para todos",
+  "join.trust2": "Sin registro para jugar",
+  "join.trust3": "Hasta {max} en la mesa",
+  "join.trust4": "Sin anuncios",
+
+  "join.yourTeamRooms": "Tus Team Rooms",
+  "join.yourTeamRoomsSub":
+    "Dos URLs fijas ligadas a tu cuenta. Compártelas una vez y reutilízalas cada sprint.",
+  "join.room1": "Sala 1",
+  "join.room2": "Sala 2",
+  "join.openRoom": "Abrir {room} →",
+  "join.linkCopied": "Enlace copiado",
+  "join.copyLink": "Copiar enlace",
+  "join.renameBoth": "Renombrar ambas salas",
+  "join.sharedRoomName": "Nombre común de las salas",
+  "join.renamePlaceholder": "p. ej. Planificación de producto",
+  "join.saving": "Guardando…",
+  "join.save": "Guardar",
+  "join.renameSaved": "Guardado. Comparte los nuevos enlaces con tu equipo.",
+
+  "join.tabsAria": "Qué quieres hacer",
+  "join.tabCreate": "Crear",
+  "join.tabJoin": "Unirse",
+  "join.tabTeam": "Equipo",
+  "join.yourName": "Tu nombre",
+  "join.namePlaceholder": "p. ej. Alex Johnson",
+  "join.nameHint":
+    "El nombre que ve el resto de la mesa. Cambiarlo aquí no cambia tu cuenta.",
+  "join.roomCode": "Código de sala",
+  "join.roomCodePlaceholder": "p. ej. A1B2C",
+  "join.teamName": "Nombre del equipo",
+  "join.teamNamePlaceholder": "p. ej. Equipo de Producto",
+  "join.teamRoomsFree": "Los Team Rooms son gratis",
+  "join.teamRoomsFreeBody":
+    "Necesitan una cuenta gratuita para que nadie más pueda reclamar la URL de tu sala. Se tarda unos treinta segundos.",
+  "join.createFreeAccount": "Crear una cuenta gratis →",
+  "join.teamReady":
+    "La sala de este equipo está lista. Pon tu nombre, elige tu rol y únete a la sesión en curso.",
+  "join.teamReadyGuest":
+    "La sala de este equipo está lista. Pon tu nombre, elige tu rol y únete a la sesión en curso, sin necesidad de cuenta.",
+  "join.yourRole": "Tu rol",
+  "join.roleVoter": "Participante",
+  "join.roleVoterDesc": "Vota en cada historia",
+  "join.roleObserver": "Facilitador",
+  "join.roleObserverDesc": "Dirige la sesión y no vota",
+  "join.cardDeck": "Baraja",
+  "join.estimating": "Qué se estima",
+  "join.permanence": "Ambas quedan fijadas para esta sala una vez creada.",
+  "join.createRoom": "Crear sala →",
+  "join.joinRoom": "Entrar en la sala →",
+  "join.joinTeamRoom": "Entrar en el Team Room →",
+  "join.needAccount": "Crear cuenta gratis para 2 Team Rooms →",
+  "join.noteCreate": "Gratis · Hasta {max} en la mesa · En marcha en diez segundos",
+  "join.noteJoin": "¿Tienes un enlace? Ábrelo y entrarás directamente.",
+  "join.noteTeam": "Dos Team Rooms fijos por cuenta. Los mismos enlaces, cada sprint, gratis.",
+
+  "join.errName": "Escribe tu nombre.",
+  "join.errRealName": "Escribe tu nombre real antes de entrar.",
+  "join.errCode": "Escribe un código de sala",
+  "join.errTeam": "Escribe el nombre de tu equipo",
+  "join.errRenameEmpty": "Elige un nombre para tus Team Rooms.",
+  "join.errRenameSave":
+    "No se han podido guardar los nombres de tus Team Rooms ahora mismo. Inténtalo otra vez.",
+  "join.errCopy":
+    "Tu navegador ha bloqueado la copia. Selecciona el enlace y cópialo a mano.",
+
+  "home.aria": "Sobre Point Poker",
+  "home.h2":
+    "Planning poker online y gratis, para sprint planning, scrum poker y estimación en remoto",
+  "home.h2sub":
+    "Point Poker da a los equipos ágiles una forma rápida y sin fricción de jugar al planning poker online. Crea una sala, comparte un enlace en Slack, Teams o Zoom, y que todo el mundo vote a la vez. Sin instalar nada, sin formación, sin anuncios y sin cuenta para jugar.",
+  "home.freeLead": "Ahora mismo todo es gratis: todas las funciones, para todos los equipos.",
+  "home.freeBody":
+    "Otras herramientas de planning poker limitan las sesiones gratuitas a un puñado de votaciones o a siete participantes, o esconden el temporizador y las medias detrás de un plan de pago. Aquí tienes {max} personas por sala, rondas de votación ilimitadas, historias ilimitadas, las tres barajas, el temporizador, la analítica completa y la exportación, por 0 €. Lo primero para nosotros es ser realmente útiles al mayor número de equipos posible. Si algún día llegan complementos de pago, todo lo que aparece en esta página seguirá siendo gratis.",
+  "home.revealTitle": "Por qué revelar a la vez lo cambia todo",
+  "home.revealBody":
+    "Cada persona vota por su cuenta antes de ver ninguna estimación. Las cartas se giran todas a la vez, lo que reduce el sesgo de anclaje y da lugar a mejores conversaciones sobre los story points. El resultado: estimaciones más claras, discusiones más cortas y menos reuniones dominadas por la voz más alta.",
+  "home.howTitle": "Cómo funciona",
+  "home.howSteps": [
+    "Crea una sala o entra en una desde un enlace compartido",
+    "Añade lo que vais a estimar: una historia de usuario o una tarea concreta dentro de ella",
+    "Votad con Fibonacci, tallas de camiseta o potencias de 2",
+    "Revelad a la vez y discutid solo donde las estimaciones no coincidan",
+    "El facilitador registra la estimación acordada o lanza otra votación",
+    "Pasad directamente al siguiente punto sin reiniciar la sala",
+  ],
+  "home.plansAria": "Resumen de precios",
+  "home.plansTitle": "Lo que cuesta: nada",
+  "home.plansSub":
+    "Un producto, gratis para todos los equipos, mientras averiguamos cuántos sois. Sin niveles, sin cuenta atrás de prueba, sin tarjeta.",
+  "home.planEveryone": "Para todos",
+  "home.planFreeList": [
+    "Hasta {max} participantes, facilitadores incluidos",
+    "Rondas ilimitadas e historias ilimitadas por sesión",
+    "Todas las barajas, cola de historias o tareas, temporizador",
+    "Modo facilitador, analítica en vivo, exportación al portapapeles y a CSV",
+    "Dos Team Rooms fijos e historial de sprints con una cuenta gratuita",
+  ],
+  "home.planComparedWith": "Comparado con",
+  "home.planOtherList": [
+    "Límites gratuitos habituales en otras herramientas: 7 participantes o 9 votaciones por partida",
+    "Los temporizadores y las medias suelen estar en un plan de pago",
+    "Algunas herramientas gratuitas se financian con publicidad",
+    "El precio por facilitador se acumula rápido para una ceremonia por sprint",
+  ],
+  "home.pricingCta": "Leer la promesa de precios completa",
+  "home.diffTitle": "Qué hace distinta a esta herramienta de planning poker",
+  "home.diffList": [
+    "Cero configuración, siempre: crea una sala y comparte el enlace en menos de 10 segundos, sin cuenta",
+    "Revelado simultáneo: evita el sesgo de anclaje para que cada estimación sea honesta e independiente",
+    "Tres barajas: Fibonacci (1 a 34), tallas de camiseta (XS a XXL) o potencias de 2, la que encaje con cómo piensa tu equipo",
+    "Historias o tareas: la cola, los avisos y la analítica se adaptan a lo que elijas",
+    "Cola de elementos: carga todo el backlog del sprint o la lista de tareas y recorredla en orden",
+    "Analítica de alineación: los facilitadores ven en vivo la tasa de consenso, los puntos totales, la distribución de estimaciones y cuántas revotaciones ha habido",
+    "Racha de estimación: un contador celebra cuando el equipo coincide de forma constante, señal de un backlog claro",
+    "Temporizador integrado: mantiene cada ronda acotada y la sesión entera a tiempo",
+    "Resumen de sesión: copia todas las estimaciones al portapapeles o descarga un CSV para Jira, Linear, Azure DevOps o una hoja de cálculo",
+    "Modo facilitador: entra sin carta de voto y controla el revelado, las revotaciones, la moderación y el ritmo desde la vista de analítica",
+    "Team Rooms: dos URLs fijas que tu equipo reutiliza cada sprint, sin volver a configurar nada. Gratis con una cuenta gratuita",
+    "Atajos de teclado: pulsa 1–9 para votar, R para revelar, N para el siguiente punto; toda la ceremonia sin tocar el ratón",
+    "Sin anuncios ni cookies de seguimiento: nada que bloquear, nada que vender, nada que persiga a tu equipo",
+  ],
+  "home.exploreLead": "Tienes páginas dedicadas a",
+  "home.exploreTail": "para ver cómo encaja el flujo con tu equipo.",
+  "home.linkFeatures": "las funciones",
+  "home.linkOnline": "planning poker online",
+  "home.linkScrum": "scrum poker",
+  "home.linkEstimation": "la estimación con story points",
+  "home.linkWhatIs": "qué es el planning poker",
+  "home.linkFib": "los story points de Fibonacci",
+  "home.linkAgile": "las herramientas de estimación ágil",
+  "home.linkTrust": "la privacidad y la fiabilidad",
+  "home.faqTitle": "Preguntas frecuentes",
+
+  "action.aria": "Controles de la sesión",
+  "action.cardsUp": "Cartas descubiertas",
+  "action.waiting": "Esperando a la mesa",
+  "action.inProgress": "Ronda en curso",
+  "action.voted": "{done} de {total} han votado",
+  "action.progressAria": "{done} de {total} votantes han puesto una carta",
+  "action.inviteCopied": "Enlace de invitación copiado",
+  "action.copyInvite": "Copiar el enlace de invitación",
+  "action.reveal": "Revelar las cartas de todos",
+  "action.hintSplit": "Los votos están divididos. Acordad un número abajo y regístralo.",
+  "action.hintDone": "Ronda terminada. Las acciones de la ronda están bajo la estimación.",
+  "action.hintEmpty": "Envíaselo a tu equipo. Entran de un toque, sin cuenta.",
+  "action.hintFirstOne": "Esperando la primera carta de tu participante.",
+  "action.hintFirstMany": "Esperando la primera carta de tus {count} participantes.",
+  "action.hintAllIn": "Ya están todos. Revela cuando quieras.",
+  "action.hintEarly": "Revela antes si en la sala ya nadie está pensando.",
+
+  "game.leaveAria": "Salir de la sala y volver al inicio",
+  "game.returnHome": "Volver al inicio",
+  "game.round": "Ronda {n}",
+  "game.inviteAria": "Invitar al equipo",
+  "game.copyInviteAria": "Copiar el enlace de invitación al portapapeles",
+  "game.copyInvite": "Copiar enlace de invitación",
+  "game.inviteCopied": "Enlace de invitación copiado",
+  "game.linkPersistent": "Enlace fijo del Team Room",
+  "game.linkTemporary": "Enlace temporal de la sala",
+  "game.linkPersistentHint": "Compártelo una vez y reutilízalo cada sprint.",
+  "game.linkTemporaryHint": "Compártelo mientras esta sesión esté activa.",
+  "game.teamRoomReady": "Team Room listo",
+  "game.dismiss": "Ocultar",
+  "game.sessionEnds": "La sesión termina pronto",
+  "game.nowEstimating": "Estimando ahora · {label} {n} de {total}",
+  "game.countdownLength": "Duración de la cuenta atrás",
+  "game.timeUp": "¡Se acaba el tiempo!",
+  "game.wrappingUp": "Cerrando…",
+  "game.estimating": "Estimando…",
+  "game.autoReveal": "Las cartas se revelan solas al llegar a cero",
+  "game.pickNow": "¡Elige carta, ya!",
+  "game.lastSeconds": "¡Últimos segundos!",
+  "game.pickYourCard": "¡Elige tu carta!",
+  "game.facilitatorReveals": "El facilitador revela las cartas",
+  "game.splitHint":
+    "Los votos están divididos: comentadlo brevemente y confirmad la estimación acordada.",
+  "game.doneHint":
+    "Ronda terminada. Regístrala desde la fila que hay bajo la estimación cuando queráis continuar.",
+  "game.playWhenReady":
+    "Pon tu carta cuando quieras. El temporizador es opcional y las cartas se giran en cuanto todos han votado.",
+  "game.yourEstimate": "Tu estimación",
+  "game.voteAria": "Votar {value}",
+  "game.tipNumericLead": "Consejo: escribe el valor que quieras.",
+  "game.tipNumericTail": ", o",
+  "game.tipNumericEnd": "para la carta comodín.",
+  "game.tipOrderLead": "Consejo: pulsa",
+  "game.tipOrderTail": "para las tallas en orden, o",
+  "game.consensusReached": "Consenso alcanzado. El facilitador lo registra y sigue.",
+  "game.cardsUpDiscuss":
+    "Cartas descubiertas. Comentad la dispersión mientras el facilitador confirma la estimación.",
+  "game.youPicked": "Has elegido {value}. Esperando al resto de la mesa.",
+  "game.pickToVote": "Elige una carta para votar.",
+  "game.resultsAria": "Resultado de la votación",
+  "game.perfectConsensus": "¡Consenso perfecto!",
+  "game.allPicked": "Los {count} votantes eligieron",
+  "game.everyonePicked": "Todos los que votaron eligieron",
+  "game.agreedEstimate": "Estimación acordada",
+  "game.averageVote": "Voto medio",
+  "game.allSameHint": "Todos los que votaron eligieron la misma carta.",
+  "game.allUnknownHint":
+    "Todos han jugado ?. Nadie tiene aún lo suficiente para estimarlo: aclarad el elemento y volved a votar.",
+  "game.spreadHint":
+    "Usad el rango de abajo para guiar la conversación. Después el facilitador registra la estimación final acordada.",
+  "game.min": "Mín",
+  "game.max": "Máx",
+  "game.spreadSub": "Dispersión: {n} punto — comentadlo y registrad un valor de la baraja",
+  "game.spreadSubPlural": "Dispersión: {n} puntos — comentadlo y registrad un valor de la baraja",
+  "game.median": "Mediana",
+  "game.average": "Media",
+  "game.spread": "Dispersión",
+  "game.spreadPoints": "{n} punto",
+  "game.spreadPointsPlural": "{n} puntos",
+  "game.differentVotes": "Votos distintos",
+  "game.votesShown": "Votos mostrados",
+  "game.nobodyVoted": "Todavía no ha votado nadie",
+  "game.whoPickedWhat": "Quién eligió qué",
+  "game.highest": "Más alta",
+  "game.lowest": "Más baja",
+  "game.agreed": "De acuerdo",
+  "game.facilitatorAria": "El facilitador elige la estimación final",
+  "game.facilitatorDecision": "Decisión del facilitador",
+  "game.nobodyCouldSize": "Nadie ha podido estimar este",
+  "game.chooseAgreed": "Elige la estimación acordada para este elemento",
+  "game.allUnknownBody":
+    "Todos los votantes han jugado ?. Eso indica que el elemento necesita criterios de aceptación más claros, no un número. Aclaradlo y volved a votar, o registrad un marcador y volved luego.",
+  "game.mixedBody":
+    "Los votos están repartidos. Elige la estimación que acuerde tu equipo y pasa directamente al siguiente elemento. El resumen de arriba es solo para la conversación.",
+  "game.chooseFinalAria": "Elegir la estimación final",
+  "game.recordValueAria": "Registrar {value} como la estimación acordada",
+  "game.pickAgreed": "Elige la estimación acordada",
+  "game.recordNextItem": "Registrar {value} y siguiente elemento",
+  "game.recordNextRound": "Registrar {value} y siguiente ronda",
+  "game.roundActionsAria": "Acciones de la ronda",
+  "game.addItem": "Añadir un elemento",
+  "game.addTask": "Añadir una tarea",
+  "game.addHint":
+    "Pega una lista entera, una {unit} por línea, y todas las líneas entran en la cola de una vez.",
+  "game.removeFromQueue": "Quitar de la cola",
+  "game.removeNamed": "Quitar {name} de la cola",
+  "game.atTheTable": "En la mesa",
+  "game.nobodyYet": "Todavía no hay nadie",
+  "game.votedLabel": "Ha votado",
+  "game.notVoted": "Aún no ha votado",
+  "game.removeFromRoom": "Expulsar a {name} de la sala",
+  "game.facilitatorNoVote": "Facilitador · No vota",
+  "game.sprintAnalytics": "Analítica del sprint",
+  "game.nothingRecorded": "Todavía no hay nada registrado",
+  "game.recordFirst": "Registra tu primera historia para empezar a medir la alineación.",
+  "game.mostUsedSize": "Talla más usada",
+  "game.sprintScope": "Alcance del sprint",
+  "game.sizeMix": "Mezcla de tallas",
+  "game.avgPer": "Media / {unit}",
+  "game.afterFirst": "Tras la primera estimación",
+  "game.teamAlignment": "Alineación del equipo",
+  "game.teamAlignmentAria": "Alineación del equipo {n} por ciento",
+  "game.alignExcellent": "Excelente",
+  "game.alignLow": "Poco consenso",
+  "game.colEstimate": "Estimación",
+  "game.colRemove": "Quitar",
+  "game.colItem": "Elemento",
+  "game.deleteEstimateAria": "Borrar la estimación {estimate} de {name}",
+  "game.noneSized": "Todavía no hay {plural} estimadas",
+  "game.addNamesHint":
+    "Añade nombres de {singular} a la cola para seguir aquí las estimaciones.",
+  "game.estimatesAppear": "Las estimaciones aparecen aquí tras la primera ronda registrada.",
+  "game.spree": "¡Racha de estimación!",
+  "game.spreeN": "¡Racha de {n} rondas!",
+  "game.spree1": "Primer consenso, todos en la misma página",
+  "game.spree2": "Dos seguidas, el equipo entiende el trabajo",
+  "game.spree3": "El equipo está sincronizado, el backlog está claro",
+  "game.spree4": "Imparables. El equipo está perfectamente alineado.",
+  "game.alignGood": "Bien",
+  "game.alignFair": "Regular",
+  "game.alignSub": "{done} de {total} {unit} de acuerdo a la primera",
+  "game.alignRevote": " · {n} revotación",
+  "game.alignRevotePlural": " · {n} revotaciones",
+  "game.deckTshirtSizes": "Tallas de camiseta",
+  "game.unitPoints": " pts",
+  "game.pluralSized": "{plural} estimadas",
+  "game.colIndex": "N.º",
+  "game.notEstimated": "sin estimar",
+  "game.reportMeta": "Sala {code} · {date} · {sized} de {total} {plural} estimadas",
+  "game.reportPointsTotal": " · {n} puntos en total",
+  "game.summaryCounts": "{plural}: {total} · estimadas: {sized}",
+  "game.queueAdded": "{n} {plural} añadidas a la cola.",
+  "game.allEstimated": "Las {n} {plural} están estimadas.",
+  "game.allEstimatedTail": " — ¡todas las {plural} estimadas!",
+  "game.doneBadge": "hechas",
+  "game.analyticsEmpty":
+    "La tasa de consenso, la dispersión y los totales por {singular} aparecen aquí tras la primera ronda registrada.",
+  "game.alignNote": "% de {plural} en las que todos coincidieron en la primera votación",
+  "game.sprintSummary": "Resumen del sprint",
+  "game.deleteConfirm": "¿Borrar esta {unit}?",
+  "game.cancel": "Cancelar",
+  "game.confirmReset":
+    "¿Empezar un sprint nuevo? Esto borra todos los votos, estimaciones y rondas para todos los de la sala. Tu cola de historias se mantiene.",
+  "game.confirmEnd":
+    "¿Terminar la sesión? Esto desconecta a todo el mundo y borra permanentemente todos los datos de la sesión.",
+  "game.summaryTitle": "Resumen de estimaciones del sprint",
+  "game.summaryTitleTeam": "{team} — estimaciones",
+  "game.summaryTotal": "Puntos totales: {n}",
+  "game.summaryFooter": "Estimado con Point Poker — {domain}",
+  "game.reportRoom": "Sala {code} · {date}",
+
+  "toast.inviteCopied": "Enlace de invitación copiado.",
+  "toast.copyBlockedLink":
+    "El navegador ha bloqueado la copia: selecciona el enlace de arriba y cópialo.",
+  "toast.summaryCopied": "Resumen copiado al portapapeles.",
+  "toast.copyBlockedCsv": "El navegador ha bloqueado la copia: usa la descarga en CSV.",
+  "toast.roomFull":
+    "Esta sala está llena. Ya hay {max} personas dentro, incluido el facilitador. Pídele al anfitrión que abra una segunda sala.",
+  "toast.teamRoomFull": "Este Team Room está lleno. Ya hay {max} personas dentro.",
+  "toast.accountCreated": "Cuenta creada. Revisa tu correo para verificar la dirección.",
+  "toast.accountCreatedNoMail":
+    "Cuenta creada. Todavía no se ha podido enviar el correo de verificación.",
+  "toast.signedIn": "Sesión iniciada.",
+
+  "login.yourAccount": "Tu cuenta",
+  "login.createTitle": "Crea tu cuenta gratis",
+  "login.resetTitle": "Restablecer tu contraseña",
+  "login.signInTitle": "Iniciar sesión",
+  "login.subAccount":
+    "Todo en Point Poker es gratis. Esta cuenta guarda tus dos Team Rooms y tu historial de sprints.",
+  "login.subTeamRoom":
+    "Los Team Rooms son gratis. La cuenta existe para que la URL de la sala sea tuya y ningún otro equipo acabe dentro.",
+  "login.subRegister":
+    "Gratis, sin tarjeta, unos treinta segundos. Te llevas dos enlaces fijos de Team Room y tu historial de sprints.",
+  "login.subReset":
+    "Escribe el correo de tu cuenta y te enviaremos un enlace para restablecer la contraseña.",
+  "login.subSignIn": "Bienvenido de nuevo. Tus Team Rooms y tu historial te esperan.",
+  "login.tabsAria": "Qué quieres hacer",
+  "login.tabSignIn": "Iniciar sesión",
+  "login.tabRegister": "Crear cuenta",
+  "login.tabReset": "Restablecer contraseña",
+  "login.fullName": "Nombre completo",
+  "login.namePlaceholder": "Alex Johnson",
+  "login.accountEmail": "Correo de la cuenta",
+  "login.email": "Correo electrónico",
+  "login.emailPlaceholder": "tu@empresa.com",
+  "login.password": "Contraseña",
+  "login.passwordMin": "Mínimo 6 caracteres",
+  "login.passwordYour": "Tu contraseña",
+  "login.signingIn": "Iniciando sesión…",
+  "login.creating": "Creando la cuenta…",
+  "login.createClaim": "Crear cuenta y reservar mis Team Rooms",
+  "login.createFree": "Crear cuenta gratis",
+  "login.continueTeamRooms": "Ir a mis Team Rooms",
+  "login.continueWorkspace": "Ir a mi espacio",
+  "login.sendingVerification": "Enviando la verificación…",
+  "login.resendVerification": "Reenviar el correo de verificación",
+  "login.sendingReset": "Enviando…",
+  "login.sendReset": "Enviar enlace de restablecimiento",
+  "login.sendResetLong": "Enviar correo para restablecer la contraseña",
+  "login.signedInAs": "Sesión iniciada como",
+  "login.currentAccount": "Cuenta actual",
+  "login.signedIn": "Sesión iniciada",
+  "login.everythingUnlocked": "Gratis, todo desbloqueado",
+  "login.notVerified": "Tu dirección de correo aún no está verificada",
+  "login.whatAccountGives": "Lo que te da esta cuenta",
+  "login.whatAccountAdds": "Lo que añade una cuenta",
+  "login.accountActive":
+    "Dos enlaces fijos de Team Room y tu historial de sprints: ambos ya activos en esta cuenta.",
+  "login.accountAdds":
+    "Dos enlaces fijos de Team Room que nunca cambian, más el historial de sprints para ver la velocity y la alineación con el tiempo. Los dos gratis.",
+  "login.elseFree": "Todo lo demás ya es gratis sin cuenta.",
+  "login.elseFreeBody":
+    "Las salas, todas las barajas, {max} participantes, la cola, el temporizador, la analítica y la exportación funcionan para cualquiera que tenga el enlace.",
+  "login.notWorking": "¿Algo no funciona?",
+  "login.emailSupport": "Escribir a soporte ↗",
+
+  "wtp.thanks": "Gracias: eso influye de verdad en lo que se construye después.",
+  "wtp.eyebrow": "Una pregunta, y nunca más",
+  "wtp.dismiss": "Ocultar esta pregunta",
+  "wtp.question":
+    "Point Poker es gratis y seguirá siéndolo. Si fuera de pago, ¿cuánto valdría para tu equipo?",
+  "wtp.note": "Anónimo. Sin correo, sin seguimiento, sin cambios en tu acceso.",
+  "wtp.zero": "Nada, lo usamos precisamente porque es gratis",
+  "wtp.5": "Hasta 5 $ al mes para el equipo",
+  "wtp.15": "6–15 $ al mes para el equipo",
+  "wtp.30": "Más de 15 $ al mes para el equipo",
+
+  "auth.emailInUse": "Ya existe una cuenta con ese correo electrónico.",
+  "auth.invalidEmail": "Escribe un correo electrónico válido.",
+  "auth.badCredentials": "Correo o contraseña no reconocidos.",
+  "auth.weakPassword": "La contraseña debe tener al menos 6 caracteres.",
+  "auth.tooMany": "Demasiados intentos. Espera un momento y prueba otra vez.",
+  "auth.generic": "No se ha podido completar la solicitud. Inténtalo otra vez.",
+  "auth.verifyTooMany": "Demasiados intentos de verificación. Espera un momento y prueba otra vez.",
+  "auth.verifyDomain":
+    "Ahora mismo no hemos podido enviar el correo de verificación desde este dominio. Prueba en un rato o escribe a soporte.",
+  "auth.verifyGeneric":
+    "Ahora mismo no hemos podido enviar el correo de verificación. Inténtalo otra vez.",
+  "auth.noEmailForVerify":
+    "Esta cuenta no tiene una dirección de correo disponible para la verificación.",
+  "auth.enterEmailPassword": "Escribe tu correo y tu contraseña.",
+  "auth.enterName": "Escribe tu nombre para que tus compañeros te reconozcan.",
+  "auth.enterEmailForReset":
+    "Escribe tu correo y te enviaremos un enlace para restablecer la contraseña.",
+  "auth.noResetAvailable":
+    "Esta cuenta no permite restablecer la contraseña por correo.",
+  "auth.signedIn": "Sesión iniciada.",
+  "auth.accountCreatedVerify": "Cuenta creada. Revisa {email} para verificar tu dirección.",
+  "auth.verifyResent": "Correo de verificación reenviado a {email}.",
+  "auth.yourEmail": "tu correo",
+  "auth.yourInbox": "tu bandeja de entrada",
+  "auth.accountCreatedNoMail":
+    "Cuenta creada, pero todavía no hemos podido enviar el correo de verificación. Usa «reenviar» abajo.",
+  "auth.resetSent": "Correo de restablecimiento enviado.",
+
+  "history.title": "Historial de sprints",
+  "history.none": "Todavía no hay sesiones de sprint registradas",
+  "history.count": "{n} sesión registrada",
+  "history.countPlural": "{n} sesiones registradas",
+  "history.emptyTitle": "Tu archivo de sprints está listo",
+  "history.emptyBody":
+    "Termina una sesión con la sesión iniciada y aparecerá aquí automáticamente. El historial se guarda cuando terminas una sesión o cuando una sala caduca sola a las cinco horas.",
+  "history.avgVelocity": "Velocity media",
+  "history.ptsPerSprint": "pts / sprint",
+  "history.appearsOnce": "Aparece cuando un sprint registre puntos",
+  "history.bestSprint": "Mejor sprint",
+  "history.storyPts": "story points",
+  "history.teamAlignment": "Alineación del equipo",
+  "history.avgConsensus": "consenso medio",
+  "history.velocityTrend": "Tendencia de velocity",
+  "history.trendMeta": "mitad reciente frente a mitad anterior",
+  "history.needsTwo": "Necesita dos sprints o más",
+  "history.caption": "La sesión más reciente primero.",
+  "history.colSprint": "Sprint",
+  "history.colEnded": "Terminado",
+  "history.colPoints": "Puntos",
+  "history.colStories": "Historias",
+  "history.colConsensus": "Consenso",
+  "history.colDuration": "Duración",
+  "history.sprintN": "Sprint {n}",
+
+  "deck.fibonacci": "Fibonacci",
+  "deck.tshirt": "Camiseta",
+  "deck.powers": "Potencias de 2",
+  "deck.fibonacci.desc": "1, 2, 3, 5, 8, 13, 21, 34, ?",
+  "deck.tshirt.desc": "XS, S, M, L, XL, XXL",
+  "deck.powers.desc": "1, 2, 4, 8, 16, 32, ?",
+  "mode.stories.label": "Historias de usuario",
+  "mode.stories.desc": "Estimar cada historia entera",
+  "mode.stories.singular": "historia",
+  "mode.stories.plural": "historias",
+  "mode.stories.queueTitle": "Cola de historias",
+  "mode.stories.progressLabel": "Historia",
+  "mode.stories.bannerLabel": "Estimando",
+  "mode.stories.allDoneText": "historias estimadas",
+  "mode.stories.backlogLabel": "Backlog del sprint",
+  "mode.stories.toastDone": "Historia estimada. A votar la siguiente.",
+  "mode.stories.toastNext": "Estimación registrada. Votando la siguiente historia.",
+  "mode.stories.placeholder": "p. ej. Flujo de inicio de sesión, PROJ-42…",
+  "mode.stories.hintText":
+    "Añade historias para seguir las estimaciones por nombre, o vota directamente sin ellas. Ambas cosas funcionan.",
+  "mode.stories.recordNext": "y estimar la siguiente historia",
+  "mode.tasks.label": "Tareas",
+  "mode.tasks.desc": "Estimar tareas dentro de las historias",
+  "mode.tasks.singular": "tarea",
+  "mode.tasks.plural": "tareas",
+  "mode.tasks.queueTitle": "Cola de tareas",
+  "mode.tasks.progressLabel": "Tarea",
+  "mode.tasks.bannerLabel": "Estimando la tarea",
+  "mode.tasks.allDoneText": "tareas estimadas",
+  "mode.tasks.backlogLabel": "Lista de tareas",
+  "mode.tasks.toastDone": "Tarea estimada. A votar la siguiente.",
+  "mode.tasks.toastNext": "Estimación registrada. Votando la siguiente tarea.",
+  "mode.tasks.placeholder": "p. ej. Construir la API de login, Escribir tests, PROJ-42-1…",
+  "mode.tasks.hintText":
+    "Añade tareas para seguir las estimaciones por nombre, o vota directamente sin ellas. Ambas cosas funcionan.",
+  "mode.tasks.recordNext": "y estimar la siguiente tarea",
+
+  "app.connecting": "Conectando…",
+  "app.roomTitle": "Sala de planning poker | Point Poker",
+  "app.roomDesc":
+    "Sala de estimación en vivo de Point Poker para el sprint planning. Las URLs de sala son para sesiones activas y no se indexan.",
+  "app.teamRoomTitle": "Team Room | Point Poker",
+  "app.teamRoomDesc":
+    "Entra en un Team Room de Point Poker para estimar historias en vivo con tu equipo. Las URLs de Team Room son para sesiones activas y no se indexan.",
+  "app.dashboardTitle": "Panel de uso | Point Poker",
+  "app.dashboardDesc": "Analítica de uso solo para el propietario.",
+};
+
+export const meta = {
+  "/": {
+    title: "Planning poker gratis online, sin registro | Point Poker",
+    description:
+      "Planning poker gratis para equipos ágiles y de Scrum. Todo es gratuito: {max} personas por sala, rondas e historias ilimitadas, todas las barajas, temporizador, analítica y exportación a CSV. Sin cuenta y sin anuncios.",
+  },
+  "/what-is-planning-poker": {
+    title: "¿Qué es el planning poker? Guía para equipos ágiles",
+    description:
+      "Qué es el planning poker, por qué lo usan los equipos ágiles y por qué revelar todas las cartas a la vez evita que el primer número dicho ancle a toda la sala.",
+  },
+  "/fibonacci-story-points": {
+    title: "Story points de Fibonacci explicados (1, 2, 3, 5, 8, 13, 21)",
+    description:
+      "Por qué los equipos ágiles estiman con story points de Fibonacci, qué significa cada número en la práctica y cómo llegar a una estimación acordada sin fingir una precisión que nadie tiene.",
+  },
+  "/scrum-poker": {
+    title: "Scrum poker gratis para sprint planning | Point Poker",
+    description:
+      "App de scrum poker gratuita para sprint planning y refinamiento del backlog. Hasta {max} personas por sala: suficiente para un equipo Scrum completo más producto, diseño y QA.",
+  },
+};
+
+export const content = {
+  "/": {
+    h1: "Planning poker gratis para equipos ágiles",
+    intro:
+      "Point Poker es una herramienta online y gratuita de planning poker para equipos ágiles y de Scrum. Crea una sala, comparte el enlace en Slack, Teams o Zoom, y todos revelan su estimación a la vez. No hay nada que instalar y no necesitas cuenta para jugar.",
+    body: [
+      "Todas las funciones son gratis para todos los equipos. Otras herramientas de planning poker limitan su plan gratuito a siete participantes o a nueve votaciones por partida, o dejan el temporizador y las medias detrás de un plan de pago. Aquí tienes {max} personas por sala, rondas de votación ilimitadas, historias ilimitadas, las tres barajas, el temporizador, la analítica completa del facilitador y la exportación, gratis.",
+      "El revelado simultáneo es lo esencial. Cada persona vota en privado, las cartas se giran a la vez y nadie se ancla al primer número dicho en voz alta. Donde las estimaciones no coinciden, la dispersión y los valores atípicos aparecen marcados, así que la conversación empieza directamente en el desacuerdo en vez de tener que llegar hasta él.",
+      "Si conoces la ceremonia como scrum poker, pointing poker, poker planning, sprint poker, estimation poker o agile poker, es esto. Seis nombres, un juego, y la misma sala sirve para todos.",
+    ],
+    sections: [
+      {
+        title: "Pensado para quien dirige la sesión",
+        intro:
+          "Casi toda la fricción de una reunión de estimación recae en el facilitador, así que casi todas las herramientas de aquí son suyas.",
+        bullets: [
+          "Solo el facilitador revela, así la mesa nunca se descubre antes de tiempo",
+          "Carga todo el backlog de golpe pegándolo, un elemento por línea",
+          "Un temporizador para acotar una ronda cuando haga falta",
+          "Tasa de consenso, dispersión, atípicos y revotaciones, en vivo",
+          "Registra el número acordado y pasa al siguiente sin reiniciar la sala",
+          "Atajos de teclado: 1–9 para votar, R para revelar, N para el siguiente",
+        ],
+      },
+      {
+        title: "Lo que cuesta, y dónde suele estar la trampa",
+        intro:
+          "Las herramientas gratuitas de planning poker suelen tener un límite en alguna parte. Estos son los que los equipos se encuentran de verdad, y dónde queda esta herramienta en cada uno.",
+        bullets: [
+          "Votaciones por partida: algunos planes gratuitos paran en nueve rondas. Aquí ilimitadas.",
+          "Elementos por sesión: algunos paran en cinco. Aquí ilimitados.",
+          "Personas por sala: los planes gratuitos suelen quedarse en unas diez. Aquí veinte, facilitadores incluidos.",
+          "Creación de salas: algunos la miden con créditos. Aquí sin límite.",
+          "Publicidad: algunas salas gratuitas llevan anuncios. Aquí ninguno, y sin rastreadores de terceros.",
+          "Temporizador y medias: a menudo reservados a los planes de pago. Aquí incluidos.",
+        ],
+      },
+      {
+        title: "Funciona con las herramientas que ya tenéis",
+        intro:
+          "Nada que instalar, para nadie, tampoco para quien administra vuestro gestor de incidencias.",
+        body: [
+          "Pega un backlog directamente desde Jira, Linear, Azure DevOps o una hoja de cálculo en la cola, estimadlo en equipo y exporta después las estimaciones acordadas en CSV para actualizar el gestor en bloque. No hay plugin, ni permiso de OAuth, ni ticket de aprobación entre vosotros y el refinamiento del jueves.",
+          "Compartir funciona igual. La sala es una URL, así que va a Slack, Teams, Zoom, Meet o una invitación de calendario, y cada persona entra desde el navegador que ya tiene abierto, en portátil o en móvil.",
+        ],
+      },
+    ],
+    steps: [
+      "Crea una sala o abre un enlace que te haya pasado alguien",
+      "Añade la historia o la tarea que vais a estimar",
+      "Todos ponen una carta a la vez: Fibonacci, tallas de camiseta o potencias de 2",
+      "Revelad juntos y discutid solo donde las estimaciones difieran",
+      "El facilitador registra la estimación acordada",
+      "Pasad directamente al siguiente punto sin reiniciar la sala",
+    ],
+    faq: [
+      {
+        q: "¿Esta herramienta de planning poker es gratis de verdad?",
+        a: "Sí, entera, para todo el mundo. Hasta {max} participantes, rondas de votación ilimitadas, historias ilimitadas, las tres barajas, la cola, el temporizador, la analítica del facilitador, exportación a CSV y al portapapeles, y dos Team Rooms fijos. No hay ningún campo para una tarjeta en ninguna parte, ni cuenta atrás de prueba, ni publicidad.",
+      },
+      {
+        q: "¿Necesito crear una cuenta?",
+        a: "No. Escribe tu nombre, crea una sala y comparte el enlace. Una cuenta gratuita hace dos cosas y nada más: te reserva dos URLs permanentes de Team Room para que ningún otro equipo pueda quedárselas, y conserva tu historial de sprints cuando cambias de dispositivo.",
+      },
+      {
+        q: "¿Cuántas personas pueden entrar en una sesión de planning poker?",
+        a: "Hasta {max} por sala, y en esa cuenta entran tanto los facilitadores como quienes votan. Para un grupo mayor, abrid dos salas en paralelo y juntad los resultados.",
+      },
+      {
+        q: "¿En qué se diferencia de otras herramientas gratuitas de planning poker?",
+        a: "Casi todos los planes gratuitos limitan algo que importa: siete participantes, nueve votaciones por partida, cinco incidencias por sesión. O ponen anuncios y reservan el temporizador y las medias para quien paga. Aquí no hay ningún límite y no hay anuncios.",
+      },
+      {
+        q: "¿Por qué se usan números de Fibonacci para los story points?",
+        a: "Nadie distingue de forma fiable un 7 de un 8. Los saltos crecientes de Fibonacci (1, 2, 3, 5, 8, 13, 21, 34) obligan a elegir entre tamaños que sí son distintos, y eso hace la estimación más rápida y más honesta.",
+      },
+      {
+        q: "¿Funciona para equipos remotos y distribuidos?",
+        a: "Sí. Pega el enlace de la sala en Slack, Teams o el chat de la reunión y cada persona entra desde el navegador que ya tiene abierto, en el ordenador o en el móvil.",
+      },
+      {
+        q: "¿Scrum poker es lo mismo que planning poker?",
+        a: "Sí, y también lo son pointing poker, poker planning, sprint poker, estimation poker y agile poker. Seis nombres, una ceremonia: estimación en privado, revelado simultáneo y después conversación allí donde las cartas no coinciden. Esta herramienta sirve para todos, porque son lo mismo.",
+      },
+      {
+        q: "¿Podemos estimar en horas en vez de en story points?",
+        a: "Puedes poner los números que quieras en las cartas, pero las horas deshacen buena parte del sentido de la ceremonia: invitan a una precisión falsa y dejan de ser comparables en cuanto cambia la composición del equipo. Los puntos miden tamaño relativo, y una fecha sale de la velocity medida, no de convertir cada carta.",
+      },
+      {
+        q: "¿Necesito un plugin de Jira para usarlo?",
+        a: "No, y tampoco existe. Pega tus incidencias en la cola de la sala de una vez, estimadlas juntos y luego exporta los puntos acordados en CSV para actualizar Jira, Linear o Azure DevOps en bloque desde el archivo. Nada que instalar y ninguna aprobación necesaria.",
+      },
+      {
+        q: "¿Qué es la puntuación de alineación del equipo?",
+        a: "La puntuación de alineación, que solo ven los facilitadores, es el porcentaje de historias que llegaron al consenso en la primera votación, con todo el mundo poniendo la misma carta. Una puntuación alta indica un backlog bien definido. Una baja señala historias que necesitan criterios de aceptación más claros antes de empezar el sprint, y eso es más útil de lo que parece.",
+      },
+      {
+        q: "¿Qué pasa con los datos de mi sesión?",
+        a: "Las salas son temporales. Una sala y sus votos se borran cuando termina la sesión, y las salas inactivas se limpian solas. No hay publicidad ni cookies de analítica de terceros. El historial de sprints se guarda solo si has iniciado sesión, y solo para ti.",
+      },
+    ],
+  },
+
+  "/what-is-planning-poker": {
+    eyebrow: "Guía",
+    h1: "¿Qué es el planning poker?",
+    intro:
+      "El planning poker es una técnica de estimación en la que cada miembro del equipo elige en privado una carta con el esfuerzo que estima, y después todos revelan a la vez. El consenso sale de la conversación sobre las diferencias, no de la media.",
+    highlights: [
+      { value: "En privado", label: "Todos estiman antes de ver un número" },
+      { value: "A la vez", label: "Las cartas se giran todas juntas" },
+      { value: "Relativo", label: "Tamaño comparado, no horas" },
+    ],
+    body: [
+      "El revelado simultáneo es todo el mecanismo. Si los números se dicen por turnos, el primero ancla a todos los demás y la estimación acaba midiendo antigüedad en vez de complejidad. Si la mesa se gira a la vez, no hay ancla.",
+      "Cuando las cartas no coinciden, quien votó más alto y quien votó más bajo explican lo que ven. Esa conversación —y no la aritmética— es el valor del método: saca a la luz supuestos no dichos y criterios de aceptación que faltan, antes del sprint y no a mitad de él.",
+    ],
+    sections: [
+      {
+        title: "De dónde viene el método",
+        body: [
+          "James Grenning describió la técnica en 2002, cuando una reunión de estimación se le fue de las manos. El libro «Agile Estimating and Planning» de Mike Cohn puso el nombre planning poker delante de casi todo el sector tres años después. La Guía de Scrum no lo exige en ningún sitio: solo dice que los Developers dimensionan el trabajo. El planning poker es, por tanto, una convención muy extendida que encaja bien con Scrum, no una regla que incumples si estimas de otra forma.",
+          "El nombre viene de las cartas y del revelado conjunto, no de apostar. Cada persona tiene una mano de cartas numeradas, pone una boca abajo y toda la mesa se gira a la vez. No se apuesta nada y no hay ganador.",
+        ],
+      },
+      {
+        title: "Por qué tamaño relativo y no horas",
+        intro:
+          "Una estimación en horas promete una precisión que nadie tiene en el momento de estimar.",
+        bullets: [
+          "Se nos da mal estimar duraciones absolutas y bien comparar dos cosas. Los story points usan justo la capacidad que sí funciona.",
+          "Las horas van ligadas a una persona. «Dos días» significa dos días ¿para quién? El tamaño relativo vale para el equipo y sigue siendo comparable si lo coge otra persona.",
+          "La incertidumbre está dentro del tamaño. Un 13 es grande en parte porque nadie sabe exactamente qué contiene, y una cifra de horas esconde eso.",
+          "La fecha llega después, desde la velocity medida: puntos completados por sprint. Eso se afina con cada sprint, mientras que una tabla de conversión se aleja de la realidad cuanto más se usa.",
+        ],
+      },
+      {
+        title: "Cómo transcurre una ronda",
+        intro: "Siempre igual, en la misma sala o en remoto.",
+        bullets: [
+          "El Product Owner lee el elemento y responde dudas, pero normalmente no estima, porque no está estimando su propio esfuerzo.",
+          "Todos los que van a hacer el trabajo eligen una carta en privado. Desarrollo y QA votan.",
+          "Todas las cartas se revelan a la vez.",
+          "Si todos están dentro de una carta de diferencia, se registra el número y se sigue.",
+          "Si no, quien votó más alto y quien votó más bajo explican brevemente su punto de vista, y se vuelve a votar. Dos minutos de contexto valen más que diez de debate.",
+          "Si tras la segunda ronda la mesa sigue partida, el elemento suele ser demasiado grande o demasiado vago. Dividirlo es mejor resultado que un número intermedio que nadie cree.",
+        ],
+      },
+    ],
+    stepsTitle: "El planning poker en seis pasos",
+    steps: [
+      "Crea una sala o abre un enlace que te haya pasado alguien",
+      "Añade la historia o la tarea que vais a estimar",
+      "Todos ponen una carta a la vez: Fibonacci, tallas de camiseta o potencias de 2",
+      "Revelad juntos y discutid solo donde las estimaciones difieran",
+      "El facilitador registra la estimación acordada",
+      "Pasad directamente al siguiente punto sin reiniciar la sala",
+    ],
+    faq: [
+      {
+        q: "¿Qué es el planning poker explicado de forma sencilla?",
+        a: "El planning poker es una técnica de estimación para equipos ágiles: cada persona elige en privado una carta con un número que representa el esfuerzo de una tarea, y después todos revelan a la vez. Donde los números no coinciden se comenta brevemente y se vuelve a votar, hasta que el equipo se pone de acuerdo. Elegir en privado evita que todos se orienten por el primer número dicho.",
+      },
+      {
+        q: "¿Cómo se juega al planning poker?",
+        a: "El Product Owner presenta el elemento y responde preguntas. Todos los que van a hacer el trabajo eligen una carta en privado. Se revelan todas a la vez. Si están cerca, se registra el número. Si no, quien votó más alto y quien votó más bajo explican su punto de vista y se vuelve a votar. Con algo de práctica, cada elemento lleva uno o dos minutos.",
+      },
+      {
+        q: "¿Quién participa en el planning poker?",
+        a: "Todos los que van a hacer el trabajo: desarrollo, QA y cualquier otra persona implicada. El Product Owner responde preguntas sobre el objetivo, pero normalmente no vota. El Scrum Master facilita y se mantiene fuera de la votación, para poder observar la dispersión en lugar de aumentarla.",
+      },
+      {
+        q: "¿Qué números se usan en el planning poker?",
+        a: "Lo más habitual es la sucesión de Fibonacci: 1, 2, 3, 5, 8, 13, 21 y 34, casi siempre con una carta ? para «así no puedo estimarlo». Los saltos crecen a propósito, porque la incertidumbre crece con el tamaño. Las tallas de camiseta (XS a XXL) y las potencias de 2 son alternativas habituales y funcionan igual.",
+      },
+      {
+        q: "¿Qué hacer si el equipo no se pone de acuerdo?",
+        a: "Que quien votó más alto y quien votó más bajo expliquen lo que están viendo: casi siempre están mirando trabajos distintos. Después, volved a votar. Si una segunda ronda sigue partiendo la mesa, la historia suele ser demasiado vaga o demasiado grande, y dividirla es mejor que quedarse con un número intermedio que nadie defiende.",
+      },
+    ],
+    related: [
+      { href: "/fibonacci-story-points", kicker: "Baraja", title: "Story points de Fibonacci", copy: "Por qué crecen los saltos y qué te está diciendo de verdad un 21 o un 34." },
+      { href: "/scrum-poker", kicker: "Ceremonia", title: "Scrum poker", copy: "Dónde se usa el método: refinamiento y sprint planning." },
+      { href: "/", kicker: "Producto", title: "Abrir una sala gratis", copy: "Sin cuenta y sin instalar nada. Crea una sala y pega el enlace en el chat del equipo." },
+    ],
+  },
+
+  "/fibonacci-story-points": {
+    eyebrow: "Story points de Fibonacci",
+    h1: "Los story points de Fibonacci, explicados",
+    intro:
+      "Los equipos ágiles estiman con story points de Fibonacci —1, 2, 3, 5, 8, 13, 21, 34— porque la incertidumbre crece con el tamaño, y los saltos cada vez mayores impiden que un equipo finja lo contrario.",
+    highlights: [
+      { value: "1→34", label: "La baraja con la que arranca Point Poker" },
+      { value: "Saltos mayores", label: "Más trabajo, menos precisión, con honestidad" },
+      { value: "21+", label: "Normalmente significa dividir, no estimar" },
+    ],
+    body: [
+      "Nadie distingue de forma fiable un 7 de un 8. Los saltos de Fibonacci obligan a elegir de verdad entre tamaños claramente distintos, y eso hace las estimaciones más rápidas y más honestas.",
+      "Una carta alta es una señal, no un número: 21 y 34 suelen significar que la historia debería dividirse antes de entrar en un sprint.",
+    ],
+    sections: [
+      {
+        title: "Por qué crecen los saltos",
+        intro:
+          "La sucesión no se eligió por sus matemáticas, sino porque su espaciado se parece a cómo decae la confianza en realidad.",
+        body: [
+          "Entre 1 y 2 eliges entre dos cosas que entiendes bien, y la diferencia es real. Entre 21 y 34 eliges entre dos cosas que apenas entiendes, y una escala más fina solo invitaría a una precisión falsa. Los saltos crecientes codifican exactamente eso: cuanto mayor es el trabajo, más gruesa es la respuesta honesta.",
+          "Por eso un equipo que discute diez minutos entre 8 y 13 suele estar discutiendo sobre el alcance, no sobre el tamaño. En una baraja de Fibonacci las cartas contiguas están lejos a propósito, así que una división real entre ellas significa que las dos personas se están imaginando trabajos distintos.",
+        ],
+      },
+      {
+        title: "La baraja que usa Point Poker",
+        intro: "1, 2, 3, 5, 8, 13, 21, 34 y una carta ?.",
+        body: [
+          "La ? no es un cero ni una broma: significa «con lo que sé, no puedo estimarlo», que es una respuesta legítima y útil. Una mesa llena de interrogantes dice que el elemento necesita trabajo antes que una estimación. Por eso Point Poker no cuenta como consenso un ? unánime.",
+          "Muchos equipos usan una versión modificada: 0, ½, 1, 2, 3, 5, 8, 13, 20, 40, 100 es la variante habitual, que redondea la parte alta. Las dos valen. Lo que importa es que el equipo use una baraja de forma consistente, porque los story points solo significan algo en relación con las estimaciones anteriores del propio equipo.",
+        ],
+        bullets: [
+          "Las tallas de camiseta (XS a XXL) hacen el mismo trabajo cuando un equipo quiere evitar los números por completo. Point Poker las deja fuera de la media numérica, por razones evidentes.",
+          "Las potencias de 2 (1, 2, 4, 8, 16, 32) son la otra alternativa habitual y en la práctica se comportan parecido a Fibonacci.",
+        ],
+      },
+      {
+        title: "Usar bien la baraja",
+        intro: "La sucesión por sí sola no produce buenas estimaciones. Estos hábitos sí.",
+        bullets: [
+          "Fijad primero una historia de referencia. Un 3 no significa nada mientras el equipo no acuerde una historia que sea un 3.",
+          "No registréis nunca un número que no esté en la baraja. Un 4 o un 6 significa que el equipo se dividió y alguien hizo la media, y el histórico deja de ser comparable.",
+          "Tratad una división como información. Volved a votar después de que los dos extremos se expliquen; no hagáis la media.",
+          "Recalibrad de vez en cuando. Un equipo que lleva un año funcionando normalmente ha derivado, y eso es normal, no un error que haya que arreglar hacia atrás.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "¿Cuál es la sucesión de Fibonacci para los story points?",
+        a: "La mayoría de los equipos usa 1, 2, 3, 5, 8, 13, 21 y 34, donde cada número es la suma de los dos anteriores. Muchos usan una versión modificada —0, ½, 1, 2, 3, 5, 8, 13, 20, 40, 100— que redondea la parte alta. Point Poker arranca con 1 a 34 más una carta ?.",
+      },
+      {
+        q: "¿Qué significa una historia de 13 puntos?",
+        a: "Significa que el equipo la considera grande y está menos seguro de ella que de cualquier cosa más pequeña. En la mayoría de los equipos un 13 es el último tamaño que todavía merece entrar en un sprint, y un 21 o más es una señal para dividir la historia, no una estimación con la que planificar.",
+      },
+      {
+        q: "¿Por qué se usa Fibonacci y no una escala uniforme?",
+        a: "Porque la incertidumbre crece con el tamaño y una escala uniforme lo oculta. En una escala del 1 al 10, un 6 y un 7 parecen una distinción con sentido aunque nadie sepa acertarla de forma fiable. Fibonacci elimina esa precisión aparente separando las cartas contiguas lo suficiente como para que elegir entre ellas signifique algo.",
+      },
+      {
+        q: "¿El equipo debería usar una carta de 0 o de medio punto?",
+        a: "Solo si tenéis trabajo realmente así de pequeño. Un 0 sirve para algo que sale prácticamente gratis porque va montado en otra historia, y un ½ para cambios triviales. Los dos suelen generar más debate del que ahorran, y por eso la baraja por defecto aquí empieza en 1.",
+      },
+      {
+        q: "¿Y si el equipo se divide entre 3 y 5?",
+        a: "Preguntad a ambas partes qué se están imaginando: una división de dos cartas casi siempre significa que alguien está contando trabajo que la otra persona no ve. Después volved a votar y registrad la carta a la que llegue el equipo. No anotéis un 4: no está en la baraja, y en cuanto vuestro histórico contiene números que la baraja no puede producir, comparar sprints deja de funcionar.",
+      },
+    ],
+    related: [
+      { href: "/what-is-planning-poker", kicker: "Guía", title: "¿Qué es el planning poker?", copy: "El método en sí y por qué todos revelan a la vez." },
+      { href: "/scrum-poker", kicker: "Ceremonia", title: "Scrum poker", copy: "Dónde se usa la baraja: refinamiento y sprint planning." },
+      { href: "/", kicker: "Producto", title: "Estimar una historia", copy: "Abre una sala gratis y pruébalo con algo real." },
+    ],
+  },
+
+  "/scrum-poker": {
+    eyebrow: "Scrum poker",
+    h1: "App de scrum poker gratis para sprint planning",
+    intro:
+      "Usa Point Poker como app de scrum poker para el sprint planning y el refinamiento del backlog, con conversaciones rápidas y sin sesgo sobre los story points en un equipo distribuido.",
+    highlights: [
+      { value: "Scrum", label: "Hecho para refinamiento y sprint planning" },
+      { value: "Justo", label: "Los votos se revelan a la vez, nadie ancla" },
+      { value: "Gratis", label: "Sin cuenta, sin tarjeta, sin límite de plazas" },
+    ],
+    body: [
+      "Scrum poker y planning poker son la misma ceremonia con dos nombres: el equipo estima de forma relativa, vota a la vez y solo habla de las diferencias.",
+      "Las salas admiten hasta {max} personas incluidos los facilitadores, suficiente para un equipo Scrum completo más producto, diseño y QA en una sola sesión.",
+    ],
+    sections: [
+      {
+        title: "Dónde encaja el scrum poker en el sprint",
+        intro:
+          "La ceremonia se gana su tiempo en los dos momentos en que el equipo tiene que acordar un tamaño antes de comprometerse a nada.",
+        bullets: [
+          "Refinamiento del backlog: dimensionar lo que viene y encontrar los elementos cuyos criterios de aceptación son demasiado pobres para poder estimarlos.",
+          "Sprint planning: recorrer la cola y salir con un sprint que el equipo entero ha aceptado de verdad, en vez de uno fijado por la voz más alta.",
+          "A mitad de sprint, cuando una historia resulta ser mayor de lo que parecía: redimensionarla en equipo en lugar de dejar que una sola persona absorba la sorpresa.",
+        ],
+      },
+      {
+        title: "Qué tiene que hacer bien una herramienta de scrum poker",
+        intro: "Casi todo el valor está en el revelado. Lo demás es logística.",
+        bullets: [
+          "Revelado simultáneo: si una estimación aparece antes que las otras, las demás derivan hacia ella. Ese sesgo es la razón misma de la ceremonia.",
+          "Un facilitador que no vota: el Scrum Master, o quien dirija la sala, necesita observar la dispersión, no sumarse a ella.",
+          "Una dispersión visible, no promediada: un 3 frente a un 13 es la parte útil de la sesión, y una media esconde el desacuerdo.",
+          "Entrada sin cuenta: quien tiene que registrarse antes de votar es quien llega cinco minutos tarde.",
+        ],
+      },
+      {
+        title: "Dirigir la sesión sin que se alargue",
+        intro:
+          "Las reuniones de estimación se desbordan cuando la conversación no tiene regla de parada. Estas la tienen.",
+        bullets: [
+          "Estimad en relación con una historia que todos recuerden, no en horas. Fijad esa referencia antes de la primera votación.",
+          "Discutid solo los valores atípicos. Si la mesa está dentro de una carta, registrad y seguid.",
+          "Acotad la discusión en el tiempo y volved a votar. Una segunda votación tras dos minutos de contexto vale más que diez de debate.",
+          "Una historia que nadie puede estimar es un hallazgo, no un fracaso: devolvedla para dividirla en vez de adivinar un número.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "¿Qué es el scrum poker?",
+        a: "El scrum poker es una técnica de estimación por consenso en la que cada miembro de un equipo Scrum elige en privado una carta que representa el tamaño relativo de un elemento del backlog, todos revelan a la vez y el equipo comenta las diferencias antes de acordar un número. Es la misma práctica que el planning poker; los equipos Scrum simplemente suelen llamarla scrum poker.",
+      },
+      {
+        q: "¿La Guía de Scrum obliga a usar planning poker?",
+        a: "No. La Guía de Scrum no menciona el planning poker, ni los story points, ni ninguna técnica concreta de estimación: solo dice que los Developers dimensionan el trabajo. El scrum poker es una convención muy extendida que encaja bien con Scrum, no una regla que incumples si estimas de otra manera.",
+      },
+      {
+        q: "¿Quién debería participar en el scrum poker?",
+        a: "Vota todo el que vaya a hacer el trabajo: desarrollo, QA y cualquiera que contribuya al elemento. El Product Owner responde preguntas sobre la intención pero normalmente no vota, porque no está estimando su propio esfuerzo. El Scrum Master facilita y se mantiene completamente fuera de la votación.",
+      },
+      {
+        q: "¿Qué hacer cuando el equipo no acuerda una estimación?",
+        a: "Pide a quien votó más alto y a quien votó más bajo que expliquen lo que ven: normalmente están mirando trabajos distintos. Después volved a votar. Si una segunda ronda sigue partiendo la mesa, la historia suele ser demasiado vaga o demasiado grande, y dividirla es mejor resultado que quedarse con un número intermedio que nadie defiende.",
+      },
+      {
+        q: "¿Cuánto debería durar una sesión de scrum poker?",
+        a: "Alrededor de uno o dos minutos por elemento una vez que el equipo tiene una referencia, así que un refinamiento de diez a quince elementos cabe holgadamente en media hora. Las sesiones que se alargan suelen ser síntoma de elementos que llegan sin criterios de aceptación, no de que estimar sea lento.",
+      },
+    ],
+    related: [
+      { href: "/what-is-planning-poker", kicker: "Guía", title: "¿Qué es el planning poker?", copy: "El método en sí, y por qué el revelado simultáneo es la parte que hace el trabajo." },
+      { href: "/fibonacci-story-points", kicker: "Baraja", title: "Story points de Fibonacci", copy: "Por qué crecen los saltos y qué te está diciendo de verdad un 21 o un 34." },
+      { href: "/", kicker: "Producto", title: "Abrir una sala gratis", copy: "Sin cuenta y sin instalar nada. Crea una sala y pega el enlace en el chat del equipo." },
+    ],
+  },
+};
