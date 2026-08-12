@@ -268,11 +268,21 @@ function applyRouteMeta(meta) {
   /* meta.basePath, not next.basePath: DEFAULT_META carries "/" and the spread
      would hand the home page's four alternates to every noindex room URL. */
   applyAlternates(meta.basePath);
+  /* The document's own language has to follow client-side navigation, and it
+     has to come from the URL rather than from getLocale(). Only four pages are
+     translated, so a Japanese reader clicking through to /pricing lands on a
+     page that genuinely is English — getLocale() still says "ja" there, which
+     tells a screen reader to read English with Japanese phonemes. The URL gets
+     every case right: /ja/scrum-poker is ja, /pricing is en however you
+     arrived, and /ja/?room=ABC12 is ja because the app UI is translated even
+     though a room is not a content page. */
+  const docLocale = splitLocalePath(window.location.pathname).locale;
+  document.documentElement.lang = LOCALES[docLocale].hreflang;
   upsertMeta(
     'meta[property="og:locale"]',
     "meta",
     { property: "og:locale" },
-    LOCALES[meta.locale || getLocale()].ogLocale,
+    LOCALES[docLocale].ogLocale,
   );
   upsertMeta('meta[name="description"]', "meta", { name: "description" }, next.description);
   upsertMeta('meta[name="robots"]', "meta", { name: "robots" }, next.robots);
