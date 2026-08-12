@@ -939,3 +939,68 @@ Fixed by deleting the key; the explanation it carried already exists in
 `robots.txt`, which has real comments. Pinned by a test asserting every
 `vercel.json` header entry carries only `source`/`headers`/`has`/`missing`,
 verified to fail when the key is put back. **408 tests.**
+
+---
+
+## Session — 12 August 2026 — what Search Console actually said
+
+Sitemap resubmitted (13 → **18** discovered pages; Google had not re-read it
+since 30 April) and indexing requested for the three new URLs. Then read the
+reports properly instead of assuming.
+
+**The numbers.** 90 days: 2,740 impressions, 10 clicks, average position 53.6.
+11 pages indexed, 3 not — and the 3 are `http://pointpoker.app`,
+`https://pointpoker.app` and `http://www.pointpoker.app`, which 301 to
+canonical www. That is a Domain property reporting a redirect as a redirect.
+Correct, not a defect. Core Web Vitals has no data on either device type,
+which is a traffic problem and not a performance one. No manual actions.
+
+**The finding.** Clustering all 147 queries onto the page that owns them:
+
+| Page | Cluster impressions | Clicks | Prerendered words |
+|------|--------------------:|-------:|------------------:|
+| `/scrum-poker` | ~966 | 0 | 139 |
+| `/pointing-poker` | ~494 | 0 | 787 (shipped 11 Aug) |
+| `/planning-poker-online` | ~219 | 0 | 157, **not indexed** |
+| `/fibonacci-story-points` | ~176 | 0 | 146 |
+
+`scrum poker` alone is 553 impressions with zero clicks against a 139-word
+page. The demand was already arriving; there was nothing on the page to earn
+the click.
+
+**Why those pages were thin.** They were hand-written JSX. The prerender
+builds from `ROUTE_CONTENT`, which held only an intro for them — so a non-JS
+crawler got ~140 words while the React app showed ~350. Worse, their FAQs
+could never earn FAQPage schema: the prerender only emits it from
+`content.faq`, and their answers lived in JSX it never saw. Adding schema
+without moving the content would have described text that is not on the page,
+which is a structured-data violation, not a shortcut.
+
+**What changed.** All three converted to data-driven `<ContentPage>` pages —
+the pattern established on 11 Aug. Content moved into `ROUTE_CONTENT`,
+deepened, and given five FAQ entries each; the three hand-written components
+deleted. **213 lines of JSX removed, 210 lines of data added — a net
+deletion**, and prerender and React can no longer disagree because they read
+the same object.
+
+| Page | Words | New schema |
+|------|------:|------------|
+| `/scrum-poker` | 139 → **756** | FAQPage |
+| `/planning-poker-online` | 157 → **814** | FAQPage + HowTo |
+| `/fibonacci-story-points` | 146 → **876** | FAQPage |
+
+Verified in a browser, not just in tests: FAQ answers are in the DOM when
+collapsed (`textContent` yes, `innerText` no — which is what the schema needs
+and what Google permits), the accordion flips `aria-expanded`, no console
+errors, no horizontal overflow at 375px. **411 tests**, lint clean.
+
+Two claims were checked rather than assumed: the Scrum Guide genuinely does
+not mandate planning poker or story points, and "two Team Rooms" — which read
+like leftover Pro-tier copy — is a current, accurate fact in seven places, so
+it was left alone.
+
+**Still thin, and deliberately left:** `/story-point-estimation` (~80 cluster
+impressions), `/agile-estimation-tool` (~45), `/remote-sprint-planning`,
+`/about`, `/trust`, `/features`, `/pricing`. Same conversion applies when the
+demand justifies it. `/terms` and `/privacy` are 38 and 45 words and should
+stay that way.

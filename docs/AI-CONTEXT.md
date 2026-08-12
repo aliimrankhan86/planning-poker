@@ -24,8 +24,8 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 399 KB |
-| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 48 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 386 KB |
+| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 63 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 30 KB |
 | `src/design-system/components.css` | The `pp-` component classes | 58 KB |
@@ -61,17 +61,17 @@ Do not split it without a reason that outweighs that.
 - `/support`
 - `/trust`
 - `/what-is-planning-poker`
-- `/fibonacci-story-points`
 - `/agile-estimation-tool`
 - `/pricing`
 - `/features`
-- `/planning-poker-online`
-- `/scrum-poker`
 - `/story-point-estimation`
 - `/remote-sprint-planning`
 - `/pointing-poker`
 - `/story-points-to-hours`
 - `/planning-poker-jira`
+- `/scrum-poker`
+- `/planning-poker-online`
+- `/fibonacci-story-points`
 - `/admin`  (private, never indexed, never prerendered)
 
 Every public route is prerendered at build time with its own title, description, canonical,
@@ -161,9 +161,9 @@ migration, and they should fall over time, never rise.
 `src/design-system/design-system.test.js` computes the actual WCAG contrast of
 every semantic role in both themes and fails if one drops below AA.
 
-## Components in App.js (34)
+## Components in App.js (31)
 
-`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `FibonacciStoryPointsPage`, `AgileEstimationToolPage`, `FeaturesPage`, `PlanningPokerOnlinePage`, `ScrumPokerPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
+`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `WhatIsPlanningPokerPage`, `AgileEstimationToolPage`, `FeaturesPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
 
 ---
 

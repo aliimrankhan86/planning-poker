@@ -4135,9 +4135,6 @@ export default function App() {
           {screen === "whatIsPlanningPoker" && (
             <WhatIsPlanningPokerPage onNavigate={navTo} />
           )}
-          {screen === "fibonacciStoryPoints" && (
-            <FibonacciStoryPointsPage onNavigate={navTo} />
-          )}
           {screen === "agileEstimationTool" && (
             <AgileEstimationToolPage onNavigate={navTo} />
           )}
@@ -4146,12 +4143,6 @@ export default function App() {
           )}
           {screen === "features" && (
             <FeaturesPage onNavigate={navTo} />
-          )}
-          {screen === "planningPokerOnline" && (
-            <PlanningPokerOnlinePage onNavigate={navTo} />
-          )}
-          {screen === "scrumPoker" && (
-            <ScrumPokerPage onNavigate={navTo} />
           )}
           {screen === "storyPointEstimation" && (
             <StoryPointEstimationPage onNavigate={navTo} />
@@ -4967,83 +4958,6 @@ function WhatIsPlanningPokerPage({ onNavigate }) {
   );
 }
 
-function FibonacciStoryPointsPage({ onNavigate }) {
-  return (
-    <MarketingPageShell
-      eyebrow="Fibonacci story points"
-      title="Fibonacci story points help agile teams express uncertainty as work gets bigger"
-      intro="Agile teams often use a Fibonacci-style sequence like 1, 2, 3, 5, 8, 13, 21, and 34 because the gaps get wider as work becomes less predictable. That makes it easier to express uncertainty honestly instead of pretending large stories can be sized with the same precision as small ones."
-      highlights={[
-        { value: "Fibonacci", label: "Default deck for many Scrum teams" },
-        { value: "Wider gaps", label: "Larger work carries more uncertainty" },
-        { value: "Consensus", label: "Final estimate should be an agreed deck value" },
-      ]}
-      onNavigate={onNavigate}
-      primaryHref="/"
-      primaryLabel="Try Fibonacci planning poker"
-      secondaryHref="/story-point-estimation"
-      secondaryLabel="See story estimation guide"
-    >
-      <MarketingSection
-        title="Why Fibonacci is used for story points"
-        intro="The sequence is useful because it reminds the team that uncertainty increases with scale. A 13-point story is not just a slightly bigger 8. It often means the team knows less, expects more variation, or sees more delivery risk."
-      >
-        <Grid min="280px">
-          <Card title="Small differences matter less as work grows">
-              Teams usually do not need to debate whether something is an 11 or a 12. Fibonacci keeps the choices coarse enough to focus on useful differences rather than false precision.
-              </Card>
-          <Card title="The numbers represent relative effort">
-              Story points are not hours. They reflect a mix of effort, complexity, risk, and uncertainty, compared against the rest of the backlog.
-              </Card>
-          <Card title="Agreement matters more than arithmetic">
-              If the team splits between 3 and 5, the final answer should be the agreed Fibonacci card, not an invalid middle number like 4.
-              </Card>
-        </Grid>
-      </MarketingSection>
-
-      <MarketingSection
-        title="How to use Fibonacci cards well"
-        intro="The deck works best when the team treats it as a conversation tool, not a scoring machine."
-      >
-        <ul className="marketing-list">
-          <li><strong>Pick a baseline story first:</strong> so the team has a shared reference for what a 2, 3, or 5 roughly feels like.</li>
-          <li><strong>Use split votes as a signal:</strong> that the story needs discussion, not as a reason to average numbers automatically.</li>
-          <li><strong>Record only valid deck values:</strong> so sprint history and throughput stay consistent with the method the team chose.</li>
-          <li><strong>Re-vote when the discussion changes understanding:</strong> instead of forcing a conclusion too early.</li>
-        </ul>
-      </MarketingSection>
-
-      <MarketingSection
-        title="How Point Poker handles Fibonacci estimation"
-        intro="The product is designed to reinforce good estimation habits rather than bypass them."
-      >
-        <Grid min="280px">
-          <Card title="Fibonacci is the default deck">
-              Teams can start with the familiar sequence immediately, while still having T-shirt and Powers of 2 available for different estimation styles.
-              </Card>
-          <Card title="Averages stay contextual">
-              The app can show average and median after reveal, but those numbers are there to guide discussion rather than silently becoming the recorded estimate.
-              </Card>
-          <Card title="Final estimate must stay deck-valid">
-              When votes differ, the facilitator records the final agreed Fibonacci value or runs another vote. That keeps sprint history and analytics trustworthy.
-              </Card>
-        </Grid>
-      </MarketingSection>
-
-      <MarketingRelatedLinks
-        title="Related guides"
-        intro="These pages explain the broader estimation method, live planning workflow, and feature layer around Fibonacci story points."
-        onNavigate={onNavigate}
-        links={[
-          { href: "/what-is-planning-poker", kicker: "Guide", title: "What is planning poker?", copy: "Understand the method itself and why simultaneous reveal matters for fair estimation." },
-          { href: "/story-point-estimation", kicker: "Workflow", title: "Story point estimation", copy: "See how the product supports better estimation conversations and explicit final agreement." },
-          { href: "/planning-poker-online", kicker: "Remote", title: "Planning poker online", copy: "See how distributed teams can use the workflow in a browser without setup friction." },
-        ]}
-      />
-    </MarketingPageShell>
-  );
-}
-
 function AgileEstimationToolPage({ onNavigate }) {
   return (
     <MarketingPageShell
@@ -5192,133 +5106,6 @@ function FeaturesPage({ onNavigate }) {
           { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing. See exactly what free covers and why it is built this way." },
           { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker use cases", copy: "See how the same workflow supports Scrum Masters, Product Owners, and remote engineering teams." },
           { href: "/remote-sprint-planning", kicker: "Remote", title: "Remote sprint planning", copy: "Learn how the product fits distributed ceremonies and recurring shared-room workflows." },
-        ]}
-      />
-    </MarketingPageShell>
-  );
-}
-
-function PlanningPokerOnlinePage({ onNavigate }) {
-  return (
-    <MarketingPageShell
-      eyebrow="Planning poker online"
-      title="Run planning poker online without slowing the team down with setup, sign-up friction, or awkward reveal flow"
-      intro="Point Poker is built for teams that want to open a room, share a link, vote together, and move through a backlog quickly. It works in any browser, so the whole team can join from desktop or mobile in seconds."
-      highlights={[
-        { value: "10 sec", label: "Typical time to create and share a room" },
-        { value: "Zero", label: "Install or account requirement for free sessions" },
-        { value: "Live", label: "Realtime reveal and room sync across the team" },
-      ]}
-      onNavigate={onNavigate}
-      primaryHref="/"
-      primaryLabel="Start free room"
-      secondaryHref="/features"
-      secondaryLabel="Explore features"
-    >
-      <MarketingSection
-        title="Why teams look for planning poker online"
-        intro="Most teams are trying to solve the same problem: they want unbiased estimates, a simple remote join flow, and enough structure that the sprint planning meeting does not drift."
-      >
-        <Grid min="280px">
-          <Card title="No install barrier">
-              Everyone joins from a browser link. That makes it easy to drop a room into Slack, Teams, Zoom chat, or a calendar invite and start estimating immediately.
-              </Card>
-          <Card title="Clear reveal flow">
-              The room supports true simultaneous reveal, so estimates stay independent until the team is ready to discuss them.
-              </Card>
-          <Card title="Room stays focused">
-              Story queue, timer, facilitator controls, and explicit next-step prompts keep the team in one workflow instead of juggling notes, chat, and spreadsheets.
-              </Card>
-        </Grid>
-      </MarketingSection>
-
-      <MarketingSection
-        title="How a typical online planning poker session runs"
-        intro="The product flow stays intentionally simple so the team spends time discussing the backlog, not learning the tool."
-      >
-        <Grid min="260px" className="marketing-steps">
-          {[
-            ["Create or join the room", "Start a free room instantly or join from a shared link with your name and role."],
-            ["Add the story you are estimating", "Work from a backlog queue or estimate one story at a time during refinement."],
-            ["Vote privately", "Each voter picks a card before the reveal, which reduces anchoring bias."],
-            ["Discuss only when the spread matters", "Facilitators can reveal, time-box discussion, and either re-vote or record the agreed estimate."],
-            ["Move straight to the next item", "The room keeps momentum without forcing the team to rebuild context for every story."],
-          ].map(([stepTitle, stepCopy], index) => (
-            <Card key={stepTitle} eyebrow={`Step ${index + 1}`} title={stepTitle}>
-              {stepCopy}
-            </Card>
-          ))}
-        </Grid>
-      </MarketingSection>
-
-      <MarketingRelatedLinks
-        title="Explore the workflow in more detail"
-        intro="If you are evaluating tools for estimation practice, these related pages show the Scrum, story-point, and remote-team angles."
-        onNavigate={onNavigate}
-        links={[
-          { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "See how the same flow supports backlog refinement and sprint planning in Scrum teams." },
-          { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "Learn how the product supports Fibonacci-based discussions and facilitator-led agreement." },
-          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for every team. Read the full pricing promise and what it covers." },
-        ]}
-      />
-    </MarketingPageShell>
-  );
-}
-
-function ScrumPokerPage({ onNavigate }) {
-  return (
-    <MarketingPageShell
-      eyebrow="Scrum poker"
-      title="A scrum poker app that keeps sprint planning focused, fair, and easy to run with remote teams"
-      intro="Scrum teams often search for scrum poker when what they really need is a low-friction planning poker workflow. Point Poker supports that exact ceremony pattern: independent voting, reveal, discussion, agreement, then straight into the next story."
-      highlights={[
-        { value: "Scrum", label: "Built for backlog refinement and sprint planning" },
-        { value: "Fair", label: "Votes reveal together to reduce anchoring" },
-        { value: "Fast", label: "Facilitator can re-vote or record agreement quickly" },
-      ]}
-      onNavigate={onNavigate}
-      primaryHref="/"
-      primaryLabel="Start scrum poker room"
-      secondaryHref="/features"
-      secondaryLabel="See facilitator features"
-    >
-      <MarketingSection
-        title="Where scrum poker fits best"
-        intro="The tool is most useful in the ceremonies where the team needs shared understanding before committing to sprint scope."
-      >
-        <Grid min="280px">
-          <Card title="Sprint planning">
-              Use the queue, vote through the backlog, and leave the session with a cleaner sense of the sprint’s scope and the stories that still need clarification.
-              </Card>
-          <Card title="Backlog refinement">
-              Smaller estimation sessions still benefit from the same reveal-and-discuss pattern, especially when stories are unclear or acceptance criteria are thin.
-              </Card>
-          <Card title="Cross-functional alignment">
-              Scrum poker surfaces differences between engineering, product, and delivery expectations before those differences become sprint risk.
-              </Card>
-        </Grid>
-      </MarketingSection>
-
-      <MarketingSection
-        title="What Scrum Masters and facilitators need from the tool"
-        intro="A usable scrum poker app should help the facilitator manage the flow without dominating the conversation."
-      >
-        <ul className="marketing-list">
-          <li><strong>Role separation:</strong> facilitators can join without casting a vote card.</li>
-          <li><strong>Clear post-reveal decisions:</strong> when the team splits, the facilitator can record the agreed deck value or run another vote.</li>
-          <li><strong>Moderation controls:</strong> facilitators can manage participants and keep the room focused.</li>
-          <li><strong>Lightweight join flow:</strong> guests can enter with a name and role instead of being forced through account creation.</li>
-        </ul>
-      </MarketingSection>
-
-      <MarketingRelatedLinks
-        title="Keep evaluating from the right angle"
-        intro="These pages cover the broader online-estimation workflow, pricing, and story-point estimation practice around Scrum poker."
-        onNavigate={onNavigate}
-        links={[
-          { href: "/planning-poker-online", kicker: "Guide", title: "Planning poker online", copy: "See the full browser-first flow for remote teams and ad-hoc sessions." },
-          { href: "/story-point-estimation", kicker: "Guide", title: "Story point estimation", copy: "Understand how the tool helps teams converge on meaningful estimates." },
-          { href: "/pricing", kicker: "Plans", title: "Pricing and Team Room fit", copy: "See when recurring Scrum teams benefit from two dedicated reusable Team Rooms." },
         ]}
       />
     </MarketingPageShell>

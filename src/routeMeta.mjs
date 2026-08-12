@@ -40,12 +40,9 @@ export const STATIC_SCREEN_BY_PATH = {
   "/support": "support",
   "/trust": "trust",
   "/what-is-planning-poker": "whatIsPlanningPoker",
-  "/fibonacci-story-points": "fibonacciStoryPoints",
   "/agile-estimation-tool": "agileEstimationTool",
   "/pricing": "pricing",
   "/features": "features",
-  "/planning-poker-online": "planningPokerOnline",
-  "/scrum-poker": "scrumPoker",
   "/story-point-estimation": "storyPointEstimation",
   "/remote-sprint-planning": "remoteSprintPlanning",
   /* Routes below render from ROUTE_CONTENT via <ContentPage>, so adding one
@@ -60,6 +57,13 @@ export const STATIC_SCREEN_BY_PATH = {
   "/pointing-poker": "/pointing-poker",
   "/story-points-to-hours": "/story-points-to-hours",
   "/planning-poker-jira": "/planning-poker-jira",
+  /* Converted from hand-written components. They were the three pages Search
+     Console showed carrying real impressions against a ~140-word prerender —
+     and their FAQs could not earn FAQPage schema while the answers lived in
+     JSX the prerender never saw. Data-driven, the two renderers cannot drift. */
+  "/scrum-poker": "/scrum-poker",
+  "/planning-poker-online": "/planning-poker-online",
+  "/fibonacci-story-points": "/fibonacci-story-points",
   "/admin": "admin",
 };
 
@@ -372,21 +376,153 @@ export const ROUTE_CONTENT = {
     ],
   },
   "/planning-poker-online": {
+    eyebrow: "Planning poker online",
     h1: "Planning Poker Online for Remote Agile Teams",
     intro:
       "Run planning poker online in any browser. Create a room, invite the team with one link, reveal together, and estimate stories fast without installs or account setup.",
+    highlights: [
+      { value: "One link", label: "Paste it in Slack, Teams, or the call" },
+      { value: "No install", label: "Any browser, desktop or mobile" },
+      { value: "Live", label: "Everyone reveals at the same moment" },
+    ],
     body: [
       "Everyone joins from the browser they already have open — desktop or mobile, no extension, no app store, no sign-up. Paste the link into Slack, Teams, or the meeting chat and the room fills in seconds.",
       "The facilitator drives reveal, re-votes, and the item queue. Everyone else just plays a card. That keeps a distributed ceremony to the length it should be.",
     ],
+    stepsTitle: "How to run planning poker online",
+    stepsIntro:
+      "Five steps, and the only one that needs preparation is the baseline.",
+    steps: [
+      "Open a room and share the link. Nobody needs an account, so latecomers can join mid-session without breaking the flow.",
+      "Agree a baseline story everyone remembers, and give it a number. Every later estimate is relative to that one.",
+      "Read the item, then everyone plays a card privately. Nothing is visible until the whole table has voted.",
+      "Reveal together, and ask the highest and lowest voters what they are each looking at. That is where the useful information is.",
+      "Record the agreed number and move on. Re-vote once if the discussion genuinely changed what people think.",
+    ],
+    sections: [
+      {
+        title: "What changes when the room is remote",
+        intro:
+          "The ceremony is the same. The failure modes are different, and they are mostly about who speaks first.",
+        bullets: [
+          "In a video call, the first person to unmute sets the anchor. A simultaneous reveal removes that entirely — nobody sees a number until everyone has committed to one.",
+          "Silence reads as agreement on a call when it usually means someone is not sure. A card forces a position from everyone, including the quiet half of the team.",
+          "Screen-shared spreadsheets put one person in control of the record. A shared room lets everybody see the same state without anyone driving.",
+          "Timezone-split teams lose the most to overrunning meetings, which is why a stopping rule matters more here than in a room.",
+        ],
+      },
+      {
+        title: "Using it alongside the call you are already on",
+        intro:
+          "This is not a replacement for the meeting — it is the estimation surface inside it.",
+        body: [
+          "Keep the video call for the conversation and put the room on a second window or a phone. The room carries the votes and the queue; the call carries the discussion about the spread. Trying to do both in one window is what makes people drop off the call to find the link.",
+          "For a team that estimates every fortnight, a Team Room gives you a URL built from the team name that stays the same between sessions, so it can live in the recurring calendar invite rather than being re-shared each time.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "How do you play planning poker online?",
+        a: "Open a room, share the link with the team, and read out the item being estimated. Everyone picks a card privately, the facilitator reveals all votes at once, and the team discusses only where the estimates disagree before agreeing a final number. Then the next item. The online part changes nothing about the method — it only removes the physical deck and the shared table.",
+      },
+      {
+        q: "Can you run planning poker during a video call?",
+        a: "Yes, and that is the usual setup. Keep Zoom, Teams, or Meet open for the discussion and use the room for the voting, either in a second window or on a phone. Paste the room link into the meeting chat so nobody has to hunt for it.",
+      },
+      {
+        q: "What happens if someone joins late or loses connection?",
+        a: "They open the same link and rejoin. A refresh puts you back into the room you were already in rather than starting a new session, so a dropped connection or a closed laptop lid does not cost you the round or the queue.",
+      },
+      {
+        q: "Can a distributed team estimate without meeting at all?",
+        a: "You can collect the votes asynchronously, but you will lose most of the benefit. The value of planning poker is in the conversation the disagreement triggers — a spread of 3 to 13 with nobody there to explain it is just a number nobody trusts. If the team genuinely cannot meet, estimate a smaller set of items in a shorter live session instead.",
+      },
+      {
+        q: "Is there a free planning poker tool with no sign-up?",
+        a: "Point Poker is free with no account required to create or join a room, and no participant limit tier — the room holds up to 20 people whoever you are. Signing in is optional and only adds Team Rooms with a reusable URL, plus sprint history.",
+      },
+    ],
+    related: [
+      { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "The same ceremony under the name scrum teams tend to use for it." },
+      { href: "/planning-poker-jira", kicker: "Trackers", title: "Planning poker with Jira", copy: "Paste the backlog in, get the estimates out. No plugin, no admin approval." },
+      { href: "/features", kicker: "Product", title: "All features", copy: "Decks, timers, story queue, sprint history and CSV export." },
+    ],
   },
   "/scrum-poker": {
+    eyebrow: "Scrum poker",
     h1: "Free Scrum Poker App for Sprint Planning",
     intro:
       "Use Point Poker as a scrum poker app for sprint planning and backlog refinement, with fast, unbiased story-point discussions across a distributed team.",
+    highlights: [
+      { value: "Scrum", label: "Built for refinement and sprint planning" },
+      { value: "Fair", label: "Votes reveal together, so nobody anchors" },
+      { value: "Free", label: "No account, no card, no seat limit" },
+    ],
     body: [
       "Scrum poker and planning poker are the same ceremony under two names: the team sizes work relatively, votes simultaneously, and talks only about the gaps.",
       `Rooms hold up to ${MAX_PARTICIPANTS} people including facilitators, which covers a full scrum team plus product, design, and QA in one session.`,
+    ],
+    sections: [
+      {
+        title: "Where scrum poker fits in the sprint",
+        intro:
+          "The ceremony earns its time in the two places where the team has to agree on size before it commits to anything.",
+        bullets: [
+          "Backlog refinement — size the items coming up, and find the ones whose acceptance criteria are too thin to size at all.",
+          "Sprint planning — work the queue, and leave with a sprint the whole team has actually agreed to rather than one the loudest voice set.",
+          "Mid-sprint, when a story turns out bigger than it looked — re-size it as a team instead of letting one person absorb the surprise.",
+        ],
+      },
+      {
+        title: "What a scrum poker tool has to get right",
+        intro:
+          "Most of the value is in the reveal. Everything else is logistics.",
+        bullets: [
+          "Simultaneous reveal — if one estimate lands before the others, the rest drift toward it. That bias is the whole reason the ceremony exists.",
+          "A facilitator who does not vote — the Scrum Master or whoever runs the room needs to watch the spread, not add to it.",
+          "A spread that is visible, not averaged away — a 3 against a 13 is the useful part of the session, and averaging it hides the disagreement.",
+          "A join flow with no account — a guest who has to sign up before voting is a guest who joins five minutes late.",
+        ],
+      },
+      {
+        title: "Running the session without it overrunning",
+        intro:
+          "Estimation meetings sprawl when the discussion has no stopping rule. These are the ones that hold.",
+        bullets: [
+          "Size relative to a story everyone remembers, not in hours. Pick that baseline before the first vote.",
+          "Discuss the outliers only. If the table is within one card of each other, record it and move on.",
+          "Time-box the discussion, then re-vote. A second vote after two minutes of context beats ten minutes of debate.",
+          "A story nobody can size is a finding, not a failure — send it back for splitting rather than guessing at it.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What is scrum poker?",
+        a: "Scrum poker is a consensus estimation technique where each member of a scrum team privately picks a card representing the relative size of a backlog item, everyone reveals at once, and the team discusses the disagreements before agreeing a number. It is the same practice as planning poker — scrum teams simply tend to call it scrum poker.",
+      },
+      {
+        q: "Does the Scrum Guide require planning poker?",
+        a: "No. The Scrum Guide does not mention planning poker, story points, or any specific estimation technique — it only says the Developers size the work. Scrum poker is a widely used convention that fits Scrum well, not a rule you are failing to follow if you estimate some other way.",
+      },
+      {
+        q: "Who should take part in scrum poker?",
+        a: "Everyone who will do the work votes — developers, QA, and anyone else delivering the item. The Product Owner answers questions about intent but does not usually vote, since they are not estimating their own effort. The Scrum Master facilitates and stays out of the voting entirely.",
+      },
+      {
+        q: "What do you do when the team cannot agree on an estimate?",
+        a: "Ask the highest and lowest voters to explain what they are seeing — they are usually looking at different work. Then re-vote. If a second round still splits the table, the story is generally too vague or too large, and splitting it is a better outcome than settling on a middle number nobody believes.",
+      },
+      {
+        q: "How long should a scrum poker session take?",
+        a: "Around a minute or two per item once the team has a baseline, so a refinement session of ten to fifteen items fits comfortably in half an hour. Sessions that run long are usually a symptom of items arriving without acceptance criteria, not of the estimation itself being slow.",
+      },
+    ],
+    related: [
+      { href: "/what-is-planning-poker", kicker: "Guide", title: "What is planning poker?", copy: "The method itself, and why the simultaneous reveal is the part that matters." },
+      { href: "/fibonacci-story-points", kicker: "Deck", title: "Fibonacci story points", copy: "Why the gaps widen, and what a 21 or a 34 is really telling you." },
+      { href: "/story-point-estimation", kicker: "Practice", title: "Story point estimation", copy: "Turning the votes into estimates the team will still stand behind next sprint." },
     ],
   },
   "/story-point-estimation": {
@@ -427,12 +563,80 @@ export const ROUTE_CONTENT = {
     steps: HOW_TO_STEPS,
   },
   "/fibonacci-story-points": {
+    eyebrow: "Fibonacci story points",
     h1: "Fibonacci Story Points Explained",
     intro:
       "Agile teams estimate in Fibonacci story points — 1, 2, 3, 5, 8, 13, 21, 34 — because uncertainty grows with size, and the widening gaps stop teams pretending otherwise.",
+    highlights: [
+      { value: "1→34", label: "The deck Point Poker opens with" },
+      { value: "Wider gaps", label: "Bigger work, less precision, honestly" },
+      { value: "21+", label: "Usually means split it, not size it" },
+    ],
     body: [
       "Nobody can reliably tell a 7 from an 8. The Fibonacci gaps force a real choice between clearly different sizes, which makes estimates faster and more honest.",
       "A large card is a signal, not a number: 21 and 34 usually mean the story should be split before it enters a sprint.",
+    ],
+    sections: [
+      {
+        title: "Why the gaps widen",
+        intro:
+          "The sequence is not chosen for its mathematics. It is chosen because the spacing matches how confidence actually decays.",
+        body: [
+          "Between 1 and 2 you are choosing between two things you understand well, and the difference is real. Between 21 and 34 you are choosing between two things you barely understand, and a finer scale would only invite false precision. The widening gaps encode that: the bigger the work, the coarser the honest answer.",
+          "This is also why a team that argues over 8 versus 13 for ten minutes is usually arguing about scope, not size. On a Fibonacci deck adjacent cards are far apart on purpose, so a genuine split between them means the two voters are picturing different work.",
+        ],
+      },
+      {
+        title: "The deck Point Poker uses",
+        intro:
+          "1, 2, 3, 5, 8, 13, 21, 34, and a ? card.",
+        body: [
+          "The ? is not a zero and not a joke — it means \"I cannot size this from what I have been told\", which is a legitimate and useful answer. A table of question marks says the item needs work before it needs an estimate, and Point Poker deliberately does not treat a unanimous ? as consensus.",
+          "Plenty of teams use a modified sequence instead — 0, ½, 1, 2, 3, 5, 8, 13, 20, 40, 100 is the common variant, rounding the large end for readability. Either works. What matters is that the team uses one deck consistently, because story points only mean anything relative to the team's own past estimates.",
+        ],
+        bullets: [
+          "T-shirt sizes (XS to XXL) do the same job when a team wants to avoid numbers entirely — Point Poker excludes them from the numeric average for obvious reasons.",
+          "Powers of 2 (1, 2, 4, 8, 16, 32) is the other common alternative, and behaves much like Fibonacci in practice.",
+        ],
+      },
+      {
+        title: "Using the deck well",
+        intro:
+          "The sequence does not produce good estimates on its own. These habits do.",
+        bullets: [
+          "Anchor on a baseline story first. A 3 means nothing until the team agrees on one story that is a 3.",
+          "Never record a number that is not on the deck. A 4 or a 6 means the team split and someone averaged it, and the history stops being comparable.",
+          "Treat a split as information. Re-vote after the two ends of the spread explain themselves; do not average.",
+          "Re-baseline occasionally. A team that has been running a year has usually drifted, and that is normal rather than a problem to fix retroactively.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What is the Fibonacci sequence for story points?",
+        a: "Most teams use 1, 2, 3, 5, 8, 13, 21 and 34, where each number is the sum of the two before it. Many use a modified version — 0, ½, 1, 2, 3, 5, 8, 13, 20, 40, 100 — which rounds the large end. Point Poker opens with 1 to 34 plus a ? card.",
+      },
+      {
+        q: "What does a 13-point story mean?",
+        a: "It means the team thinks the item is large and is less confident about it than about anything smaller. In most teams a 13 is the last size still worth putting in a sprint, and a 21 or above is a prompt to split the story rather than an estimate to plan around.",
+      },
+      {
+        q: "Should the team use a 0 or a half-point card?",
+        a: "Only if you have real work that small. A 0 is useful for an item that is genuinely free because it rides along with another story, and a ½ for trivial changes. Both tend to cause more debate than they save, which is why the default deck here starts at 1.",
+      },
+      {
+        q: "What if the team is split between 3 and 5?",
+        a: "Ask both sides what they are picturing — a two-card split almost always means someone is including work the other person is not. Then re-vote and record whichever card the team lands on. Do not record a 4: it is not on the deck, and the moment your history contains numbers the deck cannot produce, comparing sprints stops working.",
+      },
+      {
+        q: "Is there a Fibonacci estimation template we can use?",
+        a: "The deck is the template — there is nothing to download or configure. Open a room and the Fibonacci sequence is already the active deck, with T-shirt sizes and powers of 2 available if the team prefers those. If you want the results as a file afterwards, each session exports to CSV.",
+      },
+    ],
+    related: [
+      { href: "/story-points-to-hours", kicker: "Guide", title: "Story points to hours", copy: "Why there is no conversion rate, and what to forecast with instead." },
+      { href: "/scrum-poker", kicker: "Ceremony", title: "Scrum poker", copy: "Where the deck gets used: refinement and sprint planning." },
+      { href: "/what-is-planning-poker", kicker: "Guide", title: "What is planning poker?", copy: "The method itself, and why everyone reveals at once." },
     ],
   },
   "/pointing-poker": {
