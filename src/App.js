@@ -11,7 +11,6 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react"
 import {
   Accordion,
   Alert,
-  Avatar,
   Button,
   Card,
   Chip,
@@ -26,10 +25,14 @@ import {
   Icon as DesignSystemIcon,
   IconButton,
   Modal,
+  Participant,
+  ParticipantList,
   Progress,
   Prose,
   rememberDialogOpener,
   ResultsTable,
+  RevealCard,
+  RevealGrid,
   Row,
   Section,
   SectionHead,
@@ -43,6 +46,8 @@ import {
   Toast,
   ToastRegion,
   VisuallyHidden,
+  VoteCard,
+  VoteHand,
 } from "./design-system";
 import { auth, db } from "./firebase";
 import {
@@ -498,14 +503,12 @@ const CSS = `
   color: var(--text-3);
 }
 .action-bar-hint {
-  font-size: var(--fs-2);
+  font-size: var(--fs-2); letter-spacing: var(--fs-2-tracking);
   line-height: var(--lh-snug);
   color: var(--text-3);
   text-align: center;
 }
-.pp-progress.is-complete .pp-progress__bar {
-  background: linear-gradient(90deg, var(--mint) 0%, var(--success) 100%);
-}
+/* .pp-progress.is-complete moved to the "complete" Progress tone. */
 
 @media (max-width: 780px) {
   /* This block used to dock the bar to the bottom of the phone viewport with
@@ -537,17 +540,17 @@ html, body, * {
 }
 *::-webkit-scrollbar-track {
   background: var(--scroll-track);
-  border-radius: 999px;
+  border-radius: var(--r-full);
 }
 *::-webkit-scrollbar-thumb {
   background: var(--scroll-thumb);
-  border-radius: 999px;
+  border-radius: var(--r-full);
   border: 2px solid var(--scroll-thumb-border);
 }
 *::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 *::-webkit-scrollbar-corner { background: transparent; }
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-ui);
   background:
     radial-gradient(circle at top, var(--page-wash-1), transparent 34%),
     radial-gradient(circle at 82% 14%, var(--page-wash-2), transparent 22%),
@@ -574,14 +577,14 @@ body {
 :focus-visible {
   outline: 2.5px solid var(--focus);
   outline-offset: 3px;
-  border-radius: 6px;
+  border-radius: var(--r-xs);
 }
 :focus:not(:focus-visible) { outline: none; }
 
 /* Subtle felt texture */
 body::before {
   content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  position: fixed; inset: 0; z-index: var(--z-base); pointer-events: none;
   background-image:
     radial-gradient(ellipse 80% 55% at 50% 0%, var(--felt-wash-1) 0%, transparent 62%),
     radial-gradient(ellipse 46% 36% at 88% 92%, var(--felt-wash-2) 0%, transparent 58%),
@@ -590,14 +593,12 @@ body::before {
 }
 
 /* .app — child of .page-shell flex column; flex:1 ensures it fills available space */
-.app { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
+.app { flex: 1; display: flex; flex-direction: column; position: relative; z-index: var(--z-raised); }
 
 /* ── ANIMATIONS ── */
 @keyframes fadeUp   { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
 @keyframes spin     { to { transform: rotate(360deg); } }
-@keyframes pulse    { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
-@keyframes dealIn   { from { opacity:0; transform:translateY(-18px) scale(.9); } to { opacity:1; transform:none; } }
 @keyframes urgentBg { 0%,100% { background: color-mix(in oklab, var(--danger) 10%, transparent); } 50% { background: color-mix(in oklab, var(--danger) 24%, transparent); } }
 @keyframes heroIn   { from { opacity:0; transform:scale(.92) translateY(12px); } to { opacity:1; transform:none; } }
 @keyframes badgePop  { 0% { transform:scale(0.7); opacity:0; } 70% { transform:scale(1.08); } 100% { transform:scale(1); opacity:1; } }
@@ -605,31 +606,31 @@ body::before {
 
 /* ══════════════════════ CONFETTI CANVAS ══════════════════════ */
 .confetti-canvas {
-  position: fixed; inset: 0; z-index: 999;
+  position: fixed; inset: 0; z-index: var(--z-confetti);
   pointer-events: none; width: 100%; height: 100%;
 }
 
 /* ══════════════════════ CONSENSUS OVERLAY ══════════════════════ */
 .consensus-overlay {
-  position: fixed; inset: 0; z-index: 998;
+  position: fixed; inset: 0; z-index: var(--z-modal);
   display: flex; align-items: center; justify-content: center;
   pointer-events: none;
 }
 .consensus-burst {
   text-align: center;
-  animation: consensusIn .55s cubic-bezier(.34,1.56,.64,1) both;
+  animation: consensusIn var(--dur-celebrate) var(--ease-flip) both;
 }
-.consensus-burst-emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
+.consensus-burst-emoji { font-size: var(--fs-9); display: block; margin-bottom: var(--sp-2); }
 .consensus-burst-text {
-  font-family: 'Outfit', sans-serif;
-  font-size: 2.4rem; font-weight: 700; color: var(--gold-ink2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-7); font-weight: var(--fw-bold); color: var(--gold-ink2);
   letter-spacing: -0.02em;
   text-shadow: var(--glow-accent);
-  line-height: 1.1;
+  line-height: var(--lh-tight);
 }
 .consensus-burst-sub {
   font-size: var(--fs-2); color: var(--text-1);
-  margin-top: 6px; font-weight: 400; letter-spacing: .5px;
+  margin-top: var(--sp-2); font-weight: var(--fw-regular); letter-spacing: .5px;
   text-shadow: var(--glow-display);
 }
 
@@ -638,7 +639,7 @@ body::before {
    it — the form column and the SEO band each carry their own. */
 .join-wrap {
   flex: 1; display: flex; flex-direction: column; align-items: center;
-  padding: var(--sp-10) 0 var(--sp-20); animation: fadeIn .4s ease; overflow-y: auto;
+  padding: var(--sp-10) 0 var(--sp-20); animation: fadeIn var(--dur-slow) var(--ease-out); overflow-y: auto;
 }
 /* Single column by default — the hero reads first, then the form, which is
    the right order on a phone where they cannot share a row. */
@@ -669,32 +670,32 @@ body::before {
   background: linear-gradient(90deg, transparent, var(--action) 30%, var(--action) 70%, transparent);
 }
 .join-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: clamp(1.75rem, 4.4vw, 2.35rem); font-weight: 700;
+  font-family: var(--font-ui);
+  font-size: var(--fs-section); font-weight: var(--fw-bold);
   color: var(--cream); text-align: center;
-  margin-bottom: 4px; letter-spacing: -0.03em; line-height: 1.1;
+  margin-bottom: var(--sp-1); letter-spacing: -0.03em; line-height: var(--lh-tight);
   text-shadow: var(--glow-display);
 }
 .join-sub {
   text-align: center; color: var(--text-2);
-  font-size: .9rem; margin-bottom: 22px; font-weight: 300; letter-spacing: .5px;
-  max-width: 44ch; margin-left: auto; margin-right: auto; line-height: 1.55;
+  font-size: var(--fs-2); margin-bottom: var(--sp-5); font-weight: var(--fw-light); letter-spacing: .5px;
+  max-width: 44ch; margin-left: auto; margin-right: auto; line-height: var(--lh-body);
 }
 .join-sub.workspace {
-  margin-bottom: 24px;
+  margin-bottom: var(--sp-6);
   letter-spacing: .2px;
 }
 /* Card-suit value strip under the hero — replaces the old "compare plans" CTA */
 .trust-strip {
-  list-style: none; margin: 0 0 26px; padding: 0;
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 7px;
+  list-style: none; margin: 0 0 var(--sp-6); padding: 0;
+  display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2);
 }
 .trust-strip li {
-  font-size: var(--fs-1); font-weight: 500; letter-spacing: var(--fs-1-tracking);
+  font-size: var(--fs-1); font-weight: var(--fw-medium); letter-spacing: var(--fs-1-tracking);
   color: var(--text-2);
   background: var(--tint-raise-2);
   border: 1px solid var(--border);
-  border-radius: 999px; padding: 5px 11px;
+  border-radius: var(--r-full); padding: var(--sp-1) var(--sp-3);
   white-space: nowrap;
 }
 
@@ -741,7 +742,11 @@ body::before {
      the first thing the eye catches. */
   .join-hero { text-align: left; }
   .join-mark { justify-content: flex-start; }
-  .join-title { text-align: left; font-size: clamp(2.1rem, 3.2vw, 2.75rem); }
+  /* Only the alignment changes here now. The size used to be a second clamp
+     that ran 2.1→2.75rem against the base rule's 1.75→2.35rem, so the heading
+     jumped a step at exactly 1024px; --fs-section is already fluid across the
+     whole range and does the job with one declaration. */
+  .join-title { text-align: left; }
   .join-sub { text-align: left; margin-left: 0; max-width: 40ch; }
   .trust-strip { justify-content: flex-start; }
 }
@@ -770,7 +775,7 @@ body::before {
 }
 .workspace-room-name {
   min-width: 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-ui);
   font-size: var(--fs-3);
   font-weight: var(--fw-semi);
   line-height: var(--lh-snug);
@@ -796,7 +801,7 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: var(--fs-1);
   letter-spacing: var(--fs-1-tracking);
   line-height: var(--lh-snug);
@@ -869,10 +874,9 @@ body::before {
 /* Helper text belongs to the field above it, so the field gives up its own
    bottom margin and the pair carries one gap instead of two. Browsers without
    :has() just leave the looser spacing, which is not a defect. */
-.inp:has(+ .join-note) { margin-bottom: var(--sp-2); }
 .join-note--centred { text-align: center; margin: var(--sp-3) 0 0; }
 
-@media (max-width: 560px) {
+@media (max-width: 780px) {
   .workspace-team-url {
     grid-template-columns: 1fr;
     padding: var(--sp-3);
@@ -885,70 +889,15 @@ body::before {
   .join-layout--workspace { align-items: start; }
   .join-side + .join-box { margin-top: 0; }
 }
-/* ═══════════════════════════════════════════════
-   CHOICE — a selectable option in an exclusive group
-   ───────────────────────────────────────────────
-   The second primitive, after the design system's Button. A button performs
-   an action; a .choice
-   holds state. Role, deck, estimation mode and the join tabs are all the
-   same shape — label, optional description, selected-or-not — and each had
-   grown its own class with its own padding, type and hover treatment.
 
-   Selection is styled off [aria-pressed="true"] rather than an .active class
-   so the accessible state and the visual state cannot disagree. One accent
-   marks selection: the role picker previously used gold for Participant and
-   aqua for Facilitator, which made "selected" look like two different things
-   on one screen.
-   ═══════════════════════════════════════════════ */
-.choice {
-  flex: 1;
-  min-width: 0;
-  min-height: var(--tap-min);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-1);
-  padding: var(--sp-3) var(--sp-2);
-  font-family: 'Outfit', system-ui, sans-serif;
-  color: var(--text-2);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  text-align: center;
-  transition:
-    background-color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-.choice:hover:not([aria-pressed="true"]) {
-  background: var(--surface2);
-  border-color: var(--border2);
-  color: var(--text-1);
-}
-.choice[aria-pressed="true"] {
-  background: var(--gold-fill-2);
-  border-color: var(--gold-line-1);
-  color: var(--gold-ink2);
-}
-.choice[aria-pressed="true"] .choice-desc { color: var(--gold-ink2); }
-.choice > svg { flex: none; }
-
-.err { color: var(--danger); font-size: var(--fs-1); margin-bottom: 12px; text-align: center; }
-.inp:has(+ .err--field),
-.join-note:has(+ .err--field),
-.choice-row:has(+ .err--field),
-.workspace-room-list:has(+ .err--field) { margin-bottom: var(--sp-2); }
-.tcp-code { font-family: monospace; font-size: .9rem; font-weight: 700; color: var(--mint2); letter-spacing: .1em; flex: 1; }
-
-/* Deck and estimation-mode pickers use .choice-grid; see the CHOICE block. */
+.err { color: var(--danger); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); margin-bottom: var(--sp-3); text-align: center; }
+.tcp-code { font-family: var(--font-mono); font-size: var(--fs-2); font-weight: var(--fw-bold); color: var(--mint2); letter-spacing: .1em; flex: 1; }
 
 /* Both are write-once for the life of the room — database.rules.json validates
    them with "newData.val() === data.val()" because every vote is checked
    against the room's deck. Say so where the choice is made. */
 .choice-permanence {
-  font-size: var(--fs-2);
+  font-size: var(--fs-2); letter-spacing: var(--fs-2-tracking);
   line-height: var(--lh-snug);
   color: var(--text-3);
   margin: calc(var(--sp-5) * -1) 0 var(--sp-5);
@@ -971,7 +920,6 @@ body::before {
    back against, so the note sits flush under the group it describes. */
 .session-grid { display: grid; gap: var(--sp-3); margin-bottom: var(--sp-5); }
 .session-field { min-width: 0; }
-.session-field .choice-grid { margin-bottom: var(--sp-3); }
 .session-summary-cards { color: var(--text-2); font-weight: var(--fw-semi); }
 @media (max-width: 520px) {
   .session-grid { grid-template-columns: 1fr; gap: var(--sp-2); }
@@ -983,10 +931,10 @@ body::before {
 .seo-section { width: 100%; }
 .seo-ol, .seo-ul {
   line-height: var(--lh-body); color: var(--text-2);
-  margin: 0; padding-left: 1.3em; font-weight: 300;
+  margin: 0; padding-left: 1.3em; font-weight: var(--fw-light);
 }
 /* Inside a Card, so it takes the card body's size. */
-.seo-ol { font-size: var(--fs-2); }
+.seo-ol { font-size: var(--fs-2); letter-spacing: var(--fs-2-tracking); }
 /* A list of sentences is prose: same size, same reading cap, same centred block
    as the paragraph and the heading around it — at 14px its own 68ch resolved
    89px narrower than theirs and the list sat visibly inset between them. Only
@@ -997,34 +945,28 @@ body::before {
 }
 .seo-ul li { padding-left: 1.4em; position: relative; margin-bottom: var(--sp-2); }
 .seo-ul li::before { content: "♦"; position: absolute; left: 0; color: var(--gold-ink); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); top: .35em; opacity: .7; }
-.seo-ul strong { color: var(--text-1); font-weight: 600; }
+.seo-ul strong { color: var(--text-1); font-weight: var(--fw-semi); }
 .seo-inline-link {
   color: var(--gold-ink2);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: var(--fw-semi);
 }
 .seo-inline-link:hover { color: var(--gold-ink3); text-decoration: underline; }
-.scroll-target { scroll-margin-top: 92px; }
-#plans.scroll-target { scroll-margin-top: 72px; }
-.seo-plan-card.pro {
-  background: var(--gold-fill-1);
-  border-color: var(--gold-line-1);
-}
-.seo-plan-card.pro .seo-plan-topline { color: var(--gold-ink2); }
-.seo-plan-card.pro .seo-plan-price { color: var(--gold-ink2); }
+.scroll-target { scroll-margin-top: var(--sp-24); }
+#plans.scroll-target { scroll-margin-top: var(--sp-20); }
 .seo-plan-list {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-3);
   color: var(--text-2);
-  font-size: .86rem;
-  line-height: 1.55;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  line-height: var(--lh-body);
 }
 .seo-plan-list li::before {
   content: "✓";
   color: var(--gold-ink2);
-  margin-right: 10px;
+  margin-right: var(--sp-3);
 }
 .seo-plan-actions { justify-content: center; }
 /* ══════════════════════ ROOM HEADER (game view) ══════════════════════
@@ -1039,22 +981,41 @@ body::before {
   background: var(--surface-bar-solid);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(20px);
-  position: sticky; top: 0; z-index: 100;
+  position: sticky; top: 0; z-index: var(--z-sticky);
 }
+/* ONE ROW, ALWAYS. This used to be flex-wrap: wrap, and wrapping is the wrong
+   failure mode for a sticky bar: flex wraps BEFORE it shrinks, so the moment
+   the three groups wanted one pixel more than the container had, the whole
+   right-hand group dropped to a second line and the bar went from 60px to
+   142px — a seventh of an iPad's viewport, permanently, on every screen in the
+   room.
+
+   The width it needs is not fixed either, which is why no breakpoint alone can
+   solve this: the centre group grows when the stories-done badge appears, so a
+   header that fitted at 1024px on an empty room stopped fitting two rounds in.
+   Content decides, not viewport.
+
+   So: nothing wraps, and one group absorbs the pressure. --hdr-r is the one,
+   because the least important thing in the bar lives inside it — the invite
+   URL, which is already ellipsised and whose only job is reassurance, since
+   the button beside it is what actually copies the link. Everything else in
+   the bar is either an action or a code somebody reads out loud. */
 .hdr-in {
   display: flex; align-items: center; justify-content: space-between;
-  min-height: 60px; gap: var(--sp-3); flex-wrap: wrap; padding-block: var(--sp-3);
+  min-height: 60px; gap: var(--sp-3); flex-wrap: nowrap; padding-block: var(--sp-3);
 }
-.hdr-l { display: flex; align-items: center; gap: 12px; }
-.hdr-c { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
-.hdr-r { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hdr-l { display: flex; align-items: center; gap: var(--sp-3); flex: none; }
+/* 0 1 auto, not none: the chips hold their natural width until there is
+   genuinely nowhere left to take it from, and only then give way. */
+.hdr-c { display: flex; align-items: center; gap: var(--sp-2); flex: 0 1 auto; min-width: 0; flex-wrap: nowrap; justify-content: center; }
+.hdr-r { display: flex; align-items: center; gap: var(--sp-2); flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
 .hdr-invite {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   min-width: 0;
-  padding: 8px 10px;
-  border-radius: 14px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
   border: var(--bw-hair) solid var(--gold-line-1);
   background: var(--tint-raise-2);
 }
@@ -1064,12 +1025,19 @@ body::before {
   flex-direction: column;
   gap: 2px;
 }
+/* All three lines in this panel are single-line labels in a box that is now
+   allowed to shrink, so all three truncate the same way. The label was the one
+   without it: at 168px "TEMPORARY ROOM LINK" wrapped to two lines and took the
+   sticky header from 94px to 111px, which is the wrapping bug one level down. */
 .hdr-invite-label {
   font-size: var(--fs-1);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
   letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .hdr-invite-helper {
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
@@ -1083,7 +1051,7 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
   color: var(--mint2);
 }
@@ -1104,7 +1072,7 @@ body::before {
    costs a compositor layer and renders nothing. */
 .panel, .story-panel, .workspace-panel {
   background: var(--surface-1);
-  border: var(--bw-hair) solid var(--border-subtle); border-radius: var(--radius);
+  border: var(--bw-hair) solid var(--border-subtle); border-radius: var(--r-md);
   padding: var(--sp-5);
   box-shadow: var(--shadow-soft), var(--inset-hi);
 }
@@ -1135,7 +1103,7 @@ body::before {
    spaced like a sibling block reads as being about the whole panel. */
 .timer-setup + .pp-hint { display: block; margin-top: var(--sp-2); }
 .ptitle {
-  font-size: var(--fs-1); font-weight: 600; letter-spacing: 2.5px;
+  font-size: var(--fs-1); font-weight: var(--fw-semi); letter-spacing: 2.5px;
   text-transform: uppercase; color: var(--text-3);
   display: block;
 }
@@ -1145,86 +1113,13 @@ body::before {
   border-radius: var(--r-md); border: 1px solid var(--border);
 }
 .ring-area.urgent { animation: urgentBg 1.1s var(--ease-out) infinite; }
-.rnum.urgent { color: var(--danger); }
 .rtxt { flex: 1; }
 .rstatus { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: var(--sp-1); color: var(--text-2); }
 .rstatus.warn { color: var(--warning); } .rstatus.danger { color: var(--danger); }
 .rhint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); }
-.waiting-hint { font-size: var(--fs-1); color: var(--text-3); font-style: italic; text-align: center; padding: var(--sp-2) 0; }
+.waiting-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-style: italic; text-align: center; padding: var(--sp-2) 0; }
 
-/* ══════════════════════ PLAYING CARDS ══════════════════════ */
-.cards-grid { display: flex; flex-wrap: wrap; gap: var(--sp-3); padding: var(--sp-1) 0; }
-.pcard {
-  width: 96px; height: 136px; position: relative;
-  display: block;
-  border: none;
-  padding: 0;
-  background: transparent;
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer; user-select: none;
-  animation: dealIn .35s ease both;
-  transition: transform .2s cubic-bezier(.34,1.56,.64,1), filter .2s;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-.pcard:hover:not(.locked) { transform: translateY(-16px) scale(1.06); filter: drop-shadow(0 18px 16px var(--shadow-card)); }
-.pcard:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
-.pcard.sel { transform: translateY(-18px) scale(1.08); filter: drop-shadow(0 0 12px var(--gold-line-2)) drop-shadow(0 16px 20px var(--shadow-card)); }
-.pcard.locked { cursor: default; }
-/* THE CARD FACE IS THEME-INDEPENDENT ON PURPOSE, and it is the only thing in
-   the product that is. A playing card is a physical object made of ivory stock
-   with red and black ink on it; turning the room lights on does not repaint it.
-   The literal values below — the paper gradient, the black card-edge, the white
-   inset that gives the stock its thickness, the red pips — are therefore not
-   un-migrated leftovers, and re-pointing them at --surface-1 would make the
-   deck vanish into the table in the light theme. Everything AROUND the card
-   (its lift shadow, its selection ring, its focus ring) does move with the
-   theme, and does, above. */
-.pcard-inner {
-  width: 100%; height: 100%;
-  background: linear-gradient(160deg, #ffffff 0%, #fdf6e8 100%);
-  border-radius: 12px; border: 1px solid rgba(0,0,0,.12);
-  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px var(--shadow-card);
-  position: relative; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  transition: background var(--dur-fast) var(--ease-out);
-}
-.pcard.sel .pcard-inner {
-  background: linear-gradient(160deg, #fffde8 0%, #fff6c0 100%);
-  border-color: var(--gold-line-2);
-  box-shadow: 0 2px 0 rgba(255,255,255,.9) inset, 0 10px 28px var(--shadow-card), 0 0 0 2.5px var(--brass-600);
-}
-/* Corner pip — top-left */
-.pcard-tl {
-  position: absolute; top: 7px; left: 8px;
-  display: flex; flex-direction: column; align-items: center; line-height: 1;
-}
-/* Corner pip — bottom-right (rotated) */
-.pcard-br {
-  position: absolute; bottom: 7px; right: 8px;
-  display: flex; flex-direction: column; align-items: center; line-height: 1;
-  transform: rotate(180deg);
-}
-.pcard-num      { font-family: 'Outfit', sans-serif; font-size: .95rem; font-weight: 700; color: var(--text-on-gold); line-height: 1; letter-spacing: -0.02em; }
-.pcard-suit-sm  { font-size: var(--fs-1); line-height: 1; margin-top: 2px; }
-.pcard-center   { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
-.pcard-bignum   { font-family: 'Outfit', sans-serif; font-size: 2.6rem; font-weight: 700; line-height: 1; color: var(--text-on-gold); letter-spacing: -0.04em; }
-.pcard-bigsuit  { font-size: 1.3rem; line-height: 1; margin-top: 2px; }
-/* Colour variants */
-.pcard.red .pcard-num,     .pcard.red .pcard-bignum   { color: #b01020; }
-.pcard.red .pcard-suit-sm, .pcard.red .pcard-bigsuit  { color: #b01020; }
-.pcard:not(.red) .pcard-suit-sm, .pcard:not(.red) .pcard-bigsuit { color: var(--text-on-gold); }
-/* Wild (?) card — "I cannot size this".
-   It was lavender on lilac, the only purple anywhere in the product and the one
-   hue with no role in the system. It is still the odd card out, but it says so
-   in the house colours now: felt ink on a stock tinted towards the table. */
-.pcard.wild .pcard-bignum  { font-size: 2.2rem; color: var(--felt-600); }
-.pcard.wild .pcard-bigsuit { color: var(--felt-600); font-size: 1.1rem; }
-.pcard.wild .pcard-num     { color: var(--felt-600); }
-.pcard.wild .pcard-suit-sm { color: var(--felt-600); }
-.pcard.wild .pcard-inner   { background: linear-gradient(160deg, #fbfdfa 0%, #e8f0e6 100%); }
-.vstatus { text-align: center; font-size: .82rem; padding: var(--sp-2) 0; }
+.vstatus { text-align: center; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); padding: var(--sp-2) 0; }
 .vstatus.voted { color: var(--gold-ink); }
 .vstatus.wait  { color: var(--text-3); font-style: italic; }
 
@@ -1233,7 +1128,7 @@ body::before {
   text-align: center; padding: var(--sp-8) var(--sp-6);
   background: var(--gold-fill-2);
   border: var(--bw-thick) solid var(--gold-line-2); border-radius: var(--r-lg);
-  margin-bottom: var(--sp-5); animation: heroIn .45s ease;
+  margin-bottom: var(--sp-5); animation: heroIn var(--dur-flip) var(--ease-out);
   box-shadow: 0 0 50px var(--gold-glow), var(--elev-2);
 }
 /* Same floor as .pp-card__body: the hero's children each hand-margined their
@@ -1242,48 +1137,27 @@ body::before {
    below win on source order where they set their own. */
 .avg-hero > * + * { margin-top: var(--sp-3); }
 .avg-hero-label {
-  font-size: var(--fs-1); font-weight: 600; letter-spacing: 2.5px;
+  font-size: var(--fs-1); font-weight: var(--fw-semi); letter-spacing: 2.5px;
   text-transform: uppercase; color: var(--text-2); margin-bottom: var(--sp-3);
 }
 .avg-hero-num {
-  font-family: 'Outfit', sans-serif;
-  font-size: 5.5rem; color: var(--gold-ink2); font-weight: 700;
+  font-family: var(--font-ui);
+  font-size: var(--fs-estimate); color: var(--gold-ink2); font-weight: var(--fw-bold);
   line-height: 1; letter-spacing: -0.05em; text-shadow: var(--glow-numeral);
   animation: heroIn var(--dur-slow) var(--ease-out) both;
 }
-.avg-hero-sub { font-size: var(--fs-1); color: var(--text-2); margin-top: var(--sp-3); }
+.avg-hero-sub { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); margin-top: var(--sp-3); }
 .avg-hero-consensus {
   display: inline-block; margin-top: var(--sp-4);
   background: var(--gold-fill-3); border: var(--bw-hair) solid var(--gold-line-2);
   border-radius: var(--r-full); padding: var(--sp-2) var(--sp-5);
-  font-size: .82rem; font-weight: 600; color: var(--gold-ink2);
-  animation: badgePop .4s .2s ease both;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); font-weight: var(--fw-semi); color: var(--gold-ink2);
+  animation: badgePop var(--dur-flip) var(--dur-base) var(--ease-out) both;
 }
-.avg-hero-stat .v { font-family: 'Outfit', sans-serif; font-size: 1.5rem; color: var(--cream); font-weight: 700; letter-spacing: -0.03em; }
-.avg-hero-stat .l { font-size: var(--fs-1); letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); }
 
 /* ══════════════════════ WHO PICKED WHAT ══════════════════════ */
 .who-section { margin-bottom: var(--sp-2); }
-.revealed-grid { display: flex; flex-wrap: wrap; gap: var(--sp-4); justify-content: center; padding: var(--sp-1) 0 var(--sp-4); }
-.rv-card { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); animation: dealIn .4s ease both; }
-.rv-card-face {
-  width: 70px; height: 96px;
-  background: linear-gradient(160deg, #fff 0%, #fdf8ee 100%);
-  border-radius: 10px; border: 1px solid rgba(0,0,0,.1);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 18px var(--shadow-card), 0 2px 0 rgba(255,255,255,.9) inset;
-}
-.rv-card-face.outlier-high { border: var(--bw-thick) solid var(--danger); box-shadow: 0 6px 18px var(--danger-border); }
-.rv-card-face.outlier-low  { border: var(--bw-thick) solid var(--info); box-shadow: 0 6px 18px var(--info-border); }
-.rv-card-face.consensus    { border: 2px solid var(--gold); box-shadow: 0 6px 18px var(--gold-line-2); }
-.rv-val { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; color: var(--ink); letter-spacing: -0.04em; }
-.rv-val.red { color: #b01020; }
-.rv-name { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.rv-you-tag { font-size: var(--fs-1); color: var(--gold-ink2); font-weight: 700; letter-spacing: .3px; }
-.outlier-tag { font-size: var(--fs-1); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
-.outlier-tag.high { background: var(--danger-surface); color: var(--danger); }
-.outlier-tag.low  { background: var(--info-surface); color: var(--info); }
-.no-vote { text-align: center; color: var(--text-3); font-size: var(--fs-1); padding: var(--sp-2) 0; }
+.no-vote { text-align: center; color: var(--text-3); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); padding: var(--sp-2) 0; }
 
 /* ══════════════════════ OBSERVER CONTROLS ══════════════════════ */
 .obs-controls { display: flex; flex-direction: column; gap: var(--sp-3); }
@@ -1307,44 +1181,41 @@ body::before {
 
 /* Story queue panel */
 .story-panel { margin-bottom: var(--sp-3); }
-.story-panel-title { font-size: var(--fs-1); font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--text-3); margin-bottom: var(--sp-1); display: flex; align-items: center; gap: var(--sp-2); }
-.ptitle-optional, .story-panel-optional { font-size: var(--fs-1); font-weight: 500; letter-spacing: 1px; text-transform: uppercase; color: var(--gold-ink3); background: var(--gold-fill-1); border: var(--bw-hair) solid var(--gold-line-1); border-radius: 20px; padding: 1px 7px; }
-.story-panel-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-3); line-height: 1.5; font-style: italic; }
+.story-panel-title { font-size: var(--fs-1); font-weight: var(--fw-semi); letter-spacing: 2px; text-transform: uppercase; color: var(--text-3); margin-bottom: var(--sp-1); display: flex; align-items: center; gap: var(--sp-2); }
+.ptitle-optional, .story-panel-optional { font-size: var(--fs-1); font-weight: var(--fw-medium); letter-spacing: 1px; text-transform: uppercase; color: var(--gold-ink3); background: var(--gold-fill-1); border: var(--bw-hair) solid var(--gold-line-1); border-radius: var(--r-lg); padding: 1px var(--sp-2); }
+.story-panel-hint { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-3); line-height: var(--lh-body); font-style: italic; }
 .story-progress { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-3); }
 .story-add-row { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-2); }
 .story-list { max-height: 168px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--sp-1); }
-.story-item { font-size: var(--fs-1); padding: var(--sp-1) var(--sp-2); border-radius: var(--r-xs); display: flex; gap: var(--sp-2); justify-content: space-between; align-items: center; }
+.story-item { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); padding: var(--sp-1) var(--sp-2); border-radius: var(--r-xs); display: flex; gap: var(--sp-2); justify-content: space-between; align-items: center; }
 .story-item.done { color: var(--text-3); text-decoration: line-through; }
-.story-item.active { background: var(--goldB); color: var(--gold-ink2); font-weight: 600; }
+.story-item.active { background: var(--goldB); color: var(--gold-ink2); font-weight: var(--fw-semi); }
 .story-item.queued { color: var(--text-2); }
 .story-item-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .story-est { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); opacity: .7; flex-shrink: 0; }
 .story-item-remove {
   flex-shrink: 0; width: 24px; height: 24px; line-height: 1; /* WCAG 2.5.8 */
-  border-radius: 6px; border: 1px solid transparent;
+  border-radius: var(--r-xs); border: 1px solid transparent;
   background: none; color: var(--text-3); cursor: pointer;
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); transition: color .15s, background .15s, border-color .15s;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 .story-item-remove:hover { color: var(--danger); background: var(--danger-surface); border-color: var(--danger-border); }
 /* Willingness-to-pay poll */
 .wtp-panel { margin-top: var(--sp-4);
 }
-.wtp-q { font-size: .84rem; color: var(--cream); line-height: 1.45; margin-bottom: var(--sp-3); padding-right: var(--sp-6); }
+.wtp-q { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--cream); line-height: var(--lh-snug); margin-bottom: var(--sp-3); padding-right: var(--sp-6); }
 
 .kbd-hint {
   margin-top: var(--sp-3); font-size: var(--fs-1); color: var(--text-3);
   text-align: center; letter-spacing: .2px;
 }
 .kbd-hint kbd {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); padding: 1px 5px; border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); padding: 1px var(--sp-1); border-radius: var(--r-xs);
   background: var(--tint-raise-2); border: 1px solid var(--border2);
   color: var(--text-2);
 }
 /* Sprint summary */
-.summary-row.sized { background: var(--gold-fill-1); border-color: var(--gold-line-1); }
-.summary-row.sized .summary-row-name { color: var(--cream); }
-.summary-row.sized .summary-row-est { color: var(--gold-ink2); }
 @keyframes recordGlow { 0%, 100% { box-shadow: 0 10px 24px color-mix(in oklab, var(--success) 26%, transparent); } 50% { box-shadow: 0 14px 36px color-mix(in oklab, var(--success) 52%, transparent), 0 0 0 5px color-mix(in oklab, var(--success) 18%, transparent); } }
 /* The one thing the primary button cannot say for itself: the whole table
    agreed, so this is the obvious next press. Glow only — the button keeps its
@@ -1369,44 +1240,13 @@ body::before {
 }
 .story-name-banner { margin-bottom: var(--sp-3);
 }
-.story-name-text { font-size: .9rem; font-weight: 600; color: var(--cream); line-height: 1.3; }
+.story-name-text { font-size: var(--fs-2); letter-spacing: var(--fs-2-tracking); font-weight: var(--fw-semi); color: var(--cream); line-height: var(--lh-snug); }
 
 /* ══════════════════════ PLAYERS PANEL ══════════════════════ */
 .vp-head { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-2); }
 .vp-bar { margin-bottom: var(--sp-3);
 }
-.plist { display: flex; flex-direction: column; gap: var(--sp-2); }
-.prow {
-  display: flex; align-items: center; gap: var(--sp-3);
-  padding: var(--sp-3); border-radius: var(--r-sm);
-  background: var(--tint-raise-2); border: 1px solid var(--border);
-  transition: all .3s;
-}
-.prow.voted { background: var(--gold-fill-1); border-color: var(--gold-line-1); }
-/* Observers were painted in --info: a cool blue row, blue border, blue role
-   label and a blue avatar in a table that is otherwise only felt green and
-   brass. Blue is the alert vocabulary here, and "runs the session" is a role,
-   not a warning — the same hue meaning two things. Brass is already spoken for
-   by .voted, so the observer reads as the dealer instead: felt avatar, neutral
-   row, quiet label. The row still differs from a voter's on three channels. */
-.prow.obs   { background: var(--tint-raise); border-color: var(--border2); }
-.prow.not-voted-yet { border-color: var(--border); opacity: .75; }
-.prow.not-voted-yet .pav { background: var(--tint-raise-2); color: var(--text-2); }
-.prow.voted .pav { background: var(--gold); color: var(--ink); }
-.prow.obs   .pav { background: var(--felt-700); color: var(--text-on-felt); }
-.pname { font-size: .84rem; font-weight: 500; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prole { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: 1px; }
-.prow-actions { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
-.pdot.v { background: var(--gold); }
-.pdot.w { background: var(--text-3); animation: pulse 2s var(--ease-out) infinite; }
-.pdot.o { background: var(--info); }
-.voted-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--gold-ink); font-weight: 600; }
-/* "Hasn't voted yet" is the state every round starts in, for everybody. It was
-   painted --danger, so the moment a round opened the participant list filled up
-   with red: the colour that means something has gone wrong, used for the thing
-   that is supposed to happen. Pending is quiet. */
-.waiting-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-style: italic; }
-.nobody { font-size: var(--fs-1); color: var(--text-3); font-style: italic; text-align: center; padding: var(--sp-3) 0; }
+.nobody { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-style: italic; text-align: center; padding: var(--sp-3) 0; }
 
 /* ══════════════════════ SESSION WARNING ══════════════════════ */
 .session-warn-banner { margin-bottom: var(--sp-3);
@@ -1428,32 +1268,18 @@ body::before {
    tabular values line up in a column, which is the only reason to group three
    KPIs in the first place. */
 .a-kpis { display: flex; flex-direction: column; gap: var(--sp-2); }
-.a-kpis .pp-stat {
-  display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
-  padding: var(--sp-3); border-radius: var(--r-sm);
-  background: var(--tint-raise-2); border-color: var(--border);
-}
-.a-kpis .pp-stat__label { letter-spacing: .08em; }
-/* A text-align: right on .a-kpis .pp-stat__meta lived here and matched
-   nothing: none of the three tiles in this rail passes a meta. It was also the
-   only right-alignment left in the product outside numeric table columns, and
-   this tile is a baseline flex row rather than the stacked grid that rule was
-   written against — so it would not have done what it looked like it did. */
-/* One step down from the tile default: the hero number on this screen is the
-   agreed estimate, and a 28px KPI in the rail competes with it. */
-.a-kpis .pp-stat__value { font-size: var(--fs-5); }
+/* The three rules that used to sit here — a flex row, a tighter eyebrow and a
+   step down in the value — reached into .pp-stat from outside the design
+   system. They are a variant of the tile, so they moved to .pp-stat--inline in
+   components.css and these tiles pass inline. A text-align: right on
+   .a-kpis .pp-stat__meta went with them: none of the three passes a meta. */
 
 /* Team Alignment */
 .a-align-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--sp-2); }
-.a-align-score.good    { color: var(--success); }
-.a-align-score.ok      { color: var(--gold-ink); }
-.a-align-score.low     { color: var(--warning); }   /* amber — coaching signal, not an error */
-.a-align-score.neutral { color: var(--text-3); }
-.a-align-bar.good .pp-progress__bar    { background: var(--success); }
-.a-align-bar.ok .pp-progress__bar      { background: linear-gradient(90deg,var(--gold),var(--gold2)); }
-.a-align-bar.low .pp-progress__bar     { background: var(--warning); }  /* amber, not red */
-.a-align-bar.neutral .pp-progress__bar { background: var(--tint-raise-2); }
-.a-align-sub  { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); line-height: 1.4; }
+/* The four .a-align-bar fills moved to Progress tones — see ALIGN_BAR_TONE
+   above and .pp-progress--* in components.css. "ok" turned out to be the
+   component default, so it lost a rule rather than gaining a tone. */
+.a-align-sub  { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); line-height: var(--lh-snug); }
 .a-align-note { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); font-style: italic; }
 /* One sub-heading treatment for every section inside the analytics panel.
    Team Alignment was sentence case at 13px while the two below it were tracked
@@ -1461,7 +1287,7 @@ body::before {
 .a-section-title,
 .a-align-title,
 .analytics-breakdown-title {
-  font-size: var(--fs-1); font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
+  font-size: var(--fs-1); font-weight: var(--fw-medium); letter-spacing: .08em; text-transform: uppercase;
   color: var(--text-3);
 }
 /* Alignment's title sits in a row with the score chip, and that row carries the
@@ -1481,13 +1307,13 @@ body::before {
    and it collapsed the delete cell to 8px there — the button was 8px wide and
    unhittable. Columns do not exist in this layout, so the rule does not
    either. */
-@media (max-width: 760px) {
+@media (max-width: 780px) {
   .a-story-list td:last-child { width: auto; padding-left: var(--sp-2); }
 }
-.analytics-chip-cnt { color: var(--text-3); font-weight: 300; }
+.analytics-chip-cnt { color: var(--text-3); font-weight: var(--fw-light); }
 
 /* ══════════════════════ STREAK / ESTIMATION SPREE ══════════════════════ */
-.streak-fire  { font-size: 1.45rem; flex-shrink: 0; line-height: 1; }
+.streak-fire  { font-size: var(--fs-5); flex-shrink: 0; line-height: 1; }
 
 /* The room's toast is <ToastRegion><Toast>, styled by .pp-toast in the design
    system. A second .toast rule lived here and matched nothing — a fixed pill
@@ -1499,26 +1325,65 @@ body::before {
 /* Storage notice, not a consent gate: nothing here needs consent under PECR
    (essential storage only), so it stays out of the way of the primary action. */
 .cookie-banner {
-  position: fixed; bottom: 14px; right: 14px; z-index: 600;
+  position: fixed; bottom: 14px; right: 14px; z-index: var(--z-overlay);
   max-width: 340px;
   background: var(--surface3); backdrop-filter: blur(18px) saturate(1.2);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 13px 15px;
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
   box-shadow: 0 18px 42px var(--shadow-card);
-  animation: fadeIn .3s ease;
+  animation: fadeIn var(--dur-slow) var(--ease-out);
 }
-@media (max-width: 600px) {
+@media (max-width: 780px) {
   .cookie-banner { left: 10px; right: 10px; bottom: 10px; max-width: none; }
   .kbd-hint { display: none; }
 }
 
 /* ══════════════════════ LOADING ══════════════════════ */
-.loading { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+.loading { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: var(--sp-4); }
 .spinner { width: 34px; height: 34px; border: 3px solid var(--gold-line-1); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
-.pf-icon.no  { color: var(--text-3); }
 
 /* ══════════════════════ RESPONSIVE ══════════════════════ */
+/* Three widths, and they are the same three everywhere: 520 / 780 / 1024. See
+   the BREAKPOINTS block in src/design-system/tokens.css. A test fails on any
+   other number, because the alternative is what this file had until 13 Aug
+   2026 — eleven widths, six of them used once, and an 800px iPad landing in a
+   band no rule claimed. */
+
+/* ── The room header compresses below the DESKTOP breakpoint, not the tablet
+   one. Its three groups need ~920px plus the container's 64px of padding, so
+   anything under about 984px wraps them onto a second row. It used to
+   decompress at 781px and the result was a 142px-tall sticky header eating a
+   seventh of an iPad's viewport, with the invite panel stranded against the
+   left edge. Nobody developing on a laptop ever saw it.
+
+   This is deliberately a WIDER query than the grid collapse below: the header
+   and the room body break at different widths because they are different
+   amounts of content, and pretending otherwise is what caused the bug. */
+@media (max-width: 1023.98px) {
+  /* One compact row: back, code, copy. The full URL is not readable or useful
+     at this size, and it was pushing the whole room below the fold. */
+  .hdr-in { min-height: 52px; padding-block: var(--sp-2); gap: var(--sp-2); flex-wrap: nowrap; }
+  .hdr-l .chip-logo { display: none; }
+  .hdr-c { order: 0; flex: 1; justify-content: center; gap: var(--sp-2); }
+  /* Only the room code survives here — it is the one thing in this group
+     somebody needs to read out loud. The round counter and the stories-done
+     badge are both restated in the room below.
+
+     This was .pp-chip:first-child, which matched NOTHING: .hdr-c opens with
+     a visually-hidden <h1>, so the first chip has never been the first child.
+     The rule read as correct and did nothing, and on a 375px phone the two
+     chips wrapped and gave the header a second row — 76px of sticky bar
+     instead of 52px. Selecting by what the chip IS NOT survives another
+     element being added ahead of it, which is how this broke the first time. */
+  .hdr-c .pp-chip:not(.room-code-chip) { display: none; }
+  .badge-long { display: none; }
+  .hdr-r { order: 0; }
+  .hdr-invite { padding: 0; border: none; background: none; gap: 0; }
+  .hdr-invite-copy { display: none; }
+  .hdr-copy-label { display: none; }
+  .hdr-copy { padding-inline: var(--sp-3); }
+}
 @media (max-width: 780px) {
   .game-grid { grid-template-columns: 1fr; }
   /* Voters get the cards first; facilitators get the table and controls first.
@@ -1526,47 +1391,28 @@ body::before {
      which on a 375px screen meant scrolling past a full viewport to vote. */
   .game-grid.as-voter .rcol { order: 1; }
   .game-grid.as-facilitator .rcol { order: -1; }
-  /* One compact row: back, code, copy. The full URL is not readable or useful
-     on a phone, and it was pushing the whole room below the fold. */
-  .hdr-in { min-height: 52px; padding-block: var(--sp-2); gap: var(--sp-2); flex-wrap: nowrap; }
-  .hdr-l .chip-logo { display: none; }
-  .hdr-c { order: 0; flex: 1; justify-content: center; gap: 6px; }
-  .hdr-c .pp-chip:first-child { display: none; }
-  .badge-long { display: none; }
-  .hdr-r { order: 0; }
-  .hdr-invite { padding: 0; border: none; background: none; gap: 0; }
-  .hdr-invite-copy { display: none; }
-  .hdr-copy-label { display: none; }
-  .hdr-copy { padding-inline: var(--sp-3); }
-  .cards-grid { justify-content: center; }
-  .pcard { width: 82px; height: 118px; }
-  .pcard-bignum { font-size: 2.2rem; }
-  .pcard-bigsuit { font-size: 1.1rem; }
   .game-body { padding-block: var(--sp-4) var(--sp-16); }
   .obs-secondary-row { flex-direction: column; }
-  .join-box { padding: 36px 24px 32px; }
+  .join-box { padding: var(--sp-8) var(--sp-6); }
   .solo-invite-banner { flex-wrap: wrap; }
 }
-@media (max-width: 420px) {
-  .join-title { font-size: 2.1rem; }
-  .pcard { width: 70px; height: 100px; }
-  .pcard-bignum { font-size: 1.9rem; }
-  .pcard-num { font-size: .82rem; }
-  .avg-hero-num { font-size: 4rem; }
+@media (max-width: 520px) {
+  .join-title { font-size: var(--fs-7); }
+  .avg-hero-num { font-size: var(--fs-9); }
 }
 
 /* ══════════════════════ PAGE SHELL ══════════════════════ */
 .page-shell { min-height: 100vh; display: flex; flex-direction: column; }
-.app { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
+.app { flex: 1; display: flex; flex-direction: column; position: relative; z-index: var(--z-raised); }
 /* WCAG 2.4.11 — a focused element must not be hidden behind the sticky bars. */
-:focus-visible { scroll-margin-top: 132px; scroll-margin-bottom: 24px; }
+:focus-visible { scroll-margin-top: 132px; scroll-margin-bottom: var(--sp-6); }
 .skip-link {
-  position: absolute; left: 12px; top: -60px; z-index: 900;
+  position: absolute; left: 12px; top: -60px; z-index: var(--z-overlay);
   display: inline-flex; align-items: center; min-height: var(--tap-min);
-  padding: 10px 16px; border-radius: 0 0 10px 10px;
+  padding: var(--sp-3) var(--sp-4); border-radius: 0 0 var(--r-sm) var(--r-sm);
   background: var(--gold2); color: var(--ink);
-  font-family: 'Outfit', sans-serif; font-weight: 700; font-size: .82rem;
-  text-decoration: none; transition: top .18s;
+  font-family: var(--font-ui); font-weight: var(--fw-bold); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  text-decoration: none; transition: top var(--dur-base) var(--ease-out);
 }
 .skip-link:focus { top: 0; }
 .navbar {
@@ -1574,21 +1420,41 @@ body::before {
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  position: sticky; top: 0; z-index: 200;
+  position: sticky; top: 0; z-index: var(--z-sticky);
 }
 /* Width and gutters come from .pp-container on the inner element — this is the
    band the rest of the product aligns to, so it must not measure itself. */
+/* The bar was a hard 64px with nothing allowed to wrap, so the only way it
+   could answer "the contents no longer fit" was to clip them. It answers by
+   growing a line instead. min-height keeps the one-line case at exactly the 64
+   it always was; the row-gap only ever spends height that a second line was
+   going to take anyway. */
 .navbar-inner {
   display: flex; align-items: center; justify-content: space-between;
-  height: 64px; gap: var(--sp-4);
+  flex-wrap: wrap;
+  min-height: 64px; padding-block: var(--sp-2); gap: var(--sp-2) var(--sp-4);
 }
-.navbar-left  { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
-.navbar-right { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 0 auto; }
+/* The bar wraps here, at the seam between the two groups, and nowhere inside
+   them. A flex container breaks a line before it shrinks anything, so the
+   group that no longer fits moves down whole: brand and links stay together,
+   and so do the four actions. Wrapping one level lower looked reasonable and
+   was not — it put "Point Poker" on a line underneath its own mark. */
+.navbar-left  { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; flex: 1 1 auto; }
+/* margin-left: auto, not justify-content: the actions are alone on their line
+   when the bar wraps, and space-between does nothing to a single item. */
+.navbar-right {
+  display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end;
+  gap: var(--sp-2); min-width: 0; flex: 0 1 auto; margin-left: auto;
+}
 .header-language { position: relative; flex: none; }
-.header-language__trigger.pp-btn {
+/* Sets the button's own custom properties rather than out-specifying it with a
+   compound .header-language__trigger.pp-btn selector. Same result, no
+   specificity war, and .pp-btn--sm still wins its own size because it sets the
+   same property rather than the same declaration. */
+.header-language__trigger {
+  --btn-pad-inline: var(--sp-3);
+  --btn-gap: var(--sp-2);
   min-width: var(--tap-min);
-  padding-inline: var(--sp-3);
-  gap: var(--sp-2);
 }
 .header-language__code {
   color: inherit; font-weight: var(--fw-bold); letter-spacing: .08em;
@@ -1617,7 +1483,7 @@ body::before {
   display: flex; align-items: center; justify-content: space-between;
   min-height: var(--tap-min); padding-inline: var(--sp-3);
   border-radius: var(--r-sm); color: var(--text-2);
-  font-size: var(--fs-2); font-weight: var(--fw-medium);
+  font-size: var(--fs-2); letter-spacing: var(--fs-2-tracking); font-weight: var(--fw-medium);
   text-decoration: none; white-space: nowrap;
 }
 .header-language__link:hover {
@@ -1627,28 +1493,33 @@ body::before {
   color: var(--action-quiet); background: var(--gold-fill-1);
 }
 .nav-start-free-short { display: none; }
-/* Links scroll horizontally on narrow screens instead of being clipped
-   behind the right-hand actions. Scrollbar hidden — the fade edge hints at it. */
+/* This strip used to be a horizontal scroller, and that is precisely how
+   "PRICING" plus half of "SUPPORT" ended up sliced down the middle at the
+   container edge: an overflow container clips, and a clipped word reads as
+   broken rather than as scrollable — nobody drags a navbar sideways. Nothing
+   scrolls here now. The strip is a wrap item, so when the bar cannot hold
+   brand + links + actions on one line, the whole strip drops to a second line
+   intact, at whatever width that happens to be.
+   At whatever width is the point. The four labels measure 328px in English and
+   398px in Portuguese, and the call to action beside them 151px against 176px,
+   so the width where this bar fills up is 93px apart in two of the three
+   languages it ships in. Any single number written here would be wrong for at
+   least one of them. */
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-left: 10px;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  scroll-padding-inline: 8px;
 }
-.navbar-links::-webkit-scrollbar { display: none; }
 .navbar-links > * { flex: 0 0 auto; }
 .navbar-brand {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.22rem; font-weight: 700;
+  font-family: var(--font-ui);
+  font-size: var(--fs-4); font-weight: var(--fw-bold);
   color: var(--cream); letter-spacing: -.02em;
   cursor: pointer; text-decoration: none;
   background: none; border: none; padding: 0;
-  transition: color .2s, transform .2s;
+  transition: color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
 }
 .navbar-brand:hover { color: var(--cream); transform: translateY(-1px); }
 .brand-wordmark {
@@ -1667,18 +1538,18 @@ body::before {
 .navbar-brand:hover .brand-wordmark-point { color: var(--mint2); }
 .navbar-brand:hover .brand-wordmark-poker { color: var(--gold-ink3); }
 .nav-link-btn {
-  padding: 7px 12px;
-  border-radius: 999px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-full);
   border: 1px solid var(--border);
   background: var(--tint-raise);
   color: var(--text-3);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-ui);
   font-size: var(--fs-1);
-  font-weight: 600;
+  font-weight: var(--fw-semi);
   letter-spacing: .08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all .18s ease;
+  transition: background var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
 }
 .nav-link-btn:hover {
   color: var(--cream);
@@ -1700,7 +1571,7 @@ body::before {
   background: none; border: none; padding: 0;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; flex-shrink: 0;
-  transition: transform .22s ease, filter .22s ease, opacity .22s ease;
+  transition: transform var(--dur-base) var(--ease-out), filter var(--dur-base) var(--ease-out), opacity var(--dur-base) var(--ease-out);
 }
 /* The room header draws the mark at 34px to fit its bar. Rule 6 still applies,
    so the hit area is grown back to the floor without moving the artwork. */
@@ -1743,7 +1614,7 @@ body::before {
      contents down, it never separated the two bands. */
   margin-top: var(--sp-16);
 }
-/* padding-block, not padding-bottom: the plan bar's rule above had 16px of its
+/* padding-block, not padding-bottom: the plan bar's rule above had var(--sp-4) of its
    own padding on top of it and nothing under it, so the brand mark and the two
    column headings started hard against the line. A divider needs air on both
    sides — a little less above, where it closes the bar, than below, where it
@@ -1752,24 +1623,24 @@ body::before {
   display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr;
   gap: var(--block-y); padding-block: var(--sp-8);
 }
-.footer-col-brand { display: flex; flex-direction: column; gap: 12px; }
-.footer-brand-row { display: flex; align-items: center; gap: 10px; }
+.footer-col-brand { display: flex; flex-direction: column; gap: var(--sp-3); }
+.footer-brand-row { display: flex; align-items: center; gap: var(--sp-3); }
 .footer-brand-name {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.08rem; font-weight: 700; color: var(--cream);
+  font-family: var(--font-ui);
+  font-size: var(--fs-4); font-weight: var(--fw-bold); color: var(--cream);
   letter-spacing: -.02em;
 }
 .footer-brand-desc {
-  font-size: var(--fs-1); color: var(--text-3); line-height: 1.65;
-  font-weight: 300; max-width: 280px;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); line-height: var(--lh-body);
+  font-weight: var(--fw-light); max-width: 280px;
 }
 /* No gap: the links' own padding does the spacing, so there is no dead 2px
    strip between two stacked targets. */
 .footer-col-links { display: flex; flex-direction: column; }
 .footer-col-title {
-  font-size: var(--fs-1); font-weight: 700; letter-spacing: 2px;
+  font-size: var(--fs-1); font-weight: var(--fw-bold); letter-spacing: 2px;
   text-transform: uppercase; color: var(--text-3);
-  margin-bottom: 10px;
+  margin-bottom: var(--sp-3);
 }
 /* Stacked targets, so the --tap-min ::after trick used on the nav row cannot
    apply — a 44px overlay on a 29px pitch would steal the neighbour's taps.
@@ -1777,10 +1648,10 @@ body::before {
    2.2 AA floor), 41px on a touch screen (the HIG figure, less the 2px the
    underline needs). */
 .footer-link {
-  color: var(--text-2); font-size: .83rem; text-decoration: none;
+  color: var(--text-2); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); text-decoration: none;
   padding-block: var(--sp-2); transition: color var(--dur-fast) var(--ease-out);
   background: none; border: none; cursor: pointer;
-  font-family: 'Outfit', sans-serif; text-align: left;
+  font-family: var(--font-ui); text-align: left;
   display: inline-block;
 }
 @media (pointer: coarse) { .footer-link { padding-block: var(--sp-3); } }
@@ -1790,7 +1661,7 @@ body::before {
 .footer-link--static { color: var(--text-3); cursor: default; }
 .footer-link--inline { display: inline; padding: 0; text-decoration: underline; font: inherit; }
 /* The room code is data, not prose: it wants figures that line up. */
-.room-code-chip { font-family: ui-monospace, Menlo, monospace; letter-spacing: .12em; }
+.room-code-chip { font-family: var(--font-mono); letter-spacing: .12em; }
 .footer-bottom {
   border-top: var(--bw-hair) solid var(--border);
   padding-block: var(--sp-5);
@@ -1798,8 +1669,8 @@ body::before {
   flex-wrap: wrap; gap: var(--sp-3);
 }
 .footer-copy {
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-weight: 300;
-  line-height: 1.5;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); font-weight: var(--fw-light);
+  line-height: var(--lh-body);
 }
 /* Language switcher. flex-basis: 100% so it takes its own row above the two
    legal blocks rather than becoming a third column that squeezes them at
@@ -1811,7 +1682,7 @@ body::before {
 }
 .lang-switcher-label {
   font-size: var(--fs-1); letter-spacing: .08em; text-transform: uppercase;
-  color: var(--text-3); font-weight: 500;
+  color: var(--text-3); font-weight: var(--fw-medium);
 }
 .lang-switcher ul {
   display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3);
@@ -1819,12 +1690,12 @@ body::before {
 }
 .lang-link {
   font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
-  color: var(--text-2); text-decoration: none; font-weight: 300;
+  color: var(--text-2); text-decoration: none; font-weight: var(--fw-light);
 }
 .lang-link:hover { color: var(--gold2); text-decoration: underline; }
 /* The current language is a link to the page you are already on. Marked, not
    removed: taking it out makes the row jump as you move between languages. */
-.lang-link.is-current { color: var(--gold2); font-weight: 500; cursor: default; }
+.lang-link.is-current { color: var(--gold2); font-weight: var(--fw-medium); cursor: default; }
 /* No text-align: right. The note is a flex item that wraps onto its own line
    below ~940px, and once it does, space-between puts its box on the LEFT while
    the right-alignment still ran inside it — three lines ragged down the left
@@ -1833,14 +1704,14 @@ body::before {
    in the one case where the two shared a row. Both are left-aligned now, which
    holds in both cases and needs no breakpoint to undo it. */
 .footer-legal-note {
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); line-height: 1.6;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); line-height: var(--lh-body);
   max-width: 480px;
 }
 /* The modal used to restate the global scrollbar rules at a different width and
    in the brand golds, which are theme-constant — a bright brass bar down the
    edge of a paper dialog. The global rules are themed; this one just used them. */
 .login-modal::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: 20px 20px 0 0;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; border-radius: var(--r-lg) var(--r-lg) 0 0;
   background: linear-gradient(90deg, transparent, var(--action) 30%, var(--action) 70%, transparent);
 }
 .account-status-label {
@@ -1848,56 +1719,46 @@ body::before {
   text-transform: uppercase;
   letter-spacing: .08em;
   font-size: var(--fs-1);
-  font-weight: 700;
-}
-.account-status-pill.pro {
-  color: var(--gold-ink2);
-  border-color: var(--gold-line-1);
-  background: var(--gold-fill-1);
+  font-weight: var(--fw-bold);
 }
 .account-status-copy {
-  font-size: var(--fs-1);
-  line-height: 1.6;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  line-height: var(--lh-body);
   color: var(--text-3);
 }
 .login-upgrade-note {
-  margin-top: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  margin-top: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-sm);
   border: 1px solid var(--border);
   background: var(--tint-raise);
   color: var(--text-3);
-  font-size: var(--fs-1);
-  line-height: 1.55;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  line-height: var(--lh-body);
 }
 .login-upgrade-note strong {
   color: var(--gold-ink2);
-  font-weight: 600;
+  font-weight: var(--fw-semi);
 }
 .login-modal-upgrade {
-  margin-top: 20px; text-align: center;
-  font-size: .82rem; color: var(--text-3);
+  margin-top: var(--sp-5); text-align: center;
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3);
 }
 .login-modal-upgrade a {
-  color: var(--gold-ink2); text-decoration: none; font-weight: 600;
+  color: var(--gold-ink2); text-decoration: none; font-weight: var(--fw-semi);
   border-bottom: var(--bw-hair) solid var(--gold-line-1); transition: border-color var(--dur-base) var(--ease-out);
 }
 .login-modal-upgrade a:hover { border-bottom-color: var(--gold2); }
-.auth-mode-btn.active {
-  border-color: var(--gold-line-2); background: var(--gold-fill-2); color: var(--gold-ink2);
-}
-.auth-status.success { color: var(--success); background: var(--success-surface); border: var(--bw-hair) solid var(--success-border); }
-.auth-status.error   { color: var(--danger); background: var(--danger-surface); border: var(--bw-hair) solid var(--danger-border); }
 .nav-account {
-  display: flex; flex-direction: column; align-items: flex-end; gap: 4px; margin-right: 12px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-1); margin-right: var(--sp-3);
   min-width: 0;
 }
 .nav-account-name {
   max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--text-1); font-size: .84rem; font-weight: 500;
+  color: var(--text-1); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); font-weight: var(--fw-medium);
 }
 .nav-account-plan {
-  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-3); border-radius: var(--r-full);
   border: var(--bw-hair) solid var(--border2); background: var(--tint-raise-2);
   color: var(--text-3); font-size: var(--fs-1); letter-spacing: .12em; text-transform: uppercase;
 }
@@ -1924,16 +1785,8 @@ body::before {
   border-bottom: var(--bw-hair) solid var(--border);
   padding-block: var(--sp-4);
 }
-.footer-plan-item { display: flex; align-items: center; gap: 8px; }
-.footer-plan-badge.free {
-  background: var(--tint-raise-2); color: var(--text-3);
-  border: var(--bw-hair) solid var(--border);
-}
-.footer-plan-badge.pro {
-  background: var(--gold-fill-2); color: var(--gold-ink2);
-  border: var(--bw-hair) solid var(--gold-line-1);
-}
-.footer-plan-text { font-size: var(--fs-1); color: var(--text-3); }
+.footer-plan-item { display: flex; align-items: center; gap: var(--sp-2); }
+.footer-plan-text { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); }
 .footer-plan-divider {
   width: 1px; height: 18px; background: var(--tint-raise-2); flex-shrink: 0;
 }
@@ -1953,26 +1806,26 @@ body::before {
    breadcrumb it always was. */
 .legal-back { margin-block: var(--sp-4) var(--sp-1); }
 .legal-body h2 {
-  font-family: 'Outfit', sans-serif; font-size: 1.08rem; font-weight: 600;
-  color: var(--cream); letter-spacing: -0.01em; margin: 36px 0 12px;
-  padding-bottom: 6px; border-bottom: var(--bw-hair) solid var(--border);
+  font-family: var(--font-ui); font-size: var(--fs-4); font-weight: var(--fw-semi);
+  color: var(--cream); letter-spacing: -0.01em; margin: var(--sp-10) 0 var(--sp-3);
+  padding-bottom: var(--sp-2); border-bottom: var(--bw-hair) solid var(--border);
 }
 .legal-body p, .legal-body li {
-  font-size: .88rem; line-height: 1.75; color: var(--text-2);
-  margin: 0 0 12px;
+  font-size: var(--fs-2); letter-spacing: var(--fs-2-tracking); line-height: var(--lh-body); color: var(--text-2);
+  margin: 0 0 var(--sp-3);
 }
 .legal-body ul {
-  padding-left: 20px; margin: 0 0 12px;
+  padding-left: var(--sp-5); margin: 0 0 var(--sp-3);
 }
-.legal-body li { margin-bottom: 6px; }
-.legal-body strong { color: var(--text-1); font-weight: 600; }
+.legal-body li { margin-bottom: var(--sp-2); }
+.legal-body strong { color: var(--text-1); font-weight: var(--fw-semi); }
 .legal-body a { color: var(--gold-ink2); text-decoration: underline; }
 .legal-body a:hover { color: var(--gold-ink3); }
 .legal-body code {
   /* .82em of 14px landed at 11.5px, under the 13px floor. A monospace face
      already reads smaller at the same size, so it takes the floor directly. */
-  font-family: 'Courier New', monospace; font-size: var(--fs-1);
-  background: var(--tint-raise-2); padding: 1px 6px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  background: var(--tint-raise-2); padding: 1px var(--sp-2); border-radius: var(--r-xs);
 }
 
 /* ══════════════════════ MARKETING PAGES ══════════════════════ */
@@ -1982,14 +1835,14 @@ body::before {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
 }
 .marketing-list li {
   position: relative;
-  padding-left: 18px;
-  font-size: .86rem;
-  line-height: 1.6;
+  padding-left: var(--sp-5);
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  line-height: var(--lh-body);
   color: var(--text-2);
 }
 .marketing-list li::before {
@@ -2002,16 +1855,16 @@ body::before {
 }
 .marketing-list strong {
   color: var(--text-1);
-  font-weight: 600;
+  font-weight: var(--fw-semi);
 }
 /* Body copy on the data-driven pages. Measure is capped in ch rather than px
    so it tracks the font size: past roughly 70 characters the eye loses the
    start of the next line. */
 .marketing-prose {
-  max-width: 68ch;
-  margin: 0 auto 14px;
-  font-size: .92rem;
-  line-height: 1.72;
+  max-width: var(--measure);
+  margin: 0 auto var(--sp-4);
+  font-size: var(--fs-2); letter-spacing: var(--fs-2-tracking);
+  line-height: var(--lh-body);
   color: var(--text-2);
 }
 .marketing-prose:last-child { margin-bottom: 0; }
@@ -2023,32 +1876,21 @@ body::before {
 }
 /* Ordered steps keep their numbers. .marketing-list replaces the marker with a
    ♦, which is right for an unordered list and wrong for a sequence. */
-ol.marketing-list { list-style: decimal; padding-left: 22px; counter-reset: none; }
-ol.marketing-list li { padding-left: 4px; }
+ol.marketing-list { list-style: decimal; padding-left: var(--sp-5); counter-reset: none; }
+ol.marketing-list li { padding-left: var(--sp-1); }
 ol.marketing-list li::before { content: none; }
 ol.marketing-list li::marker {
   color: var(--gold-ink2);
-  font-weight: 600;
+  font-weight: var(--fw-semi);
 }
-.marketing-plan-card.pro {
-  background: var(--gold-fill-1);
-  border-color: var(--gold-line-1);
-}
-.marketing-plan-card.pro .marketing-plan-topline { color: var(--gold-ink2); }
-.marketing-plan-card.pro .marketing-plan-price { color: var(--gold-ink2); }
 .marketing-plan-sub {
-  margin-top: 6px;
-  font-size: .82rem;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
   color: var(--text-3);
-  line-height: 1.6;
+  line-height: var(--lh-body);
 }
-@media (max-width: 680px) {
-  .marketing-hero,
-  .marketing-actions,
-  .marketing-stat-grid,
-  .marketing-card-grid,
-  .marketing-related-grid,
-  .marketing-plan-grid { grid-template-columns: 1fr; }
+@media (max-width: 780px) {
+  .marketing-stat-grid { grid-template-columns: 1fr; }
 }
 /* Three stat tiles in a 515px hero rail, laid out by the auto-fit grid, came
    out two-up with the third orphaned beside 250px of nothing. Three facts read
@@ -2060,39 +1902,33 @@ ol.marketing-list li::marker {
   .marketing-stat-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
-.hi-stat-val.gold { color: var(--gold-ink2); }
 
 /* NavBar history button */
 /* .nav-btn-history: see the note by .nav-btn-login. Visual comes from pp-btn;
    the name is kept for the authenticated-only display rules. */
 
-@media (max-width: 780px) {
-  .history-insights { grid-template-columns: repeat(2, 1fr); }
-}
 @media (max-width: 520px) {
   .navbar:not(.authenticated) .nav-btn-history { display: none; }
 }
 
 /* ══════════════════════ RESPONSIVE — FOOTER + NAV ══════════════════════ */
+/* Brand, four marketing links and the right-hand actions need a little over
+   1050px of bar in English and a little over 1140px in Portuguese, so below
+   the desktop breakpoint the strip is not merely tight, it does not fit in any
+   language. It used to be dropped at 780px, which left a 243px band where it
+   rendered and was sliced in half — the reported defect. Every one of these
+   destinations is also in the footer, so under lg the bar keeps the brand and
+   the primary action and drops the rest, and above lg the wrap handles the
+   remaining thirty-odd pixels where English fits and Portuguese does not. */
+@media (max-width: 1023.98px) {
+  .navbar-links { display: none; }
+}
 @media (max-width: 780px) {
   .footer-inner { grid-template-columns: 1fr 1fr; }
   .footer-col-brand { grid-column: 1 / -1; }
-  .navbar-brand { display: none; }
-  /* Brand, four marketing links and the call to action need about 750px of bar
-     and there is less than that here. The strip was scrollable, so nothing was
-     unreachable, but what it rendered was "PRICING" plus half of "SUPPORT"
-     sliced down the middle at the container edge, which reads as broken rather
-     than as scrollable. Raising the type floor widened each link and made it
-     obvious. Every one of these destinations is also in the footer, so the bar
-     keeps the brand and the primary action and drops the rest. */
-  .navbar-links { display: none; }
-  /* The switch keeps its position, loses its word — the same call as the
-     wordmark two rules up, for the same reason and at the same width. The
-     component itself already drops to one short word at 780px; this bar needs
-     the rest of it gone. .navbar-right does not shrink, and even at 99px it
-     took 306 of the 375 here, squeezed .navbar-left to 29px, and left the 44px
-     brand mark overflowing its own box and sitting under the switch track.
-     The room header, which is roomier, keeps the word.
+  /* The switch keeps its position, loses its word. The component itself
+     already drops to one short word at 780px; this bar needs the rest of it
+     gone at its own narrowest, which the switch owns as a variant.
      Dropping the word is not dropping the state. A switch says which way it is
      set by where the thumb is, which is the whole reason this is a switch and
      not a button — and clipped, not display:none, so the accessible name is
@@ -2100,28 +1936,30 @@ ol.marketing-list li::marker {
      Not display:none on the switch itself: the theme lives nowhere else. No
      footer control, no OS fallback (tokens.css deliberately ignores
      prefers-color-scheme). Hide it and a phone is stuck in dark for good. */
-  .navbar .pp-theme-switch .pp-switch__label {
-    position: absolute; width: 1px; height: 1px; min-width: 0;
-    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
-  }
   .nav-account-name { max-width: 140px; }
-  .footer-plan-bar { gap: 14px; }
-  .footer-plan-cta { margin-left: 0; }
+  .footer-plan-bar { gap: var(--sp-4); }
 }
 @media (max-width: 520px) {
   .footer-inner { grid-template-columns: 1fr; }
   /* text-align: left used to be undone here — the base rule no longer needs it. */
   .footer-legal-note { max-width: 100%; }
-  .navbar-inner {
-    height: auto; min-height: var(--sp-16); padding-block: var(--sp-2);
-    gap: var(--sp-2);
-  }
+  /* The wordmark is 93px and a phone has none to give: at 375 the mark and the
+     four actions already take the full 343px of container, to the pixel. It is
+     visible everywhere it fits, which is 520px up, rather than being dropped at
+     780 where there was still 132px of slack — the second reported defect. It
+     carries no accessible name of its own (the mark beside it is the labelled
+     control for the same destination), so nothing is announced differently at
+     either width. */
+  .navbar-brand { display: none; }
+  .navbar-inner { gap: var(--sp-2); }
   .navbar-left { flex: 0 0 auto; }
-  .navbar-right {
-    flex: 1 1 auto; gap: 6px; flex-wrap: wrap; justify-content: flex-end;
-  }
-  .header-language__trigger.pp-btn {
-    padding-inline: var(--sp-2); gap: var(--sp-1);
+  /* The one place the actions take the leftover width rather than yielding it:
+     below here the left side is a 44px mark and nothing else, so there is
+     nothing left for it to give. */
+  .navbar-right { flex: 1 1 auto; }
+  .header-language__trigger {
+    --btn-pad-inline: var(--sp-2);
+    --btn-gap: var(--sp-1);
   }
   /* Narrow bars buy width by tightening horizontal padding and dropping to the
      small type role. The 44px tap floor from pp-btn is deliberately untouched:
@@ -2138,7 +1976,6 @@ ol.marketing-list li::marker {
     font-size: var(--fs-1);
     letter-spacing: var(--fs-1-tracking);
   }
-  .nav-link-btn { padding: 6px 10px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
   .navbar.authenticated .nav-account {
     display: flex;
     margin-right: 0;
@@ -2146,7 +1983,7 @@ ol.marketing-list li::marker {
     gap: 3px;
   }
   .navbar.authenticated .nav-account-name { max-width: 104px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
-  .navbar.authenticated .nav-account-plan { font-size: var(--fs-1); padding: 3px 8px; letter-spacing: .1em; }
+  .navbar.authenticated .nav-account-plan { font-size: var(--fs-1); padding: 3px var(--sp-2); letter-spacing: .1em; }
   .navbar:not(.authenticated) .nav-account { display: none; }
   .nav-start-free-long { display: none; }
   .nav-start-free-short { display: inline; }
@@ -2168,35 +2005,31 @@ ol.marketing-list li::marker {
 
 /* ══════════════════════ ADMIN DASHBOARD ══════════════════════ */
 .dash-wrap { padding-block: var(--sp-8) var(--sp-20); }
-.dash-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
-.dash-back { background: none; border: none; color: var(--gold-ink2); font-family: 'Outfit', sans-serif; font-size: var(--fs-1); cursor: pointer; padding: 0 0 8px; }
-.dash-head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.dash-window-btn.active { background: var(--goldB); color: var(--gold-ink2); font-weight: 600; }
+.dash-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-5); flex-wrap: wrap; margin-bottom: var(--sp-5); }
+.dash-back { background: none; border: none; color: var(--gold-ink2); font-family: var(--font-ui); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); cursor: pointer; padding: 0 0 var(--sp-2); }
+.dash-head-actions { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
 .dash-panel { min-width: 0;
 }
 .dash-panel.wide { grid-column: 1 / -1; }
-.dash-bars { display: flex; flex-direction: column; gap: 7px; }
-.dash-bar-row { display: grid; grid-template-columns: minmax(84px, 1.1fr) 3fr minmax(74px, auto); align-items: center; gap: 10px; }
+.dash-bars { display: flex; flex-direction: column; gap: var(--sp-2); }
+.dash-bar-row { display: grid; grid-template-columns: minmax(84px, 1.1fr) 3fr minmax(74px, auto); align-items: center; gap: var(--sp-3); }
 .dash-bar-label { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); }
 .dash-bar-value { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--cream); text-align: right; font-variant-numeric: tabular-nums; }
-.dash-bar-value em { font-style: normal; color: var(--text-3); margin-left: 6px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
-.dash-trend { margin-bottom: 16px; }
-.dash-trend-head { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: 7px; }
+.dash-bar-value em { font-style: normal; color: var(--text-3); margin-left: var(--sp-2); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
+.dash-trend { margin-bottom: var(--sp-4); }
+.dash-trend-head { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-bottom: var(--sp-2); }
 .dash-trend-max { color: var(--text-3); }
 .dash-trend-plot { display: flex; align-items: flex-end; gap: 2px; height: 76px; padding: 0 1px; }
 .dash-trend-col { flex: 1; min-width: 2px; border-radius: 2px 2px 0 0; background: linear-gradient(180deg, var(--gold3) 0%, var(--gold) 100%); }
 .dash-trend-col.zero { background: var(--tint-raise-2); }
-.dash-trend-axis { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: 5px; }
-.dash-calc.strong span { color: var(--gold-ink2); font-size: 1.5rem; }
+.dash-trend-axis { display: flex; justify-content: space-between; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: var(--sp-1); }
 .dash-dismissed { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); }
-.dash-foot { margin-top: 22px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); line-height: 1.6; }
-.dash-gate { max-width: 520px; margin: 60px auto;
-}
-@media (max-width: 900px) {
+.dash-foot { margin-top: var(--sp-5); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); line-height: var(--lh-body); }
+.dash-gate { max-width: 520px; margin: var(--sp-16) auto;
 }
 @media (max-width: 520px) {
   .dash-wrap { padding-block: var(--sp-5) var(--sp-16); }
-  .dash-bar-row { grid-template-columns: minmax(70px, 1fr) 2fr auto; gap: 8px; }
+  .dash-bar-row { grid-template-columns: minmax(70px, 1fr) 2fr auto; gap: var(--sp-2); }
 }
 
 /* ══════════════════════════ PRINT / PDF ══════════════════════════
@@ -2229,10 +2062,10 @@ ol.marketing-list li::marker {
 
   /* Room chrome, navigation and anything that only makes sense as a control.
      A printed sheet cannot be clicked. */
-  .navbar, .site-footer, .hdr, .toolbar, .pp-toast-region, .cookie-banner,
-  .summary-actions, .wtp-poll, .chip-logo, .pp-modal, .pp-modal-backdrop,
+  .navbar, .site-footer, .hdr, .pp-toast-region, .cookie-banner,
+  .summary-actions, .chip-logo, .pp-modal,
   .join-side, .seo-section, .seo-faq, .legal-back, .btn-back,
-  button:not(.print-keep), .pp-btn {
+  button, .pp-btn {
     display: none !important;
   }
 
@@ -2280,7 +2113,7 @@ ol.marketing-list li::marker {
     print-color-adjust: exact;
   }
   .print-report__brand {
-    font-family: 'Outfit', sans-serif;
+    font-family: var(--font-ui);
     font-size: 17pt; font-weight: 700; color: #000; margin: 0; letter-spacing: -.01em;
   }
   .print-report__url { font-size: 9.5pt; color: #333; margin: 2pt 0 0; }
@@ -2311,6 +2144,13 @@ const MAX_QUEUE = 1000;
 const SESSION_MAX_MS  = 5 * 60 * 60 * 1000;          // 5 hours, auto-end + save history
 const SESSION_WARN_MS = SESSION_MAX_MS - 10 * 60 * 1000; // warn 10 min before auto-end
 const PLAYER_AWAY_TIMEOUT_MS = 60 * 60 * 1000;       // 1 hour, grace period before sweeping disconnected players
+
+/* The alignment band's four states, mapped to the Progress component's tones.
+   "ok" has no entry on purpose: it is the default gold fill, and inventing a
+   tone that restates the default is how a component ends up with two ways to
+   say one thing. "low" is warning rather than danger for the same reason the
+   score text is amber — a split vote is the tool working, not an error. */
+const ALIGN_BAR_TONE = { good: "success", low: "warning", neutral: "neutral" };
 
 // Removes players whose socket dropped over an hour ago, from one room, by the
 // clients still sitting in it.
@@ -2583,8 +2423,11 @@ function NavBar({
           <HeaderLanguageSwitcher />
           {/* Dark is the default and stays the default; this is the only way to
               leave it, and the choice is remembered. It sits before the account
-              controls so it never competes with the one primary action. */}
-          <ThemeToggle />
+              controls so it never competes with the one primary action.
+              compactOnNarrow: this bar, unlike the room header, cannot spare
+              the word on a phone — see the note on the variant in
+              components.css. */}
+          <ThemeToggle compactOnNarrow />
           {currentUser ? (
             <>
               <Button
@@ -7036,7 +6879,7 @@ function RoomActionBar({
           value={votedCount}
           max={voterCount}
           label={t("action.progressAria", { done: votedCount, total: voterCount })}
-          className={everyoneVoted ? "is-complete" : undefined}
+          tone={everyoneVoted ? "complete" : undefined}
         />
       )}
       {primary && (
@@ -7650,55 +7493,30 @@ function GameScreen({
             <div className="panel">
               <span className="ptitle">{t("game.yourEstimate")}</span>
               {false ? null : (
-                <div className="cards-grid">
-                  {cards.map((c, i) => {
-                    const sel = myVote === c.val;
-                    return (
-                      <button
-                        key={c.val}
-                        className={`pcard${c.red ? " red" : ""}${c.val === "?" ? " wild" : ""}${sel ? " sel" : ""}${revealed ? " locked" : ""}`}
-                        style={{ animationDelay: `${i * 0.055}s` }}
-                        type="button"
-                        tabIndex={revealed ? -1 : 0}
-                        // The handlers below already refuse to act once the cards
-                        // are up, and tabIndex takes the card out of the tab
-                        // order. Neither is visible to a screen reader, which
-                        // would otherwise announce nine actionable vote buttons
-                        // that silently do nothing (WCAG 4.1.2).
-                        aria-disabled={revealed}
-                        aria-pressed={sel}
-                        aria-label={t("game.voteAria", { value: c.val })}
-                        onClick={() => {
-                          if (revealed) return;
-                          setOptimisticVote(c.val);
-                          onCard(c.val);
-                        }}
-                        onKeyDown={(e) => {
-                          if (!revealed && (e.key === "Enter" || e.key === " ")) {
-                            e.preventDefault();
-                            setOptimisticVote(c.val);
-                            onCard(c.val);
-                          }
-                        }}
-                      >
-                        <div className="pcard-inner">
-                          <div className="pcard-tl">
-                            <span className="pcard-num">{c.val}</span>
-                            <span className="pcard-suit-sm">{c.suit}</span>
-                          </div>
-                          <div className="pcard-center">
-                            <span className="pcard-bignum">{c.val}</span>
-                            <span className="pcard-bigsuit">{c.suit}</span>
-                          </div>
-                          <div className="pcard-br">
-                            <span className="pcard-num">{c.val}</span>
-                            <span className="pcard-suit-sm">{c.suit}</span>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                <VoteHand>
+                  {cards.map((c, i) => (
+                    <VoteCard
+                      key={c.val}
+                      value={c.val}
+                      suit={c.suit}
+                      red={c.red}
+                      wild={c.val === "?"}
+                      selected={myVote === c.val}
+                      // Locked is aria-disabled, not disabled: the card and the
+                      // value it played stay in the accessibility tree once the
+                      // cards are up, but nothing about it is actionable and it
+                      // is out of the tab order (WCAG 4.1.2). VoteCard drops the
+                      // click handler entirely rather than guarding inside it.
+                      locked={revealed}
+                      style={{ animationDelay: `${i * 0.055}s` }}
+                      aria-label={t("game.voteAria", { value: c.val })}
+                      onSelect={() => {
+                        setOptimisticVote(c.val);
+                        onCard(c.val);
+                      }}
+                    />
+                  ))}
+                </VoteHand>
               )}
               {!isObs && !revealed && (
                 <div className="kbd-hint">
@@ -7768,50 +7586,33 @@ function GameScreen({
                     <div className="who-section">
                       <span className="ptitle">{t("game.whoPickedWhat")}</span>
                     </div>
-                    <div className="revealed-grid">
+                    <RevealGrid>
                       {voted.map((p, i) => {
                         const isHigh =
                           !allSame && p.vote === String(maxV) && maxV !== minV;
                         const isLow =
                           !allSame && p.vote === String(minV) && maxV !== minV;
-                        const isMe = p.id === myId;
-                        const cardClass = allSame
-                          ? "consensus"
-                          : isHigh
-                            ? "outlier-high"
-                            : isLow
-                              ? "outlier-low"
-                              : "";
-                        const isRed = ["♥", "♦"].includes(
-                          cards.find((c) => c.val === p.vote)?.suit || "",
-                        );
                         return (
-                          <div
+                          <RevealCard
                             key={p.id}
-                            className="rv-card"
+                            value={p.vote}
+                            name={p.name}
+                            you={p.id === myId}
+                            red={["♥", "♦"].includes(
+                              cards.find((c) => c.val === p.vote)?.suit || "",
+                            )}
+                            tone={allSame ? "consensus" : isHigh ? "high" : isLow ? "low" : undefined}
+                            tag={isHigh ? t("game.highest") : isLow ? t("game.lowest") : undefined}
                             style={{ animationDelay: `${i * 0.07}s` }}
                           >
-                            <div className={`rv-card-face ${cardClass}`}>
-                              <span className={`rv-val${isRed ? " red" : ""}`}>
-                                {p.vote}
-                              </span>
-                            </div>
-                            <div className="rv-name">{p.name}</div>
-                            {isMe && <span className="rv-you-tag">you</span>}
-                            {isHigh && (
-                              <span className="outlier-tag high">{t("game.highest")}</span>
-                            )}
-                            {isLow && (
-                              <span className="outlier-tag low">{t("game.lowest")}</span>
-                            )}
                             {/* Rule 5 again: the tick is a second signal beside
                                 the card's gold border, and it says the word too
                                 rather than leaving a bare glyph to carry it. */}
                             {allSame && <Chip tone="gold">{t("game.agreed")}</Chip>}
-                          </div>
+                          </RevealCard>
                         );
                       })}
-                    </div>
+                    </RevealGrid>
                     {isObs && requiresManualFinalEstimate && (
                       <Card
                         variant="gold"
@@ -8023,50 +7824,40 @@ function GameScreen({
               )}
               {/* Rule 5: the brass ring on the avatar says "voted" and so does
                   the word beside it. Neither carries the meaning alone. */}
-              <ul className="plist">
+              <ParticipantList>
                 {voters.map((p) => (
-                  <li key={p.id} className={`prow${p.voted ? " voted" : " not-voted-yet"}`}>
-                    <Avatar name={p.name} size="sm" state={p.voted ? "voted" : "waiting"} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="pname">
-                        {p.name}
-                        {p.id === myId ? " (you)" : ""}
-                      </div>
-                      <div className="prole">
-                        {p.voted ? (
-                          <span className="voted-label">{t("game.votedLabel")}</span>
-                        ) : (
-                          <span className="waiting-label">{t("game.notVoted")}</span>
+                  <Participant
+                    key={p.id}
+                    name={p.name}
+                    you={p.id === myId}
+                    tone={p.voted ? "voted" : "waiting"}
+                    meta={p.voted ? t("game.votedLabel") : t("game.notVoted")}
+                    actions={
+                      <>
+                        {revealed && p.voted && <Chip tone="gold" count>{p.vote}</Chip>}
+                        {isObs && p.id !== myId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={t("game.removeFromRoom", { name: p.name })}
+                            onClick={() => onRemoveParticipant(p.id, p.name)}
+                          >
+                            Remove
+                          </Button>
                         )}
-                      </div>
-                    </div>
-                    <Row nowrap className="prow-actions">
-                      {revealed && p.voted && <Chip tone="gold" count>{p.vote}</Chip>}
-                      {isObs && p.id !== myId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={t("game.removeFromRoom", { name: p.name })}
-                          onClick={() => onRemoveParticipant(p.id, p.name)}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </Row>
-                  </li>
+                      </>
+                    }
+                  />
                 ))}
                 {observers.map((p) => (
-                  <li key={p.id} className="prow obs">
-                    <Avatar name={p.name} size="sm" facilitator />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="pname">
-                        {p.name}
-                        {p.id === myId ? " (you)" : ""}
-                      </div>
-                      <div className="prole">{t("game.facilitatorNoVote")}</div>
-                    </div>
-                    <Row nowrap className="prow-actions">
-                      {isObs && p.id !== myId && (
+                  <Participant
+                    key={p.id}
+                    name={p.name}
+                    you={p.id === myId}
+                    tone="observer"
+                    meta={t("game.facilitatorNoVote")}
+                    actions={
+                      isObs && p.id !== myId ? (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -8075,11 +7866,11 @@ function GameScreen({
                         >
                           Remove
                         </Button>
-                      )}
-                    </Row>
-                  </li>
+                      ) : null
+                    }
+                  />
                 ))}
-              </ul>
+              </ParticipantList>
             </div>
 
             {/* Sprint Analytics, facilitator only */}
@@ -8213,15 +8004,18 @@ function GameScreen({
                       258px rail and orphaned the third on a row of its own. */}
                   <div className="a-kpis">
                     <StatTile
+                      inline
                       label={`${estMode.plural.charAt(0).toUpperCase() + estMode.plural.slice(1)} sized`}
                       value={storiesDone}
                     />
                     <StatTile
+                      inline
                       label={isTshirt ? t("game.mostUsedSize") : t("game.sprintScope")}
                       value={(isTshirt ? tshirtMostCommon : scopeDisp) === "—" ? null : isTshirt ? tshirtMostCommon : scopeDisp}
                       empty={t("game.afterFirst")}
                     />
                     <StatTile
+                      inline
                       label={isTshirt ? t("game.sizeMix") : t("game.avgPer", { unit: estMode.singular })}
                       value={(isTshirt ? tshirtSizeMix : avgDisp2) === "—" ? null : isTshirt ? tshirtSizeMix : avgDisp2}
                       empty={t("game.afterFirst")}
@@ -8243,7 +8037,7 @@ function GameScreen({
                     <Progress
                       value={consensusRate ?? 0}
                       label={t("game.teamAlignmentAria", { n: consensusRate ?? 0 })}
-                      className={`a-align-bar ${fillClass}`}
+                      tone={ALIGN_BAR_TONE[fillClass]}
                     />
                     <div className="a-align-sub">{alignSub}</div>
                     <div className="a-align-note">{t("game.alignNote", { plural: estMode.plural })}</div>

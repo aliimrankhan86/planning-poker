@@ -217,14 +217,42 @@ carrying "Room" cannot fit one line at any size down to the 13px floor — 87px 
 label in 64px of column. The tab picks the mode and the primary action names the
 outcome, since it already reads "Create Room →". Do not add the noun back.
 
-**The nav's marketing links are hidden below 780px on purpose.** Brand, four
-links and the call to action need about 750px of bar. `.navbar-links` was a
-scroll strip, so nothing was ever unreachable, but what it actually rendered on
-a phone was "PRICING" and half of "SUPPORT" sliced down the middle at the
-container edge — which reads as broken, not as scrollable. Raising the type
-floor widened each link and made it obvious. Pricing, Support, Trust and
-Features are all in the footer, so nothing is lost. Do not "fix" the hidden
-links by re-showing them; the bar has no room and the footer already has them.
+**The marketing bar wraps; it does not clip, and its two hide-widths are not
+the same width.** This note used to say the links were hidden below 780px and
+that a scroll strip meant nothing was unreachable. Both halves were wrong in a
+way that shipped, and it was reported from a resized window: "PRICING" followed
+by "SUPPO", cut down the middle at the container edge, with no "Point Poker"
+beside the mark one screenshot narrower.
+
+`.navbar-links` was `overflow-x: auto`, and a scroller has exactly one response
+to running out of room. Nobody drags a navbar sideways, so what it bought was a
+page that looks broken. There is no scroller now — `.navbar-inner` is
+`flex-wrap: wrap`, and a flex container breaks a line before it shrinks
+anything, so the group that no longer fits moves down whole. `.navbar-right`
+carries `margin-left: auto` because `justify-content: space-between` does
+nothing to a single item, which is what that group is once the bar has wrapped.
+
+The wrap has to be at the seam between the two groups and nowhere inside them.
+Wrapping one level lower reads as the same fix and is not: it puts "Point
+Poker" on a line underneath its own mark. `.navbar-left` must stay `nowrap`.
+
+The two remaining numbers are no longer fit thresholds — the wrap handles
+fitting — but the widths below which each element stops being worth a line of
+its own. The wordmark goes at 520 (at 375 the mark and the four actions take
+the full 343px of container, to the pixel) and the links at 1024. They used to
+share 780, which was wrong in both directions: 132px of slack still sat beside
+the wordmark at 780, and the four links do not fit on one line until about
+1050. Pricing, Support, Trust and FAQ are all in the footer, so the band below
+lg loses nothing.
+
+**Why no single number could have worked.** The bar's contents change width
+with the language. The four labels measure 328px in English and 398px in
+Portuguese; the call to action 151px against 176px. Portuguese also spelled the
+fourth link "Perguntas frequentes" — 209px, wider than its other three links
+combined, and on its own enough to push the bar onto a second line at every
+desktop width there is. It is `FAQ` now, the ordinary Brazilian Portuguese
+label, and `nav.toFaq` still carries the full phrase as the accessible name.
+Six tests in `designsystem.test.js` under "the marketing bar" hold all of this.
 
 **An empty room's primary action is the invite, not Reveal.** A facilitator who
 has just made a room is alone in it. The action bar's primary slot held "Reveal
@@ -330,7 +358,8 @@ was wider than the 14px between the panel's own sections, so one reading unit
 sat further apart than the units did. Three columns is not the repair either: a
 `--fs-6` value has no room in an 80px column, and shrinking the number to fit
 would be fixing a layout problem with typography. `.a-kpis` is a flex column of
-label-left/value-right rows sharing `.prow`'s geometry, so the analytics panel
+label-left/value-right rows sharing `.pp-participant`'s geometry (`.prow` until
+the roster moved into the design system), so the analytics panel
 and the players list in the same rail read as one product, and the tabular
 values line up in a column — which is the only reason to group three KPIs. All
 three section sub-headings (`.a-section-title`, `.a-align-title`,
@@ -524,8 +553,10 @@ their line and the descenders of "sign-up" crossed the navbar's bottom border. T
 what "squashed" means, measurably. The same defect was live in the admin dashboard on
 `.analytics-chip`.
 
-The caption was removed rather than restyled. The navbar is a hard 64px with zero
-horizontal slack at 1104px, so nothing could reserve room for it: it had accumulated
+The caption was removed rather than restyled. The navbar was a hard 64px with zero
+horizontal slack at 1104px (it wraps now — see the marketing-bar note above — but
+that grows a line for a *group*, not for a caption glued under one button), so
+nothing could reserve room for it: it had accumulated
 five hacks (absolute positioning, `line-height: 1`, a 3px offset, `nowrap`, and
 `display: none` below 520px) and still overflowed. And every claim it made was already
 made better by the page under it — `/pricing` opens with "no paid tier, no trial

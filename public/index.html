@@ -50,7 +50,11 @@
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
 
     <!-- ── Fonts ─────────────────────────────────────────────────── -->
-    <!-- Both fonts are self-hosted — no Google Fonts dependency. -->
+    <!-- Outfit (UI, five weights) and Cormorant Garamond (display, 700) are
+         both self-hosted — no Google Fonts dependency. The @font-face rules
+         live in fonts.css; a test asserts every family a --font-* token names
+         is actually declared there, because a missing rule fails silently into
+         a system serif that looks fine on the machine it was written on. -->
     <link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" />
 
     <!-- ── Critical inline styles (prevents flash before React loads) ── -->

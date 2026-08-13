@@ -1,9 +1,18 @@
 # pointpoker design system
 
-The rules any new component follows. Tokens live in the `:root` block of the CSS
-template literal at the top of `src/App.js`; this file explains what they are for
-and why they were chosen. `src/designsystem.test.js` enforces the parts a test can
-check, so this document cannot quietly drift from the code.
+The rules any new component follows. Tokens live in
+[`src/design-system/tokens.css`](../src/design-system/tokens.css) — **not** in
+`src/App.js`, which is forbidden from redeclaring them: its `<style>` tag renders
+from the body and would beat the imported stylesheet, pinning the app to one
+theme. This file explains what the tokens are for and why they were chosen.
+`src/designsystem.test.js` enforces the parts a test can check, so this document
+cannot quietly drift from the code.
+
+The last section of that test file, **"the system rules"**, is the part worth
+reading before writing any CSS: nine assertions covering font sizes, spacing,
+font families and weights, breakpoints, `@font-face` coverage, z-index, motion,
+template-literal safety, and a ceiling on the size of the App.js stylesheet.
+Each one exists because the thing it forbids had already happened.
 
 ## Why this exists
 

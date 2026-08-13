@@ -444,6 +444,19 @@ describe("components say it in words, not only in colour", () => {
     expect(card).toHaveAttribute("aria-pressed", "true");
   });
 
+  test("a locked card is still announced, but nothing about it is actionable", async () => {
+    /* Not `disabled`: a disabled button leaves the accessibility tree, taking
+       the value the player just played with it, and the round's own votes are
+       the last thing a screen-reader user should lose at the reveal. */
+    const onSelect = jest.fn();
+    render(<VoteCard value="8" selected locked onSelect={onSelect} />);
+    const card = screen.getByRole("button", { name: "Play 8" });
+    expect(card).toHaveAttribute("aria-disabled", "true");
+    expect(card).toHaveAttribute("tabindex", "-1");
+    await userEvent.click(card);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   test("a danger alert interrupts; anything else does not", () => {
     const { rerender } = render(<Alert tone="danger" title="That room has closed" />);
     expect(screen.getByRole("alert")).toBeInTheDocument();

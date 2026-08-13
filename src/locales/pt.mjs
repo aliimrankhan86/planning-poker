@@ -22,7 +22,13 @@ export const ui = {
   "nav.pricing": "Preços",
   "nav.support": "Ajuda",
   "nav.trust": "Privacidade",
-  "nav.faq": "Perguntas frequentes",
+  /* The bar renders this label and nothing else; "Perguntas frequentes" was
+     209px of it — wider than the other three Portuguese links put together,
+     and enough on its own to push this bar onto a second line at every desktop
+     width there is. "FAQ" is the ordinary Brazilian Portuguese label for the
+     page, and the full phrase is still what a screen reader hears, because the
+     accessible name is nav.toFaq below. */
+  "nav.faq": "FAQ",
   "nav.toPricing": "Ir para preços",
   "nav.toSupport": "Ir para a ajuda",
   "nav.toTrust": "Ir para privacidade e confiabilidade",

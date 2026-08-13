@@ -186,14 +186,18 @@ export function SegmentedControl({ options, value, onChange, block = false, aria
  * checked = light, because dark is the default and a switch's on-position
  * should be the thing you turned on.
  */
-export function ThemeToggle({ className }) {
+/** `compactOnNarrow` clips the visible word below the small breakpoint and
+    keeps the knob — for a bar that runs out of width there. The accessible name
+    is unchanged either way, and the switch is never hidden: the theme lives
+    nowhere else. */
+export function ThemeToggle({ compactOnNarrow = false, className }) {
   const [theme, set] = useTheme();
   const light = theme === "light";
   const word = light ? t("theme.light") : t("theme.dark");
   const onChange = useCallback((e) => set(e.target.checked ? "light" : "dark"), [set]);
   return (
     <Switch
-      className={cx("pp-theme-switch", className)}
+      className={cx("pp-theme-switch", compactOnNarrow && "pp-theme-switch--compact-narrow", className)}
       label={<>{word}<span className="pp-theme-switch__suffix">{t("theme.suffix")}</span></>}
       checked={light}
       onChange={onChange}
@@ -312,10 +316,10 @@ export function Card({ as = "div", variant, interactive = false, pad, eyebrow, t
  * rather than a zero, because a zero reads as data — "0 stories estimated"
  * looks like a finished session that went badly, not an empty one.
  */
-export function StatTile({ label, value, meta, hero = false, gold = false, empty, className }) {
+export function StatTile({ label, value, meta, hero = false, gold = false, inline = false, empty, className }) {
   const absent = value === null || value === undefined;
   return (
-    <div className={cx("pp-stat", hero && "pp-stat--hero", gold && "pp-stat--gold", className)}>
+    <div className={cx("pp-stat", hero && "pp-stat--hero", gold && "pp-stat--gold", inline && "pp-stat--inline", className)}>
       <span className="pp-stat__label">{label}</span>
       {absent
         ? <span className="pp-stat__meta">{empty || "Appears after the first reveal"}</span>
@@ -343,44 +347,66 @@ export function Hero({ eyebrow, title, subtitle, actions, trust, paper = false, 
   );
 }
 
-/** The playing card. The one literal casino element in the system. */
-export function VoteCard({ value, suit = "♦", selected = false, size, faceDown = false, red = false, disabled, onSelect, className, ...rest }) {
+/** The playing card. The one literal casino element in the system, and the
+    product's signature object: corner pips top-left and bottom-right, the value
+    and its suit in the middle, on ivory stock that does not follow the theme.
+
+    `locked` is aria-disabled rather than `disabled` on purpose — see the note on
+    .pp-vote-card[aria-disabled] in components.css. The caller is still expected
+    to refuse the click, which is why onSelect is guarded here too. */
+export function VoteCard({ value, suit = "♦", selected = false, red = false, wild = false, locked = false, onSelect, className, ...rest }) {
+  const pip = (
+    <>
+      <span className="pp-vote-card__rank">{value}</span>
+      <span className="pp-vote-card__suit">{suit}</span>
+    </>
+  );
   return (
     <button
       type="button"
-      className={cx("pp-vote-card", size && `pp-vote-card--${size}`, faceDown && "pp-vote-card--back", red && "pp-vote-card--red", className)}
-      style={{ "--vote-suit": `"${suit}"` }}
-      aria-pressed={faceDown ? undefined : selected}
-      aria-label={faceDown ? "Hidden vote" : `Play ${value}`}
-      disabled={disabled}
-      onClick={onSelect}
+      className={cx("pp-vote-card", red && "pp-vote-card--red", wild && "pp-vote-card--wild", className)}
+      tabIndex={locked ? -1 : 0}
+      aria-disabled={locked || undefined}
+      aria-pressed={selected}
+      aria-label={`Play ${value}`}
+      onClick={locked ? undefined : onSelect}
       {...rest}
     >
-      {faceDown ? "" : value}
+      <span className="pp-vote-card__face">
+        <span className="pp-vote-card__pip">{pip}</span>
+        <span className="pp-vote-card__centre">
+          <span className="pp-vote-card__value">{value}</span>
+          <span className="pp-vote-card__value-suit">{suit}</span>
+        </span>
+        <span className="pp-vote-card__pip pp-vote-card__pip--br">{pip}</span>
+      </span>
     </button>
   );
 }
 
-/** The hand. Wraps on desktop, becomes an auto-fit grid under 480px. */
+/** The hand. Wraps; centres itself once the room drops to one column. */
 export function VoteHand({ children, className }) {
   return <div className={cx("pp-vote-hand", className)}>{children}</div>;
 }
 
-/** Simultaneous reveal: flip both faces on one axis, 420ms. The value is in the
-    DOM either way, so a screen reader is not waiting on an animation. */
-export function RevealCard({ value, revealed, suit }) {
+/** The grid of played cards after the reveal. */
+export function RevealGrid({ children, className }) {
+  return <div className={cx("pp-reveal-grid", className)}>{children}</div>;
+}
+
+/** One player's card once the cards are up: the face, their name, and whatever
+    the round has to say about it. `tone` borders the face; `tag` is the word
+    that says the same thing, because a border alone is Rule 5's failure case. */
+export function RevealCard({ value, name, red = false, tone, you = false, tag, children, className, ...rest }) {
   return (
-    <div className="pp-vote-card-flip" data-revealed={revealed ? "true" : "false"}>
-      <div className="pp-vote-card-flip__inner">
-        <div className="pp-vote-card pp-vote-card--back pp-vote-card-flip__face" aria-hidden="true" />
-        <div
-          className="pp-vote-card pp-vote-card-flip__face pp-vote-card-flip__face--front"
-          style={{ "--vote-suit": `"${suit || "♦"}"` }}
-          data-numeric
-        >
-          {value}
-        </div>
+    <div className={cx("pp-reveal-card", tone && `pp-reveal-card--${tone}`, className)} {...rest}>
+      <div className="pp-reveal-card__face">
+        <span className={cx("pp-reveal-card__value", red && "pp-reveal-card__value--red")}>{value}</span>
       </div>
+      <div className="pp-reveal-card__name">{name}</div>
+      {you && <span className="pp-reveal-card__you">you</span>}
+      {tag && <span className={cx("pp-reveal-card__tag", tone && `pp-reveal-card__tag--${tone}`)}>{tag}</span>}
+      {children}
     </div>
   );
 }
@@ -414,20 +440,30 @@ export function AvatarStack({ children, className }) {
   return <span className={cx("pp-avatar-stack", className)}>{children}</span>;
 }
 
-/** Rule 5: the brass ring says "voted" and so does the word next to it. */
-export function ParticipantList({ people, className }) {
+/** The roster. Takes <Participant> children rather than a people array, because
+    the room draws voters and observers from two different lists into one <ul>
+    and the two rows carry different controls. */
+export function ParticipantList({ children, className }) {
+  return <ul className={cx("pp-participant-list", className)}>{children}</ul>;
+}
+
+/** One row. Rule 5: the brass ring on the avatar says "voted" and so does the
+    word beside it — neither carries the meaning alone. `tone` drives both. */
+export function Participant({ name, you = false, tone = "waiting", meta, actions, className }) {
   return (
-    <ul className={cx("pp-participant-list", className)} style={{ listStyle: "none", margin: 0, padding: 0 }}>
-      {people.map((p) => (
-        <li className="pp-participant" key={p.id || p.name}>
-          <Avatar name={p.name} state={p.voted ? "voted" : "waiting"} facilitator={p.facilitator} />
-          <span className="pp-participant__name">{p.name}</span>
-          <span className="pp-participant__meta">
-            {p.facilitator ? "Facilitator" : p.voted ? "Voted" : "Waiting"}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <li className={cx("pp-participant", `pp-participant--${tone}`, className)}>
+      <Avatar
+        name={name}
+        size="sm"
+        state={tone === "observer" ? undefined : tone}
+        facilitator={tone === "observer"}
+      />
+      <div className="pp-participant__body">
+        <div className="pp-participant__name">{name}{you ? " (you)" : ""}</div>
+        {meta && <div className={cx("pp-participant__meta", `pp-participant__meta--${tone}`)}>{meta}</div>}
+      </div>
+      {actions && <div className="pp-participant__actions">{actions}</div>}
+    </li>
   );
 }
 
@@ -510,11 +546,14 @@ export function Toast({ tone = "default", text, sub, onDismiss }) {
   );
 }
 
-export function Progress({ value, max = 100, label, tall = false, className }) {
+/** A bar. `tone` recolours the fill: "success" | "warning" | "neutral", or
+    omitted for the default gold. Colour never carries the meaning on its own —
+    every caller also states the number beside it. */
+export function Progress({ value, max = 100, label, tall = false, tone, className }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
     <div
-      className={cx("pp-progress", tall && "pp-progress--tall", className)}
+      className={cx("pp-progress", tall && "pp-progress--tall", tone && `pp-progress--${tone}`, className)}
       role="progressbar"
       aria-valuenow={value}
       aria-valuemin={0}

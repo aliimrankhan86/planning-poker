@@ -27,8 +27,7 @@ body {
 
 /* Rule 8: numbers are Outfit with tabular figures. A column of stat values
    must not jitter as it updates, and Cormorant's old-style figures wobble. */
-[data-numeric],
-.tabular {
+[data-numeric] {
   font-variant-numeric: tabular-nums;
   font-family: var(--font-ui);
 }

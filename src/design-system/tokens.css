@@ -52,6 +52,27 @@
   --ivory-400: #e2dccb;
   --ivory-500: #b8d1c2;
 
+  /* ── The card face ────────────────────────────────────────────────────────
+     DELIBERATELY THEME-INVARIANT, and the only thing in the product that is.
+     A playing card is a physical object — ivory stock, red and black ink —
+     and turning the room lights on does not repaint it. So these sit here in
+     the raw palette with no semantic alias and no [data-theme] override, and
+     that is the point: a reader can see they were decided rather than missed.
+
+     They are tokens rather than literals in App.js because the deck is the
+     most recognisable object in the product, and a palette change that
+     silently skipped it would be the one nobody caught. */
+  --card-face-1:     #ffffff;   /* paper, top of the gradient */
+  --card-face-2:     #fdf6e8;   /* paper, bottom — warms towards the felt */
+  --card-face-sel-1: #fffde8;   /* the chosen card, lit */
+  --card-face-sel-2: #fff6c0;
+  --card-face-wild-1:#fbfdfa;   /* the "?" card: stock tinted towards the table */
+  --card-face-wild-2:#e8f0e6;
+  --card-ink-red:    #b01020;   /* hearts and diamonds */
+  --card-edge:       rgba(0, 0, 0, .12);  /* the cut edge of the stock */
+  --card-edge-soft:  rgba(0, 0, 0, .10);
+  --card-gloss:      rgba(255, 255, 255, .9); /* inset highlight = thickness */
+
   /* Paper — the light theme's ground and its surfaces.
      The first light theme was built out of IVORY, which put the whole UI
      between L* 92.8 and L* 100: a seven-point band at the very top of the
@@ -114,6 +135,11 @@
   --fs-7: 2.25rem;    /* 36px  hero on mobile */
   --fs-8: 3rem;       /* 48px  display numerals (the agreed estimate) */
   --fs-9: 4rem;       /* 64px  marketing display */
+  /* 88px, and it has exactly one use: the agreed estimate on the reveal. That
+     number is the entire output of the ceremony, so it is allowed to be the
+     largest thing on any screen in the product — but it is a role, not a step,
+     and nothing else may borrow it. It steps down to --fs-9 on a phone. */
+  --fs-estimate: 5.5rem;
 
   /* Fluid display: one rule covers 360px to 1440px. */
   --fs-hero:    clamp(2.25rem, 1.15rem + 4.4vw, 4rem);
@@ -124,6 +150,9 @@
   --fs-1-tracking: 0.012em;
   --fs-2-tracking: 0.008em;
   --tracking-eyebrow: 0.14em;
+  /* An eyebrow sharing a line with its own value has to give the value the
+     room instead of spending it on letter-spacing. Only .pp-stat--inline. */
+  --tracking-eyebrow-tight: 0.08em;
   --tracking-display: -0.015em;
 
   --lh-tight: 1.15;   /* display */
@@ -195,9 +224,21 @@
   --dur-base: 200ms;
   --dur-slow: 320ms;
   --dur-flip: 420ms;   /* the card reveal — the one signature moment */
+  /* Consensus. Deliberately slower than any of the four above, because it is
+     not a UI transition: nothing is waiting on it and the whole point is that
+     the table gets a beat to notice it agreed. The only thing that uses it.
+     The ambient loops — recordGlow, pulse, urgentBg, spin — are NOT on this
+     scale and should not be put on it: a 2s heartbeat is a state being held,
+     not a change being made, and reduced-motion stops them all anyway. */
+  --dur-celebrate: 560ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-flip: cubic-bezier(0.35, 1.25, 0.45, 1);
+  /* Deliberately linear, and the only correct answer for one thing: a
+     countdown ring is a readout of real elapsed time, so easing it would make
+     the clock lie. Named as a token so that intent is legible in the rule
+     rather than looking like an easing somebody forgot to pick. */
+  --ease-linear: linear;
 }
 
 /* ── Layout ────────────────────────────────────────────────────────────────
@@ -224,11 +265,45 @@
   --control-lg: 52px;
 
   --z-base: 0;
+  /* The app above the table texture painted on body::before. Not decoration:
+     without a stacking context here the felt gradient paints over the room. */
+  --z-raised: 1;
   --z-sticky: 20;
   --z-overlay: 40;
   --z-modal: 100;
+  /* Confetti has to land in front of the consensus card it is celebrating, and
+     behind a toast, which is the only thing left that still needs reading. */
+  --z-confetti: 120;
   --z-toast: 1000;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BREAKPOINTS — three widths, and they are the only three
+
+   These cannot be custom properties: a media query is evaluated before the
+   cascade, so var() is not available inside one. They are a convention held by
+   a test instead (designsystem.test.js, "one breakpoint scale"), which fails on
+   any @media width not in this list.
+
+     520px    phone
+     780px    large phone / tablet portrait
+    1024px    desktop
+
+   Written as `max-width: 519.98px` / `779.98px` / `1023.98px` when a range has
+   to STOP, and `min-width: 520px` / `780px` / `1024px` when one has to START.
+   The .98 is not superstition: viewport widths are fractional under browser
+   zoom and Windows display scaling, so `max-width: 1024px` paired with
+   `min-width: 1024px` double-applies at exactly 1024 while `max-width: 1023px`
+   leaves 1023.5 with neither. Only the STOP form needs it, so `max-width:
+   520px` and `max-width: 780px` are also permitted where nothing starts at the
+   same number.
+
+   Why so few: before 13 Aug 2026 there were eleven, six used exactly once, and
+   the room header decompressed at 781px while its content needed 984px. Every
+   iPad in portrait landed in a band no rule owned. A width that is not on this
+   list is not a smaller decision than one that is — it is the same decision
+   made privately.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SEMANTIC ROLES — DARK (the default)
@@ -493,7 +568,6 @@
   --scroll-thumb-flat: #f5c659;
   --scroll-thumb-border: rgba(5,10,9,0.62);
 
-  --radius: 20px;
   --shadow: 0 28px 90px rgba(0,0,0,0.58);
   --shadow-soft: 0 20px 60px rgba(0,0,0,0.34);
 
@@ -582,7 +656,6 @@
   --scroll-thumb-flat: #c08f22;
   --scroll-thumb-border: rgba(10,31,24,0.18);
 
-  --radius: 20px;
   --shadow: 0 24px 56px rgba(24,45,36,0.14), 0 4px 10px rgba(24,45,36,0.07);
   --shadow-soft: 0 8px 20px rgba(24,45,36,0.09), 0 2px 4px rgba(24,45,36,0.05);
 

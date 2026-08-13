@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 /* A design system nobody checks is a document, not a system. These tests read
@@ -8,6 +8,14 @@ import { join } from "node:path";
 
 const app = readFileSync(join(__dirname, "App.js"), "utf8");
 const css = app.slice(app.indexOf("const CSS = `"), app.indexOf("`;", app.indexOf("const CSS = `")));
+
+/* Several assertions below say "this selector no longer appears". A CSS comment
+   explaining WHERE a rule went necessarily quotes the selector it used to
+   carry, so those assertions have to read the stylesheet with the prose taken
+   out or they fail on their own footnotes. Strip once, here, rather than
+   remembering to at every call site. */
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "");
+const cssCode = stripComments(css);
 
 /* The tokens moved out of App.js's :root and into the design system, which now
    defines them once for dark (the default) and once for light. App.js must NOT
@@ -24,6 +32,20 @@ const dsCss = readFileSync(join(__dirname, "design-system", "components.css"), "
    t("key") and src/locales/en.mjs holds the English words. Assertions about
    *wording* read this; assertions about *structure* still read app. */
 const strings = readFileSync(join(__dirname, "locales", "en.mjs"), "utf8");
+
+/* Read by "the system rules" at the bottom of this file. base.css carries the
+   reset and the global reduced-motion block, so it holds media queries the
+   breakpoint rule has to see; fonts.css is the file that has to prove every
+   family a token names is actually loaded. */
+const baseCss = readFileSync(join(__dirname, "design-system", "base.css"), "utf8");
+const fontsCss = readFileSync(join(__dirname, "..", "public", "fonts", "fonts.css"), "utf8");
+
+/* A ceiling for the App.js stylesheet, not a target — see the last test.
+   1674 CSS declarations across 486 rule blocks on 13 Aug 2026, after the audit
+   sweep. It only ever goes down: lower it when a surface moves into the design
+   system, and treat any need to raise it as a sign the surface was built in the
+   wrong file. Comments are not counted, deliberately — see the test. */
+const CSS_DECLARATION_CEILING = 1371;
 
 describe("design tokens exist", () => {
   const required = [
@@ -243,16 +265,21 @@ describe("selectable options are one primitive", () => {
      four font sizes and four hover treatments that had already drifted apart.
      They are not .btn — a .btn performs an action, a .choice holds state — so
      the system needs the second primitive, not a fifth copy of the first. */
+  /* The primitive lives in the design system, and it did on 13 Aug 2026 when
+     these two tests were still reading App.js. App.js had kept a byte-for-byte
+     copy of the .choice rules after Choice moved out — dead CSS that nothing
+     rendered, and two green tests saying the primitive existed while pointing
+     at the copy rather than the real one. Read components.css. */
   test("the .choice primitive exists", () => {
-    for (const cls of [".choice {", ".choice-row", ".choice-grid"]) {
-      expect(css).toContain(cls);
+    for (const cls of [".pp-choice {", ".pp-choice-row", ".pp-choice-grid"]) {
+      expect(dsCss).toContain(cls);
     }
   });
 
   test("selection is expressed through aria-pressed, not a class", () => {
     // Styling the selected state off [aria-pressed="true"] makes the accessible
     // name and the visual state impossible to disagree with each other.
-    expect(css).toMatch(/\.choice\[aria-pressed="true"\]/);
+    expect(dsCss).toMatch(/\.pp-choice\[aria-pressed="true"\]/);
   });
 
   test("the four legacy option classes are gone", () => {
@@ -262,7 +289,7 @@ describe("selectable options are one primitive", () => {
   });
 
   test("options clear the 44px touch target floor", () => {
-    expect(css).toMatch(/\.choice\s*\{[^}]*min-height:\s*var\(--tap-min\)/s);
+    expect(dsCss).toMatch(/\.pp-choice\s*\{[^}]*min-height:\s*var\(--tap-min\)/s);
   });
 
   test("the join screen's own call to action uses the button system", () => {
@@ -418,24 +445,39 @@ describe("media queries come after the rules they override", () => {
 describe("small text is given room to breathe", () => {
   /* Exempt: fixed-size boxes holding exactly one glyph, where line-height 1
      is what centres that glyph rather than what crushes a sentence.
-       .story-item-remove  24x24, renders "✕"
-       .wtp-dismiss        26x26, renders "✕"
-       .pcard-suit-sm      a single card suit mark
+       .story-item-remove    24x24, renders "✕"
+       .wtp-dismiss          26x26, renders "✕"
+       .pp-vote-card__suit   a single card suit mark
+       .pp-chip__dot         7x7, renders nothing at all
+       .pp-alert__icon       24x24 grid-centred disc, one glyph
+       .pp-error::before     16x16 grid-centred disc, renders "!"
+       .pp-avatar            fixed square, one or two uppercase initials — cap
+                             height only, so there is no descender to clip, and
+                             place-items centres the line box either way
      A new entry here needs the same test: one character, fixed box. */
-  const GLYPH_ONLY = [".story-item-remove", ".wtp-dismiss", ".pcard-suit-sm"];
+  const GLYPH_ONLY = [
+    ".story-item-remove", ".wtp-dismiss",
+    ".pp-vote-card__suit", ".pp-chip__dot", ".pp-alert__icon", ".pp-avatar", ".pp-error",
+  ];
 
-  test("no run of reading-size text is crushed to line-height 1", () => {
-    const bare = css.replace(/\/\*[\s\S]*?\*\//g, "");
-    const crushed = [...bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-      .filter(
-        ([, , decls]) =>
-          /font-size:\s*var\(--fs-[123]\)/.test(decls) &&
-          /line-height:\s*1\s*[;}]?\s*$/m.test(decls),
-      )
-      .map(([, sel]) => sel.trim().split("\n").pop().trim())
-      .filter((sel) => !GLYPH_ONLY.some((g) => sel.startsWith(g)));
-    expect(crushed).toEqual([]);
-  });
+  /* Both stylesheets, since the deck moved into the design system and took the
+     one legitimate exemption with it. Scanning only App.js would have let the
+     rule quietly stop covering the file the card now lives in. */
+  test.each([["App.js", css], ["components.css", dsCss]])(
+    "no run of reading-size text is crushed to line-height 1 — %s",
+    (_label, source) => {
+      const bare = stripComments(source);
+      const crushed = [...bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+        .filter(
+          ([, , decls]) =>
+            /font-size:\s*var\(--fs-[123]\)/.test(decls) &&
+            /line-height:\s*1\s*[;}]?\s*$/m.test(decls),
+        )
+        .map(([, sel]) => sel.trim().split("\n").pop().trim())
+        .filter((sel) => !GLYPH_ONLY.some((g) => sel.startsWith(g)));
+      expect(crushed).toEqual([]);
+    },
+  );
 });
 
 describe("the navbar does not hang text off its own edge", () => {
@@ -451,6 +493,91 @@ describe("the navbar does not hang text off its own edge", () => {
   test("the absolutely positioned nav caption is gone", () => {
     expect(css).not.toContain(".nav-upgrade-sub");
     expect(app).not.toContain("nav-upgrade-sub");
+  });
+});
+
+/* ── THE BAR GROWS A LINE, IT DOES NOT CUT ONE ───────────────────────────
+   Reported from a resized window: "PRICING" followed by "SUPPO", sliced down
+   the middle at the container edge — and, one screenshot narrower, no
+   "Point Poker" beside the mark at all.
+
+   Two mistakes, and only the first is interesting. The strip was an
+   overflow-x: auto scroller, so when the bar filled up the browser did the one
+   thing a scroller can do: clip. That was a deliberate choice once — nothing
+   was unreachable, it was scrollable — but nobody drags a navbar sideways, so
+   what the scroller actually bought was a page that looks broken.
+
+   The second is the reason there is a test here rather than a bigger number.
+   The wordmark and the strip were dropped at the same 780px, one figure for
+   two elements of very different widths, and it was wrong in both directions:
+   the wordmark still fits at 620 with 130px to spare, and the four links do
+   not fit until about 1050 in English and 1160 in Portuguese, whose labels are
+   wider. No single figure can be right for a bar whose contents change width
+   with the language, so the bar wraps. The two numbers left are not fit
+   thresholds any more; they are the widths below which each element stops
+   being worth a line of its own.
+──────────────────────────────────────────────────────────────────────── */
+describe("the marketing bar", () => {
+  const rule = (selector) =>
+    (cssCode.match(new RegExp(`(^|\\})\\s*${selector.replace(/[.]/g, "\\.")}\\s*\\{[^{}]*\\}`, "m")) || [""])[0];
+
+  const mediaBodies = (query) => {
+    const bodies = [];
+    let from = 0;
+    for (;;) {
+      const start = cssCode.indexOf(`@media (${query})`, from);
+      if (start === -1) return bodies;
+      const open = cssCode.indexOf("{", start);
+      let depth = 0;
+      for (let i = open; i < cssCode.length; i++) {
+        if (cssCode[i] === "{") depth++;
+        else if (cssCode[i] === "}" && --depth === 0) {
+          bodies.push(cssCode.slice(open + 1, i));
+          from = i;
+          break;
+        }
+      }
+      if (from < start) return bodies;
+    }
+  };
+
+  test("the links strip is not a scroller, so it has nothing to clip with", () => {
+    expect(rule(".navbar-links")).not.toMatch(/overflow/);
+    expect(cssCode).not.toContain(".navbar-links::-webkit-scrollbar");
+  });
+
+  test("the bar answers a shortage of width by growing a line", () => {
+    const inner = rule(".navbar-inner");
+    expect(inner).toMatch(/flex-wrap:\s*wrap/);
+    // A fixed height cannot hold a second line, so the one-line case is a floor
+    // rather than a measurement. `min-height` passes /[^-]height/ nowhere.
+    expect(inner).toMatch(/min-height:/);
+    expect(inner).not.toMatch(/[^-]height:\s*\d/);
+  });
+
+  test("the brand is one object and does not come apart", () => {
+    // Wrapping one level lower reads as the same fix and is not: the left group
+    // splitting between its two children put "Point Poker" on a line
+    // underneath its own mark.
+    expect(rule(".navbar-left")).not.toMatch(/flex-wrap:\s*wrap/);
+  });
+
+  test("the actions stay on the right when they are alone on their line", () => {
+    // justify-content: space-between does nothing to a single item, and once
+    // the bar wraps that is exactly what this group is.
+    expect(rule(".navbar-right")).toMatch(/margin-left:\s*auto/);
+  });
+
+  test("the wordmark is only dropped where it genuinely does not fit", () => {
+    const hides = cssCode.match(/\.navbar-brand \{[^}]*display:\s*none[^}]*\}/g) || [];
+    expect(hides).toHaveLength(1);
+    expect(mediaBodies("max-width: 520px").some((body) => body.includes(hides[0]))).toBe(true);
+  });
+
+  test("the links wait for the width they actually need", () => {
+    const hides = cssCode.match(/\.navbar-links \{[^}]*display:\s*none[^}]*\}/g) || [];
+    expect(hides).toHaveLength(1);
+    expect(mediaBodies("max-width: 1023.98px").some((body) => body.includes(hides[0]))).toBe(true);
   });
 });
 
@@ -473,11 +600,12 @@ describe("one primary action per screen", () => {
 
 describe("revealed round", () => {
   test("vote cards are marked inoperable to assistive tech once revealed", () => {
-    /* The click and keydown handlers already return early when revealed, and
-       the card drops out of the tab order. Neither fact reaches a screen
-       reader: without aria-disabled it announces nine actionable buttons that
-       do nothing when activated. */
-    expect(app).toMatch(/aria-disabled=\{revealed\}/);
+    /* The card drops out of the tab order and loses its click handler once the
+       cards are up. Neither fact reaches a screen reader: without aria-disabled
+       it announces nine actionable buttons that do nothing when activated.
+       VoteCard owns the attribute now — see design-system.test.js for the
+       rendered proof — so all this file checks is that the room asks for it. */
+    expect(app).toMatch(/locked=\{revealed\}/);
   });
 });
 
@@ -740,8 +868,23 @@ describe("the sprint snapshot is a stack, not a grid", () => {
     expect(css).toMatch(/\.a-kpis\s*\{[^}]*flex-direction:\s*column/s);
   });
 
+  /* The three rules that did this used to live in App.js as
+     `.a-kpis .pp-stat*`, reaching into a design-system component from outside
+     it. They are a variant of the tile, so they are now .pp-stat--inline and
+     the tiles ask for it by prop. The behaviour this test guards is unchanged;
+     only its address moved. */
   test("each KPI reads label-left, value-right on one line", () => {
-    expect(css).toMatch(/\.a-kpis \.pp-stat\s*\{[^}]*justify-content:\s*space-between/s);
+    expect(dsCss).toMatch(/\.pp-stat--inline\s*\{[^}]*justify-content:\s*space-between/s);
+    expect(dsCss).toMatch(/\.pp-stat--inline \.pp-stat__value\s*\{[^}]*font-size:\s*var\(--fs-5\)/s);
+  });
+
+  test("the KPI tiles ask for that variant rather than being restyled from outside", () => {
+    const rail = app.match(/<div className="a-kpis">[\s\S]*?<\/div>/);
+    expect(rail).not.toBeNull();
+    expect(rail[0].match(/<StatTile/g)).toHaveLength(3);
+    expect(rail[0].match(/\binline\b/g)).toHaveLength(3);
+    // and App.js no longer owns any part of the tile's appearance
+    expect(cssCode).not.toMatch(/\.a-kpis \.pp-stat/);
   });
 
   test("one sub-heading treatment for every section of the panel", () => {
@@ -803,7 +946,7 @@ describe("overflow-x: hidden never lands on body", () => {
 
 describe("one accent, one meaning", () => {
   test("the observer row does not borrow the alert blue", () => {
-    const rule = css.match(/\.prow\.obs\s+\{[^}]*\}/s);
+    const rule = dsCss.match(/\.pp-participant--observer\s+\{[^}]*\}/s);
     expect(rule).not.toBeNull();
     expect(rule[0]).not.toContain("--info");
   });
@@ -1060,8 +1203,22 @@ describe("the theme switch survives every width", () => {
        Clipped, not display:none — a clipped label is still the accessible
        name, so what a phone stops showing it does not stop saying. */
     expect(dsCss).toMatch(/\.pp-theme-switch__suffix\s*\{[^}]*clip-path/);
-    expect(css).toMatch(/\.navbar \.pp-theme-switch \.pp-switch__label\s*\{[^}]*clip-path/);
-    expect(css).not.toMatch(/\.navbar \.pp-theme-switch \.pp-switch__label\s*\{[^}]*display:\s*none/);
+    /* The second step used to be a `.navbar .pp-theme-switch .pp-switch__label`
+       rule in App.js — one file reaching past the component boundary into
+       another's internals. It is a state of the switch, so the switch owns it
+       and a bar asks for it by prop. */
+    expect(dsCss).toMatch(/\.pp-theme-switch--compact-narrow \.pp-switch__label\s*\{[^}]*clip-path/);
+    expect(dsCss).not.toMatch(/\.pp-theme-switch--compact-narrow \.pp-switch__label\s*\{[^}]*display:\s*none/);
+    expect(cssCode).not.toMatch(/\.pp-theme-switch \.pp-switch__label/);
+  });
+
+  test("only the bar that runs out of room asks to be compacted", () => {
+    // The navbar cannot spare the word on a phone. The room header is roomier
+    // and keeps it — so exactly one of the two call sites passes the prop.
+    expect(app.match(/<ThemeToggle\b[^/>]*\/>/g)).toEqual(
+      expect.arrayContaining(["<ThemeToggle compactOnNarrow />", "<ThemeToggle />"]),
+    );
+    expect(app.match(/<ThemeToggle compactOnNarrow \/>/g)).toHaveLength(1);
   });
 
   test("the label is width-pinned so toggling cannot shove the navbar", () => {
@@ -1215,7 +1372,17 @@ describe("the sized list can be corrected", () => {
   test("and the column instruction that sizes it does not survive the stack", () => {
     // width: 1% is how the column stays 36px wide; in the stacked layout every
     // cell is its own flex row and the same rule collapsed the button to 8px.
-    expect(css).toMatch(/@media \(max-width: 760px\) \{\s*\.a-story-list td:last-child \{[^}]*width:\s*auto/);
+    //
+    // The two widths must be THE SAME width, which is the point of asserting
+    // them against each other rather than against a number. They were 760 here
+    // and 640 in components.css, so for 120px of viewport the override fired
+    // against a table that had not stacked yet. Both are on the tablet
+    // breakpoint now and neither can move without the other.
+    const stackAt = dsCss.match(/@media \(max-width: (\d+)px\) \{\s*\.pp-table--stack thead/);
+    const undoAt = css.match(/@media \(max-width: (\d+)px\) \{\s*\.a-story-list td:last-child \{[^}]*width:\s*auto/);
+    expect(stackAt).not.toBeNull();
+    expect(undoAt).not.toBeNull();
+    expect(undoAt[1]).toBe(stackAt[1]);
   });
 });
 
@@ -1309,5 +1476,248 @@ describe("printed and downloaded exports", () => {
       /const rows = \[\[t\("game\.colIndex"\), t\("game\.colItem"\), t\("game\.colEstimate"\)\]\]/,
     );
     expect(csvFn).not.toMatch(/Point Poker.*\], *\[/s);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SYSTEM RULES
+
+   Everything above guards a decision. This block guards the SHAPE of the
+   stylesheet, and it exists because docs/DESIGN-SYSTEM.md already said most of
+   it and the code drifted anyway. A rule nobody can break by accident is worth
+   more than a rule everybody agreed to.
+
+   The audit these came out of (13 Aug 2026) found: a display typeface that
+   never loaded on any machine, eleven breakpoints with an unowned band between
+   two of them, twelve rendered font sizes against a scale of eight, 61
+   off-grid spacing values, 26 hardcoded font stacks and nine raw z-indexes.
+   Every one of them would have failed one of the tests below on the day it was
+   written.
+
+   @media print is exempt throughout. A print sheet is a different medium: it
+   is black on white paper, it is not themed, it has no motion and no layering,
+   and the design system has no print layer for it to draw from.
+   ═══════════════════════════════════════════════════════════════════════════ */
+describe("the system rules", () => {
+  /* The CSS block is a template literal, so a comment quoting a selector is
+     indistinguishable from the selector itself to a regex. Strip prose first,
+     then split the print sheet off. */
+  const code = stripComments(css);
+  const printAt = code.indexOf("@media print");
+  const screenCss = printAt === -1 ? code : code.slice(0, printAt);
+  const dsCode = stripComments(dsCss);
+
+  /* Declarations, as [property, value] pairs, from the screen stylesheet. */
+  const declarations = (source) =>
+    [...source.matchAll(/([-a-z]+)\s*:\s*([^;{}]+)[;}]/g)].map((m) => [m[1], m[2].trim()]);
+
+  const valuesOf = (source, prop) =>
+    declarations(source).filter(([p]) => p === prop).map(([, v]) => v);
+
+  // ── 1 ────────────────────────────────────────────────────────────────────
+  test("App.js does not restyle a design-system component from outside it", () => {
+    /* Positioning a component INSIDE its parent is normal CSS and stays legal:
+       .timer-setup > .pp-btn { flex: 1 1 11rem } is the parent's business.
+       Repainting one is not — that is the component's business, and two files
+       owning one component is how they drift. So the check is on the property,
+       not the selector. */
+    const APPEARANCE = /^(background|color|border|box-shadow|font|letter-spacing|text-transform|padding|opacity|filter)/;
+    const offences = [...screenCss.matchAll(/([^{}]*\.pp-[^{}]*)\{([^{}]*)\}/g)]
+      .flatMap(([, sel, body]) =>
+        declarations(body)
+          .filter(([p]) => APPEARANCE.test(p))
+          .map(([p, v]) => `${sel.trim().split("\n").pop().trim()} { ${p}: ${v} }`),
+      );
+    expect(offences).toEqual([]);
+  });
+
+  /* Rules 2, 3, 4, 7 and 8 read BOTH stylesheets. They read only App.js until
+     13 Aug 2026, which was fine while App.js was where the un-migrated CSS
+     lived — and stopped being fine the moment the deck moved into
+     components.css, because the migration would have carried the card's type
+     and spacing straight out from under every rule meant to police it. A rule
+     that a refactor can walk out of is not a rule. */
+  const SHEETS = [["App.js", screenCss], ["components.css", dsCode]];
+
+  // ── 2 ────────────────────────────────────────────────────────────────────
+  test.each(SHEETS)("every font-size is a token — %s", (_label, source) => {
+    /* html { font-size: 16px } is the rem base every other step is expressed
+       against. It is the one place a literal is the correct answer. */
+    const bad = valuesOf(source, "font-size")
+      .filter((v) => !/^var\(--(fs|pc)-/.test(v) && v !== "inherit" && v !== "16px");
+    expect(bad).toEqual([]);
+  });
+
+  test("the rem base is declared exactly once, in App.js", () => {
+    expect(screenCss).toMatch(/html\s*\{[^}]*font-size:\s*16px/);
+  });
+
+  // ── 3 ────────────────────────────────────────────────────────────────────
+  test.each(SHEETS)("every padding, margin and gap is on the 4px grid — %s", (_label, source) => {
+    /* 1px, 2px and 3px survive as literals: hairlines, the inset on a chip and
+       optical nudges under the grid's own resolution. Anything larger that is
+       not a --sp-* is a private decision about spacing.
+       scroll-margin/scroll-padding are excluded — they clear the sticky bars,
+       so they are a measurement of the layout rather than a step in it. */
+    const bad = declarations(source)
+      .filter(([p]) => /^(padding|margin|gap|row-gap|column-gap)(-|$)/.test(p))
+      .flatMap(([p, v]) =>
+        (v.match(/-?\d+(?:\.\d+)?px/g) || [])
+          .filter((px) => Math.abs(parseFloat(px)) > 3)
+          .map((px) => `${p}: ${v}  (${px})`),
+      );
+    expect(bad).toEqual([]);
+  });
+
+  // ── 4 ────────────────────────────────────────────────────────────────────
+  test.each(SHEETS)("every font-family and font-weight is a token — %s", (_label, source) => {
+    expect(valuesOf(source, "font-family").filter((v) => !/^var\(--font-/.test(v) && v !== "inherit")).toEqual([]);
+    expect(valuesOf(source, "font-weight").filter((v) => !/^var\(--fw-/.test(v) && v !== "inherit")).toEqual([]);
+  });
+
+  // ── 5 ────────────────────────────────────────────────────────────────────
+  test("every media query is on the one breakpoint scale", () => {
+    /* Three widths. .98 on the STOP form only, so a fractional viewport under
+       browser zoom or Windows scaling lands in exactly one of any adjacent
+       pair. The full reasoning is in the BREAKPOINTS block in tokens.css. */
+    const ALLOWED = new Set(["max-width: 519.98px", "max-width: 520px", "min-width: 520px",
+                             "max-width: 779.98px", "max-width: 780px", "min-width: 780px",
+                             "max-width: 1023.98px", "min-width: 1024px"]);
+    const found = [];
+    for (const source of [code, dsCode, stripComments(baseCss)]) {
+      for (const [, q] of source.matchAll(/@media\s*\(((?:max|min)-width:\s*[\d.]+px)\)/g)) {
+        if (!ALLOWED.has(q.replace(/\s+/g, " "))) found.push(q);
+      }
+    }
+    expect(found).toEqual([]);
+  });
+
+  // ── 6 ────────────────────────────────────────────────────────────────────
+  test("every family a --font-* token names is actually loaded", () => {
+    /* THE ONE THAT WOULD HAVE CAUGHT CORMORANT. A missing @font-face does not
+       throw, warn, or look wrong on the machine it was written on — it falls
+       silently through to the next candidate, so a Mac shows Iowan Old Style,
+       Windows shows Georgia, and the brand has no display face on either.
+       Only the FIRST family in a stack is ours; the rest are the fallbacks. */
+    const SYSTEM = /^(ui-|system-ui|-apple-system|sans-serif|serif|monospace|cursive)/;
+    const declared = [...fontsCss.matchAll(/font-family:\s*'([^']+)'/g)].map((m) => m[1]);
+    const wanted = [...tokens.matchAll(/--font-[\w-]*:\s*([^;]+);/g)]
+      .map((m) => m[1].split(",")[0].trim().replace(/^['"]|['"]$/g, ""))
+      .filter((f) => !SYSTEM.test(f));
+    expect(wanted.length).toBeGreaterThan(0);
+    for (const family of wanted) expect(declared).toContain(family);
+  });
+
+  test("and every font file that ships is one something asks for", () => {
+    // The other direction: three Cormorant weights nothing could request were
+    // shipping 69kB to every visitor. A file with no @font-face is dead weight.
+    const files = readdirSync(join(__dirname, "..", "public", "fonts")).filter((f) => f.endsWith(".woff2"));
+    const referenced = [...fontsCss.matchAll(/url\('\.\/([^']+)'\)/g)].map((m) => m[1]);
+    expect(files.filter((f) => !referenced.includes(f))).toEqual([]);
+  });
+
+  // ── 7 ────────────────────────────────────────────────────────────────────
+  test.each(SHEETS)("every z-index is a token — %s", (_label, source) => {
+    expect(valuesOf(source, "z-index").filter((v) => !/^var\(--z-/.test(v))).toEqual([]);
+  });
+
+  // ── 8 ────────────────────────────────────────────────────────────────────
+  test.each(SHEETS)("every transition and animation is on the motion scale — %s", (_label, source) => {
+    /* Exempt: infinite ambient loops. A 2s heartbeat is a state being HELD,
+       not a change being made, so it is not on the transition scale and should
+       not be forced onto it. Named here so the exemption is a decision.
+       Also exempt: the reduced-motion block's .001ms, which is the mechanism
+       that turns all of this off. */
+    const AMBIENT = /\binfinite\b/;
+    /* Take the var() references out before looking for raw values, or
+       "var(--ease-out)" reads as the bare keyword "ease-out" and every
+       correctly-tokenised rule reports itself. */
+    const raw = (v) => v.replace(/var\(--[\w-]+\)/g, "");
+    const bad = declarations(source)
+      .filter(([p]) => /^(transition|animation)(-|$)/.test(p))
+      .filter(([, v]) => !AMBIENT.test(v) && !v.includes(".001ms"))
+      .filter(([, v]) => /\d+(?:\.\d+)?m?s\b/.test(raw(v)) || /\b(ease|ease-in|ease-out|ease-in-out|linear|cubic-bezier)\b/.test(raw(v)))
+      .map(([p, v]) => `${p}: ${v}`);
+    expect(bad).toEqual([]);
+  });
+
+  test("nothing in the stylesheet can terminate the template literal", () => {
+    /* The CSS is a JS template literal, so a backtick or a ${...} anywhere in
+       it — including inside a comment quoting a selector — ends the string and
+       the file stops parsing. It fails loudly at build time, but it fails a
+       long way from the character that caused it: babel reports "Missing
+       semicolon" pointing at whatever JS follows, which is why this happened
+       twice in one afternoon. Cheaper to state the rule than to re-diagnose it.
+       Interpolation is legal in the JSX below and nowhere in here. */
+    const body = css.slice("const CSS = `".length);
+    expect(body).not.toContain("`");
+    expect(body).not.toContain("${");
+  });
+
+  // ── 9 ────────────────────────────────────────────────────────────────────
+  test("every class in every stylesheet is one something can render", () => {
+    /* A selector that matches nothing is not an error, so nothing ever fails
+       and it sits there looking authoritative. This codebase had 40-odd of
+       them on 13 Aug 2026 and two of them were actively misleading:
+
+         .prow.obs / .pcard:first-child style rules whose element had been
+         renamed underneath them, so a later reader "fixed" the rule that was
+         already dead and left the live one alone;
+
+         a byte-for-byte copy of the whole .choice primitive, kept in App.js
+         after Choice moved into the design system, with three green tests
+         asserting the primitive existed — against the copy.
+
+       The rest were the paid tier: .seo-plan-card.pro, .footer-plan-badge.pro,
+       .marketing-plan-card.pro and friends, still styling a plan that had been
+       deleted months earlier.
+
+       Classes built by interpolation (`pp-btn--${variant}`) can't be found by
+       name, so any class starting with a prefix that appears before a ${ in
+       source counts as live. That admits a few genuinely-dead modifiers rather
+       than failing on live ones, which is the right way round for a rule that
+       gates every commit. */
+    const sources = [
+      ...readdirSync(__dirname).filter((f) => /\.(js|mjs)$/.test(f) && !/\.test\./.test(f)).map((f) => join(__dirname, f)),
+      ...readdirSync(join(__dirname, "design-system")).filter((f) => /\.(js|mjs)$/.test(f) && !/\.test\./.test(f)).map((f) => join(__dirname, "design-system", f)),
+      ...readdirSync(join(__dirname, "locales")).map((f) => join(__dirname, "locales", f)),
+      join(__dirname, "..", "public", "index.html"),
+      join(__dirname, "..", "scripts", "prerender.mjs"),
+    ];
+    // App.js's own stylesheet is not a consumer of itself.
+    const markup = sources.map((f) => readFileSync(f, "utf8")).join("\n").replace(css, "");
+    const prefixes = [...markup.matchAll(/([\w-]+)\$\{/g)].map((m) => m[1]).filter((p) => p.includes("-"));
+    const rendered = (c) =>
+      new RegExp(`(^|[^\\w-])${c}([^\\w-]|$)`).test(markup) || prefixes.some((p) => c.startsWith(p));
+
+    for (const [label, source] of [["App.js", css], ["components.css", dsCss], ["base.css", baseCss]]) {
+      const dead = [...new Set(
+        // url(...) holds an inline SVG whose xmlns makes "www.w3.org" look like
+        // a class called w3. Strip the payloads before reading selectors.
+        [...stripComments(source).replace(/url\([^)]*\)/g, "url()").matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]),
+      )].filter((c) => !rendered(c));
+      expect({ [label]: dead }).toEqual({ [label]: [] });
+    }
+  });
+
+  // ── 10 ───────────────────────────────────────────────────────────────────
+  test("the App.js stylesheet does not grow", () => {
+    /* A ceiling, not a target. The direction of travel is the point: every
+       component that moves into the design system should take its CSS with it,
+       so this number goes down and never up. Lower it when it does; needing to
+       raise it means a surface was built in the wrong file.
+
+       DECLARATIONS, not lines. Lines were the obvious metric and the wrong one:
+       this codebase explains its decisions in comments, and a rule that makes
+       documentation cost the same as CSS teaches people to delete the comments.
+       Declarations measure the surface App.js actually owns, which is the thing
+       that should shrink.
+
+       It is the only rule here that cannot be satisfied by renaming something. */
+    const rules = [...stripComments(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+    const declarations = rules.reduce(
+      (n, [, , body]) => n + body.split(";").filter((d) => d.trim()).length, 0);
+    expect({ declarations }).toEqual({ declarations: expect.any(Number) });
+    expect(declarations).toBeLessThanOrEqual(CSS_DECLARATION_CEILING);
   });
 });

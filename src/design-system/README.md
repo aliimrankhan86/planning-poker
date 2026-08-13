@@ -395,13 +395,18 @@ gutters became one `Container`:
 
 ## Known rough edges
 
-- **A handful of literal hues remain** in App.js — the red and purple on the playing card
-  faces, and a couple of outlier badges. All of them sit on a surface that is the same
-  object in both themes (an ivory card face, a tinted badge), so they are correct as they
-  are.
-- **The playing card is still App.js's own** (`.pcard`, with corner pips and a big suit).
-  It is better than `pp-vote-card` and it is the product's signature; `pp-vote-card` is
-  what new surfaces should use until the two are reconciled.
+- **The card's own colours are literals, deliberately.** `--card-face-*`, `--card-ink-red`,
+  `--card-edge` and `--card-gloss` in `tokens.css` do not move with the theme, because a
+  playing card is a physical object and turning the room lights on does not repaint it.
+  They are tokens, not loose hex — but they are theme-invariant tokens, which is the one
+  documented exception in the system.
+- ~~**The playing card is still App.js's own**~~ — reconciled 13 Aug 2026, and in the
+  direction this note did not anticipate. The room's card was the better of the two, so it
+  was promoted into the system rather than replaced by it: `pp-vote-card` now *is* the
+  corner-pip card, same markup and same pixels, and App.js renders `<VoteCard>`. The same
+  went for `RevealCard` and `ParticipantList`, both of which were thinner than the room's
+  version — `ParticipantList` had no remove control and no revealed vote, so adopting it
+  would have deleted working features. Use them; there is no second card any more.
 - **The room's two-column split** (`.game-grid`, `.lcol`, `.rcol`, `.panel`) is local. The
   room's outer measure is `.pp-container` like everything else, but the 1fr/300px split
   inside it is an application shell, which the system does not model.

@@ -139,9 +139,14 @@
   --btn-bd: var(--border-strong);
   --btn-bg-hover: color-mix(in oklab, var(--text-1) 7%, transparent);
   --btn-shadow: var(--elev-0);
-  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  /* Instance-tunable, so a caller that genuinely needs a tighter button in a
+     crowded bar sets a property instead of winning a specificity fight with a
+     compound selector. The header language trigger is the one real case. */
+  --btn-pad-inline: var(--sp-5);
+  --btn-gap: var(--sp-2);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--btn-gap);
   min-height: var(--control-md);
-  padding-inline: var(--sp-5);
+  padding-inline: var(--btn-pad-inline);
   border: var(--bw-hair) solid var(--btn-bd);
   border-radius: var(--r-sm);
   background: var(--btn-bg);
@@ -245,10 +250,9 @@
   --btn-bd: rgba(255,255,255,0.28);
 }
 
-.pp-btn--sm { min-height: var(--control-sm); padding-inline: var(--sp-4); font-size: var(--fs-2); }
-.pp-btn--lg { min-height: var(--control-lg); padding-inline: var(--sp-6); font-size: var(--fs-4); }
+.pp-btn--sm { --btn-pad-inline: var(--sp-4); min-height: var(--control-sm); font-size: var(--fs-2); }
+.pp-btn--lg { --btn-pad-inline: var(--sp-6); min-height: var(--control-lg); font-size: var(--fs-4); }
 .pp-btn--block { width: 100%; }
-.pp-btn__icon { width: 1.25em; height: 1.25em; flex: none; }
 
 /* Rule 6, without giving up the handoff's density. A small control still
    *looks* 36px; the finger gets --tap-min. The hit area grows vertically only:
@@ -372,7 +376,7 @@
 
 .pp-hint { font-size: var(--fs-2); color: var(--text-3); line-height: var(--lh-snug); letter-spacing: var(--fs-2-tracking); }
 .pp-error { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-2); font-weight: var(--fw-medium); color: var(--danger); line-height: var(--lh-snug); }
-.pp-error::before { content: "!"; width: 16px; height: 16px; flex: none; display: grid; place-items: center; border-radius: var(--r-full); background: var(--danger); color: var(--surface-1); font-size: 11px; font-weight: var(--fw-bold); line-height: 1; }
+.pp-error::before { content: "!"; width: 16px; height: 16px; flex: none; display: grid; place-items: center; border-radius: var(--r-full); background: var(--danger); color: var(--surface-1); font-size: var(--fs-1); font-weight: var(--fw-bold); line-height: 1; }
 
 .pp-select { position: relative; display: block; }
 .pp-select__control { appearance: none; padding-right: var(--sp-10); cursor: pointer; }
@@ -437,6 +441,30 @@
   .pp-theme-switch .pp-switch__label { font-size: var(--fs-2); min-width: 3.1em; }
   .pp-theme-switch__suffix {
     position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+}
+
+/* Compact: the knob alone. The marketing navbar under 520px cannot spare the
+   word — .navbar-right does not shrink, and at 375px it took 306 of the
+   available 375, squeezed .navbar-left to 29px, and left the brand mark
+   overflowing its own box underneath the switch track.
+
+   Dropping the word is not dropping the state: a switch says which way it is
+   set by where the thumb is, which is the whole reason this is a switch and
+   not a button. And it is CLIPPED, not display:none, so the accessible name is
+   still the full "Dark theme" the bar can no longer show. The switch itself is
+   never hidden — the theme lives nowhere else. No footer control, no OS
+   fallback (tokens.css deliberately ignores prefers-color-scheme), so hiding
+   it strands a phone in dark for good.
+
+   This was a .navbar .pp-theme-switch .pp-switch__label rule in App.js. It is
+   a state of the switch, so the switch owns it — including the width at which
+   it kicks in. A bar asks for the behaviour by name; it does not get to pick a
+   twelfth breakpoint to ask at. */
+@media (max-width: 520px) {
+  .pp-theme-switch--compact-narrow .pp-switch__label {
+    position: absolute; width: 1px; height: 1px; min-width: 0;
     overflow: hidden; clip-path: inset(50%); white-space: nowrap;
   }
 }
@@ -508,6 +536,18 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-stat__meta { font-size: var(--fs-2); color: var(--text-3); line-height: var(--lh-snug); }
 .pp-stat--hero .pp-stat__value { font-size: var(--fs-8); }
 .pp-stat--gold .pp-stat__value { color: var(--action-quiet); }
+/* Inline: label and value on one baseline instead of stacked, for a narrow
+   rail beside a hero number. One step down from the tile default, because a
+   28px KPI in the sidebar competes with the agreed estimate it sits next to.
+   This was three descendant rules in App.js reaching into .pp-stat from
+   outside; it is a variant of the tile, so it belongs to the tile. */
+.pp-stat--inline {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
+  padding: var(--sp-3); border-radius: var(--r-sm);
+  background: var(--tint-raise-2); border-color: var(--border);
+}
+.pp-stat--inline .pp-stat__label { letter-spacing: var(--tracking-eyebrow-tight); }
+.pp-stat--inline .pp-stat__value { font-size: var(--fs-5); }
 
 /* Hero. Felt ground by default; --paper for content pages that need to breathe. */
 .pp-hero { position: relative; overflow: hidden; background: var(--surface-felt); color: var(--text-on-felt); }
@@ -532,59 +572,147 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 
 /* ── vote-card ─────────────────────────────────────────────────────────────── */
 /* The playing card. The one place the casino is literal, and the only element allowed a lift shadow.
-   Suit glyphs are typographic characters from the text font — the documented emoji exemption. */
+   Suit glyphs are typographic characters from the text font — the documented emoji exemption.
+
+   This IS the room's deck, not a second drawing of it. Until 13 Aug 2026 the
+   system carried a thinner card here — one centred numeral, two pseudo-element
+   pips — while the room drew its own richer one in App.js under .pcard, and the
+   README told new surfaces to use the worse of the two "until the two are
+   reconciled". Reconciling them by adopting the system's card would have
+   redrawn the product's signature object, so the room's card was promoted into
+   the system instead: same markup, same geometry, same pixels, one definition.
+
+   THE CARD IS A FIXED-GEOMETRY OBJECT, so its type is sized to the card face
+   rather than to the document's reading scale — a 41.6px numeral is not a
+   heading, it is the pip on a 96px card, and forcing it onto the eight-step
+   scale would redraw the deck. The seven numbers below are the card's own
+   proportions, declared once here and stepped down twice at the foot of this
+   section. Everything that consumes them does so through a var(), so the deck
+   still has no loose font-size or width anywhere. */
 .pp-vote-card {
-  --vote-w: 76px;
-  position: relative; display: grid; place-items: center;
-  width: var(--vote-w); aspect-ratio: 2 / 3; padding: 0;
-  background: var(--surface-card-face); color: var(--felt-950);
-  border: var(--bw-hair) solid rgba(10,31,24,0.18); border-radius: var(--r-sm);
-  box-shadow: var(--elev-card-lift);
-  font-family: var(--font-ui); font-size: var(--fs-6); font-weight: var(--fw-semi);
-  font-variant-numeric: tabular-nums; line-height: var(--lh-tight);
+  --pc-w: 96px;      --pc-h: 136px;
+  --pc-num: .95rem;  --pc-big: 2.6rem;  --pc-suit: 1.3rem;
+  --pc-big-wild: 2.2rem;                --pc-suit-wild: 1.1rem;
+
+  width: var(--pc-w); height: var(--pc-h); position: relative;
+  display: block;
+  border: none;
+  padding: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
   cursor: pointer; user-select: none;
-  transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  animation: pp-deal-in var(--dur-flip) var(--ease-out) both;
+  transition: transform var(--dur-base) var(--ease-flip), filter var(--dur-base) var(--ease-out);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
-.pp-vote-card::before, .pp-vote-card::after {
-  content: var(--vote-suit, "\2666"); position: absolute;
-  font-size: var(--fs-1); line-height: 1; /* single glyph, no descender: the documented exemption */
-  color: var(--brass-600); opacity: 0.9;
+.pp-vote-card:hover:not([aria-disabled="true"]) { transform: translateY(-16px) scale(1.06); filter: drop-shadow(0 18px 16px var(--shadow-card)); }
+.pp-vote-card:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.pp-vote-card[aria-pressed="true"] { transform: translateY(-18px) scale(1.08); filter: drop-shadow(0 0 12px var(--gold-line-2)) drop-shadow(0 16px 20px var(--shadow-card)); }
+/* Locked is aria-disabled, not a class and not :disabled. A real disabled
+   button is removed from the accessibility tree along with the value it played,
+   and the round's own votes are the last thing a screen-reader user should lose
+   at reveal; aria-disabled keeps the card announced and merely inert. */
+.pp-vote-card[aria-disabled="true"] { cursor: default; }
+/* THE CARD FACE IS THEME-INDEPENDENT ON PURPOSE, and it is the only thing in
+   the product that is. A playing card is a physical object made of ivory stock
+   with red and black ink on it; turning the room lights on does not repaint it.
+   The values behind --card-* are therefore not un-migrated leftovers, and
+   re-pointing them at --surface-1 would make the deck vanish into the table in
+   the light theme. Everything AROUND the card (its lift shadow, its selection
+   ring, its focus ring) does move with the theme, and does, above. */
+.pp-vote-card__face {
+  width: 100%; height: 100%;
+  background: linear-gradient(160deg, var(--card-face-1) 0%, var(--card-face-2) 100%);
+  border-radius: var(--r-sm); border: var(--bw-hair) solid var(--card-edge);
+  box-shadow: 0 2px 0 var(--card-gloss) inset, 0 10px 28px var(--shadow-card);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: background var(--dur-fast) var(--ease-out);
 }
-.pp-vote-card::before { top: 6px; left: 8px; }
-.pp-vote-card::after { bottom: 6px; right: 8px; transform: rotate(180deg); }
-.pp-vote-card:hover:not(:disabled) { transform: translateY(-8px); }
-.pp-vote-card[aria-pressed="true"] {
-  transform: translateY(-14px);
-  border-color: var(--brass-500);
-  box-shadow: var(--elev-card-lift), 0 0 0 3px color-mix(in oklab, var(--action) 55%, transparent);
+.pp-vote-card[aria-pressed="true"] .pp-vote-card__face {
+  background: linear-gradient(160deg, var(--card-face-sel-1) 0%, var(--card-face-sel-2) 100%);
+  border-color: var(--gold-line-2);
+  box-shadow: 0 2px 0 var(--card-gloss) inset, 0 10px 28px var(--shadow-card), 0 0 0 2.5px var(--brass-600);
 }
-.pp-vote-card:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
-.pp-vote-card--sm { --vote-w: 56px; font-size: var(--fs-5); }
-.pp-vote-card--lg { --vote-w: 104px; font-size: var(--fs-8); }
-.pp-vote-card--red { color: var(--red-600); }
-.pp-vote-card--red::before, .pp-vote-card--red::after { color: var(--red-600); }
+/* Corner pip — top-left, and the same element rotated for bottom-right. */
+.pp-vote-card__pip {
+  position: absolute; top: var(--sp-2); left: var(--sp-2);
+  display: flex; flex-direction: column; align-items: center; line-height: 1;
+}
+.pp-vote-card__pip--br {
+  top: auto; left: auto; bottom: var(--sp-2); right: var(--sp-2);
+  transform: rotate(180deg);
+}
+.pp-vote-card__rank  { font-family: var(--font-ui); font-size: var(--pc-num); font-weight: var(--fw-bold); color: var(--text-on-gold); line-height: 1; letter-spacing: -0.02em; }
+.pp-vote-card__suit  { font-size: var(--fs-1); line-height: 1; margin-top: 2px; }
+.pp-vote-card__centre { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.pp-vote-card__value  { font-family: var(--font-ui); font-size: var(--pc-big); font-weight: var(--fw-bold); line-height: 1; color: var(--text-on-gold); letter-spacing: -0.04em; }
+.pp-vote-card__value-suit { font-size: var(--pc-suit); line-height: 1; margin-top: 2px; }
+/* Colour variants */
+.pp-vote-card--red .pp-vote-card__rank,  .pp-vote-card--red .pp-vote-card__value      { color: var(--card-ink-red); }
+.pp-vote-card--red .pp-vote-card__suit,  .pp-vote-card--red .pp-vote-card__value-suit { color: var(--card-ink-red); }
+.pp-vote-card:not(.pp-vote-card--red) .pp-vote-card__suit,
+.pp-vote-card:not(.pp-vote-card--red) .pp-vote-card__value-suit { color: var(--text-on-gold); }
+/* Wild (?) card — "I cannot size this".
+   It was lavender on lilac, the only purple anywhere in the product and the one
+   hue with no role in the system. It is still the odd card out, but it says so
+   in the house colours now: felt ink on a stock tinted towards the table. */
+.pp-vote-card--wild .pp-vote-card__value      { font-size: var(--pc-big-wild); color: var(--felt-600); }
+.pp-vote-card--wild .pp-vote-card__value-suit { color: var(--felt-600); font-size: var(--pc-suit-wild); }
+.pp-vote-card--wild .pp-vote-card__rank       { color: var(--felt-600); }
+.pp-vote-card--wild .pp-vote-card__suit       { color: var(--felt-600); }
+.pp-vote-card--wild .pp-vote-card__face       { background: linear-gradient(160deg, var(--card-face-wild-1) 0%, var(--card-face-wild-2) 100%); }
 
-/* Face down: felt back with a brass lattice. No image, no SVG — two repeating gradients. */
-.pp-vote-card--back {
-  background:
-    repeating-linear-gradient(45deg, rgba(241,185,63,0.16) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(-45deg, rgba(241,185,63,0.16) 0 2px, transparent 2px 9px),
-    linear-gradient(160deg, var(--felt-600) 0%, var(--felt-700) 55%, var(--felt-850) 100%);
-  border-color: var(--border-gold); color: transparent;
+/* The hand. Wraps; centres once the room is one column. */
+.pp-vote-hand { display: flex; flex-wrap: wrap; gap: var(--sp-3); padding: var(--sp-1) 0; }
+
+/* ── reveal-card ───────────────────────────────────────────────────────────── */
+/* One player's card after the reveal, with their name under it. Same stock as
+   the deck it was dealt from, so it takes the same tokens — it used to carry
+   its own near-identical literals, #fff/#fdf8ee against the deck's
+   #ffffff/#fdf6e8, which is two people drawing the same card twice. */
+.pp-reveal-grid { display: flex; flex-wrap: wrap; gap: var(--sp-4); justify-content: center; padding: var(--sp-1) 0 var(--sp-4); }
+.pp-reveal-card { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); animation: pp-deal-in var(--dur-flip) var(--ease-out) both; }
+.pp-reveal-card__face {
+  width: 70px; height: 96px;
+  background: linear-gradient(160deg, var(--card-face-1) 0%, var(--card-face-2) 100%);
+  border-radius: var(--r-sm); border: var(--bw-hair) solid var(--card-edge-soft);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px var(--shadow-card), 0 2px 0 var(--card-gloss) inset;
 }
-.pp-vote-card--back::before, .pp-vote-card--back::after { content: none; }
+.pp-reveal-card--high .pp-reveal-card__face      { border: var(--bw-thick) solid var(--danger); box-shadow: 0 6px 18px var(--danger-border); }
+.pp-reveal-card--low .pp-reveal-card__face       { border: var(--bw-thick) solid var(--info); box-shadow: 0 6px 18px var(--info-border); }
+.pp-reveal-card--consensus .pp-reveal-card__face { border: var(--bw-thick) solid var(--gold); box-shadow: 0 6px 18px var(--gold-line-2); }
+.pp-reveal-card__value { font-family: var(--font-ui); font-size: var(--fs-6); font-weight: var(--fw-bold); color: var(--ink); letter-spacing: -0.04em; }
+.pp-reveal-card__value--red { color: var(--card-ink-red); }
+.pp-reveal-card__name { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--fw-medium); }
+.pp-reveal-card__you  { font-size: var(--fs-1); color: var(--gold-ink2); font-weight: var(--fw-bold); letter-spacing: .3px; }
+.pp-reveal-card__tag  { font-size: var(--fs-1); font-weight: var(--fw-bold); letter-spacing: .5px; text-transform: uppercase; padding: 2px var(--sp-2); border-radius: var(--r-xs); }
+.pp-reveal-card__tag--high { background: var(--danger-surface); color: var(--danger); }
+.pp-reveal-card__tag--low  { background: var(--info-surface); color: var(--info); }
 
-/* Reveal. The signature moment; 420ms, one axis, respects reduced motion via base.css. */
-.pp-vote-card-flip { perspective: 900px; width: var(--vote-w, 76px); }
-.pp-vote-card-flip__inner { position: relative; transform-style: preserve-3d; transition: transform var(--dur-flip) var(--ease-flip); }
-.pp-vote-card-flip[data-revealed="true"] .pp-vote-card-flip__inner { transform: rotateY(180deg); }
-.pp-vote-card-flip__face { backface-visibility: hidden; }
-.pp-vote-card-flip__face--front { position: absolute; inset: 0; transform: rotateY(180deg); }
+/* Deal. One keyframe for both the hand and the reveal grid; base.css turns it
+   off under prefers-reduced-motion along with everything else. */
+@keyframes pp-deal-in { from { opacity: 0; transform: translateY(-18px) scale(.9); } to { opacity: 1; transform: none; } }
 
-.pp-vote-hand { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
-@media (max-width: 480px) {
-  .pp-vote-hand { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: var(--sp-2); }
-  .pp-vote-hand .pp-vote-card { --vote-w: 100%; }
+/* The whole card steps down together — face, numerals and pips — because they
+   are one object's proportions and not four independent decisions. */
+@media (max-width: 780px) {
+  .pp-vote-hand { justify-content: center; }
+  .pp-vote-card {
+    --pc-w: 82px;      --pc-h: 118px;
+    --pc-num: .86rem;  --pc-big: 2.2rem;  --pc-suit: 1.1rem;
+    --pc-big-wild: 1.9rem;                --pc-suit-wild: .95rem;
+  }
+}
+@media (max-width: 520px) {
+  .pp-vote-card {
+    --pc-w: 70px;      --pc-h: 100px;
+    --pc-num: .8125rem; --pc-big: 1.9rem; --pc-suit: 1rem;
+    --pc-big-wild: 1.6rem;                --pc-suit-wild: .85rem;
+  }
 }
 
 
@@ -622,13 +750,42 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-avatar--waiting { background: var(--surface-2); color: var(--text-3); border-style: dashed; border-color: var(--border-strong); }
 .pp-avatar--facilitator { box-shadow: 0 0 0 2px var(--bg-page), 0 0 0 4px var(--border-gold); }
 .pp-avatar-stack { display: flex; }
-.pp-avatar-stack .pp-avatar + .pp-avatar { margin-left: -10px; box-shadow: 0 0 0 2px var(--bg-page); }
+.pp-avatar-stack .pp-avatar + .pp-avatar { margin-left: calc(var(--sp-2) * -1); box-shadow: 0 0 0 2px var(--bg-page); }
 
-.pp-participant { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); }
-.pp-participant:hover { background: var(--surface-2); }
-.pp-participant__name { flex: 1; min-width: 0; font-size: var(--fs-3); line-height: var(--lh-snug); color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pp-participant__meta { font-size: var(--fs-1); color: var(--text-3); letter-spacing: var(--fs-1-tracking); }
-.pp-participant-list { display: flex; flex-direction: column; gap: var(--sp-1); }
+/* The roster. Promoted out of App.js's .plist/.prow on 13 Aug 2026 for the same
+   reason as the deck: the system's version was the thinner of the two — no
+   remove control, no revealed vote, one line instead of two — so adopting it
+   would have removed working features from the room. The room's version moved
+   here instead.
+
+   Rule 5 throughout: the brass ring on the avatar says "voted" and so does the
+   word beside it. Neither carries the meaning alone. */
+.pp-participant-list { display: flex; flex-direction: column; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; }
+.pp-participant {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3); border-radius: var(--r-sm);
+  background: var(--tint-raise-2); border: var(--bw-hair) solid var(--border);
+  transition: background var(--dur-slow) var(--ease-out), border-color var(--dur-slow) var(--ease-out);
+}
+.pp-participant--voted { background: var(--gold-fill-1); border-color: var(--gold-line-1); }
+.pp-participant--waiting { border-color: var(--border); opacity: .75; }
+/* Observers were painted in --info: a cool blue row, blue border, blue role
+   label and a blue avatar in a table that is otherwise only felt green and
+   brass. Blue is the alert vocabulary here, and "runs the session" is a role,
+   not a warning — the same hue meaning two things. Brass is already spoken for
+   by --voted, so the observer reads as the dealer instead: felt avatar, neutral
+   row, quiet label. The row still differs from a voter's on three channels. */
+.pp-participant--observer { background: var(--tint-raise); border-color: var(--border2); }
+.pp-participant__body { flex: 1; min-width: 0; }
+.pp-participant__name { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); font-weight: var(--fw-medium); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp-participant__meta { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-3); margin-top: 1px; }
+.pp-participant__meta--voted { color: var(--gold-ink); font-weight: var(--fw-semi); }
+/* "Hasn't voted yet" is the state every round starts in, for everybody. It was
+   painted --danger, so the moment a round opened the participant list filled up
+   with red: the colour that means something has gone wrong, used for the thing
+   that is supposed to happen. Pending is quiet. */
+.pp-participant__meta--waiting { font-style: italic; }
+.pp-participant__actions { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
 
 
 /* ── table ─────────────────────────────────────────────────────────────── */
@@ -648,7 +805,7 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-table--card { background: var(--surface-1); border: var(--bw-hair) solid var(--border-subtle); border-radius: var(--r-md); overflow: hidden; }
 .pp-table caption { caption-side: top; text-align: left; padding-bottom: var(--sp-3); font-size: var(--fs-2); color: var(--text-3); }
 
-@media (max-width: 640px) {
+@media (max-width: 780px) {
   .pp-table--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .pp-table--stack tbody tr { display: grid; gap: var(--sp-1); padding: var(--sp-3) 0; border-bottom: var(--bw-hair) solid var(--divider); }
   .pp-table--stack td { display: flex; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-1) var(--sp-4); border: 0; }
@@ -662,7 +819,7 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
   width: 56px; height: 56px; flex: none; border-radius: var(--r-full);
   display: grid; place-items: center;
   background: conic-gradient(var(--action) calc(var(--timer-progress) * 360deg), var(--surface-2) 0);
-  transition: background var(--dur-base) linear;
+  transition: background var(--dur-base) var(--ease-linear);
 }
 .pp-timer__ring::after { content: ""; position: absolute; }
 .pp-timer__face {
@@ -722,13 +879,25 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-toast__text { font-size: var(--fs-3); line-height: var(--lh-snug); color: var(--text-1); }
 .pp-toast__sub { font-size: var(--fs-2); color: var(--text-2); line-height: var(--lh-snug); }
 @keyframes pp-toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@media (min-width: 640px) {
+@media (min-width: 520px) {
   .pp-toast-region { inset-inline: auto var(--sp-6); bottom: var(--sp-6); width: 380px; }
 }
 
 .pp-progress { height: 8px; border-radius: var(--r-full); background: var(--surface-2); overflow: hidden; }
 .pp-progress__bar { height: 100%; border-radius: inherit; background: var(--action-gradient); transition: width var(--dur-base) var(--ease-out); }
 .pp-progress--tall { height: 12px; }
+/* Tones. The room's alignment bar and its round-progress bar both used to
+   recolour .pp-progress__bar from App.js, which meant two files owned one
+   component and neither said so. A tone is a property of the bar, so it lives
+   with the bar. Amber for "low", never red: a split vote is the tool working,
+   not an error. */
+.pp-progress--success  .pp-progress__bar { background: var(--success); }
+.pp-progress--warning  .pp-progress__bar { background: var(--warning); }
+.pp-progress--neutral  .pp-progress__bar { background: var(--tint-raise-2); }
+/* "complete" is not "success": the round bar filling up means everybody has
+   voted, which is a finish line rather than a good score. It keeps the mint
+   run-up it has always had. */
+.pp-progress--complete .pp-progress__bar { background: linear-gradient(90deg, var(--mint) 0%, var(--success) 100%); }
 
 .pp-skeleton {
   background: var(--skeleton); background-size: 200% 100%;
@@ -749,18 +918,6 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-empty__title { font-size: var(--fs-4); font-weight: var(--fw-semi); color: var(--text-1); line-height: var(--lh-snug); font-family: var(--font-ui); }
 .pp-empty__text { font-size: var(--fs-2); color: var(--text-2); max-width: 42ch; line-height: var(--lh-body); }
 
-.pp-tooltip {
-  position: absolute; z-index: var(--z-overlay); max-width: 260px;
-  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm);
-  background: var(--felt-850); color: var(--text-on-felt);
-  font-size: var(--fs-2); line-height: var(--lh-snug); box-shadow: var(--elev-2);
-}
-.pp-popover {
-  position: absolute; z-index: var(--z-overlay); min-width: 240px; max-width: 340px;
-  padding: var(--sp-4); border-radius: var(--r-md);
-  background: var(--surface-3); border: var(--bw-hair) solid var(--border-strong);
-  box-shadow: var(--elev-3); color: var(--text-1);
-}
 
 
 /* ── tabs ─────────────────────────────────────────────────────────────── */
@@ -793,7 +950,7 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 }
 .pp-tab[aria-selected="true"]::after { background: var(--action); }
 .pp-tab__count {
-  min-width: 22px; height: 22px; padding-inline: 6px; border-radius: var(--r-full);
+  min-width: 22px; height: 22px; padding-inline: var(--sp-2); border-radius: var(--r-full);
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--surface-2); color: var(--text-2);
   font-size: var(--fs-1); font-weight: var(--fw-semi); font-variant-numeric: tabular-nums;
@@ -929,7 +1086,7 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-modal__footer { display: flex; gap: var(--sp-3); justify-content: flex-end; flex-wrap: wrap; }
 @keyframes pp-modal-in { from { opacity: 0; transform: translateY(10px) scale(0.99); } to { opacity: 1; transform: none; } }
 
-@media (max-width: 560px) {
+@media (max-width: 520px) {
   .pp-modal-layer { align-items: end; padding: 0; }
   .pp-modal { width: 100%; border-radius: var(--r-lg) var(--r-lg) 0 0; max-height: 88vh; padding-bottom: max(var(--sp-6), env(safe-area-inset-bottom)); }
   .pp-modal__footer { flex-direction: column-reverse; }
