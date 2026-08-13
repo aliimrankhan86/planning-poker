@@ -118,9 +118,13 @@ describe("route metadata", () => {
      only places "pointpoker" may still appear lowercase, and each is an
      identifier rather than the brand in prose:
        • pointpoker.app        the domain, and the support address on it
-       • pointpoker-<thing>    download filenames
        • [pointpoker]          the console log namespace
-     Anything else is the brand and reads "Point Poker". */
+     Anything else is the brand and reads "Point Poker".
+
+     A third entry used to sit here — "pointpoker-<thing>  download filenames" —
+     and it was never true of the shipped code: both CSV downloads are named
+     Point-Poker-…, which the test below pins directly. The allowlist keeps the
+     `-` branch because it costs nothing, but nothing in this list uses it. */
   test("the brand is spelled Point Poker everywhere it is prose", () => {
     const files = [
       "App.js", "routeMeta.mjs", "AppErrorBoundary.js", "AdminDashboard.js",

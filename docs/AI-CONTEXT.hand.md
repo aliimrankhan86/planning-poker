@@ -749,6 +749,73 @@ states, because the derivation is only safe while they hold.
 Auto-reveal when *everyone has voted* is untouched — that one is the table
 finishing, not a clock expiring.
 
+## The exports carry the product's name — 14 August 2026
+
+Asked for by the owner: the PDF should carry the logo and "Point Poker",
+properly laid out, and the CSV should say where it came from. A file that lands
+in a Slack channel or a Downloads folder outlives the session that made it, and
+it is the only thing about this product a stranger ever sees.
+
+### The PDF was the whole live room
+
+`PrintReport` — mark, wordmark, domain, title, meta line, table, footer — had
+existed all along. Nobody saw it, because it rendered **inside the summary
+panel**, inside `.game-body`, and nothing hid the room. Pressing Print / PDF put
+on paper: the action bar with "0 of 1 voted", an empty "Add an item" textarea, a
+Countdown length `<select>`, the participant list, the analytics rail — controls,
+on a sheet nobody can click — and the branded report somewhere below all of it.
+Worse, the print theme only forces `#000` on `p, li, td, th`, so every label
+that happened to be a `span` printed in its dark-theme grey onto white paper.
+
+`PrintReport` renders **outside `.game-body`** now, and `.game-body` joined the
+print hide-list. The sheet is the report and nothing else. Two more selectors
+went into the same list, both free because a selector list costs no
+declarations: `.skip-link`, and `body::before` — the felt is a full-bleed
+`position: fixed` graphic, and on a printer told to keep background graphics it
+washed every page green.
+
+Verified by lifting the app's own `@media print` rules out of their media query
+with `document.styleSheets` and screenshotting — the real cascade, not a
+transcription of it.
+
+### Where the CSV signs itself is the whole decision
+
+The line is `game.summaryFooter`, the same sentence the Copy button uses, so the
+two exports cannot drift apart. It goes **last, after a blank row, in the first
+column**, and both of those are load-bearing:
+
+- **Last**, because `/support` and `/remote-sprint-planning` both promise the
+  file imports straight into Jira, Linear and Azure DevOps, and every one of
+  those readers takes row 1 as the column names. A preamble renames the columns
+  to an advert.
+- **First column**, because an importer that reads past the blank row maps
+  column 2 to Summary, finds it empty, and rejects the row. Put the sentence
+  under Item instead and a careless import files a ticket named after our own
+  marketing.
+
+Serialisation moved out of the click handler into `summaryCsv` in
+`src/estimation.js` — the file is a contract with somebody else's importer, so
+its shape is testable without a browser. Seven tests, and the output was also
+round-tripped through a real RFC 4180 parser: header plus data rows at three
+columns each and unshifted, then a one-column footer row.
+
+The filename already carried `Point-Poker-…` and still does. That is the second
+place the brand appears, not the only one — the old comment claiming otherwise
+is gone.
+
+### Two things found on the way
+
+- **`.prose a[href^="http"]::after` had never fired.** The print rule meant to
+  spell out a link's destination on paper named `.prose`, and nothing in this
+  product renders that class — the pages use `.marketing-prose`. Fixed rather
+  than deleted, because the intent was right. The dead-class test missed it
+  because "marketing-prose" contains the string it was looking for.
+- **Marketing pages still print their labels in dark-theme grey.** Body prose is
+  fine — `p, li, td, th` are forced to `#000` — but a label inside a stat card is
+  a `span` and prints near-invisible on white. Not touched here: it is
+  pre-existing, it is a different surface from the room's export, and doing it
+  properly means checking ten routes in both themes. Worth a session of its own.
+
 ## Two sticky things, one z-index — 14 August 2026 (reported by the owner)
 
 From a screenshot of a scrolled room: the action bar printed across the header.

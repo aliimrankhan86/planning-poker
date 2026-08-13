@@ -9,6 +9,7 @@ import {
   playerId,
   CODE_ALPHABET,
   isTimeUp,
+  summaryCsv,
 } from "./estimation";
 
 /* The estimation maths is the product. If `tally` is wrong the app still
@@ -490,5 +491,69 @@ describe("isTimeUp", () => {
     expect(isTimeUp(undefined, false)).toBe(false);
     expect(isTimeUp(null, false)).toBe(false);
     expect(isTimeUp({}, false)).toBe(false);
+  });
+});
+
+/* ═══════════════════ THE CSV IS SOMEBODY ELSE'S INPUT ═══════════════════
+   The export carries the product's name now, because a file that lands in a
+   Slack channel or a Downloads folder is the one artefact of a session that
+   outlives it. The interesting part is not that it signs itself — it is that
+   signing must not cost anything, and /support and /remote-sprint-planning
+   both promise this file opens straight in Jira, Linear and Azure DevOps.
+
+   Two ways to get that wrong, both easy and both silent:
+     - put the line above the header, and row 1 stops being the column names;
+     - put it under Item, and an importer that reads past the blank row files a
+       ticket named after an advert.
+   These are what stop either from happening again.
+═════════════════════════════════════════════════════════════════════════ */
+describe("summaryCsv", () => {
+  const header = ["#", "Item", "Estimate"];
+  const items = [["1", "Login flow", "5"], ["2", "Search, sorted", "13"]];
+  const footer = "Estimated with Point Poker — www.pointpoker.app";
+  const lines = (csv) => csv.split("\r\n");
+
+  test("row 1 is the column names, exactly as given", () => {
+    expect(lines(summaryCsv(header, items, footer))[0]).toBe('"#","Item","Estimate"');
+  });
+
+  test("the data block is untouched and unshifted", () => {
+    const rows = lines(summaryCsv(header, items, footer));
+    expect(rows[1]).toBe('"1","Login flow","5"');
+    expect(rows[2]).toBe('"2","Search, sorted","13"');
+  });
+
+  test("the provenance line is last, after a blank row", () => {
+    const rows = lines(summaryCsv(header, items, footer));
+    expect(rows[rows.length - 1]).toBe(`"${footer}"`);
+    expect(rows[rows.length - 2]).toBe("");
+  });
+
+  test("it occupies the first column only, so an import rejects the row", () => {
+    // Column 2 is Summary in every importer the docs name. Empty means the row
+    // is skipped rather than filed as a ticket named after an advert.
+    const last = lines(summaryCsv(header, items, footer)).pop();
+    expect(last.split(",").length).toBe(1);
+  });
+
+  test("no footer, no blank row — the file stays exactly the data", () => {
+    expect(lines(summaryCsv(header, items))).toEqual([
+      '"#","Item","Estimate"',
+      '"1","Login flow","5"',
+      '"2","Search, sorted","13"',
+    ]);
+  });
+
+  test("commas and quotes in an item name survive RFC 4180 escaping", () => {
+    const csv = summaryCsv(header, [["1", 'He said "ship it", loudly', "8"]], "");
+    expect(lines(csv)[1]).toBe('"1","He said ""ship it"", loudly","8"');
+  });
+
+  test("an empty queue still produces a readable, signed file", () => {
+    expect(lines(summaryCsv(header, [], footer))).toEqual([
+      '"#","Item","Estimate"',
+      "",
+      `"${footer}"`,
+    ]);
   });
 });

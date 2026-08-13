@@ -1608,7 +1608,12 @@ describe("the timer row", () => {
    filename only, and the printable report is where the mark actually goes.
 ──────────────────────────────────────────────────────────────────────── */
 describe("printed and downloaded exports", () => {
-  const printBlock = app.match(/@media print \{[\s\S]*?\n\}/g)?.join("\n") || "";
+  /* Comments stripped, and not as tidiness: the rules below assert that
+     selectors are PRESENT, and the prose in this block names the very
+     selectors it explains. Without the strip, deleting `.game-body` from the
+     hide-list still passed because the comment above it says ".game-body".
+     Caught by mutation-testing the rule, which is the point of doing it. */
+  const printBlock = stripComments(app.match(/@media print \{[\s\S]*?\n\}/g)?.join("\n") || "");
 
   test("print forces paper colours, or the dark theme prints as a blank sheet", () => {
     expect(printBlock).toMatch(/background:\s*#fff\s*!important/);
@@ -1644,14 +1649,63 @@ describe("printed and downloaded exports", () => {
   });
 
   test("the CSV body stays machine-clean so the promised import keeps working", () => {
-    // The first row built for the file must be the column names and nothing
-    // else. A branding preamble here silently breaks every importer.
+    /* The header argument must be the column names and nothing else — a
+       branding preamble there silently renames every column. The shape of the
+       file, including where the provenance line may sit, is enforced properly
+       in summaryCsv's own tests (src/estimation.test.js); this only checks
+       that the room still hands it the three arguments in the right order and
+       has not gone back to assembling rows by hand. */
     const csvFn = app.match(/const downloadSummaryCsv = useCallback\(\(\) => \{[\s\S]*?\n {2}\}/)?.[0] || "";
     expect(csvFn).toBeTruthy();
     expect(csvFn).toMatch(
-      /const rows = \[\[t\("game\.colIndex"\), t\("game\.colItem"\), t\("game\.colEstimate"\)\]\]/,
+      /summaryCsv\(\s*\[t\("game\.colIndex"\), t\("game\.colItem"\), t\("game\.colEstimate"\)\]/,
     );
-    expect(csvFn).not.toMatch(/Point Poker.*\], *\[/s);
+    expect(csvFn).not.toMatch(/const rows = /);
+  });
+
+  test("the CSV signs itself with the same sentence the Copy button uses", () => {
+    // One product, one line. Two exports saying it differently is how a
+    // wording change lands in one of them and not the other.
+    const csvFn = app.match(/const downloadSummaryCsv = useCallback\(\(\) => \{[\s\S]*?\n {2}\}/)?.[0] || "";
+    const copyFn = app.match(/const copySummary = useCallback\(async \(\) => \{[\s\S]*?\n {2}\}/)?.[0] || "";
+    expect(csvFn).toMatch(/t\("game\.summaryFooter"/);
+    expect(copyFn).toMatch(/t\("game\.summaryFooter"/);
+    expect(strings).toMatch(/"game\.summaryFooter":\s*"[^"]*Point Poker/);
+  });
+
+  /* ── What the Print / PDF button actually puts on paper ──────────────────
+     It used to be the whole live room: the action bar, an empty "Add an item"
+     textarea, a Countdown length <select>, the participant list — controls, on
+     a sheet nobody can click — with the branded report somewhere below all of
+     it. And because the print theme only forces #000 on p/li/td/th, every
+     label that happened to be a span printed in its screen grey onto white.
+
+     PrintReport renders outside .game-body now, and .game-body is in the
+     hide-list, so the sheet is the report and nothing else. Both halves are
+     pinned: move the component back inside and the first test fails; drop the
+     selector and the second does. */
+  test("the report is not inside the room it reports on", () => {
+    /* Counted, not eyeballed: every <div> opened between the room's opening
+       tag and the report must be closed again, and the room's own <div> closed
+       on top — one more close than open. Inside the room the balance is
+       negative, because the panel, the column and the grid are all still open.
+       An earlier version of this test looked for three closing divs in a row
+       and passed either way; there are plenty of those inside the room. */
+    const a = app.indexOf('className="game-body');
+    const b = app.indexOf("<PrintReport", a);
+    expect(a).toBeGreaterThan(-1);
+    expect(b).toBeGreaterThan(a);
+    const between = app.slice(a, b);
+    const opens = (between.match(/<div\b/g) || []).length;
+    const closes = (between.match(/<\/div>/g) || []).length;
+    expect(closes - opens).toBe(1);
+  });
+
+  test("the live room is not what gets printed", () => {
+    expect(printBlock).toMatch(/\.game-body/);
+    // The felt is a full-bleed fixed graphic; on a printer told to keep
+    // backgrounds it washes every sheet green.
+    expect(printBlock).toMatch(/body::before/);
   });
 });
 

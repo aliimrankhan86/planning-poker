@@ -187,6 +187,40 @@ export function deleteSizedItemUpdates(roomData = {}, kind, index) {
 export const isTimeUp = (timer, revealed) =>
   !!timer && timer.running !== true && timer.remaining === 0 && revealed !== true;
 
+/* ── THE CSV EXPORT ─────────────────────────────────────────────────────
+   This file is a contract with somebody else's importer. /support and
+   /remote-sprint-planning both promise it opens straight in Jira, Linear and
+   Azure DevOps, and every one of those readers takes row 1 as the column names
+   and everything after it as work items. So the shape is testable here rather
+   than only reachable through a click in a live room.
+───────────────────────────────────────────────────────────────────────── */
+
+/** RFC 4180 escaping — item names routinely contain commas and quotes. */
+export const csvCell = (v = "") => `"${String(v).replace(/"/g, '""')}"`;
+
+/**
+ * Serialises the sprint summary.
+ *
+ * The provenance line goes LAST, after a blank row, and in the first column.
+ * Both of those are load-bearing:
+ *
+ *   - last, because a preamble above the header would rename the columns to
+ *     our own marketing and break every import the docs promise;
+ *   - first column, because an importer that reads past the blank row maps
+ *     column 2 to Summary, finds it empty and rejects the row. Put the
+ *     sentence under Item instead and a careless import files a ticket named
+ *     after an advert.
+ *
+ * @param {string[]} header    column names, written verbatim as row 1
+ * @param {string[][]} items   one row per estimated item
+ * @param {string} [footer]    provenance line; omitted entirely when empty
+ */
+export function summaryCsv(header, items = [], footer = "") {
+  const rows = [header, ...items];
+  if (footer) rows.push([], [footer]);
+  return rows.map((cols) => cols.map(csvCell).join(",")).join("\r\n");
+}
+
 /** Formats a number for display: whole numbers bare, otherwise one decimal. */
 export const showNum = (n) =>
   n === null || n === undefined ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(1);

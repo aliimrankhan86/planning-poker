@@ -76,6 +76,7 @@ import {
 import {
   tally,
   isTimeUp,
+  summaryCsv,
   showNum,
   teamCode,
   sprintResetUpdates,
@@ -453,8 +454,6 @@ async function copyText(text) {
     return false;
   }
 }
-// RFC 4180 escaping — item names routinely contain commas and quotes.
-const csvCell = (v = "") => `"${String(v).replace(/"/g, '""')}"`;
 // Guests should not retype their name every sprint. Stored locally only —
 // never sent anywhere except into the room they choose to join.
 const NAME_STORAGE_KEY = "pp_display_name";
@@ -2161,9 +2160,17 @@ ol.marketing-list li::marker {
   body { font-size: 11pt; }
 
   /* Room chrome, navigation and anything that only makes sense as a control.
-     A printed sheet cannot be clicked. */
-  .navbar, .site-footer, .hdr, .pp-toast-region, .cookie-banner,
-  .summary-actions, .chip-logo, .pp-modal,
+     A printed sheet cannot be clicked.
+
+     .game-body is the whole live room, and it is here because printing it was
+     never useful: an empty "Add an item" box, a Countdown length select and a
+     "0 of 1 voted" progress bar are controls, and on paper they are furniture.
+     PrintReport renders OUTSIDE .game-body so this hides the room and leaves
+     the report — which is the document somebody actually wanted. Everything
+     else in this list is still here for the marketing and legal pages, which
+     print as themselves. */
+  .navbar, .site-footer, .hdr, .pp-toast-region, .cookie-banner, .game-body,
+  .summary-actions, .chip-logo, .pp-modal, .skip-link, body::before,
   .join-side, .seo-section, .seo-faq, .legal-back, .btn-back,
   button, .pp-btn {
     display: none !important;
@@ -2183,8 +2190,12 @@ ol.marketing-list li::marker {
   }
   p, li, td, th, .pp-card__body { color: #000 !important; }
   a { color: #000 !important; text-decoration: underline; }
-  /* A printed link is dead, so spell the destination out once. */
-  .prose a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
+  /* A printed link is dead, so spell the destination out once. The selector
+     said .prose, and nothing in this product has ever rendered that class —
+     the marketing pages use .marketing-prose. The rule had never once fired.
+     (The dead-class test missed it because "marketing-prose" contains the
+     string it was looking for.) */
+  .marketing-prose a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 9pt; }
 
   table { width: 100%; border-collapse: collapse; }
   th, td { border: 1px solid #999 !important; padding: 6pt 8pt; text-align: left; }
@@ -7514,21 +7525,25 @@ function GameScreen({
 
   const downloadSummaryCsv = useCallback(() => {
     track("feature_csv");
-    const rows = [[t("game.colIndex"), t("game.colItem"), t("game.colEstimate")]].concat(
+    /* The file signs itself. Where it signs is the whole decision, and it is
+       made — and tested — in summaryCsv: last, after a blank row, in the first
+       column, so no importer this product's docs promise can be broken by it.
+       Same sentence the Copy button uses, so the two exports say one thing. */
+    const csv = summaryCsv(
+      [t("game.colIndex"), t("game.colItem"), t("game.colEstimate")],
       summaryRows.map((r, i) => [String(i + 1), r.name, r.estimate != null ? String(r.estimate) : ""]),
+      t("game.summaryFooter", { domain: SITE_URL.replace(/^https?:\/\//, "") }),
     );
-    const csv = rows.map((cols) => cols.map(csvCell).join(",")).join("\r\n");
     // BOM so Excel opens UTF-8 item names correctly
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    /* The brand rides on the filename, and only the filename. A CSV cannot hold
-       a logo, and a branded preamble row above the header would break the one
-       thing this file is for: /support and /remote-sprint-planning both promise
-       it imports straight into Jira, Linear and Azure DevOps, and every one of
-       those readers takes row 1 as the column names. Anyone who wants the mark
-       on the page wants the PDF button beside this one. */
+    /* The filename is the second place the brand appears — the footer row above
+       is the first. It is the name that shows in a Slack upload and in a
+       Downloads folder six months later, which is worth more than either. A CSV
+       still cannot hold a logo; whoever wants the mark wants the PDF button
+       beside this one. */
     a.download = `Point-Poker-${(code || "session").toLowerCase()}-${new Date()
       .toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
@@ -8558,34 +8573,49 @@ function GameScreen({
                     <Icon name="arrowRight" size={16} /> Print / PDF
                   </Button>
                 </Row>
-                {/* Hidden on screen. This is what the Print / PDF button puts on
-                    paper, and the only export that can carry the mark. */}
-                <PrintReport
-                  title={summaryTitle}
-                  meta={t("game.reportMeta", {
-                    code: code || "—",
-                    date: new Date().toLocaleDateString(LOCALES[getLocale()].inLanguage, {
-                      day: "numeric", month: "long", year: "numeric",
-                    }),
-                    sized: summarySized,
-                    total: summaryRows.length,
-                    plural: estMode.plural,
-                  }) + (summaryTotalPoints !== null
-                    ? t("game.reportPointsTotal", { n: summaryTotalPoints })
-                    : "")}
-                  columns={[t("game.colIndex"), t("game.colItem"), t("game.colEstimate")]}
-                  rows={summaryRows.map((r, i) => [
-                    String(i + 1),
-                    r.name,
-                    r.estimate != null ? String(r.estimate) : t("game.notEstimated"),
-                  ])}
-                />
                 {showWtpPoll && <WtpPoll onDone={() => setWtpDone(true)} />}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* OUTSIDE .game-body, and that is the whole point of where it sits.
+
+          It used to render inside the summary panel, which meant "Print / PDF"
+          put the entire live room on paper: the action bar, an empty "Add an
+          item" textarea, a Countdown length <select>, the participant list, the
+          analytics rail — controls, on a sheet that cannot be clicked — with
+          the branded report somewhere below the fold. Worse, the print theme
+          only forces #000 on p/li/td/th, so every label that is a span or a div
+          printed in its screen grey onto white paper and was close to invisible.
+
+          .game-body is in the print hide-list now, so the sheet is this report
+          and nothing else: mark, wordmark, domain, title, table, footer. No
+          rule has to make the room presentable on paper, because the room is
+          not on the paper. */}
+      {summaryRows.length > 0 && (
+        <PrintReport
+          title={summaryTitle}
+          meta={t("game.reportMeta", {
+            code: code || "—",
+            date: new Date().toLocaleDateString(LOCALES[getLocale()].inLanguage, {
+              day: "numeric", month: "long", year: "numeric",
+            }),
+            sized: summarySized,
+            total: summaryRows.length,
+            plural: estMode.plural,
+          }) + (summaryTotalPoints !== null
+            ? t("game.reportPointsTotal", { n: summaryTotalPoints })
+            : "")}
+          columns={[t("game.colIndex"), t("game.colItem"), t("game.colEstimate")]}
+          rows={summaryRows.map((r, i) => [
+            String(i + 1),
+            r.name,
+            r.estimate != null ? String(r.estimate) : t("game.notEstimated"),
+          ])}
+        />
+      )}
 
       {/* Deleting a recorded estimate is the one action in the room that
           removes work the team already did, so it is the one that gets a

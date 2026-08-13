@@ -7,8 +7,13 @@
   branch (design sweep, deck migration into the design system, dead-CSS removal,
   the Cormorant `@font-face` fix, and the measured header ladder) was merged to
   `main` on 13 August 2026.
-- 479 Jest tests pass; production build succeeds; sitemap and prerender both
+- 489 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
+- **14 August:** both exports now carry the product's name. Print / PDF puts the
+  branded report on the sheet and nothing else — it used to print the whole live
+  room, controls and all, with the report below the fold. The CSV signs itself
+  in a trailing row that cannot break the Jira/Linear/Azure DevOps import the
+  docs promise. Details and the reasoning in `docs/AI-CONTEXT.hand.md`.
 - **14 August:** the room's sticky action bar was parking *behind* the sticky
   header and painting over it — reported from a screenshot. It now sits below a
   header whose height is measured at runtime (`--hdr-h`), loses the z-index tie
