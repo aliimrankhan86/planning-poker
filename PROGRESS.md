@@ -3,9 +3,11 @@
 
 ## Authoritative status — 13 August 2026
 
-- Product code baseline is clean and fully pushed at `378b3b1`; this session
-  changes tracked research/handover documentation only.
-- 432 Jest tests pass; production build succeeds; sitemap and prerender both
+- Product code baseline is clean and fully pushed. The `design-consistency`
+  branch (design sweep, deck migration into the design system, dead-CSS removal,
+  the Cormorant `@font-face` fix, and the measured header ladder) was merged to
+  `main` on 13 August 2026.
+- 464 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
 - Product is free for everyone: 20 people per room, no paid tier, Stripe,
   licences, Pro gating, trial clock, card fields, or ads.
@@ -25,6 +27,15 @@
 
 ### Open actions
 
+0. **Verify the live deploy of the `design-consistency` merge (13 August).**
+   Bigger visually than the commit titles suggest. On production: drag a
+   desktop window through ~1050 and ~620 and confirm the header stays on one
+   line with no `ResizeObserver` error in the console; open
+   `/what-is-planning-poker` and confirm the H1 renders in Cormorant Garamond
+   rather than the OS serif (this was invisible on macOS for months — check
+   Windows if possible); open a room and check the deck, reveal cards and
+   players list, which now come from the design system. Fastest rollback is
+   redeploying the previous build from the Vercel dashboard.
 1. **13 August, after Search Console quota resets:** request indexing for
    `/pt/what-is-planning-poker`, `/pt/scrum-poker`,
    `/pt/fibonacci-story-points`, `/ja/what-is-planning-poker`, and
