@@ -12,7 +12,7 @@
 
 ---
 
-## § Authoritative Current Truth — 12 August 2026
+## § Authoritative Current Truth — 13 August 2026
 
 - Point Poker is live at `https://www.pointpoker.app/`.
 - The product is free for everyone. There is no paid tier, Stripe checkout,
@@ -33,6 +33,11 @@
   production-verified on 11 August 2026.
 - Quality gate after the header language selector: 432 Jest tests pass, build succeeds, sitemap has 26
   URLs, and prerender writes 26 route documents.
+- Product discovery on 13 August set a no-spend evidence window: keep the
+  current domain, research retrospective demand without approving a build, and
+  do not run Google Ads until the post-fix baseline and attribution gates exist.
+  The evidence, unknowns, action calendar, and reopening tests are in
+  [`docs/PRODUCT-DISCOVERY-2026-08-13.md`](docs/PRODUCT-DISCOVERY-2026-08-13.md).
 - There is no blocking or half-finished code work.
 
 The only open work is time- or human-gated and is listed in
@@ -1004,6 +1009,32 @@ English leakage; another machine pass does not satisfy this task.
 Use position and first impressions as the early signal. At an average position
 near 56, zero clicks is expected and is not enough to reject a locale.
 
+### Product discovery evidence gates — no spend before review
+
+- [ ] Manually check `pointpoker.app` with Palo Alto, FortiGuard, and
+  BrightCloud; record dated categories/screenshots and request recategorisation
+  for false positives.
+- [ ] Collect target-organisation access tests with the filtering vendor and
+  exact failure. Do not infer that the word `poker` caused a general
+  unapproved-SaaS block.
+- [ ] Interview 10–15 facilitators about their last real retrospective and seek
+  three to five teams willing to use a prototype for two consecutive sprints.
+  These are internal decision thresholds, not claimed industry standards.
+- [ ] At the six-week review, assess real activation/session depth, Team Room
+  returns, confirmed access failures, and retrospective evidence alongside the
+  Search Console pull.
+
+Until those gates are reviewed:
+
+- do not buy or deploy a neutral-domain redirect;
+- do not build a generic retrospective product; and
+- do not run the proposed USD 1/day Google Ads campaign or install a third-party
+  conversion tag.
+
+The reasoning, sources, limitations, and separate reopening conditions for each
+decision are authoritative in
+[`docs/PRODUCT-DISCOVERY-2026-08-13.md`](docs/PRODUCT-DISCOVERY-2026-08-13.md).
+
 ### Expected recrawl movement — do not act
 
 - Sitemap discovered pages moving from 42 to 26.
@@ -1016,7 +1047,9 @@ These are the intended result of shrinking the sitemap and landing the 301s.
 
 Distribution, premium add-ons, App Check, and further component extraction are
 ideas only. Do not treat them as pending or start them without a new product
-decision. Everything currently free must remain free.
+decision. Retrospectives and paid acquisition remain discovery hypotheses under
+the evidence gates above, not approved features or campaigns. Everything
+currently free must remain free.
 
 ---
 

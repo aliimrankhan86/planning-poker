@@ -1,9 +1,10 @@
 # pointpoker — Launch Progress Tracker
 <!-- Share this file at the start of every session so Claude knows exactly where we are -->
 
-## Authoritative status — 12 August 2026
+## Authoritative status — 13 August 2026
 
-- Repository handover was clean and fully pushed at `ff7d8cb`.
+- Product code baseline is clean and fully pushed at `378b3b1`; this session
+  changes tracked research/handover documentation only.
 - 432 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
 - Product is free for everyone: 20 people per room, no paid tier, Stripe,
@@ -16,6 +17,10 @@
   back to the selected language's home page for English-only routes.
 - Firebase rules and both Cloud Functions were deployed and
   production-verified on 11 August 2026.
+- The 13 August name/retrospective/Google Ads discovery is recorded in
+  `docs/PRODUCT-DISCOVERY-2026-08-13.md`. The current decision is spend USD 0:
+  keep the domain, validate retrospective demand without approving a build, and
+  wait for clean evidence and attribution before paid acquisition.
 - Nothing is blocking and no code feature is half-finished.
 
 ### Open actions
@@ -30,6 +35,10 @@
 3. **Around 23 September:** run the exact Search Console checklist under “For
    the six-week re-pull”. Compare positions and first impressions, not clicks
    alone.
+4. **No-spend discovery window:** record actual enterprise-filter categories
+   and access failures; interview 10–15 facilitators and seek three to five
+   committed retrospective design-partner teams. Apply the decision gates in
+   `docs/PRODUCT-DISCOVERY-2026-08-13.md` around the six-week review.
 
 Expected movement needs no intervention: sitemap discovered pages 42 → 26 and
 redirect pages 3 → roughly 7 as retired locales are recrawled.
@@ -1434,3 +1443,57 @@ Closed the navigation gap between the three live languages.
 
 The dated Search Console and native-review actions above remain unchanged; this
 session creates no new deferred work.
+
+---
+
+## Session — 13 August 2026 — product discovery: name, retrospectives, and ads
+
+Recorded an evidence-based decision for three founder questions. Full sources,
+limitations, production-counter caveats, action dates, and reopening gates are
+in `docs/PRODUCT-DISCOVERY-2026-08-13.md`.
+
+### Current decision
+
+- **Name/domain:** keep `pointpoker.app`. Enterprise filtering products can
+  falsely categorise planning-poker sites, but there is no bank-specific
+  prevalence evidence and the domain's current Palo Alto, FortiGuard, and
+  BrightCloud verdicts remain unverified because their public flows require
+  interactive CAPTCHA. A neutral domain that only redirects to the blocked
+  destination cannot solve a hostname block.
+- **Retrospectives:** research the adjacency; do not build a generic
+  retrospective product yet. Competitors prove the workflows can be bundled,
+  not that Point Poker users demand the feature. The preferred hypothesis is a
+  smaller estimation-reflection flow, subject to interviews and committed
+  design partners.
+- **Google Ads:** do not run USD 1/day for 30 days now. The product has no
+  revenue/LTV, no campaign-to-activation attribution, a noisy QA-contaminated
+  early usage sample, and only days of valid post-fix organic measurement. USD
+  30 would probably generate too few clicks to make a reliable decision.
+
+### Evidence discipline
+
+- Official Scrum, Google Ads, Google site-move, and security-vendor documents
+  support definitions and platform behaviour.
+- Competitor pages support feature/price comparisons only; they do not prove
+  market size, quality, or Point Poker demand.
+- One public planning-poker firewall incident demonstrates possibility, not
+  frequency.
+- The 9–13 August Firebase snapshot consists of aggregate events, not unique
+  users, and includes substantial owner QA.
+- An account-specific Keyword Planner forecast, actual domain filter verdicts,
+  retrospective interviews, and clean retention/WTP cohorts do not yet exist.
+
+### What happens when
+
+1. **13–20 August:** complete the planned indexing requests, manually capture
+   vendor categories, request any recategorisation, start organisation-network
+   tests, and recruit interviewees. Spend nothing.
+2. **Before 23 September:** complete native-language review, aim for 10–15
+   retrospective interviews and three to five real design partners, and let
+   organic usage accumulate without paid traffic.
+3. **Around 23 September:** run the six-week SEO pull and review product depth,
+   Team Room returns, access failures, and interview evidence. The date alone
+   is not approval; apply each reopening gate in the decision record.
+
+No product code, production configuration, analytics implementation, domain,
+or campaign changed in this session.

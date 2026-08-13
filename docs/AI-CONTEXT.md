@@ -173,6 +173,27 @@ every semantic role in both themes and fails if one drops below AA.
      the bottom of the generated docs/AI-CONTEXT.md. Keep it to things a script
      cannot derive: intent, history, and traps. -->
 
+## Product discovery decision — 13 August 2026
+
+The evidence record for the product name, a possible retrospective feature, and
+Google Ads is [`docs/PRODUCT-DISCOVERY-2026-08-13.md`](PRODUCT-DISCOVERY-2026-08-13.md).
+Its current decision is **spend USD 0 now**:
+
+- keep `pointpoker.app`; a neutral URL that merely redirects to a blocked final
+  hostname cannot solve a hostname block, and the domain's actual enterprise
+  filter classifications have not yet been verified;
+- research retrospective demand, but do not build a generic retrospective tool
+  without interviews and committed design partners; and
+- do not run the proposed USD 1/day Google Ads campaign before the six-week SEO
+  review, a useful activation conversion, privacy-compatible attribution, and
+  an account-specific Keyword Planner forecast exist.
+
+This is “not yet”, not “never”. Review the dated evidence and its reopening
+gates around 23 September 2026. Do not turn the documented firewall anecdote
+into a claim that banks generally block Point Poker, competitor bundles into
+proof of Point Poker demand, or a broad CPC benchmark into a Point Poker
+forecast.
+
 ## Things that will bite you
 
 **Never name a class after an advertisement.** The admin dashboard prefixed all
