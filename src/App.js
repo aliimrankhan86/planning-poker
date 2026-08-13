@@ -507,8 +507,35 @@ button, input, select, textarea { line-height: inherit; }
    ═══════════════════════════════════════════════ */
 .action-bar {
   /* The card is the design system's; what is local is that this one follows
-     the column on a desktop, where there is height to spare. */
-  position: sticky; top: var(--sp-3); z-index: var(--z-sticky);
+     the column on a desktop, where there is height to spare.
+
+     It parks BELOW the header, and it loses to the header when they meet.
+     Both halves of that were wrong and the two faults hid each other: the
+     offset was var(--sp-3), which is 12px from the top of the VIEWPORT and
+     therefore inside a header that is 61-100px tall, and the z-index was
+     var(--z-sticky) — the header's own — so the tie went to whichever came
+     later in the DOM. That is this card. Scrolling a room printed "CARDS ARE
+     UP" across "← Leave" and the vote count across the invite link.
+
+     --hdr-h is measured (useHeaderHeight); see the token for why no literal
+     can stand in for it. --z-raised keeps the card above the panels it
+     scrolls over and under the one bar that must never be covered. */
+  position: sticky;
+  top: calc(var(--hdr-h) + var(--sp-3));
+  z-index: var(--z-raised);
+  /* The card's own surface is 76% opaque, which is right for something sitting
+     ON the page and wrong for something the page slides UNDER: once the offset
+     above made it stick properly, the story queue read straight through it —
+     "1. Story 1", "2. Story 2" printed across the invite button. Frosted, not
+     opaque, and the same 20px the header uses, because they are the same
+     material doing the same job one above the other. Unprefixed only, like
+     .hdr: Safari has not needed -webkit- for this since 15.4.
+
+     Paid for out of the declaration ceiling by deleting the no-op
+     "display: block" on .timer-setup + .pp-hint, so the ratchet stays at
+     1370 rather than moving the wrong way. No backticks in this file's
+     stylesheet: it is one JS template literal and a backtick ends it. */
+  backdrop-filter: blur(20px);
 }
 .action-bar-title {
   font-size: var(--fs-1);
@@ -1119,8 +1146,11 @@ body::before {
 .timer-setup > .pp-field { flex: 1 1 9rem; min-width: 0; }
 .timer-setup > .pp-btn { flex: 1 1 11rem; }
 /* 8px, not the panel's 16: the hint belongs to the row above it, and a hint
-   spaced like a sibling block reads as being about the whole panel. */
-.timer-setup + .pp-hint { display: block; margin-top: var(--sp-2); }
+   spaced like a sibling block reads as being about the whole panel.
+   The "display: block" that used to sit here did nothing — the hint is a <p>,
+   .pp-hint sets no display, and nothing above it changes one. Verified by
+   reverting the declaration on the live element: block either way. */
+.timer-setup + .pp-hint { margin-top: var(--sp-2); }
 .ptitle {
   font-size: var(--fs-1); font-weight: var(--fw-semi); letter-spacing: 2.5px;
   text-transform: uppercase; color: var(--text-3);
@@ -2562,6 +2592,63 @@ function useBarFit(navRef, innerRef, leftRef, rightRef) {
      way — so the observer has nothing to report and the bar would stay
      collapsed around content that now fits. Every render re-asks. */
   useLayoutEffect(() => { measureRef.current?.(); });
+}
+
+/* ═══════════════════ HOW TALL THE ROOM HEADER IS ═══════════════════
+   Publishes the sticky room header's height as --hdr-h, so the action bar
+   underneath it can park below rather than behind. Nothing else in CSS can
+   ask: the two are in different branches of the tree, and the number moves.
+
+   It is not one number and never could be. The invite block stacks a label, a
+   helper line and the URL on a desktop and collapses to a button on a phone;
+   the round chip, the stories-done badge and the room code come and go with
+   the session; and any of it can rewrap when the reader's font size does. Two
+   measurements from the same page: 99.6px at 1080, 61px at 375. A literal
+   would have been wrong at one of them and stale after the first badge.
+
+   The three rules this obeys are the ones the marketing bar learned the hard
+   way, and they are load-bearing rather than defensive:
+
+   1. the callback mutates nothing — it only asks for a frame;
+   2. the write happens in that frame, outside the delivery it would otherwise
+      extend, and only when the value actually changed. Writing the same value
+      back still invalidates style, which resizes the observed box, which
+      schedules another callback, for ever;
+   3. it is a custom property on the document root, not a style on the header,
+      so measuring cannot change what is being measured. --hdr-h feeds one
+      thing (.action-bar's top offset) and the header's own height does not
+      depend on it, so there is no loop to close.
+═══════════════════════════════════════════════════════════════════════ */
+function useHeaderHeight(ref) {
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    let frame = 0;
+    let last = null;
+    const apply = () => {
+      const h = Math.round(el.getBoundingClientRect().height);
+      if (h === last || h === 0) return;
+      last = h;
+      document.documentElement.style.setProperty("--hdr-h", `${h}px`);
+    };
+
+    apply();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => { frame = 0; apply(); });
+    });
+    ro.observe(el);
+
+    return () => {
+      ro.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+      /* Leaving the room leaves the header with it. A stale height would push
+         whatever sticks next down by the height of a bar that is gone. */
+      document.documentElement.style.removeProperty("--hdr-h");
+    };
+  }, [ref]);
 }
 
 /* ═══════════════════════ GLOBAL NAVBAR ═══════════════════════
@@ -7201,6 +7288,10 @@ function GameScreen({
      keyboard lands on <body>, at the top of a long room. The list the row came
      out of is the nearest thing that still exists. */
   const sizedListRef = useRef(null);
+  /* The sticky header measures itself so the sticky action bar knows where the
+     bottom of it is. See useHeaderHeight. */
+  const headerRef = useRef(null);
+  useHeaderHeight(headerRef);
   // Confetti fires once per consensus reveal, keyed by round number
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConsensus, setShowConsensus] = useState(false);
@@ -7540,7 +7631,7 @@ function GameScreen({
           </div>
         </div>
       )}
-      <header className="hdr" role="banner">
+      <header className="hdr" role="banner" ref={headerRef}>
         <div className="hdr-in pp-container">
           <div className="hdr-l">
             <Button variant="ghost" size="sm" className="btn-back" onClick={onBack} aria-label={t("game.leaveAria")}>

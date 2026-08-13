@@ -228,6 +228,63 @@ describe("room layout", () => {
   });
 });
 
+/* ═══════ TWO STICKY THINGS, AND ONLY ONE OF THEM IS THE HEADER ═══════
+   Reported from a screenshot: scrolling a room printed the action bar across
+   the header — "CARDS ARE UP" over "← Leave", the vote count over the invite
+   link. Two independent faults, each of which alone would have been visible,
+   and which together looked like one:
+
+     - the bar's offset was var(--sp-3), 12px from the top of the VIEWPORT,
+       which is inside a header that measures 61-100px;
+     - its z-index was var(--z-sticky), the header's own, so the tie went to
+       whichever came later in the DOM. That is the bar.
+
+   Fixing only the offset would have hidden the bar behind the header; fixing
+   only the z-index would have left it stuck in the wrong place. Both are
+   pinned, and so is the third thing the fix exposed: a card at 76% opacity is
+   fine sitting ON the page and wrong with the page sliding UNDER it.
+════════════════════════════════════════════════════════════════════════ */
+describe("what sticks under the room header", () => {
+  const rule = () => (cssCode.match(/\.action-bar\s*\{[^}]*\}/s) || [""])[0];
+
+  test("the sticky bar reads the header's real height, not a spacing token", () => {
+    // No literal can stand in for it: the invite block stacks three lines on a
+    // desktop and collapses on a phone, and the badges beside the room code
+    // arrive as the session goes on.
+    expect(rule()).toMatch(/top:\s*calc\([^)]*var\(--hdr-h\)/);
+  });
+
+  test("the header wins when the two meet", () => {
+    expect(rule()).toContain("z-index: var(--z-raised)");
+    expect(rule()).not.toContain("var(--z-sticky)");
+    // Guards the guard: the header is the one that keeps --z-sticky.
+    expect(cssCode).toMatch(/\.hdr\s*\{[^}]*z-index:\s*var\(--z-sticky\)/s);
+  });
+
+  test("nothing reads through it while the page slides under", () => {
+    expect(rule()).toContain("backdrop-filter: blur(");
+  });
+
+  test("--hdr-h has a fallback, and something measures the real one", () => {
+    // The fallback is what the header is before it has anything to say. The
+    // measurement is what makes it right for every state after that.
+    expect(tokens).toMatch(/--hdr-h:\s*\d+px/);
+    expect(app).toContain("function useHeaderHeight");
+    expect(app).toMatch(/setProperty\("--hdr-h"/);
+  });
+
+  test("the measurement cannot start the loop it would be blamed for", () => {
+    /* The marketing bar learned this twice: a ResizeObserver callback that
+       writes — even the same value back — invalidates style, resizes the
+       observed box and schedules itself again. So the callback only asks for a
+       frame, and the write is guarded on the value having changed. */
+    const hook = app.slice(app.indexOf("function useHeaderHeight"), app.indexOf("GLOBAL NAVBAR"));
+    expect(hook).toMatch(/new ResizeObserver\(\(\)\s*=>\s*\{\s*if\s*\(frame\)\s*return;/);
+    expect(hook).toContain("requestAnimationFrame");
+    expect(hook).toMatch(/if\s*\(h === last/);
+  });
+});
+
 describe("type floor", () => {
   /* This is a tool for the general public, which includes people who do not
      have young eyes. The scale bottomed out at --fs-1 12px, but 104 font-size

@@ -24,10 +24,10 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 392 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 396 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 75 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
-| `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 35 KB |
+| `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 36 KB |
 | `src/design-system/components.css` | The `pp-` component classes | 70 KB |
 | `src/design-system/index.js` | The React components. Import from here | 41 KB |
 | `src/design-system/README.md` | The rulebook: theming, the ten rules, the decision table | 20 KB |
@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 298 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 303 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -149,7 +149,7 @@ existing 10k-line file theme-aware without rewriting it.
 
 | Measure | Now | Note |
 |---|---|---|
-| Design tokens | 230 | Type, spacing, elevation, motion, semantic colour |
+| Design tokens | 231 | Type, spacing, elevation, motion, semantic colour |
 | Roles defined per theme | 98 | Every one exists in both, or light falls back to a dark value |
 | Icons in `ICON_PATHS` | 20 | One stroke family, `currentColor` |
 | Distinct font sizes in CSS | 1 | Target is the 8-step scale; the rest is unmigrated legacy |
@@ -919,6 +919,57 @@ states, because the derivation is only safe while they hold.
 
 Auto-reveal when *everyone has voted* is untouched — that one is the table
 finishing, not a clock expiring.
+
+## Two sticky things, one z-index — 14 August 2026 (reported by the owner)
+
+From a screenshot of a scrolled room: the action bar printed across the header.
+"CARDS ARE UP" over "← Leave", "0 of 1 voted" over the invite link, the story
+queue reading straight through the card.
+
+**Three faults, and each was hiding the others.**
+
+1. `.action-bar` stuck at `top: var(--sp-3)` — 12px from the top of the
+   *viewport*, which is inside a header that measures 61–100px. It had never
+   parked below the header; it parked behind it.
+2. Its `z-index` was `var(--z-sticky)`, the header's own value. A tie goes to
+   whichever comes later in the DOM, and that is the bar — so it painted on
+   top of the header rather than under it. Fixing only the offset would have
+   hidden the bar; fixing only the z-index would have left it stuck in the
+   wrong place.
+3. The card is 76% opaque, which is right for something sitting *on* the page
+   and wrong for something the page slides *under*. Once the offset was fixed
+   the story queue read through it. It is frosted now — `backdrop-filter:
+   blur(20px)`, the same value `.hdr` uses, because they are the same material
+   doing the same job one above the other. In the light theme the card surface
+   is already fully opaque, so the blur only matters in dark.
+
+**The header's height is measured, not written down.** `useHeaderHeight`
+publishes it as `--hdr-h` on the document root and `.action-bar` sticks at
+`calc(var(--hdr-h) + var(--sp-3))`. There is no number that would have worked:
+the invite block stacks label, helper and URL on a desktop and collapses to a
+button on a phone, and the round/stories-done/room-code chips arrive as the
+session goes on. Same room, same page: **100px at 1280, 61px at 820**. The
+token in `tokens.css` is a fallback — the one-row minimum, what the header is
+before it has anything to say.
+
+The hook obeys the three rules the marketing bar learned the hard way: the
+ResizeObserver callback mutates nothing and only asks for a frame; the write
+happens in that frame and only when the value changed; and it writes a custom
+property the header's own height does not depend on, so there is no loop to
+close. Verified with a listener attached during a resize sweep — zero
+`ResizeObserver loop completed with undelivered notifications`.
+
+**This is a desktop-only bug.** `.action-bar` is `position: static` below
+780px, so the phone was never affected.
+
+**The declaration ceiling stayed at 1370.** `backdrop-filter` was paid for by
+deleting the `display: block` on `.timer-setup + .pp-hint`, which did nothing —
+the hint is a `<p>`, `.pp-hint` sets no display, and reverting the declaration
+on the live element computed `block` either way. The ratchet only goes down.
+
+Five tests in `describe("what sticks under the room header")`, each
+mutation-tested. Verified live at 820, 900, 1180 and 1280 in both themes:
+constant 12px gap while stuck, zero overlap, zero document overflow.
 
 ## Layout bugs that survived a passing test suite
 

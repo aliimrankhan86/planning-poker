@@ -7,8 +7,13 @@
   branch (design sweep, deck migration into the design system, dead-CSS removal,
   the Cormorant `@font-face` fix, and the measured header ladder) was merged to
   `main` on 13 August 2026.
-- 474 Jest tests pass; production build succeeds; sitemap and prerender both
+- 479 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
+- **14 August:** the room's sticky action bar was parking *behind* the sticky
+  header and painting over it — reported from a screenshot. It now sits below a
+  header whose height is measured at runtime (`--hdr-h`), loses the z-index tie
+  to the header, and is frosted so the page no longer reads through it. Desktop
+  only; the bar is static below 780px. Details in `docs/AI-CONTEXT.hand.md`.
 - **14 August:** the countdown no longer reveals the cards by itself. Time up
   stops the clock and hands the facilitator the choice — reveal, or start
   another countdown — which is what the owner reported as missing. Auto-reveal

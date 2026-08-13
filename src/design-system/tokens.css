@@ -264,6 +264,17 @@
   --control-md: 44px;
   --control-lg: 52px;
 
+  /* How tall the room's sticky header currently is, so anything that sticks
+     underneath it can park below rather than behind. This value is a FALLBACK
+     — the real one is measured and written here at runtime by useHeaderHeight
+     in App.js, because the header's height is not a number anyone can write
+     down: the invite block stacks three lines on a desktop and collapses on a
+     phone, and the badges beside the room code appear as the session
+     progresses. It measured 99.6px in the room that exposed this and 61px on
+     the same page at 375. The fallback is the one-row minimum, which is what
+     the header is before it has anything to say. */
+  --hdr-h: 61px;
+
   --z-base: 0;
   /* The app above the table texture painted on body::before. Not decoration:
      without a stacking context here the felt gradient paints over the room. */
