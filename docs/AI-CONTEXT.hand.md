@@ -277,7 +277,7 @@ rung. The first draft of this note was written from such a sweep and every
 number in it was wrong. Set the width, then poll until the verdict and the bar
 height both stop changing.
 
-**Four rules that are not optional, each learned by breaking it.**
+**Five rules that are not optional, each learned by breaking it.**
 
 1. *Never measure inside a ResizeObserver by mutating the DOM.* The obvious
    implementation puts the bar back to `full`, reads the real widths, writes the
@@ -285,15 +285,30 @@ height both stop changing.
    notifications`, after which the browser **stops delivering to that observer at
    all** and the bar freezes on whatever rung it was on. It survives a scripted
    resize sweep and dies during a real drag. Measurement is read-only.
-2. *Hidden is not `display: none`.* A hidden piece must keep a box or it
+2. *Read-only is not enough — the callback must not WRITE during delivery
+   either.* Rule 1 was fixed and the same error kept firing, because the verdict
+   was still assigned inside the callback, and assigned on every pass including
+   the great majority that change nothing. Setting an attribute to the value it
+   already holds still invalidates style, which resizes the observed boxes,
+   which schedules another pass. So: write only when the verdict actually
+   differs, and have the observer schedule a `requestAnimationFrame` that writes
+   in the next frame, outside the delivery it would otherwise extend.
+
+   **This one shipped.** It was seen during verification, confirmed not to stop
+   the observer, and written off as benign because the bar still worked. It is
+   not benign — `react-scripts` turns any `window.onerror` into a **full-screen
+   dev overlay**, so the app looked crashed on every drag, and in production it
+   reaches `window.onerror` and anything reporting from it. "Still behaves
+   correctly" is the wrong bar for something that raises an error event.
+3. *Hidden is not `display: none`.* A hidden piece must keep a box or it
    measures 0, 0 reads as "there is room now", and the bar shows it, overflows,
    and hides it again next frame. Everything droppable is `position: absolute;
    visibility: hidden`.
-3. *Ghosts anchor to `inset-inline-end`, not `left`.* A ghost keeps its full
+4. *Ghosts anchor to `inset-inline-end`, not `left`.* A ghost keeps its full
    natural width; anchored at the start it hangs off the right of a phone and
    scrolls the whole page sideways — 21px of document overflow in English, 42 in
    Portuguese, from elements nobody can see.
-4. *Width-buying rules key off a viewport width, never off the verdict.* Tie the
+5. *Width-buying rules key off a viewport width, never off the verdict.* Tie the
    `≤520` padding block to `[data-nav-fit]` and the bar tightens, re-measures,
    finds it now fits a rung up, loosens, and no longer fits — for ever. Deleting
    it instead makes the ladder perfectly monotonic and puts 360 and 375 — the
@@ -317,8 +332,8 @@ three combined, enough on its own to hold the bar on two lines at every desktop
 width. It is `FAQ` now, the ordinary Brazilian Portuguese label, with
 `nav.toFaq` still carrying the full phrase as the accessible name.
 
-"the marketing bar" in `designsystem.test.js` holds nine tests, five added by
-this pass; one more was rewritten under "the theme switch survives every width"
+"the marketing bar" in `designsystem.test.js` holds eleven tests, seven added by
+this pass (two of them guarding the ResizeObserver rules above); one more was rewritten under "the theme switch survives every width"
 (six there). Each of the six new-or-changed ones was mutation-tested. Verified
 by sweeping 320→1440 in all three languages against the production build: zero
 clipped strips, zero document overflow, one line from 328/327/334 upwards.

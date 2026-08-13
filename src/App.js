@@ -2432,7 +2432,7 @@ function useBarFit(navRef, innerRef, leftRef, rightRef) {
       return real.reduce((a, w) => a + w, 0) + Math.max(0, real.length - 1) * gap;
     };
 
-    const measure = () => {
+    const verdict = () => {
       const cs = getComputedStyle(inner);
       const avail = inner.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
 
@@ -2467,22 +2467,45 @@ function useBarFit(navRef, innerRef, leftRef, rightRef) {
       const links = width(left.querySelector(".navbar-links"));
       const withBrand = run([mark, brand], gap);
 
-      nav.dataset.navFit =
+      return (
         run([mark, brand, links], gap) <= withWord ? "full"
         : withBrand <= withWord ? "no-links"
         : withBrand <= withLongCta ? "no-label"
         : withBrand <= spare ? "short-cta"
-        : "minimal";
+        : "minimal"
+      );
     };
 
-    measureRef.current = measure;
-    measure();
-    const ro = new ResizeObserver(measure);
+    /* Writing the same value back is still a write: it invalidates style, which
+       resizes observed boxes, which schedules another callback, for ever. Most
+       passes change nothing and must therefore touch nothing. */
+    const apply = () => {
+      const next = verdict();
+      if (next !== nav.dataset.navFit) nav.dataset.navFit = next;
+    };
+
+    /* A ResizeObserver callback may not resize what it observes. Doing so is
+       what raises "ResizeObserver loop completed with undelivered
+       notifications" — which is only a warning to the console, and a
+       full-screen modal in react-scripts' dev overlay, and a window.onerror in
+       production. So the observer decides and rAF applies: the write lands in
+       the next frame, outside the delivery it would otherwise extend. Called
+       from anywhere else — mount, a re-render — it applies straight away, since
+       deferring the first one would paint the wrong rung before fixing it. */
+    let frame = 0;
+    const applyOutsideDelivery = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => { frame = 0; apply(); });
+    };
+
+    measureRef.current = apply;
+    apply();
+    const ro = new ResizeObserver(applyOutsideDelivery);
     [inner, left, right].forEach((el) => ro.observe(el));
     /* A bar measured in the fallback face is measured wrong — Outfit is not the
        width of whatever stood in for it. */
-    document.fonts?.ready.then(measure).catch(() => {});
-    return () => ro.disconnect();
+    document.fonts?.ready.then(apply).catch(() => {});
+    return () => { ro.disconnect(); if (frame) cancelAnimationFrame(frame); };
   }, [navRef, innerRef, leftRef, rightRef]);
 
   /* Signing out makes the actions narrower without making their CONTAINER

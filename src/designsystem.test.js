@@ -632,6 +632,27 @@ describe("the marketing bar", () => {
     }
   });
 
+  test("the observer decides but does not write during delivery", () => {
+    /* A ResizeObserver callback that resizes what it observes raises
+       "ResizeObserver loop completed with undelivered notifications". That is a
+       console warning, a FULL-SCREEN MODAL in react-scripts' dev overlay, and a
+       window.onerror in production — it was shipped once and reported from the
+       dev overlay. The observer schedules; the frame after it writes. */
+    const hook = app.slice(app.indexOf("function useBarFit"), app.indexOf("GLOBAL NAVBAR"));
+    expect(hook).toMatch(/new ResizeObserver\(applyOutsideDelivery\)/);
+    expect(hook).toMatch(/requestAnimationFrame\(/);
+    expect(hook).not.toMatch(/new ResizeObserver\(apply\)/);
+  });
+
+  test("a verdict that has not changed is not written back", () => {
+    /* Assigning the same value still invalidates style, which resizes the
+       observed boxes, which schedules another pass — for ever. Most passes
+       change nothing and must touch nothing. */
+    const hook = app.slice(app.indexOf("function useBarFit"), app.indexOf("GLOBAL NAVBAR"));
+    expect(hook).toMatch(/if\s*\(next !== nav\.dataset\.navFit\)\s*nav\.dataset\.navFit = next/);
+    expect(hook.match(/nav\.dataset\.navFit\s*=/g) || []).toHaveLength(1);
+  });
+
   test("the switch names itself, so hiding its word costs nothing", () => {
     /* The word is hidden outright rather than clipped, which is only safe
        because the control no longer borrows its name from the span. */
