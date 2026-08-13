@@ -468,6 +468,20 @@ const recallName = () => {
 const CSS = `
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* The document's leading, which nothing had ever set. Without it the default
+   for the whole app was the browser's "normal" — a font-metric guess, ~1.24
+   for Outfit and a different number for every fallback face — so the type only
+   obeyed the scale where a rule happened to name a token, and 142 elements on
+   the home page alone were running on the guess. --lh-snug is the UI default;
+   prose (--lh-body) and display (--lh-tight) override it where they already
+   do. Form controls need naming separately because the UA stylesheet pins them
+   to "normal" rather than letting them inherit.
+
+   No backticks in this block: the whole stylesheet is a JS template literal,
+   so one would end the string and take the rest of the app with it. */
+body { line-height: var(--lh-snug); }
+button, input, select, textarea { line-height: inherit; }
+
 /* The token block that used to live here now lives in
    src/design-system/tokens.css, which App.js imports at the top of this file.
    It defines the same names — plus the semantic roles the old palette is now
@@ -690,6 +704,10 @@ body::before {
   list-style: none; margin: 0 0 var(--sp-6); padding: 0;
   display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2);
 }
+/* No line-height here: these pills used to have none and took their height
+   from Outfit's font metrics, but the body rule at the top of this stylesheet
+   now gives them --lh-snug by inheritance, which is exactly what a label
+   wants. Setting it again would be the same number written twice. */
 .trust-strip li {
   font-size: var(--fs-1); font-weight: var(--fw-medium); letter-spacing: var(--fs-1-tracking);
   color: var(--text-2);
@@ -1838,27 +1856,50 @@ body::before {
 /* ══════════════════════ MARKETING PAGES ══════════════════════ */
 .marketing-page { width: 100%;
 }
+/* Two spacings with a stated relationship, not three that collide: --sp-4
+   between blocks (the same gap a paragraph leaves after itself, so a list
+   following prose is spaced like another paragraph), --sp-3 between items
+   inside one list. Within is tighter than between; that is the whole rule. */
+/* Same measure and same centring as .marketing-prose, so the two kinds of
+   reading copy on one page start at the same x and break at the same width.
+   The list ran uncapped: 784px of 16px text is ~80 characters, past the point
+   the measure comment below says the eye loses the next line's start. The box
+   is the SAME --measure as the prose, not measure+indent: widening it for the
+   marker and then centring it splits the indent over both sides and lands the
+   text 10px off. Matching boxes puts the ♦ exactly on the prose's left edge —
+   the ordinary way a list under a paragraph is set. */
 .marketing-list {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  margin-top: var(--sp-3);
+  margin: var(--sp-4) auto 0;
+  max-width: var(--measure);
 }
+/* --fs-3 is the body token. This was --fs-1 — 13px, "THE FLOOR", the size the
+   scale reserves for micro labels and uppercase eyebrows — for the bullets of
+   a page whose entire job is being read. It now matches .marketing-prose
+   beside it. The --fs-1 tracking correction goes with it: that exists to stop
+   the two smallest sizes blooming on a dark ground, and 16px does not. */
 .marketing-list li {
   position: relative;
   padding-left: var(--sp-5);
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  font-size: var(--fs-3);
   line-height: var(--lh-body);
   color: var(--text-2);
 }
+/* top: .22rem was a magic number tuned by eye to 13px/1.6 and would drift at
+   any other size. top: 0 shares the first line's box instead, which aligns the
+   marker at every size. The line-height it needs is --lh-body, inherited from
+   the li — a unitless number resolves against each element's own font-size, so
+   the marker gets 13 x 1.6 and the text 16 x 1.6 from the one declaration. */
 .marketing-list li::before {
   content: "♦";
   position: absolute;
   left: 0;
-  top: .22rem;
+  top: 0;
   color: var(--gold-ink2);
-  font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking);
+  font-size: var(--fs-1);
 }
 .marketing-list strong {
   color: var(--text-1);
@@ -1870,7 +1911,7 @@ body::before {
 .marketing-prose {
   max-width: var(--measure);
   margin: 0 auto var(--sp-4);
-  font-size: var(--fs-2); letter-spacing: var(--fs-2-tracking);
+  font-size: var(--fs-3);
   line-height: var(--lh-body);
   color: var(--text-2);
 }

@@ -93,8 +93,13 @@
    CTA had a centred headline above two buttons hard against the left edge,
    665px of nothing beside them. */
 .pp-section-head:not(.pp-section-head--start) + .pp-row { justify-content: center; }
-.pp-section-head__title { font-size: var(--fs-section); }
-.pp-section-head__sub { font-size: var(--fs-4); color: var(--text-2); line-height: var(--lh-snug); }
+/* This had NO line-height, so a section title that wrapped got the browser's
+   font-metric default (~1.2) while the hero title above it got 1.15. Every
+   display heading is --lh-tight. */
+.pp-section-head__title { font-size: var(--fs-section); line-height: var(--lh-tight); }
+/* --lh-body, not --lh-snug: this is the same 18px sentence in the same role as
+   .pp-hero__sub, which is --lh-body. Two leadings for one role is the defect. */
+.pp-section-head__sub { font-size: var(--fs-4); color: var(--text-2); line-height: var(--lh-body); }
 
 
 
@@ -565,7 +570,11 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-hero__inner { position: relative; max-width: var(--container); margin-inline: auto; padding: var(--section-y) var(--gutter); display: grid; gap: var(--sp-10); align-items: center; }
 .pp-hero__copy { display: grid; gap: var(--sp-5); justify-items: start; }
 .pp-hero__eyebrow { font-size: var(--fs-1); font-weight: var(--fw-semi); text-transform: uppercase; letter-spacing: var(--tracking-eyebrow); color: var(--brass-300); line-height: var(--lh-snug); }
-.pp-hero__title { font-family: var(--font-display); font-size: var(--fs-hero); font-weight: var(--fw-bold); line-height: var(--lh-tight); letter-spacing: var(--tracking-display); color: var(--text-on-felt); }
+/* Outfit, not the display serif, and the same -0.03em the join hero uses. The
+   two H1s sit one click apart — the join hero at .join-title and every content
+   page here — so a reader moving between them saw the brand change typeface.
+   Outfit is the one they arrive on and the one that reads at 56px. */
+.pp-hero__title { font-family: var(--font-ui); font-size: var(--fs-hero); font-weight: var(--fw-bold); line-height: var(--lh-tight); letter-spacing: -0.03em; color: var(--text-on-felt); }
 .pp-hero__sub { font-size: var(--fs-4); line-height: var(--lh-body); color: var(--text-on-felt-2); max-width: var(--measure-tight); }
 .pp-hero__actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
 .pp-hero__trust { display: flex; flex-wrap: wrap; gap: var(--sp-4); font-size: var(--fs-2); color: var(--text-on-felt-2); letter-spacing: var(--fs-2-tracking); }

@@ -266,16 +266,21 @@ it was half the original report.
 
 Lowest width at which each rung is reached, English / Portuguese / Japanese, from
 **settled reads** against the production build: `short-cta` 434/433/440,
-`no-label` 563/588/595, `no-links` 621/646/653, `full` 1055/1110/1123. One line
-from 328/327/334 upwards. Every one of those is a number no stylesheet could
-have known.
+`no-label` 563/588/595, `no-links` 621/646/653. One line from 328/327/334
+upwards. Every one of those is a number no stylesheet could have known.
+
+**`full` is 1064–1068 in English** — measured 14 Aug 2026, `no-links` at 1063
+and `full` at 1068. This note previously said 1055, which was wrong; the
+Portuguese and Japanese figures it carried (1110/1123) come from the same pass
+and should be treated as unmeasured until someone re-reads them.
 
 **Measure with settled reads or not at all.** An ascending 1px sweep that reads
-the attribute a fixed 40ms after each resize reports every threshold 10–15px
-high, because the observer has not caught up and the read returns the previous
-rung. The first draft of this note was written from such a sweep and every
-number in it was wrong. Set the width, then poll until the verdict and the bar
-height both stop changing.
+the attribute a fixed 40ms after each resize reports a threshold high, because
+the observer has not caught up and the read returns the previous rung. But note
+how the 1055 error happened: that lag is real, and it was then used to "correct"
+a reading of 1068 that had been right all along. Re-measure; do not reason a
+number into a different one. Set the width, then poll until the verdict and the
+bar height both stop changing.
 
 **Five rules that are not optional, each learned by breaking it.**
 
@@ -610,6 +615,55 @@ they pay. If a metric on the dashboard does not change a decision, delete it.
 The willingness-to-pay poll is the only thing on the site that can answer the pricing
 question. Usage counters cannot: revealed preference from a free product is silent on
 price. Treat stated preference as a ceiling and halve it.
+
+## The page had no leading at all — 14 August 2026
+
+Reported by the owner as inconsistent typography between the join hero and
+`/what-is-planning-poker`, then as "random spacing". Two findings.
+
+**The H1s used different typefaces.** `.pp-hero__title` was `--font-display`
+(Cormorant) and `.join-title` is `--font-ui` (Outfit), so the brand changed face
+one click from the home page. `.pp-hero__title` is Outfit now, at the join
+hero's `-0.03em`. The two keep different *sizes* — that is hierarchy, not drift.
+
+**Nothing had ever set a document line-height.** Not `html`, not `body`. The
+app's default leading was therefore the browser's `normal`: a font-metric guess,
+~1.24 for Outfit and a different number for every fallback face. The type obeyed
+the scale only where a rule happened to name a token, and **142 elements on the
+home page alone were running on the guess**. That is the whole of "random
+spacing" — not wrong values, missing ones.
+
+```css
+body { line-height: var(--lh-snug); }
+button, input, select, textarea { line-height: inherit; }
+```
+
+The second line is required: the UA stylesheet pins form controls to `normal`,
+so they do not inherit the page's leading unless told to.
+
+Alongside it, five places where inheritance would not have supplied the right
+value: `.pp-section-head__title` gained `--lh-tight` (it had none);
+`.pp-section-head__sub` moved to `--lh-body` to match `.pp-hero__sub`, the same
+18px sentence in the same role; `.marketing-prose` moved from `--fs-2` (the
+*helper text* size) to `--fs-3`; `.marketing-list li` moved from `--fs-1` — the
+scale's floor, reserved for uppercase micro-labels — to `--fs-3`; and
+`.marketing-list` gained `max-width: var(--measure)`, having run 784px wide
+(~80 characters) starting 36px left of the prose above it.
+
+Two things to keep:
+
+- **The declaration ceiling caught a duplicate the global rule had created.**
+  Two elements had been given an explicit `line-height` that inheritance now
+  supplies with an identical computed value. The test failed at 1373 > 1371 and
+  the right answer was deleting both, not raising the ratchet. It stays at 1371.
+- **A unitless line-height resolves against each element's own font-size**, which
+  is why the list marker needs no declaration of its own: it inherits `1.6` and
+  computes 13 × 1.6 while the text gets 16 × 1.6. That replaced `top: .22rem`, a
+  number tuned by eye to one font size and wrong at every other.
+
+**Never put a backtick in the App.js stylesheet, including in a comment.** The
+whole `CSS` block is a JS template literal; one backtick ends the string and
+takes the app down. Done twice while writing this.
 
 ## Layout bugs that survived a passing test suite
 
