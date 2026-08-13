@@ -459,14 +459,24 @@
    it strands a phone in dark for good.
 
    This was a .navbar .pp-theme-switch .pp-switch__label rule in App.js. It is
-   a state of the switch, so the switch owns it — including the width at which
-   it kicks in. A bar asks for the behaviour by name; it does not get to pick a
-   twelfth breakpoint to ask at. */
-@media (max-width: 520px) {
-  .pp-theme-switch--compact-narrow .pp-switch__label {
-    position: absolute; width: 1px; height: 1px; min-width: 0;
-    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
-  }
+   a state of the switch, so the switch owns the recipe — but not the moment. It
+   used to fire at 520px, which was a guess, and a guess that read backwards:
+   widening a window past 520 brought the word back and pushed the brand
+   wordmark out, so the bar lost more than it gained. The container says when it
+   has run out of room and the switch answers, which is why this keys off an
+   ancestor's verdict rather than a width. Any container that measures itself
+   can set it; the navbar is the only one that does today.
+
+   Hidden, not clipped to 1px. The container decides this by measuring, and a
+   word clamped to 1px tells it that putting the word back would cost a pixel —
+   so it puts it back, overflows by the hundred pixels the word actually takes,
+   and the bar it was protecting wraps. The accessible name is unaffected either
+   way: Switch names its input directly. */
+[data-nav-fit="no-label"] .pp-theme-switch--compact-narrow .pp-switch__label,
+[data-nav-fit="short-cta"] .pp-theme-switch--compact-narrow .pp-switch__label,
+[data-nav-fit="minimal"] .pp-theme-switch--compact-narrow .pp-switch__label {
+  position: absolute; top: 0; inset-inline-end: 0;
+  visibility: hidden; pointer-events: none; white-space: nowrap;
 }
 
 .pp-check { display: inline-flex; align-items: flex-start; gap: var(--sp-3); min-height: var(--tap-min); padding-block: var(--sp-2); cursor: pointer; }

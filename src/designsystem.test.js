@@ -568,16 +568,74 @@ describe("the marketing bar", () => {
     expect(rule(".navbar-right")).toMatch(/margin-left:\s*auto/);
   });
 
-  test("the wordmark is only dropped where it genuinely does not fit", () => {
-    const hides = cssCode.match(/\.navbar-brand \{[^}]*display:\s*none[^}]*\}/g) || [];
-    expect(hides).toHaveLength(1);
-    expect(mediaBodies("max-width: 520px").some((body) => body.includes(hides[0]))).toBe(true);
+  /* The bar needs 991px in English, 1045 in Portuguese and 1057 in Japanese.
+     No breakpoint can carry three numbers, and both times one was written down
+     it was reported as a defect: the links rendered and were sliced in half
+     between 781 and 1023, and then the whole bar went to two lines between 1024
+     and 1065. What replaced it measures. These pin the properties that keep the
+     measurement honest — each was mutation-tested. */
+  const DROPPABLE = [".navbar-links", ".navbar-brand", ".nav-start-free-long",
+                     ".nav-start-free-short", ".pp-switch__label"];
+
+  test("nothing the bar can drop is dropped at a width", () => {
+    /* A media query here is the defect coming back. The one exception is the
+       last rung's padding, which is deliberately NOT keyed to the verdict — see
+       below. */
+    for (const sel of DROPPABLE) {
+      const escaped = sel.replace(/[.]/g, "\\.");
+      const hidden = new RegExp(`${escaped}[^{}]*\\{[^}]*(display:\\s*none|visibility:\\s*hidden)`, "g");
+      for (const body of [...mediaBodies("max-width: 520px"), ...mediaBodies("max-width: 780px"),
+                          ...mediaBodies("max-width: 1023.98px")]) {
+        expect(body).not.toMatch(hidden);
+      }
+    }
   });
 
-  test("the links wait for the width they actually need", () => {
-    const hides = cssCode.match(/\.navbar-links \{[^}]*display:\s*none[^}]*\}/g) || [];
-    expect(hides).toHaveLength(1);
-    expect(mediaBodies("max-width: 1023.98px").some((body) => body.includes(hides[0]))).toBe(true);
+  /* Whole rules, selector included — a declaration block on its own cannot be
+     matched back to the thing it hides. */
+  const ghostRules = [cssCode, stripComments(dsCss)]
+    .flatMap((source) => source.match(/[^{}]+\{[^{}]*\}/g) || [])
+    .filter((r) => DROPPABLE.some((s) => r.split("{")[0].includes(s)))
+    .filter((r) => /display:\s*none|visibility:\s*hidden/.test(r));
+
+  test("what the bar hides, it can still measure", () => {
+    /* display:none measures zero, zero reads as "there is room now", and the
+       bar shows the piece, overflows, and hides it again on the next frame.
+       Every hidden piece keeps a box. */
+    expect(ghostRules.length).toBeGreaterThanOrEqual(3);
+    for (const r of ghostRules) {
+      expect(r).toMatch(/visibility:\s*hidden/);
+      expect(r).not.toMatch(/display:\s*none/);
+      expect(r).toMatch(/position:\s*absolute/);
+    }
+  });
+
+  test("a hidden piece keeps its width without widening the document", () => {
+    /* A ghost keeps its full natural width. Anchored at the inline start it
+       hangs off the right of a phone and scrolls the whole page sideways —
+       measured at 21px of document overflow in English, 42 in Portuguese. */
+    for (const r of ghostRules) {
+      expect(r).toMatch(/inset-inline-end:\s*0/);
+      expect(r).not.toMatch(/[^-]left:\s*0/);
+    }
+  });
+
+  test("the last rung buys width at a viewport size, not at its own verdict", () => {
+    /* The ladder is only stable while the widths it reads do not depend on the
+       rung it last chose. Tie the padding to [data-nav-fit] and the bar
+       tightens, re-measures, finds it now fits a rung up, loosens, and no
+       longer fits — for ever. */
+    const keyed = cssCode.match(/\[data-nav-fit="[^"]*"\][^{}]*\{[^}]*\}/g) || [];
+    expect(keyed.length).toBeGreaterThanOrEqual(2);
+    for (const block of keyed) {
+      expect(block).not.toMatch(/--btn-pad-inline|font-size|letter-spacing|padding|[^-]gap:/);
+    }
+  });
+
+  test("the switch names itself, so hiding its word costs nothing", () => {
+    /* The word is hidden outright rather than clipped, which is only safe
+       because the control no longer borrows its name from the span. */
+    expect(dsIndex).toMatch(/aria-label=\{`\$\{word\}\$\{t\("theme\.suffix"\)\}`\}/);
   });
 });
 
@@ -1199,16 +1257,21 @@ describe("the theme switch survives every width", () => {
   test("the narrow bar drops the word, not the control", () => {
     /* Two steps, because the two rows this switch lives in have different
        amounts of room. The component drops " theme" for itself; the navbar,
-       which cannot spare even one word, clips the label whole.
-       Clipped, not display:none — a clipped label is still the accessible
-       name, so what a phone stops showing it does not stop saying. */
+       which cannot spare even one word, takes the label whole. */
     expect(dsCss).toMatch(/\.pp-theme-switch__suffix\s*\{[^}]*clip-path/);
-    /* The second step used to be a `.navbar .pp-theme-switch .pp-switch__label`
+    /* The bar's step used to be a `.navbar .pp-theme-switch .pp-switch__label`
        rule in App.js — one file reaching past the component boundary into
        another's internals. It is a state of the switch, so the switch owns it
-       and a bar asks for it by prop. */
-    expect(dsCss).toMatch(/\.pp-theme-switch--compact-narrow \.pp-switch__label\s*\{[^}]*clip-path/);
-    expect(dsCss).not.toMatch(/\.pp-theme-switch--compact-narrow \.pp-switch__label\s*\{[^}]*display:\s*none/);
+       and a container asks for it by name.
+       The word is hidden outright rather than clipped to 1px, and the two are
+       not interchangeable here: the container decides this by measuring, and a
+       word clamped to 1px reports that restoring it would cost one pixel. It
+       restores it, overflows by the hundred the word really takes, and wraps
+       the bar it was protecting — observed at 640px in Portuguese. */
+    const ghost = dsCss.match(/\[data-nav-fit[^{]*\.pp-switch__label\s*\{[^}]*\}/);
+    expect(ghost).not.toBeNull();
+    expect(ghost[0]).toMatch(/visibility:\s*hidden/);
+    expect(ghost[0]).not.toMatch(/display:\s*none|width:\s*1px|clip-path/);
     expect(cssCode).not.toMatch(/\.pp-theme-switch \.pp-switch__label/);
   });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, lazy, Suspense } from "react";
 /* The design system. Importing it pulls in tokens.css, base.css and
    components.css, which is what makes every --bg / --gold / --text-2 below
    theme-aware: those names are now aliases of semantic roles defined once for
@@ -1492,7 +1492,14 @@ body::before {
 .header-language__link[aria-current="page"] {
   color: var(--action-quiet); background: var(--gold-fill-1);
 }
-.nav-start-free-short { display: none; }
+/* Hidden but measurable, like everything else the bar can swap in: useBarFit
+   prices the long label against the short one, and a display:none short label
+   would price it against nothing. The button's accessible name is its own
+   aria-label, so neither span carries it. */
+.nav-start-free-short {
+  position: absolute; top: 0; inset-inline-end: 0;
+  visibility: hidden; pointer-events: none; white-space: nowrap;
+}
 /* This strip used to be a horizontal scroller, and that is precisely how
    "PRICING" plus half of "SUPPORT" ended up sliced down the middle at the
    container edge: an overflow container clips, and a clipped word reads as
@@ -1912,16 +1919,34 @@ ol.marketing-list li::marker {
 }
 
 /* ══════════════════════ RESPONSIVE — FOOTER + NAV ══════════════════════ */
-/* Brand, four marketing links and the right-hand actions need a little over
-   1050px of bar in English and a little over 1140px in Portuguese, so below
-   the desktop breakpoint the strip is not merely tight, it does not fit in any
-   language. It used to be dropped at 780px, which left a 243px band where it
-   rendered and was sliced in half — the reported defect. Every one of these
-   destinations is also in the footer, so under lg the bar keeps the brand and
-   the primary action and drops the rest, and above lg the wrap handles the
-   remaining thirty-odd pixels where English fits and Portuguese does not. */
-@media (max-width: 1023.98px) {
-  .navbar-links { display: none; }
+/* What the bar gives up as it runs out of room, cheapest first. The width at
+   which each step happens is measured, not written here — see useBarFit, which
+   sets the attribute. These rules only say what each verdict looks like.
+
+   Hidden, but still occupying a box the measurement can read — see useBarFit.
+   display:none here would make the next pass measure zero, conclude there is
+   room, and put the bar into a one-frame flicker between two rungs.
+   visibility takes them out of the a11y tree and the tab order and absolute
+   takes them out of the line the bar is trying to fit.
+
+   inset-inline-end, not left. A ghost keeps its full natural width, so anchored
+   at the start it hangs off the right of a narrow viewport and pushes the
+   document's scrollWidth out — an invisible element scrolling the whole page
+   sideways. Anchored at the end it overhangs towards the inline start, which is
+   the direction a document does not scroll, in either writing direction. */
+.navbar[data-nav-fit="no-links"] .navbar-links,
+.navbar[data-nav-fit="no-label"] .navbar-links,
+.navbar[data-nav-fit="short-cta"] .navbar-links,
+.navbar[data-nav-fit="minimal"] .navbar-links,
+.navbar[data-nav-fit="short-cta"] .nav-start-free-long,
+.navbar[data-nav-fit="minimal"] .nav-start-free-long,
+.navbar[data-nav-fit="minimal"] .navbar-brand {
+  position: absolute; top: 0; inset-inline-end: 0;
+  visibility: hidden; pointer-events: none; white-space: nowrap;
+}
+.navbar[data-nav-fit="short-cta"] .nav-start-free-short,
+.navbar[data-nav-fit="minimal"] .nav-start-free-short {
+  position: static; visibility: visible;
 }
 @media (max-width: 780px) {
   .footer-inner { grid-template-columns: 1fr 1fr; }
@@ -1943,32 +1968,30 @@ ol.marketing-list li::marker {
   .footer-inner { grid-template-columns: 1fr; }
   /* text-align: left used to be undone here — the base rule no longer needs it. */
   .footer-legal-note { max-width: 100%; }
-  /* The wordmark is 93px and a phone has none to give: at 375 the mark and the
-     four actions already take the full 343px of container, to the pixel. It is
-     visible everywhere it fits, which is 520px up, rather than being dropped at
-     780 where there was still 132px of slack — the second reported defect. It
-     carries no accessible name of its own (the mark beside it is the labelled
-     control for the same destination), so nothing is announced differently at
-     either width. */
-  .navbar-brand { display: none; }
+  /* What a phone-width bar buys back: tighter gutters, the small type role, and
+     the short form of the CTA label. This stays a media query on purpose. The
+     measured ladder can only stay stable if the widths it reads do not depend
+     on the rung it last chose — tie these to the verdict and the bar tightens,
+     re-measures, finds it now fits a rung up, loosens, and no longer fits. A
+     viewport width is the one input the bar cannot argue with.
+
+     It costs one step: crossing 520 upwards loosens the buttons, so English
+     gives the CTA its short label back for about eight pixels of window. That
+     was measured against the alternative. Deleting these rules makes the ladder
+     perfectly monotonic and puts 360 and 375 — the two commonest phone widths
+     there are — onto two lines. A step in the CTA's label beats a wrapped bar
+     on every phone.
+     The 44px tap floor from pp-btn is deliberately untouched: a phone is where
+     it matters most. "Sign in" is deliberately still here too — hiding it once
+     left a signed-out phone with no route to an account at all. The CTA's
+     visible label shortens while its accessible name stays complete. */
   .navbar-inner { gap: var(--sp-2); }
   .navbar-left { flex: 0 0 auto; }
-  /* The one place the actions take the leftover width rather than yielding it:
-     below here the left side is a 44px mark and nothing else, so there is
-     nothing left for it to give. */
   .navbar-right { flex: 1 1 auto; }
   .header-language__trigger {
     --btn-pad-inline: var(--sp-2);
     --btn-gap: var(--sp-1);
   }
-  /* Narrow bars buy width by tightening horizontal padding and dropping to the
-     small type role. The 44px tap floor from pp-btn is deliberately untouched:
-     a phone is where it matters most. */
-  /* "Sign in" used to be hidden here, which left a signed-out phone with no
-     route to an account at all. The language control makes the full CTA label
-     too wide at this size, so its visible label shortens while its accessible
-     name stays complete. Authenticated controls may wrap; the bar grows with
-     them instead of clipping a language or account action. */
   .navbar .nav-btn-login,
   .navbar .nav-btn-history,
   .navbar .nav-btn-register {
@@ -1985,8 +2008,6 @@ ol.marketing-list li::marker {
   .navbar.authenticated .nav-account-name { max-width: 104px; font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); }
   .navbar.authenticated .nav-account-plan { font-size: var(--fs-1); padding: 3px var(--sp-2); letter-spacing: .1em; }
   .navbar:not(.authenticated) .nav-account { display: none; }
-  .nav-start-free-long { display: none; }
-  .nav-start-free-short { display: inline; }
   .footer-plan-item:last-of-type .footer-plan-text { display: none; }
 }
 /* ══════════════════════ REDUCED MOTION (WCAG 2.3.3) ══════════════════════ */
@@ -2346,6 +2367,131 @@ function RouteLink({ href, onNavigate, className, children, ...props }) {
   );
 }
 
+/* What the bar can afford to show, measured rather than named as a width.
+
+   It needs 991px of room in English, 1045 in Portuguese and 1057 in Japanese —
+   three numbers, one bar. Every fixed breakpoint this component has been given
+   was one of those three answers applied to all three languages, which is why
+   the same defect has now been reported twice at two different widths. There is
+   no fourth number that would have been right either: the bar's appetite also
+   moves with the signed-in state and with the reader's font size.
+
+   So it is asked instead of predicted, and the order is by what each piece
+   costs against what it is worth:
+
+     full       everything
+     no-links   the four marketing links go — all four are in the footer too
+     no-label   "Dark theme" goes. The switch still says which way it is set by
+                where the thumb is, which is the whole reason it is a switch
+     short-cta  "Start a free room" becomes the short label. Its accessible name
+                is unchanged, because the button carries its own
+     minimal    the wordmark goes — the mark beside it is the same control to
+                the same place, and names itself for both
+
+   The wordmark is last on purpose: it is the piece a reader is most likely to
+   notice missing, and it was the second half of the defect report.
+
+   A pass reads and never writes, apart from the verdict itself. Everything the
+   bar can drop keeps its box — absolute and hidden, not display:none — so each
+   piece measures the same on every rung and the answer is a pure function of
+   the width available. Both halves of that matter:
+
+   - A display:none piece measures zero, zero reads as "there is room now", and
+     the bar shows it, overflows, and hides it again on the next frame.
+   - The obvious alternative — put the bar back to "full", measure the real
+     thing, write the verdict — cannot be done from inside a ResizeObserver.
+     Mutating observed boxes in the callback earns "ResizeObserver loop
+     completed with undelivered notifications", after which the browser stops
+     delivering to that observer AT ALL and the bar stays on whatever rung it
+     happened to be on. It survives a resize sweep and dies during a drag.
+
+   It sums the CHILDREN, never the groups. A flex group alone on its line has
+   already grown to fill it, so measuring the group reports the width it was
+   given rather than the width it asked for.
+
+   The switch's word is the one piece inside another component's box, so its
+   cost is subtracted out rather than read directly: the group is measured as if
+   the word were already gone, and the word's own width is added back for the
+   rungs that keep it.
+
+   The 1px is sub-pixel rounding, not a guess: a bar that has computed its way
+   to within one pixel of the edge should round towards the layout that cannot
+   break. */
+function useBarFit(navRef, innerRef, leftRef, rightRef) {
+  const measureRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current, inner = innerRef.current;
+    const left = leftRef.current, right = rightRef.current;
+    if (!nav || !inner || !left || !right || typeof ResizeObserver === "undefined") return;
+
+    const width = (el) => (el ? el.getBoundingClientRect().width : 0);
+    const gapOf = (el) => (el ? parseFloat(getComputedStyle(el).columnGap) || 0 : 0);
+    const run = (widths, gap) => {
+      const real = widths.filter((w) => w > 0);
+      return real.reduce((a, w) => a + w, 0) + Math.max(0, real.length - 1) * gap;
+    };
+
+    const measure = () => {
+      const cs = getComputedStyle(inner);
+      const avail = inner.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+
+      const inFlow = (el) => !!el && getComputedStyle(el).position !== "absolute";
+
+      /* The switch's word costs its own width plus the gap that appears with
+         it; the CTA's long label costs only the difference, because the short
+         one takes its place rather than leaving a hole. */
+      const sw = right.querySelector(".pp-switch");
+      const word = sw && sw.querySelector(".pp-switch__label");
+      const wordCost = width(word) > 0 ? width(word) + gapOf(sw) : 0;
+      const longCost = Math.max(
+        0,
+        width(right.querySelector(".nav-start-free-long"))
+          - width(right.querySelector(".nav-start-free-short"))
+      );
+
+      /* Normalised to the narrowest the actions can be: no word, short CTA.
+         Everything currently on screen that the bar could still give up is
+         taken back out, so this number does not depend on the current rung. */
+      const bare = run([...right.children].map(width), gapOf(right))
+        - (inFlow(word) ? wordCost : 0)
+        - (inFlow(right.querySelector(".nav-start-free-long")) ? longCost : 0);
+
+      const spare = avail - gapOf(inner) - bare - 1;
+      const withLongCta = spare - longCost;
+      const withWord = withLongCta - wordCost;
+
+      const gap = gapOf(left);
+      const mark = width(left.querySelector(".chip-logo"));
+      const brand = width(left.querySelector(".navbar-brand"));
+      const links = width(left.querySelector(".navbar-links"));
+      const withBrand = run([mark, brand], gap);
+
+      nav.dataset.navFit =
+        run([mark, brand, links], gap) <= withWord ? "full"
+        : withBrand <= withWord ? "no-links"
+        : withBrand <= withLongCta ? "no-label"
+        : withBrand <= spare ? "short-cta"
+        : "minimal";
+    };
+
+    measureRef.current = measure;
+    measure();
+    const ro = new ResizeObserver(measure);
+    [inner, left, right].forEach((el) => ro.observe(el));
+    /* A bar measured in the fallback face is measured wrong — Outfit is not the
+       width of whatever stood in for it. */
+    document.fonts?.ready.then(measure).catch(() => {});
+    return () => ro.disconnect();
+  }, [navRef, innerRef, leftRef, rightRef]);
+
+  /* Signing out makes the actions narrower without making their CONTAINER
+     narrower — on the last rung it is flex: 1 1 auto and spans the line either
+     way — so the observer has nothing to report and the bar would stay
+     collapsed around content that now fits. Every render re-asks. */
+  useLayoutEffect(() => { measureRef.current?.(); });
+}
+
 /* ═══════════════════════ GLOBAL NAVBAR ═══════════════════════
    Persistent top bar shown on all screens.
    - Left:  Brand mark + "Point Poker" brand name
@@ -2373,15 +2519,25 @@ function NavBar({
   inRoom = false,
 }) {
   const accountLabel = currentUser?.displayName || currentUser?.email || null;
+  const navRef = useRef(null), innerRef = useRef(null);
+  const leftRef = useRef(null), rightRef = useRef(null);
+  useBarFit(navRef, innerRef, leftRef, rightRef);
 
   return (
     <nav
       className={`navbar${currentUser ? " authenticated" : ""}`}
       role="navigation"
       aria-label={t("nav.aria")}
+      /* Written by useBarFit, not by React: it is the outcome of a measurement
+         that changes on resize, and routing it through state would re-render
+         the whole bar on every frame of a drag to set one attribute. "full" is
+         the pre-measurement default, so a bar that never measures shows
+         everything rather than nothing. */
+      data-nav-fit="full"
+      ref={navRef}
     >
-      <div className="navbar-inner pp-container">
-        <div className="navbar-left">
+      <div className="navbar-inner pp-container" ref={innerRef}>
+        <div className="navbar-left" ref={leftRef}>
           <BrandMark
             onClick={onLogoClick}
             size={44}
@@ -2419,7 +2575,7 @@ function NavBar({
             </div>
           )}
         </div>
-        <div className="navbar-right">
+        <div className="navbar-right" ref={rightRef}>
           <HeaderLanguageSwitcher />
           {/* Dark is the default and stays the default; this is the only way to
               leave it, and the choice is remembered. It sits before the account

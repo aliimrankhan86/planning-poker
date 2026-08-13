@@ -217,12 +217,15 @@ carrying "Room" cannot fit one line at any size down to the 13px floor — 87px 
 label in 64px of column. The tab picks the mode and the primary action names the
 outcome, since it already reads "Create Room →". Do not add the noun back.
 
-**The marketing bar wraps; it does not clip, and its two hide-widths are not
-the same width.** This note used to say the links were hidden below 780px and
-that a scroll strip meant nothing was unreachable. Both halves were wrong in a
-way that shipped, and it was reported from a resized window: "PRICING" followed
-by "SUPPO", cut down the middle at the container edge, with no "Point Poker"
-beside the mark one screenshot narrower.
+**The marketing bar measures itself; it does not clip, and it has no hide-widths
+at all.** This note has now been wrong twice, both times because it wrote down a
+width. First it said the links were hidden below 780px and that a scroll strip
+meant nothing was unreachable; that shipped and was reported from a resized
+window — "PRICING" followed by "SUPPO", cut down the middle at the container
+edge, with no "Point Poker" beside the mark one screenshot narrower. The fix for
+that replaced 780 with 520 and 1024, and *that* was reported the next day: the
+whole bar on two lines from 1024 to 1065. Read the ladder below before adding a
+third number.
 
 `.navbar-links` was `overflow-x: auto`, and a scroller has exactly one response
 to running out of room. Nobody drags a navbar sideways, so what it bought was a
@@ -235,24 +238,73 @@ nothing to a single item, which is what that group is once the bar has wrapped.
 The wrap has to be at the seam between the two groups and nowhere inside them.
 Wrapping one level lower reads as the same fix and is not: it puts "Point
 Poker" on a line underneath its own mark. `.navbar-left` must stay `nowrap`.
+The wrap still exists and still matters — it is what a bar below ~344px falls
+back to once there is nothing left to give up — but it is no longer how the bar
+answers a shortage of width in the ordinary case.
 
-The two remaining numbers are no longer fit thresholds — the wrap handles
-fitting — but the widths below which each element stops being worth a line of
-its own. The wordmark goes at 520 (at 375 the mark and the four actions take
-the full 343px of container, to the pixel) and the links at 1024. They used to
-share 780, which was wrong in both directions: 132px of slack still sat beside
-the wordmark at 780, and the four links do not fit on one line until about
-1050. Pricing, Support, Trust and FAQ are all in the footer, so the band below
-lg loses nothing.
+**The wrap is now the last resort, not the mechanism.** Replacing 780 with 520
+and 1024 was still one number per element, and it was reported again a day
+later: at 1024–1065 the whole bar went to two lines, because 1024 was the
+English answer rounded the wrong way. The bar needs **991px in English, 1045 in
+Portuguese, 1057 in Japanese** — three numbers, one bar, and there is no fourth
+that would have been right either, because the appetite also moves with the
+signed-in state and the reader's font size.
 
-**Why no single number could have worked.** The bar's contents change width
-with the language. The four labels measure 328px in English and 398px in
-Portuguese; the call to action 151px against 176px. Portuguese also spelled the
-fourth link "Perguntas frequentes" — 209px, wider than its other three links
-combined, and on its own enough to push the bar onto a second line at every
-desktop width there is. It is `FAQ` now, the ordinary Brazilian Portuguese
-label, and `nav.toFaq` still carries the full phrase as the accessible name.
-Six tests in `designsystem.test.js` under "the marketing bar" hold all of this.
+So it is asked, not predicted. `useBarFit` measures and writes `data-nav-fit`
+on `.navbar`; CSS says only what each verdict looks like. Cheapest first:
+
+| rung | gives up | why it is cheap |
+|------|----------|-----------------|
+| `full` | — | |
+| `no-links` | the four marketing links | all four are in the footer |
+| `no-label` | "Dark theme" | the thumb still shows the state |
+| `short-cta` | the long CTA label | the button names itself |
+| `minimal` | the wordmark | the mark is the same control, and names both |
+
+The wordmark is last on purpose — it is the piece a reader notices missing, and
+it was half the original report. Measured thresholds, English / Portuguese /
+Japanese: `short-cta` 446/444/452, `no-label` 576/600/608, `no-links`
+634/660/668, `full` 1068/1124/1136. Every one of those is a number no
+stylesheet could have known.
+
+**Four rules that are not optional, each learned by breaking it.**
+
+1. *Never measure inside a ResizeObserver by mutating the DOM.* The obvious
+   implementation puts the bar back to `full`, reads the real widths, writes the
+   verdict. It earns `ResizeObserver loop completed with undelivered
+   notifications`, after which the browser **stops delivering to that observer at
+   all** and the bar freezes on whatever rung it was on. It survives a scripted
+   resize sweep and dies during a real drag. Measurement is read-only.
+2. *Hidden is not `display: none`.* A hidden piece must keep a box or it
+   measures 0, 0 reads as "there is room now", and the bar shows it, overflows,
+   and hides it again next frame. Everything droppable is `position: absolute;
+   visibility: hidden`.
+3. *Ghosts anchor to `inset-inline-end`, not `left`.* A ghost keeps its full
+   natural width; anchored at the start it hangs off the right of a phone and
+   scrolls the whole page sideways — 21px of document overflow in English, 42 in
+   Portuguese, from elements nobody can see.
+4. *Width-buying rules key off a viewport width, never off the verdict.* Tie the
+   `≤520` padding block to `[data-nav-fit]` and the bar tightens, re-measures,
+   finds it now fits a rung up, loosens, and no longer fits — for ever. That
+   block costs one four-pixel step in English at 520 where the CTA label comes
+   back. Deleting it instead makes the ladder perfectly monotonic and puts 360
+   and 375 — the two commonest phone widths there are — onto two lines. Measured
+   both ways; the step is the cheaper defect.
+
+`Switch` now names its own input (`aria-label`), which is what makes rule 2 safe
+for the theme word: the name no longer lives in the span being hidden.
+
+**Why no number could have worked.** The four labels measure 328px in English
+and 359 in Portuguese; the call to action 151 against 176. Portuguese also
+spelled the fourth link "Perguntas frequentes" — 209px, wider than its other
+three combined, enough on its own to hold the bar on two lines at every desktop
+width. It is `FAQ` now, the ordinary Brazilian Portuguese label, with
+`nav.toFaq` still carrying the full phrase as the accessible name.
+
+Eleven tests in `designsystem.test.js` under "the marketing bar" and "the theme
+switch survives every width" hold all of this; each was mutation-tested.
+Verified by sweeping 320→1440 in all three languages: zero clipped strips, zero
+document overflow, and the bar on one line everywhere above 344px.
 
 **An empty room's primary action is the invite, not Reveal.** A facilitator who
 has just made a room is alone in it. The action bar's primary slot held "Reveal

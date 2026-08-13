@@ -199,6 +199,12 @@ export function ThemeToggle({ compactOnNarrow = false, className }) {
     <Switch
       className={cx("pp-theme-switch", compactOnNarrow && "pp-theme-switch--compact-narrow", className)}
       label={<>{word}<span className="pp-theme-switch__suffix">{t("theme.suffix")}</span></>}
+      /* The same words, said once for the machine. A bar with no room for the
+         visible label hides it outright — see the compact-narrow variant in
+         components.css — and a name that lived only in that span would go with
+         it. Naming the input directly makes the name independent of whether the
+         span is on screen. */
+      aria-label={`${word}${t("theme.suffix")}`}
       checked={light}
       onChange={onChange}
     />
