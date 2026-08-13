@@ -409,14 +409,14 @@ nothing to a single item, which is what that group is once the bar has wrapped.
 The wrap has to be at the seam between the two groups and nowhere inside them.
 Wrapping one level lower reads as the same fix and is not: it puts "Point
 Poker" on a line underneath its own mark. `.navbar-left` must stay `nowrap`.
-The wrap still exists and still matters — it is what a bar below ~344px falls
-back to once there is nothing left to give up — but it is no longer how the bar
-answers a shortage of width in the ordinary case.
+The wrap still exists and still matters — it is what a bar narrower than
+328/327/334 (EN/PT/JA) falls back to once there is nothing left to give up — but
+it is no longer how the bar answers a shortage of width in the ordinary case.
 
 **The wrap is now the last resort, not the mechanism.** Replacing 780 with 520
 and 1024 was still one number per element, and it was reported again a day
 later: at 1024–1065 the whole bar went to two lines, because 1024 was the
-English answer rounded the wrong way. The bar needs **991px in English, 1045 in
+English answer rounded the wrong way. The bar needs **990px in English, 1045 in
 Portuguese, 1057 in Japanese** — three numbers, one bar, and there is no fourth
 that would have been right either, because the appetite also moves with the
 signed-in state and the reader's font size.
@@ -433,10 +433,20 @@ on `.navbar`; CSS says only what each verdict looks like. Cheapest first:
 | `minimal` | the wordmark | the mark is the same control, and names both |
 
 The wordmark is last on purpose — it is the piece a reader notices missing, and
-it was half the original report. Measured thresholds, English / Portuguese /
-Japanese: `short-cta` 446/444/452, `no-label` 576/600/608, `no-links`
-634/660/668, `full` 1068/1124/1136. Every one of those is a number no
-stylesheet could have known.
+it was half the original report.
+
+Lowest width at which each rung is reached, English / Portuguese / Japanese, from
+**settled reads** against the production build: `short-cta` 434/433/440,
+`no-label` 563/588/595, `no-links` 621/646/653, `full` 1055/1110/1123. One line
+from 328/327/334 upwards. Every one of those is a number no stylesheet could
+have known.
+
+**Measure with settled reads or not at all.** An ascending 1px sweep that reads
+the attribute a fixed 40ms after each resize reports every threshold 10–15px
+high, because the observer has not caught up and the read returns the previous
+rung. The first draft of this note was written from such a sweep and every
+number in it was wrong. Set the width, then poll until the verdict and the bar
+height both stop changing.
 
 **Four rules that are not optional, each learned by breaking it.**
 
@@ -456,11 +466,17 @@ stylesheet could have known.
    Portuguese, from elements nobody can see.
 4. *Width-buying rules key off a viewport width, never off the verdict.* Tie the
    `≤520` padding block to `[data-nav-fit]` and the bar tightens, re-measures,
-   finds it now fits a rung up, loosens, and no longer fits — for ever. That
-   block costs one four-pixel step in English at 520 where the CTA label comes
-   back. Deleting it instead makes the ladder perfectly monotonic and puts 360
-   and 375 — the two commonest phone widths there are — onto two lines. Measured
-   both ways; the step is the cheaper defect.
+   finds it now fits a rung up, loosens, and no longer fits — for ever. Deleting
+   it instead makes the ladder perfectly monotonic and puts 360 and 375 — the
+   two commonest phone widths there are — onto two lines. Measured both ways,
+   and it was kept.
+
+   Keeping it costs a **42px band in English only**: `no-label` is reached at
+   507, lost again at 521 when the padding loosens, and regained at 563, so
+   521–562 wears the short CTA label. Portuguese and Japanese show no reversal
+   at all — both sit at `short-cta` either side of 520. An earlier draft called
+   this "one four-pixel step", which was the lagging sweep talking. The wordmark
+   is never involved, which is what makes the band acceptable.
 
 `Switch` now names its own input (`aria-label`), which is what makes rule 2 safe
 for the theme word: the name no longer lives in the span being hidden.
@@ -472,10 +488,11 @@ three combined, enough on its own to hold the bar on two lines at every desktop
 width. It is `FAQ` now, the ordinary Brazilian Portuguese label, with
 `nav.toFaq` still carrying the full phrase as the accessible name.
 
-Eleven tests in `designsystem.test.js` under "the marketing bar" and "the theme
-switch survives every width" hold all of this; each was mutation-tested.
-Verified by sweeping 320→1440 in all three languages: zero clipped strips, zero
-document overflow, and the bar on one line everywhere above 344px.
+"the marketing bar" in `designsystem.test.js` holds nine tests, five added by
+this pass; one more was rewritten under "the theme switch survives every width"
+(six there). Each of the six new-or-changed ones was mutation-tested. Verified
+by sweeping 320→1440 in all three languages against the production build: zero
+clipped strips, zero document overflow, one line from 328/327/334 upwards.
 
 **An empty room's primary action is the invite, not Reveal.** A facilitator who
 has just made a room is alone in it. The action bar's primary slot held "Reveal
