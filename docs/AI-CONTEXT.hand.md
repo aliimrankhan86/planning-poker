@@ -712,6 +712,43 @@ Firebase RTDB's own transport), the React DevTools notice is a dev-mode
 `console.info` whose string is absent from the build, and Speed Insights' debug
 notice is replaced by `script.js` in production.
 
+## Time up stops the clock, it does not turn the cards over — 14 August 2026
+
+Reported by the owner as basic timer behaviour that was missing: when the
+countdown ends, the facilitator should be the one who reveals, so the team can
+talk first — or get more time.
+
+What it used to do was reveal by itself. The tick at zero wrote
+`revealed: true` from whichever browser happened to be driving the clock, which
+is the wrong hand on the deck: a facilitator is running a ceremony out loud,
+and the room's cards turned over mid-sentence, sometimes with a voter still
+deciding, and with nothing to undo it. The panel even advertised it —
+"Cards auto-reveal on zero".
+
+Zero now stops the clock and nothing else. The facilitator gets:
+
+- the action bar's primary relabelled to **"Time is up — reveal everyone's
+  cards"**, in the place that button always sits;
+- a warning panel saying the cards are still face down, and naming both options;
+- the countdown row back, so "give them another 30 seconds" is one click.
+
+Voters get "Time is up. The facilitator reveals the cards — you can still play
+one until they do." — which is true: the deck is only locked at reveal, so a
+late card still counts.
+
+**The expired state is derived, not stored** (`isTimeUp` in
+`src/estimation.js`). A stopped clock sitting on `remaining: 0` with nothing
+revealed can only have got there by running out: a manual stop keeps the second
+it stopped on, a new round restores the duration, both reveal paths write
+`revealed` in the same breath as `remaining: 0`, and the "whoever started the
+timer left" guard writes `running: false` alone. So there is no new Firebase
+field, no `database.rules.json` change, and no second write that can drift out
+of step with the first. Seven tests in `describe("isTimeUp")` pin each of those
+states, because the derivation is only safe while they hold.
+
+Auto-reveal when *everyone has voted* is untouched — that one is the table
+finishing, not a clock expiring.
+
 ## Layout bugs that survived a passing test suite
 
 Three defects shipped together and all three came from the same place: a rule that

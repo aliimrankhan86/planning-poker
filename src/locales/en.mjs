@@ -266,6 +266,10 @@ export const ui = {
   "action.hintFirstMany": "Waiting for the first card from your {count} voters.",
   "action.hintAllIn": "Everyone is in. Reveal when you are ready.",
   "action.hintEarly": "Reveal early if the room has stopped thinking.",
+  "action.timeUp": "Time is up",
+  "action.revealTimeUp": "Time is up — reveal everyone's cards",
+  "action.hintTimeUp": "The countdown ended. Reveal when the room is ready, or start another timer.",
+  "action.hintTimeUpNone": "The countdown ended with no cards played. Start another timer, or talk it through first.",
 
   /* ── Game screen ── */
   "game.leaveAria": "Leave room and return to home",
@@ -305,7 +309,10 @@ export const ui = {
   "game.timeUp": "Time's almost up!",
   "game.wrappingUp": "Wrapping up…",
   "game.estimating": "Estimating…",
-  "game.autoReveal": "Cards auto-reveal on zero",
+  "game.timerEndsHint": "You reveal the cards when it ends",
+  "game.timerExpiredTitle": "Time is up",
+  "game.timerExpiredBody": "The cards are still face down. Reveal them with the button above when the room is ready, or start another countdown to give the team more time.",
+  "game.timeUpVoter": "Time is up. The facilitator reveals the cards — you can still play one until they do.",
   "game.pickNow": "Pick a card, NOW!",
   "game.lastSeconds": "Last few seconds!",
   "game.pickYourCard": "Pick your card!",

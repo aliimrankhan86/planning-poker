@@ -8,6 +8,7 @@ import {
   mkCode,
   playerId,
   CODE_ALPHABET,
+  isTimeUp,
 } from "./estimation";
 
 /* The estimation maths is the product. If `tally` is wrong the app still
@@ -439,5 +440,55 @@ describe("sprintHistoryStats", () => {
       const history = Array.from({ length: n }, (_, i) => h(n - i));
       expect(sprintHistoryStats(history).trend).not.toBeNull();
     }
+  });
+});
+
+/* ═══════════════════ THE COUNTDOWN RUNNING OUT ═══════════════════
+   Time up used to mean "reveal everyone's cards", written by whichever
+   browser happened to be driving the clock. That is the wrong hand on the
+   deck: a facilitator runs the ceremony, and having the room's cards turn
+   over mid-sentence — with a voter still deciding, and no way back — took
+   the round off them. Zero now only stops the clock. The facilitator
+   reveals, or gives the team another countdown.
+
+   Every state below is one the room can really be in, and only the first is
+   the expired one. The whole point of deriving this rather than storing a
+   flag is that no second write can drift out of step with it — which is only
+   true while these hold.
+═══════════════════════════════════════════════════════════════════ */
+describe("isTimeUp", () => {
+  test("a clock stopped on zero with the cards down is time up", () => {
+    expect(isTimeUp({ running: false, duration: 30, remaining: 0 }, false)).toBe(true);
+  });
+
+  test("a fresh room is not time up", () => {
+    expect(isTimeUp({ running: false, duration: 30, remaining: 30 }, false)).toBe(false);
+  });
+
+  test("a running clock is never time up, not even on its last second", () => {
+    expect(isTimeUp({ running: true, duration: 30, remaining: 0 }, false)).toBe(false);
+    expect(isTimeUp({ running: true, duration: 30, remaining: 1 }, false)).toBe(false);
+  });
+
+  test("a facilitator stopping the clock early is not time up", () => {
+    // onStop leaves the seconds it stopped on, which is what keeps the two
+    // apart: one ran out, the other was called off.
+    expect(isTimeUp({ running: false, duration: 30, remaining: 7 }, false)).toBe(false);
+  });
+
+  test("once the cards are up it is no longer time up", () => {
+    // Both reveal paths write revealed alongside remaining 0, so without this
+    // clause every revealed round would sit in the expired state for ever.
+    expect(isTimeUp({ running: false, duration: 30, remaining: 0 }, true)).toBe(false);
+  });
+
+  test("a new round clears it, because the duration is restored", () => {
+    expect(isTimeUp({ running: false, duration: 45, remaining: 45 }, false)).toBe(false);
+  });
+
+  test("a room with no timer node at all is not time up", () => {
+    expect(isTimeUp(undefined, false)).toBe(false);
+    expect(isTimeUp(null, false)).toBe(false);
+    expect(isTimeUp({}, false)).toBe(false);
   });
 });

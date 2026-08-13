@@ -7,8 +7,15 @@
   branch (design sweep, deck migration into the design system, dead-CSS removal,
   the Cormorant `@font-face` fix, and the measured header ladder) was merged to
   `main` on 13 August 2026.
-- 464 Jest tests pass; production build succeeds; sitemap and prerender both
+- 474 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
+- **14 August:** the countdown no longer reveals the cards by itself. Time up
+  stops the clock and hands the facilitator the choice — reveal, or start
+  another countdown — which is what the owner reported as missing. Auto-reveal
+  when *everyone has voted* is unchanged. The expired state is derived
+  (`isTimeUp` in `src/estimation.js`), so there is no new Firebase field and no
+  rules change; the reasoning and the seven tests that keep it safe are in
+  `docs/AI-CONTEXT.hand.md`.
 - Product is free for everyone: 20 people per room, no paid tier, Stripe,
   licences, Pro gating, trial clock, card fields, or ads.
 - Live languages are English, Portuguese (`/pt/`), and Japanese (`/ja/`). The

@@ -170,6 +170,23 @@ export function deleteSizedItemUpdates(roomData = {}, kind, index) {
   return upd;
 }
 
+/**
+ * True when the countdown ran out and the cards are still face down.
+ *
+ * Derived rather than stored, and it costs nothing to keep it that way: only
+ * the tick at zero leaves a stopped clock sitting on `remaining: 0` with
+ * nothing revealed. A manual stop keeps the seconds it stopped on, a new round
+ * restores the duration, and both reveal paths write `revealed` in the same
+ * breath as `remaining: 0` — so no other state collides with this one, and
+ * Firebase needs no extra field and no rules change to carry it.
+ *
+ * The room-level "whoever started the timer has left" guard writes
+ * `running: false` alone, leaving whatever second it stopped on, which is why
+ * that path does not read as expired either.
+ */
+export const isTimeUp = (timer, revealed) =>
+  !!timer && timer.running !== true && timer.remaining === 0 && revealed !== true;
+
 /** Formats a number for display: whole numbers bare, otherwise one decimal. */
 export const showNum = (n) =>
   n === null || n === undefined ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(1);

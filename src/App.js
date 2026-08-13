@@ -75,6 +75,7 @@ import {
 } from "./i18n.mjs";
 import {
   tally,
+  isTimeUp,
   showNum,
   teamCode,
   sprintResetUpdates,
@@ -3752,14 +3753,25 @@ export default function App() {
         clearInterval(timerRef.current);
         timerRef.current = null;
         remainingRef.current = null;
-        // The interval is already cleared by the time these run, so a rejection
-        // here does not retry a second later — the countdown simply stops at
-        // zero and the cards never turn over. It has to be said out loud.
-        const stopped = await write("Time is up, but the timer could not be stopped. Reveal the cards manually.", () =>
-          update(ref(db, `rooms/${code}/timer`), { running: false, remaining: 0 }));
-        const revealed = await write("Time is up, but the cards could not be revealed. Try the Reveal button.", () =>
-          update(ref(db, `rooms/${code}`), { revealed: true }));
-        if (stopped && revealed) showToast("Time is up. Cards revealed.");
+        // Zero stops the clock. It does NOT turn the cards over: the countdown
+        // is a box the facilitator draws round the discussion, not a hand on
+        // the deck. Auto-revealing took the round out of their hands
+        // mid-sentence and published a half-voted table with no way back.
+        // They reveal when the room is ready, or start another countdown.
+        //
+        // The expired state needs no new field and so no rules change: a timer
+        // that is stopped at remaining 0 with nothing revealed is a countdown
+        // that ran out, and nothing else writes that combination — a manual
+        // stop keeps the seconds it stopped on, a new round restores the
+        // duration, and both reveal paths set revealed at the same time.
+        // See `timeUp` in GameScreen.
+        //
+        // The interval is already cleared by the time this runs, so a rejection
+        // does not retry a second later — the clock simply stays where it is.
+        // It has to be said out loud.
+        const stopped = await write("Time is up, but the timer could not be stopped. Reveal the cards when you are ready.", () =>
+          update(ref(db, `rooms/${code}/timer`), { running: false, remaining: 0, startedBy: null }));
+        if (stopped) showToast("Time is up. Reveal the cards when the team is ready.");
       } else {
         // One tick failing is not worth a message — the next second retries it.
         await update(ref(db, `rooms/${code}/timer`), { remaining: r }).catch(() => {});
@@ -7049,6 +7061,7 @@ function RoomActionBar({
   votedCount,
   voterCount,
   needsManualEstimate,
+  timeUp,
   onReveal,
   onInvite,
   inviteCopied,
@@ -7076,7 +7089,11 @@ function RoomActionBar({
         disabled: false,
       }
     : {
-        label: t("action.reveal"),
+        /* Time up changes the label, not the button. The countdown ending is
+           the moment this control matters most, and it is already the thing
+           the facilitator's eye is on — moving the decision to a new button
+           somewhere else would make them look for it. */
+        label: timeUp ? t("action.revealTimeUp") : t("action.reveal"),
         icon: "eye",
         onClick: onReveal,
         disabled: votedCount === 0,
@@ -7092,17 +7109,27 @@ function RoomActionBar({
       // The button above now says "Copy the invite link", so this says what
       // happens after rather than repeating the instruction.
       ? t("action.hintEmpty")
-      : votedCount === 0
-        ? t(voterCount === 1 ? "action.hintFirstOne" : "action.hintFirstMany", { count: voterCount })
-        : everyoneVoted
-          ? t("action.hintAllIn")
-          : t("action.hintEarly");
+      : timeUp
+        // Time up is a state, not a verdict: nothing has been decided and
+        // nothing is lost. Both sentences say what is still available.
+        ? t(votedCount === 0 ? "action.hintTimeUpNone" : "action.hintTimeUp")
+        : votedCount === 0
+          ? t(voterCount === 1 ? "action.hintFirstOne" : "action.hintFirstMany", { count: voterCount })
+          : everyoneVoted
+            ? t("action.hintAllIn")
+            : t("action.hintEarly");
 
   return (
     <Card variant="raised" as="section" className="action-bar" aria-label={t("action.aria")}>
       <Row between nowrap>
         <span className="action-bar-title">
-          {revealed ? t("action.cardsUp") : roomIsEmpty ? t("action.waiting") : t("action.inProgress")}
+          {revealed
+            ? t("action.cardsUp")
+            : roomIsEmpty
+              ? t("action.waiting")
+              : timeUp
+                ? t("action.timeUp")
+                : t("action.inProgress")}
         </span>
         {/* "0 of 0 voted" over an empty bar is state that has not happened.
             Zeroes read as data. Neither renders until someone can vote. */}
@@ -7492,6 +7519,11 @@ function GameScreen({
   const urgent = timer.remaining <= 5;
   const warn = timer.remaining <= 10 && !urgent;
 
+  /* The countdown ran out and the cards are still face down. The reasoning for
+     deriving this rather than storing it is on isTimeUp, in src/estimation.js
+     — the room's rules live where they can be tested without a browser. */
+  const timeUp = isTimeUp(timer, revealed);
+
   return (
     <>
       {/* Confetti, mounts when consensus detected, canvas self-destructs when done */}
@@ -7608,6 +7640,7 @@ function GameScreen({
                 votedCount={votedCount}
                 voterCount={voters.length}
                 needsManualEstimate={requiresManualFinalEstimate}
+                timeUp={timeUp}
                 onReveal={onReveal}
                 onInvite={handleCopyLink}
                 inviteCopied={headerLinkCopied}
@@ -7628,6 +7661,22 @@ function GameScreen({
                 <>
                   {!timer.running && !revealed && (
                     <>
+                      {/* What happened, and what is still possible. No Reveal
+                          button here: the action bar directly above already
+                          holds it, in the place it always sits, and a second
+                          copy would make the facilitator choose between two
+                          identical controls at the one moment they are being
+                          watched by the whole room. The Start row below is the
+                          other option — another countdown, more time.
+
+                          No class of its own: the panel's own `> * + *` rule
+                          owns the gap above it, and a selector nothing else
+                          needs is a selector to keep alive. */}
+                      {timeUp && (
+                        <Alert tone="warning" title={t("game.timerExpiredTitle")}>
+                          {t("game.timerExpiredBody")}
+                        </Alert>
+                      )}
                       {/* Length and Start are one decision, so they are one
                           row: you pick 45 and press the thing next to it. They
                           used to be stacked with the hint wedged between them,
@@ -7684,7 +7733,7 @@ function GameScreen({
                         <div className={`rstatus${urgent ? " danger" : warn ? " warn" : ""}`}>
                           {urgent ? t("game.timeUp") : warn ? t("game.wrappingUp") : t("game.estimating")}
                         </div>
-                        <div className="rhint">{t("game.autoReveal")}</div>
+                        <div className="rhint">{t("game.timerEndsHint")}</div>
                         <Button variant="ghost" size="sm" className="btn-stop" onClick={onStop}>
                           <Icon name="stop" size={16} /> {t("game.stopTimer")}
                         </Button>
@@ -7717,9 +7766,15 @@ function GameScreen({
                         ? allSame
                           ? "✓ Cards revealed, consensus reached"
                           : "✓ Cards revealed, review the spread below"
-                        : myVote
-                          ? "✓ Card played. The cards flip once everyone has voted."
-                          : t("game.playWhenReady")}
+                        /* Ahead of "you have voted", because it is the newer
+                           fact and the one that explains why nothing is
+                           happening. A voter who has not played can still play
+                           — the deck is only locked at reveal. */
+                        : timeUp
+                          ? t("game.timeUpVoter")
+                          : myVote
+                            ? "✓ Card played. The cards flip once everyone has voted."
+                            : t("game.playWhenReady")}
                     </div>
                   )}
                 </>
