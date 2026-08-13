@@ -45,7 +45,7 @@ const fontsCss = readFileSync(join(__dirname, "..", "public", "fonts", "fonts.cs
    sweep. It only ever goes down: lower it when a surface moves into the design
    system, and treat any need to raise it as a sign the surface was built in the
    wrong file. Comments are not counted, deliberately — see the test. */
-const CSS_DECLARATION_CEILING = 1371;
+const CSS_DECLARATION_CEILING = 1370;
 
 describe("design tokens exist", () => {
   const required = [
@@ -517,6 +517,41 @@ describe("the navbar does not hang text off its own edge", () => {
    thresholds any more; they are the widths below which each element stops
    being worth a line of its own.
 ──────────────────────────────────────────────────────────────────────── */
+/* Chrome logs "Blocked aria-hidden on an element because its descendant
+   retained focus" and the offending node is dropped from the a11y tree while
+   still being reachable — a real defect, not a lint nit. The wordmark shipped
+   as <button aria-hidden="true" tabIndex={-1}> on the theory that tabIndex={-1}
+   made it legal; it does not, because tabindex="-1" only removes an element
+   from SEQUENTIAL tab order and a pointer click still focuses it. */
+describe("nothing hidden from assistive tech can take focus", () => {
+  const FOCUSABLE = ["button", "a", "input", "select", "textarea", "summary"];
+  /* Opening tags, so <span aria-hidden> containing a <button> is not matched —
+     that nesting is caught live, not here. */
+  const openingTags = app.match(/<[a-zA-Z][^>]*?aria-hidden=["{]?["']?true["'}]?[^>]*>/g) || [];
+
+  test("no focusable element in App.js carries aria-hidden", () => {
+    const offenders = openingTags
+      .map((tag) => (tag.match(/^<([a-zA-Z]+)/) || [])[1])
+      .filter((name) => FOCUSABLE.includes(name));
+    expect(offenders).toEqual([]);
+  });
+
+  /* Non-vacuity: the regex must actually be finding the aria-hidden tags that
+     legitimately exist (the print report, the decorative spans, the wordmark),
+     or the test above passes by matching nothing at all. */
+  test("the scan actually sees the aria-hidden markup", () => {
+    expect(openingTags.length).toBeGreaterThanOrEqual(5);
+  });
+
+  /* tabIndex={-1} is not a licence for aria-hidden and must not come back as
+     one. It is legitimate elsewhere (roving tabindex, focus targets), so this
+     only forbids the two appearing on the SAME tag. */
+  test("tabIndex={-1} is never used to excuse aria-hidden", () => {
+    const both = openingTags.filter((tag) => /tabIndex=\{-1\}|tabindex=["']-1["']/.test(tag));
+    expect(both).toEqual([]);
+  });
+});
+
 describe("the marketing bar", () => {
   const rule = (selector) =>
     (cssCode.match(new RegExp(`(^|\\})\\s*${selector.replace(/[.]/g, "\\.")}\\s*\\{[^{}]*\\}`, "m")) || [""])[0];

@@ -1538,12 +1538,19 @@ body::before {
   min-width: 0;
 }
 .navbar-links > * { flex: 0 0 auto; }
+/* display matters here and is not decoration. This is a <span> (see the JSX for
+   why), and transform does not apply to a non-replaced inline element — as a
+   plain inline it would silently drop the :hover lift below and give the tap
+   -target ::after an inline box to hang off. It was inline-block for free while
+   it was a <button>. */
 .navbar-brand {
+  display: inline-flex; align-items: center;
   font-family: var(--font-ui);
   font-size: var(--fs-4); font-weight: var(--fw-bold);
   color: var(--cream); letter-spacing: -.02em;
   cursor: pointer; text-decoration: none;
-  background: none; border: none; padding: 0;
+  /* background/border/padding resets deleted with the <button>: a <span> has
+     none of them, and the global reset already zeroes padding. */
   transition: color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
 }
 .navbar-brand:hover { color: var(--cream); transform: translateY(-1px); }
@@ -2607,21 +2614,32 @@ function NavBar({
             size={44}
             label={t("nav.brandHome")}
           />
-          {/* The wordmark is the same home control as the mark beside it, and
-              it had no accessible name of its own: aria-label on the inner
-              <span> is not exposed, so a screen reader read it as an unlabelled
-              button. Rather than announce one destination twice, this stays
-              clickable for the pointer and is hidden from assistive tech, which
-              already has the labelled mark immediately before it. Removing it
-              from the tab order is what makes aria-hidden legal here. */}
-          <button
+          {/* The wordmark is the same home control as the labelled mark beside
+              it, so it is hidden from assistive tech rather than announcing one
+              destination twice. It is a <span>, not a <button>, and that is the
+              whole point: a focusable control that is aria-hidden is a
+              contradiction, and Chrome logs it — "Blocked aria-hidden on an
+              element because its descendant retained focus" — the moment a
+              pointer click focuses it.
+
+              The comment that used to sit here claimed tabIndex={-1} was "what
+              makes aria-hidden legal". It is not. tabindex="-1" removes an
+              element from SEQUENTIAL tab order only; click and programmatic
+              focus still land on it, which is exactly how the warning was
+              reached. `inert` would prevent focus, but it also swallows the
+              click, so it cannot be used on something that must stay clickable.
+
+              A span cannot take focus at all, so there is nothing to contradict.
+              Keyboard and screen-reader users lose nothing: BrandMark, directly
+              above, is a real button with a real name and the same onClick. */}
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+          <span
             className="navbar-brand"
             onClick={onLogoClick}
             aria-hidden="true"
-            tabIndex={-1}
           >
             <BrandWordmark />
-          </button>
+          </span>
           {showMarketingNav && (
             <div className="navbar-links" aria-label={t("nav.sections")}>
               <NavLinkButton onClick={onPlans} ariaLabel={t("nav.toPricing")}>

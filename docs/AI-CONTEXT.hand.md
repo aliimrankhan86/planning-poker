@@ -665,6 +665,53 @@ Two things to keep:
 whole `CSS` block is a JS template literal; one backtick ends the string and
 takes the app down. Done twice while writing this.
 
+## A focusable element must never be aria-hidden — 14 August 2026
+
+Chrome logged this on every content page, and it was missed because the console
+had been read *filtered to errors*, returning a cumulative buffer of stale dev
+entries instead of the live warning:
+
+```
+Blocked aria-hidden on an element because its descendant retained focus.
+Ancestor with aria-hidden: <button class="navbar-brand" aria-hidden="true" tabindex="-1">
+```
+
+**Read the console unfiltered, in a fresh tab, after interacting.** The dev
+server's buffer spans the whole session.
+
+The wordmark is aria-hidden on purpose — it is the same home control as the
+labelled mark beside it, and one destination should not be announced twice. The
+defect was shipping that as a `<button>`. The comment there claimed
+`tabIndex={-1}` legalised it; it does not. `tabindex="-1"` removes an element
+from *sequential* tab order only, and a pointer click still focuses it.
+
+It is a `<span>` now. `inert` — which the browser message suggests — prevents
+focus but also swallows the click, so it cannot be used on something that must
+stay clickable. A span cannot take focus at all. Nothing is lost for keyboard or
+screen-reader users: `BrandMark` directly above is a real button, with a real
+name and the same `onClick`.
+
+Two consequences worth keeping:
+
+- **`display: inline-flex` on `.navbar-brand` is load-bearing.** `transform`
+  does not apply to a non-replaced inline element, so a plain inline span would
+  silently drop the `:hover` lift and give the 44px tap-target `::after` an
+  inline box to hang off. A `<button>` was inline-block for free.
+- **The ghosts were never at fault.** `visibility: hidden` refuses focus and
+  releases it — verified by focusing a nav link at `full` and dragging to 500px,
+  which moves focus to `body` with no warning. Only the aria-hidden button broke
+  the rule.
+
+Pinned by three tests in `describe("nothing hidden from assistive tech can take
+focus")`, mutation-tested against the restored `<button>`.
+
+The other console lines on that page are all dev-only, each checked: the failing
+`ws://localhost:3000/ws` socket is CRA's HMR client (`sockjs` and
+`webpack-dev-server` are absent from the build; the one `ws://` in the bundle is
+Firebase RTDB's own transport), the React DevTools notice is a dev-mode
+`console.info` whose string is absent from the build, and Speed Insights' debug
+notice is replaced by `script.js` in production.
+
 ## Layout bugs that survived a passing test suite
 
 Three defects shipped together and all three came from the same place: a rule that
