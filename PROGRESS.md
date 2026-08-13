@@ -27,15 +27,31 @@
 
 ### Open actions
 
-0. **Verify the live deploy of the `design-consistency` merge (13 August).**
-   Bigger visually than the commit titles suggest. On production: drag a
-   desktop window through ~1050 and ~620 and confirm the header stays on one
-   line with no `ResizeObserver` error in the console; open
-   `/what-is-planning-poker` and confirm the H1 renders in Cormorant Garamond
-   rather than the OS serif (this was invisible on macOS for months — check
-   Windows if possible); open a room and check the deck, reveal cards and
-   players list, which now come from the design system. Fastest rollback is
-   redeploying the previous build from the Vercel dashboard.
+0. ~~Verify the live deploy.~~ **Done 14 August**, against
+   `https://www.pointpoker.app` on commit `f2a9022`, which supersedes the
+   13 August `design-consistency` deploy this item was originally written for.
+   What was actually checked, so a later session does not repeat it:
+   - **Ten routes** (`/`, `/what-is-planning-poker`, `/features`, `/pricing`,
+     `/support`, `/terms`, `/planning-poker-jira`, `/fibonacci-story-points`,
+     `/scrum-poker`, `/pointing-poker`): zero elements containing text at
+     `line-height: normal`, zero focusable elements inside any `aria-hidden`
+     subtree, zero document overflow, and prose and both list types sharing a
+     left edge on every page that has them.
+   - **Header ladder**: `no-links` at 1063, `full` at 1068, `minimal` at 375 —
+     one line and 64px tall at all three, zero overflow.
+   - **A real room, end to end**: created, joined from a second browser as a
+     voter, voted, revealed. The deck rendered 9 `.pp-vote-card`s, the reveal
+     produced `.pp-reveal-card--consensus`, and `.pp-participant-list` showed
+     both players with avatars, roles, the vote badge and the remove control —
+     so all three design-system migrations are correct in production.
+   - **Console: completely empty** on every page and through the whole room
+     session. The four messages reported on 14 August were all dev-only and are
+     analysed in `docs/AI-CONTEXT.hand.md`.
+
+   The original text of this item asked for the H1 in **Cormorant Garamond**.
+   That is now obsolete rather than failed: the owner chose Outfit on 14 August
+   and content-page H1s match the join hero deliberately. Do not "restore" the
+   serif on the strength of this checklist.
 1. **13 August, after Search Console quota resets:** request indexing for
    `/pt/what-is-planning-poker`, `/pt/scrum-poker`,
    `/pt/fibonacci-story-points`, `/ja/what-is-planning-poker`, and
