@@ -1,6 +1,28 @@
 # pointpoker — Launch Progress Tracker
 <!-- Share this file at the start of every session so Claude knows exactly where we are -->
 
+## OPEN — reported 14 August 2026, deferred by the owner
+
+Three room defects, reported from `https://www.pointpoker.app/?room=KGBK7` and
+explicitly held over to a later session. **Nothing was reproduced or fixed.**
+Verbatim:
+
+> "the buttons, the timer is up the message isnt clear and viewing what others
+> have estimated isnt fixed."
+
+| # | Item | State |
+|---|------|-------|
+| 1 | "the buttons" | No screen, state or control named. Ask before touching — four separate button passes landed this week and a guess will undo one |
+| 2 | Time-is-up message unclear | `action.timeUp` / `revealTimeUp` / `hintTimeUp` / `hintTimeUpNone` in `src/locales/en.mjs`; expired state from `isTimeUp()` in `src/estimation.js`. Facilitator and voter see different copy; which one is unclear is not recorded |
+| 3 | Viewing others' estimates "isn't fixed" | **Contradicts a claim made on 14 Aug.** The reveal grid was moved above the average hero and measured in a live three-browser room. Either it fails on the owner's path, or the phrase means something other than card order |
+
+**Collect before acting:** a screenshot per item, viewport width, role
+(facilitator or voter), and round state (pre-reveal / revealed / expired). All
+three reports are one line each, and item 3 in particular should not be
+"fixed" again by repeating the same reorder.
+
+Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
+
 ## Authoritative status — 13 August 2026
 
 - Product code baseline is clean and fully pushed. The `design-consistency`

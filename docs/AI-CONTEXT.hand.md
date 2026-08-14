@@ -847,6 +847,35 @@ mutation-tested.
 
 `assets/fonts/` is gone; `assets/` is `brand-mark-master.png` alone again.
 
+## OPEN: three room defects, reported 14 August 2026, not investigated
+
+Reported from a live room and deferred by the owner to a later session. Recorded
+here rather than acted on, so the next session starts from the report and not
+from my summary of it.
+
+> "the buttons, the timer is up the message isnt clear and viewing what others
+> have estimated isnt fixed."
+
+1. **"the buttons."** Unqualified — no screen, state or control. Four separate
+   button decisions landed this week (ghost deleted, Remove to `danger`, Stop
+   timer to `accent`, reveal confirmed already `primary`); each was deliberate
+   and any of them could be what is meant. Ask.
+2. **The time-is-up copy is unclear.** Shipped the same day, untested on anyone
+   but me. `action.timeUp`, `action.revealTimeUp`, `action.hintTimeUp` and
+   `action.hintTimeUpNone`; the state comes from `isTimeUp()`. Facilitator and
+   voter read different sentences and the report does not say which.
+3. **"Viewing what others have estimated isn't fixed" — this contradicts a claim
+   made in this session.** The reveal grid was moved above the average hero and
+   verified by driving a live three-browser room: cards at 523–674px, hero from
+   706px, 943px viewport. That measurement stands for what it measured. It does
+   not follow that the owner's complaint was about card order — it may be
+   per-person attribution, a pre-reveal state, or history across rounds. **Do
+   not re-apply the same reorder.** Find out what was expected.
+
+The common failure here would be treating three one-line reports as three
+specifications. Collect a screenshot, viewport width, role and round state for
+each before changing anything.
+
 ## Print inks every element — 14 August 2026
 
 The exports work left this as a known gap, described as "marketing pages print
