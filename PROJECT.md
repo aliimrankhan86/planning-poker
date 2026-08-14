@@ -410,7 +410,8 @@ live token files.
 
 - **All text:** Outfit, self-hosted, weights 300/400/500/600/700
 - Display contexts use Outfit 700 with tight negative tracking
-- Old Cormorant files remain in `public/fonts/` but are not referenced
+- One family only. The Cormorant Garamond files are deleted, not merely
+  unreferenced — `public/fonts/` is Outfit and nothing else
 
 ### Animation keyframes defined
 

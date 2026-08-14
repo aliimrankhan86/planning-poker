@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 321 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 323 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -945,16 +945,13 @@ Two other selectors named `--font-display`: `.pp-logo--serif` and
 prop that silently does nothing is worse than no prop.
 
 With nothing rendering it, the token, the `@font-face` and the shipped file all
-had to go. The `.woff2` **moved to `assets/fonts/`** rather than being deleted,
-because `scripts/make-og-image.py` still draws the OG card's wordmark with it,
-and `assets/` is outside everything that ships (same reason
-`brand-mark-master.png` lives there). `build/fonts` is Outfit only now — 84 kB,
-down 22.
+had to go. The `.woff2` moved to `assets/fonts/` first, because
+`scripts/make-og-image.py` still drew the OG card's wordmark with it and that
+card was then the only place left in the world showing the serif. `build/fonts`
+became Outfit only — 84 kB, down 22.
 
-**Left undone, deliberately:** the OG card still renders the brand wordmark in
-Cormorant, which now disagrees with the site. Regenerating it needs
-`pip install pillow fonttools brotli`, which is not installed here, so it was
-left whole rather than half-changed. Decide it, do not inherit it.
+**That halfway state lasted one turn; see the next section.** The font is
+deleted now and `assets/` holds only `brand-mark-master.png` again.
 
 ### Two tests that were green while the rule was broken
 
@@ -970,6 +967,56 @@ left whole rather than half-changed. Decide it, do not inherit it.
   the same failure shape as the missing `@font-face`. A test now fails on any
   `var(--x)` with no fallback naming a property nothing defines;
   `var(--x, fallback)` is exempt, because a fallback is the contract.
+
+## The OG card agrees with the site — 14 August 2026
+
+The section above left the share card as the last place the serif appeared, and
+therefore the one image of the brand that no longer matched the brand. The
+owner asked for it fixed. `pip install pillow fonttools brotli` into a throwaway
+venv is all it took; nothing about the change needed to wait.
+
+**The wordmark is Outfit 600 at `--text-on-felt` / `--brass-300`** — the two
+colours `.pp-logo--on-felt` resolves to, so the card's lockup is the site's
+lockup rather than an approximation of it. Everything else on the card is
+byte-identical: same copy, same pills, same deck, same felt. Diffed against
+`git show HEAD:public/og-image.png` to be sure the redraw touched only the
+wordmark.
+
+**Two numbers are derived rather than chosen**, which is the part worth keeping:
+
+- **Size.** `.pp-logo--lg` puts a 28px word beside a 48px mark; the card's mark
+  is 142px, so the word is `round(142 × 28 / 48)` = 83px. Picking by eye would
+  have given ~92 — that is the size at which Outfit matches the *old serif's*
+  cap height, and it perpetuates a proportion the site never had.
+- **Baseline.** Centred on the mark using the rendered cap box of `"PP"`, not a
+  literal `y`. "Point Poker" has one descender and nothing above cap height, so
+  its em box sits low and any fixed `y` drifts the moment the face changes —
+  which is exactly the change that had just been made.
+
+**PIL has no letter-spacing, so the site's `-0.02em` is not reproduced.** Faking
+it means drawing character by character, which forfeits the face's kerning
+pairs. At 83px that is the worse trade, and it is written down in the script so
+the next person does not "fix" it.
+
+### The cache-buster is the whole delivery mechanism
+
+`?v=2` → **`?v=3`**. LinkedIn, Facebook, Slack and X key their unfurl cache on
+the image URL, and the PNG is replaced in place, so a redraw that does not bump
+the version ships to nobody. The literal lives in three places —
+`DEFAULT_OG_IMAGE` in `routeMeta.mjs`, and `og:image` and `twitter:image` in
+`public/index.html` — and **a test now pins the three together**, because
+bumping one and forgetting the others is the same failure, quieter.
+
+### The test that would have caught the halfway state
+
+`scripts/make-og-image.py` holds font *filenames*, resolved by no bundler and
+read by no test. When the serif moved out from under it, the script kept a live
+path to a file the deploy no longer had, and nothing failed until somebody ran
+it by hand. A fourth direction now closes that loop too: **every `.woff2` the OG
+script names must be one that ships in `public/fonts`.** Both new tests were
+mutation-tested.
+
+`assets/fonts/` is gone; `assets/` is `brand-mark-master.png` alone again.
 
 ## The ghost variant is deleted — 14 August 2026 (reported by the owner)
 

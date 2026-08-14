@@ -53,8 +53,8 @@
 
 /* Cormorant Garamond is NOT declared here, and that is not an oversight —
    the same missing-@font-face shape caused a real bug in Aug 2026, so it is
-   written down. Nothing in the product renders it any more: the modal title
-   was its last selector and moved to Outfit on 14 Aug. Its .woff2 lives in
-   assets/fonts/, outside everything that ships, and only
-   scripts/make-og-image.py reads it — to draw the OG card's wordmark. Declaring
-   a face nothing requests would put 22 kB in the deploy for no reader. */
+   written down. The product had a display serif; the modal title was its last
+   selector and moved to Outfit on 14 Aug, and the OG card — the one thing
+   outside the app that still drew it — was reset in Outfit the same day. The
+   .woff2 is deleted. This is now the whole set: one family, five weights, and
+   every one of them is requested by something. */

@@ -6,8 +6,16 @@ been false since the product went free for everyone, and three of its labels
 were clipped by their own pills. Every string here is measured before it is
 drawn, so nothing can silently overflow again.
 
-Fonts come from public/fonts, converted from woff2 on the fly, so this uses the
-same Cormorant Garamond and Outfit the site does rather than a lookalike.
+Fonts come from public/fonts, converted from woff2 on the fly, so the card is
+set in the same Outfit the site ships rather than a lookalike.
+
+The wordmark is measured against the mark rather than positioned by eye: its
+size is the site logo's word-to-mark ratio (28px word on a 48px mark) applied
+to this card's 142px mark, and its baseline is derived from the rendered cap
+box so the caps centre on the mark whatever the face's metrics happen to be.
+PIL has no letter-spacing, so the site's -0.02em is not reproduced; drawing
+per-character to fake it would cost the face's kerning pairs, which is the
+worse trade at this size.
 
 Run: python3 scripts/make-og-image.py     (needs Pillow, fonttools, brotli)
 """
@@ -19,12 +27,6 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS = os.path.join(ROOT, "public", "fonts")
-# Cormorant is no longer one of the shipped faces: nothing in the product
-# renders it since the modal title moved to Outfit (14 Aug 2026), so keeping it
-# under public/ would put 22 kB in every deploy for no reader. It lives beside
-# the other build-time-only brand assets instead, and this card is the last
-# thing that draws it. See public/fonts/fonts.css.
-BRAND_FONTS = os.path.join(ROOT, "assets", "fonts")
 W, H = 1200, 630
 
 # Straight from src/design-system/tokens.css.
@@ -36,11 +38,15 @@ GOLD2 = (232, 184, 75)
 GOLD3 = (245, 208, 122)
 CREAM = (238, 242, 236)
 MUTED = (168, 186, 172)
+# The wordmark's own two colours, so the card's logo is the site's logo. These
+# are --text-on-felt and --brass-300, what .pp-logo--on-felt resolves to.
+ON_FELT = (245, 251, 247)
+BRASS_300 = (255, 217, 120)
 
 
-def font(name, size, where=None):
+def font(name, size):
     """Load a brand woff2 as a PIL font (fontTools does the decompression)."""
-    f = TTFont(os.path.join(where or FONTS, name))
+    f = TTFont(os.path.join(FONTS, name))
     f.flavor = None
     buf = io.BytesIO()
     f.save(buf)
@@ -48,9 +54,9 @@ def font(name, size, where=None):
     return ImageFont.truetype(buf, size)
 
 
-CORMORANT_BOLD = "cormorant-garamond-v21-latin-700.woff2"
 OUTFIT_REG = "outfit-v15-latin-regular.woff2"
 OUTFIT_MED = "outfit-v15-latin-500.woff2"
+OUTFIT_SEMI = "outfit-v15-latin-600.woff2"
 OUTFIT_BOLD = "outfit-v15-latin-700.woff2"
 
 
@@ -88,20 +94,25 @@ DECK_X = 762
 
 # ── the mark ───────────────────────────────────────────────────────────────
 mark = Image.open(os.path.join(ROOT, "public", "logo512.png")).convert("RGBA")
-MARK = 142
+MARK, MARK_Y = 142, 54
 mark = mark.resize((MARK, MARK), Image.LANCZOS)
-img.paste(mark, (PAD, 54), mark)
+img.paste(mark, (PAD, MARK_Y), mark)
 
 # ── wordmark and copy ──────────────────────────────────────────────────────
-f_brand = font(CORMORANT_BOLD, 100, BRAND_FONTS)
+# .pp-logo--lg sets a 28px word beside a 48px mark; this card's mark is 142.
+f_brand = font(OUTFIT_SEMI, round(MARK * 28 / 48))
 f_tag = font(OUTFIT_BOLD, 38)
 f_body = font(OUTFIT_REG, 26)
 f_pill = font(OUTFIT_MED, 23)
 f_url = font(OUTFIT_MED, 25)
 
-x = PAD + MARK + 26
-d.text((x, 66), "Point", font=f_brand, fill=CREAM)
-d.text((x + d.textlength("Point ", font=f_brand), 66), "Poker", font=f_brand, fill=GOLD3)
+# Centre the caps on the mark, not the em box: "Point Poker" has one descender
+# and no ascender above cap height, so the em box sits low and a fixed y drifts
+# with the face. "PP" is cap top to baseline and nothing else.
+cap_top, cap_bottom = d.textbbox((0, 0), "PP", font=f_brand)[1::2]
+x, brand_y = PAD + MARK + 26, round(MARK_Y + MARK / 2 - (cap_top + cap_bottom) / 2)
+d.text((x, brand_y), "Point", font=f_brand, fill=ON_FELT)
+d.text((x + d.textlength("Point ", font=f_brand), brand_y), "Poker", font=f_brand, fill=BRASS_300)
 
 d.text((PAD, 244), "Free planning poker for agile teams", font=f_tag, fill=CREAM)
 

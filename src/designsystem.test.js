@@ -1411,6 +1411,21 @@ describe("brand assets", () => {
     for (const h of hrefs) expect(`${h}:${existsSync(join(publicDir, h))}`).toBe(`${h}:true`);
   });
 
+  test("every unfurl points at the same version of the OG card", () => {
+    /* The card is one PNG replaced in place, and every unfurl cache keys on the
+       URL — so the ?v=N is the only thing that makes a redraw visible. It is
+       written in three places: DEFAULT_OG_IMAGE, and og:image and twitter:image
+       in the boot HTML. Bump one and the others quietly keep serving the card
+       from before the fix. */
+    const html = readFileSync(join(publicDir, "index.html"), "utf8");
+    const meta = readFileSync(join(__dirname, "routeMeta.mjs"), "utf8");
+    const versions = [...html.matchAll(/og-image\.png\?v=(\d+)/g)].map((m) => m[1]);
+    const [canonical] = [...meta.matchAll(/og-image\.png\?v=(\d+)/g)].map((m) => m[1]);
+    expect(versions).toHaveLength(2); // og:image and twitter:image
+    expect(canonical).toBeDefined();
+    expect(versions).toEqual([canonical, canonical]);
+  });
+
   test("the nav mark stays at least 3x the largest size any screen draws it", () => {
     // PNG header: width and height are big-endian uint32 at byte 16 and 20.
     const png = readFileSync(join(publicDir, "brand-mark.png"));
@@ -1927,6 +1942,20 @@ describe("the system rules", () => {
     const files = readdirSync(join(__dirname, "..", "public", "fonts")).filter((f) => f.endsWith(".woff2"));
     const referenced = [...fontsCss.matchAll(/url\('\.\/([^']+)'\)/g)].map((m) => m[1]);
     expect(files.filter((f) => !referenced.includes(f))).toEqual([]);
+  });
+
+  test("and every face the OG card asks for is one that still ships", () => {
+    /* A fourth direction, and the one that bit. The card is drawn by a Python
+       script outside the build, so it holds filenames no bundler resolves and
+       no test above reads: when the serif moved out from under it the script
+       kept a live path to a file the deploy no longer had, and nothing failed
+       until somebody next ran it by hand. It reads public/fonts now — the same
+       directory the app ships — so this pins the two together. */
+    const script = readFileSync(join(__dirname, "..", "scripts", "make-og-image.py"), "utf8");
+    const files = readdirSync(join(__dirname, "..", "public", "fonts"));
+    const asked = [...script.matchAll(/"([\w-]+\.woff2)"/g)].map((m) => m[1]);
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked.filter((f) => !files.includes(f))).toEqual([]);
   });
 
   test("and every family declared is one a token can still name", () => {

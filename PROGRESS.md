@@ -7,14 +7,22 @@
   branch (design sweep, deck migration into the design system, dead-CSS removal,
   the Cormorant `@font-face` fix, and the measured header ladder) was merged to
   `main` on 13 August 2026.
-- 497 Jest tests pass; production build succeeds; sitemap and prerender both
+- 499 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
 - **14 August:** one typeface. The modal title was the last selector rendering
   the display serif, which put two faces inside the sign-in dialog; it is
   Outfit now, at the same 22px. With nothing left rendering Cormorant the
   token, the `@font-face` and two unreachable selectors went with it, and the
-  `.woff2` moved to `assets/fonts/` — `scripts/make-og-image.py` still needs
-  it, and the deploy is 22 kB lighter.
+  deploy is 22 kB lighter.
+- **14 August:** the OG share card is reset in Outfit, so the last image of the
+  brand still using the serif now matches the brand. The wordmark's size comes
+  from the site logo's own 28-on-48 word-to-mark ratio and its baseline from the
+  rendered cap box, rather than either being chosen by eye; the two wordmark
+  colours are what `.pp-logo--on-felt` resolves to. Nothing else on the card
+  changed. `?v=2` → `?v=3`, without which no unfurl cache would ever have
+  refetched it. Cormorant is deleted outright — `assets/fonts/` is gone. Two new
+  tests: every face the OG script names must still ship, and the three places
+  that write the card's version must agree.
 - **14 August:** the `ghost` button variant is deleted product-wide. It was
   transparent fill, transparent border and muted text, and it was carrying nine
   real controls (Sign in, Sign out, Stop timer, Leave, Resend verification,

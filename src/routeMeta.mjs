@@ -21,10 +21,13 @@ import {
 } from "./locales/index.mjs";
 
 export const SITE_URL = "https://www.pointpoker.app";
-// ?v=2 is a cache-buster, not a real query. LinkedIn, Facebook, Slack and X all
+// ?v=N is a cache-buster, not a real query. LinkedIn, Facebook, Slack and X all
 // key their unfurl cache on the image URL, so replacing og-image.png in place
-// left them serving the old card that still advertised a Pro tier.
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png?v=2`;
+// left them serving the old card that still advertised a Pro tier. Bump it
+// whenever the PNG changes, or the fix ships and nobody sees it: v=3 is the
+// wordmark reset in Outfit, 14 Aug 2026. public/index.html carries the same
+// literal twice — a test pins the three together.
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png?v=3`;
 export const MAX_PARTICIPANTS = 20;
 
 // One address for the support copy, the ContactPoint in the JSON-LD, and the
