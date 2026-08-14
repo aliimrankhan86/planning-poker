@@ -2179,25 +2179,44 @@ ol.marketing-list li::marker {
      print as themselves. */
   .navbar, .site-footer, .hdr, .pp-toast-region, .cookie-banner, .game-body,
   .summary-actions, .chip-logo, .pp-modal, .skip-link, body::before,
+  .pp-hero::before,
   .join-side, .seo-section, .seo-faq, .legal-back, .btn-back,
   button, .pp-btn {
     display: none !important;
   }
 
+  /* EVERY element, not a list of them. The list used to be p, li, td, th and
+     the headings, which is why a marketing page printed its prose in ink and
+     its labels in whatever colour the screen had given them — a label inside a
+     stat card is a span, and no span was on the list.
+
+     On a felt hero or a felt section it is worse than grey, and worse in BOTH
+     themes: those surfaces set color: var(--text-on-felt) outright, which is
+     near-white, and the printer drops the felt behind them because a felt is a
+     background. White on white. The eyebrow is --brass-300, which is pale gold
+     on white paper and only slightly better.
+
+     Re-pointing the colour TOKENS under print cannot fix this. A custom
+     property is inherited from the nearest ancestor that sets it, so a value
+     written at :root — !important or not — never reaches a child of .pp-hero,
+     which sets its own: the cascade only ever compares declarations on the
+     same element. Forcing the computed colour does reach it. */
+  body * { color: #000 !important; }
+
   /* Cards and panels: no felt, no shadow, a hairline so the structure survives. */
   .panel, .pp-card, .pp-alert, .pp-stat {
     background: #fff !important;
-    color: #000 !important;
     border: 1px solid #999 !important;
     box-shadow: none !important;
     break-inside: avoid;
   }
-  h1, h2, h3, h4, .ptitle, .pp-card__title, .pp-section-head__title {
-    color: #000 !important;
-    break-after: avoid;
-  }
-  p, li, td, th, .pp-card__body { color: #000 !important; }
-  a { color: #000 !important; text-decoration: underline; }
+  /* Felt surfaces get the paper without the hairline — a rule drawn round a
+     whole page section reads as a box nobody asked for. Only matters when the
+     reader has ticked "print background graphics"; without it the felt is
+     already gone. */
+  .pp-hero, .pp-section--felt { background: #fff !important; }
+  h1, h2, h3, h4, .ptitle, .pp-card__title, .pp-section-head__title { break-after: avoid; }
+  a { text-decoration: underline; }
   /* A printed link is dead, so spell the destination out once. The selector
      said .prose, and nothing in this product has ever rendered that class —
      the marketing pages use .marketing-prose. The rule had never once fired.
@@ -2235,12 +2254,16 @@ ol.marketing-list li::marker {
     font-family: var(--font-ui);
     font-size: 17pt; font-weight: 700; color: #000; margin: 0; letter-spacing: -.01em;
   }
-  .print-report__url { font-size: 9.5pt; color: #333; margin: 2pt 0 0; }
+  /* The three deliberate greys on the sheet, and the only exemptions from the
+     ink rule above. They need !important purely to outrank it — "body *" is a
+     feeble selector but an important one, and this is the report's own
+     hierarchy rather than a colour that leaked in from the screen. */
+  .print-report__url { font-size: 9.5pt; color: #333 !important; margin: 2pt 0 0; }
   .print-report__title { font-size: 15pt; margin: 0 0 3pt; color: #000; }
-  .print-report__meta { font-size: 9.5pt; color: #333; margin: 0 0 12pt; }
+  .print-report__meta { font-size: 9.5pt; color: #333 !important; margin: 0 0 12pt; }
   .print-report__foot {
     margin-top: 16pt; padding-top: 7pt; border-top: 1px solid #999;
-    font-size: 9pt; color: #333;
+    font-size: 9pt; color: #333 !important;
   }
   /* The report is one column of flowing content, so it should use the sheet.
      Without this the table inherits whatever width the room layout left it. */

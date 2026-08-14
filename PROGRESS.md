@@ -7,8 +7,15 @@
   branch (design sweep, deck migration into the design system, dead-CSS removal,
   the Cormorant `@font-face` fix, and the measured header ladder) was merged to
   `main` on 13 August 2026.
-- 499 Jest tests pass; production build succeeds; sitemap and prerender both
+- 501 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
+- **14 August:** print inks every element rather than a list of them. The rule
+  covered `p`, `li`, `td`, `th` and the headings, so every label, eyebrow and
+  stat value — all spans — printed in its screen colour; on a felt hero that is
+  near-white on white in *both* themes, not the dark-theme-only cosmetic issue
+  it had been logged as. 28 elements on one page in dark, 22 in light. Verified
+  across ten routes in both themes: 1,930 text-bearing elements, zero not-ink.
+  Declaration ceiling 1361 → 1359.
 - **14 August:** one typeface. The modal title was the last selector rendering
   the display serif, which put two faces inside the sign-in dialog; it is
   Outfit now, at the same 22px. With nothing left rendering Cormorant the

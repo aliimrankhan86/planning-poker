@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 401 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 402 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 75 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 36 KB |
@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 323 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 325 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -1017,6 +1017,63 @@ script names must be one that ships in `public/fonts`.** Both new tests were
 mutation-tested.
 
 `assets/fonts/` is gone; `assets/` is `brand-mark-master.png` alone again.
+
+## Print inks every element — 14 August 2026
+
+The exports work left this as a known gap, described as "marketing pages print
+their labels in dark-theme grey". **Measured, it was worse than that and it was
+not a dark-theme problem.**
+
+The print stylesheet forced `#000` on `p, li, td, th, .pp-card__body`, the
+headings, and `a`. A stat card's label is a `span`. So was the hero eyebrow, the
+language code, and every stat value. On `/what-is-planning-poker` that is **28
+elements in dark and 22 in light**; `/features` had 27. The light-theme figures
+are the point — the fix was being deferred as cosmetic on the strength of a
+theme it was never confined to.
+
+On a felt hero or a felt section it is not grey, it is invisible. Those surfaces
+set `color: var(--text-on-felt)` outright — near-white in **both** themes — and
+the printer drops the felt behind them because a felt is a background. The
+eyebrow is `--brass-300`, pale gold on white paper.
+
+```css
+body * { color: #000 !important; }
+```
+
+**Re-pointing the colour tokens under print cannot do this**, and the reason is
+worth remembering: a custom property is taken from the nearest ancestor that
+sets it, so `--text-1: #000` written at `:root` — `!important` or not — never
+reaches a child of `.pp-hero`, which sets its own. The cascade only ever
+compares declarations on the same element. Forcing the computed colour does
+reach it.
+
+Three deliberate greys stay: `.print-report__url`, `__meta` and `__foot` at
+`#333`, now `!important` purely to outrank the ink rule. `body *` is a feeble
+selector carrying an important declaration, so **anything wanting to stay
+off-black has to say so and mean it** — and a fourth colour that forgets is one
+the cascade silently discards, which reads as a working rule and is not. A test
+pins that.
+
+`.pp-hero` and `.pp-section--felt` get paper too, without the hairline the cards
+get — a rule drawn round a whole page section is a box nobody asked for. Their
+texture `::before` joins the hide-list. All of this only matters when the reader
+has ticked "print background graphics"; otherwise the felt is already gone.
+
+**The ceiling ratcheted 1361 → 1359.** Four `color` declarations went — the
+per-element lists the global replaces — against two added. Confirmed exact by
+setting it to 1358 and watching it fail at 1359.
+
+### Verified by reading the cascade, not by looking at it
+
+Ten routes × both themes, the app's own `@media print` rules lifted out of their
+media query via `document.styleSheets` so it is the real cascade: **1,930
+text-bearing elements, zero not-ink.** Before/after isolated with `git stash`,
+because a control that removes only the new rule from the new stylesheet
+overstates the old bug — it reported 86 on a page whose true figure was 28.
+
+The report's exemption was checked the same way rather than reasoned about: a
+stand-in `.print-report` injected into a loaded page reads `#333` on all three
+greys, `#000` on the brand, title and table cells.
 
 ## The ghost variant is deleted — 14 August 2026 (reported by the owner)
 

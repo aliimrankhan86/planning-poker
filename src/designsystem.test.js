@@ -45,7 +45,7 @@ const fontsCss = readFileSync(join(__dirname, "..", "public", "fonts", "fonts.cs
    sweep. It only ever goes down: lower it when a surface moves into the design
    system, and treat any need to raise it as a sign the surface was built in the
    wrong file. Comments are not counted, deliberately — see the test. */
-const CSS_DECLARATION_CEILING = 1361;
+const CSS_DECLARATION_CEILING = 1359;
 
 describe("design tokens exist", () => {
   const required = [
@@ -1804,6 +1804,34 @@ describe("printed and downloaded exports", () => {
     // The felt is a full-bleed fixed graphic; on a printer told to keep
     // backgrounds it washes every sheet green.
     expect(printBlock).toMatch(/body::before/);
+  });
+
+  test("print inks every element, not a list of elements", () => {
+    /* This was "p, li, td, th" plus the headings, and it held for as long as
+       nobody looked at a label: a stat card's label is a span, and no span was
+       on the list. On a felt hero it is not grey but invisible — those surfaces
+       set color to --text-on-felt outright, in BOTH themes, and the felt behind
+       them is a background the printer drops.
+
+       Re-pointing the tokens instead cannot work: a custom property comes from
+       the nearest ancestor that sets it, so a value at :root never reaches a
+       child of .pp-hero. Only a forced computed colour does. */
+    expect(printBlock).toMatch(/body\s*\*\s*\{[^}]*color:\s*#000\s*!important/);
+  });
+
+  test("and every exemption from the ink outranks it deliberately", () => {
+    /* "body *" is a feeble selector carrying an important declaration, so
+       anything that wants to stay off-black has to say !important and mean it.
+       The three report greys are the whole list; a fourth colour appearing here
+       without !important is one the cascade will silently discard, which looks
+       like a working rule and is not. */
+    const colours = [...printBlock.matchAll(/color:\s*(#[0-9a-f]{3,6})([^;]*);/gi)]
+      .map(([, value, rest]) => ({ value: value.toLowerCase(), important: /!important/.test(rest) }));
+    expect(colours.length).toBeGreaterThan(3);
+    for (const c of colours) {
+      if (c.value === "#000" || c.value === "#fff") continue;
+      expect(`${c.value} !important:${c.important}`).toBe(`${c.value} !important:true`);
+    }
   });
 });
 
