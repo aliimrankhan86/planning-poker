@@ -173,6 +173,22 @@ every semantic role in both themes and fails if one drops below AA.
      the bottom of the generated docs/AI-CONTEXT.md. Keep it to things a script
      cannot derive: intent, history, and traps. -->
 
+## ⚠ Next session starts here — three OPEN room defects, 14 August 2026
+
+Reported by the owner from `https://www.pointpoker.app/?room=KGBK7` and deferred
+to a later session. **Nothing was reproduced, diagnosed or fixed.** Every other
+section in this file describes finished, verified, deployed work; these three do
+not, and one of them contradicts a claim made further down.
+
+1. **"the buttons"** — no control named. Ask before touching any of them.
+2. **The time-is-up message is not clear** — facilitator and voter read
+   different copy and the report does not say which.
+3. **"Viewing what others have estimated isn't fixed"** — do not re-apply the
+   reveal reorder and call it done.
+
+Full record, code pointers and what to collect first: **"OPEN: three room
+defects"** below. Also in `PROGRESS.md` and `CLAUDE.md`.
+
 ## Product discovery decision — 13 August 2026
 
 The evidence record for the product name, a possible retrospective feature, and
