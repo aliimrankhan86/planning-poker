@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 400 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 401 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 75 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 36 KB |
@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 318 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 319 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -944,6 +944,25 @@ Button back to a text link (background, border, colour, font, size, tracking,
 padding) from outside the component, which is the one thing App.js is not
 allowed to do to a `pp-*` component. The dashboard's back control is an ordinary
 secondary button now. **Ceiling 1369 → 1361.**
+
+### The signed-in workspace, seen without an account
+
+"Open Room 1 →" was the one call left as a neutral fill, and it is the returning
+user's whole errand: the page greets them with "Welcome back" and offers a fixed
+Team Room or a one-off session, and the gold was on Create Room — the *other*
+path. It is `--accent` now, in both cards. Accent rather than a second primary,
+so the screen keeps exactly one gold gradient.
+
+**How it was verified without credentials, and how to do it again.** The panel
+is gated on one line — `const signedIn = !!currentUser;` in `JoinScreen`.
+Flipping it to `true` in the local dev build renders the whole workspace with
+placeholder rooms ("Alex Johnson Team", "…Team 2"), which is enough to judge and
+screenshot in both themes. Restore the line from a backup afterwards and confirm
+with `grep -c` that no stub survives — this must never reach a commit.
+
+Never take an account password to see a screen. There is almost always a gate to
+flip locally, and a stub cannot lock anyone out, leak a session, or be
+accidentally reused.
 
 ### What this cost, stated honestly
 

@@ -6740,7 +6740,18 @@ function JoinScreen({
                   pad="sm"
                   className="workspace-room-card"
                   footer={
-                    <Button block onClick={() => openDedicatedRoom(room)}>
+                    /* Accent, not the default. This panel exists for these two
+                       buttons: the page above it says "Welcome back" and offers
+                       a fixed Team Room or a one-off session, and opening the
+                       room IS the returning user's errand. As a neutral fill it
+                       was the quietest thing on their half of the screen while
+                       the gold sat on Create Room, which is the other path.
+
+                       Accent rather than a second primary: one screen keeps one
+                       gold gradient, and Create Room is still the control that
+                       finishes the other job. Two of them because they are the
+                       same action on two rooms, like rows in a list. */
+                    <Button variant="accent" block onClick={() => openDedicatedRoom(room)}>
                       {t("join.openRoom", { room: room.shortLabel })}
                     </Button>
                   }

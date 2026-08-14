@@ -774,6 +774,25 @@ padding) from outside the component, which is the one thing App.js is not
 allowed to do to a `pp-*` component. The dashboard's back control is an ordinary
 secondary button now. **Ceiling 1369 → 1361.**
 
+### The signed-in workspace, seen without an account
+
+"Open Room 1 →" was the one call left as a neutral fill, and it is the returning
+user's whole errand: the page greets them with "Welcome back" and offers a fixed
+Team Room or a one-off session, and the gold was on Create Room — the *other*
+path. It is `--accent` now, in both cards. Accent rather than a second primary,
+so the screen keeps exactly one gold gradient.
+
+**How it was verified without credentials, and how to do it again.** The panel
+is gated on one line — `const signedIn = !!currentUser;` in `JoinScreen`.
+Flipping it to `true` in the local dev build renders the whole workspace with
+placeholder rooms ("Alex Johnson Team", "…Team 2"), which is enough to judge and
+screenshot in both themes. Restore the line from a backup afterwards and confirm
+with `grep -c` that no stub survives — this must never reach a commit.
+
+Never take an account password to see a screen. There is almost always a gate to
+flip locally, and a stub cannot lock anyone out, leak a session, or be
+accidentally reused.
+
 ### What this cost, stated honestly
 
 The navbar used to rank `ghost (Sign in) → secondary → primary`. On the join

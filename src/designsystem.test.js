@@ -886,6 +886,20 @@ describe("the signed-in workspace", () => {
     expect(join()).not.toContain("Choose Team Room");
   });
 
+  /* A returning user's errand is on the left, not the right. The page greets
+     them with "Welcome back" and offers a fixed Team Room or a one-off session;
+     opening the room is the first of those, and it was rendering as a neutral
+     fill while the gold sat on Create Room. Accent rather than a second
+     primary, so the screen still has exactly one gold gradient. */
+  test("opening a Team Room is the action of its panel", () => {
+    const card = join().slice(join().indexOf('className="workspace-room-card"'));
+    const footer = card.slice(card.indexOf("footer={"), card.indexOf("<Row between nowrap>"));
+    expect(footer).toContain('variant="accent"');
+    expect(footer).toContain("openDedicatedRoom");
+    // and it does not steal the screen's one gradient from Create Room
+    expect(footer).not.toContain('variant="primary"');
+  });
+
   test("Open needs nothing the form has not already answered", () => {
     /* Open used to be able to refuse: the role picker had no default, so it
        held the room you asked for, sent you down the page to pick a role, and
