@@ -385,6 +385,7 @@ export const ui = {
   "game.nobodyYet": "Ninguém aqui ainda",
   "game.votedLabel": "Votou",
   "game.notVoted": "Ainda não votou",
+  "game.remove": "Remover",
   "game.removeFromRoom": "Remover {name} da sala",
   "game.facilitatorNoVote": "Facilitador · Não vota",
   "game.sprintAnalytics": "Análise do sprint",

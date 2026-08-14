@@ -7,8 +7,14 @@
   branch (design sweep, deck migration into the design system, dead-CSS removal,
   the Cormorant `@font-face` fix, and the measured header ladder) was merged to
   `main` on 13 August 2026.
-- 489 Jest tests pass; production build succeeds; sitemap and prerender both
+- 492 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
+- **14 August:** reveal now shows *who picked what* before the average — the
+  faces used to sit ~780px below the fold. Remove in the participant rail is
+  red rather than a ghost button, and its label is translated instead of
+  hardcoded English. The reveal button was already gold; nothing changed there.
+  The timer-expiry path (expire → reveal → record / re-vote) was tested end to
+  end in a live three-browser room.
 - **14 August:** both exports now carry the product's name. Print / PDF puts the
   branded report on the sheet and nothing else — it used to print the whole live
   room, controls and all, with the report below the fold. The CSV signs itself

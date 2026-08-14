@@ -45,7 +45,7 @@ const fontsCss = readFileSync(join(__dirname, "..", "public", "fonts", "fonts.cs
    sweep. It only ever goes down: lower it when a surface moves into the design
    system, and treat any need to raise it as a sign the surface was built in the
    wrong file. Comments are not counted, deliberately — see the test. */
-const CSS_DECLARATION_CEILING = 1370;
+const CSS_DECLARATION_CEILING = 1369;
 
 describe("design tokens exist", () => {
   const required = [
@@ -225,6 +225,41 @@ describe("room layout", () => {
   test("counts use tabular figures so they do not reflow as they climb", () => {
     // The count is a Chip now; the figures rule travelled with it.
     expect(dsCss).toMatch(/\.pp-chip--count[^{]*\{[^}]*tabular-nums/s);
+  });
+
+  /* The cards come before the arithmetic. The results panel used to open with
+     the AVERAGE VOTE hero and put the faces ~780px down, so a facilitator who
+     pressed Reveal in front of a room saw a mean and had to scroll to find out
+     who had said what — the one thing the table is about to discuss. The
+     product's own guide says it: consensus comes out of the conversation about
+     the differences, not out of the average. */
+  test("reveal shows who picked what before it shows the average", () => {
+    const results = app.slice(app.indexOf('className="panel panel-gold"'));
+    const who = results.indexOf('className="who-section"');
+    const hero = results.indexOf('className="avg-hero"');
+    expect(who).toBeGreaterThan(-1);
+    expect(hero).toBeGreaterThan(-1);
+    expect(who).toBeLessThan(hero);
+  });
+
+  /* Removing somebody mid-round takes their vote off the table with no undo.
+     As a ghost button it carried the same weight as the name beside it — easy
+     to hit by accident, easy to miss on purpose. Red is the room's one word
+     for "this takes something away", and End session already speaks it. */
+  test("removing a participant looks like what it is", () => {
+    const list = app.slice(app.indexOf("<ParticipantList>"), app.indexOf("</ParticipantList>"));
+    const buttons = list.match(/<Button[\s\S]*?>/g) || [];
+    expect(buttons.length).toBe(2);
+    buttons.forEach((b) => expect(b).toContain('variant="danger"'));
+    expect(list).not.toContain('variant="ghost"');
+  });
+
+  test("the remove control is translated, not hardcoded English", () => {
+    // The aria-label was translated and the visible word was not, so pt and ja
+    // rooms had an English button sitting in the participant rail.
+    const list = app.slice(app.indexOf("<ParticipantList>"), app.indexOf("</ParticipantList>"));
+    expect(list).not.toMatch(/>\s*Remove\s*</);
+    expect(list).toMatch(/\{t\("game\.remove"\)\}/);
   });
 });
 

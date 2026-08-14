@@ -1194,7 +1194,10 @@ body::before {
   line-height: 1; letter-spacing: -0.05em; text-shadow: var(--glow-numeral);
   animation: heroIn var(--dur-slow) var(--ease-out) both;
 }
-.avg-hero-sub { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); margin-top: var(--sp-3); }
+/* No margin-top: the rule three lines up already gives it exactly --sp-3, and
+   this sub is never the first child of .avg-hero. Measured on both instances
+   live — 12px either way. */
+.avg-hero-sub { font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); color: var(--text-2); }
 .avg-hero-consensus {
   display: inline-block; margin-top: var(--sp-4);
   background: var(--gold-fill-3); border: var(--bw-hair) solid var(--gold-line-2);
@@ -7946,6 +7949,51 @@ function GameScreen({
               <div className="panel panel-gold" role="region" aria-live="polite" aria-label={t("game.resultsAria")}>
                 {voted.length > 0 && (
                   <>
+                    {/* The cards come before the arithmetic, and that order is
+                        the point of the ceremony rather than a layout preference.
+                        This panel used to open with the AVERAGE VOTE hero and put
+                        the faces ~780px down the page, so a facilitator who
+                        pressed Reveal in front of a room saw a mean and had to
+                        scroll to find out who had actually said what — the one
+                        thing the table is about to talk about. The product's own
+                        guide says it out loud: consensus comes out of the
+                        conversation about the differences, not out of the average.
+
+                        Nothing is lost on a consensus round: every card carries
+                        the same number, so the agreed value is on screen before
+                        the hero restates it. And the split-vote decision card
+                        below already repeats votes shown, average and spread,
+                        which is where a facilitator picking a number reads them. */}
+                    <div className="who-section">
+                      <span className="ptitle">{t("game.whoPickedWhat")}</span>
+                    </div>
+                    <RevealGrid>
+                      {voted.map((p, i) => {
+                        const isHigh =
+                          !allSame && p.vote === String(maxV) && maxV !== minV;
+                        const isLow =
+                          !allSame && p.vote === String(minV) && maxV !== minV;
+                        return (
+                          <RevealCard
+                            key={p.id}
+                            value={p.vote}
+                            name={p.name}
+                            you={p.id === myId}
+                            red={["♥", "♦"].includes(
+                              cards.find((c) => c.val === p.vote)?.suit || "",
+                            )}
+                            tone={allSame ? "consensus" : isHigh ? "high" : isLow ? "low" : undefined}
+                            tag={isHigh ? t("game.highest") : isLow ? t("game.lowest") : undefined}
+                            style={{ animationDelay: `${i * 0.07}s` }}
+                          >
+                            {/* Rule 5 again: the tick is a second signal beside
+                                the card's gold border, and it says the word too
+                                rather than leaving a bare glyph to carry it. */}
+                            {allSame && <Chip tone="gold">{t("game.agreed")}</Chip>}
+                          </RevealCard>
+                        );
+                      })}
+                    </RevealGrid>
                     <div className="avg-hero">
                       <div className="avg-hero-label">
                         {revealHeroLabel}
@@ -7982,36 +8030,6 @@ function GameScreen({
                       )}
                     </div>
 
-                    <div className="who-section">
-                      <span className="ptitle">{t("game.whoPickedWhat")}</span>
-                    </div>
-                    <RevealGrid>
-                      {voted.map((p, i) => {
-                        const isHigh =
-                          !allSame && p.vote === String(maxV) && maxV !== minV;
-                        const isLow =
-                          !allSame && p.vote === String(minV) && maxV !== minV;
-                        return (
-                          <RevealCard
-                            key={p.id}
-                            value={p.vote}
-                            name={p.name}
-                            you={p.id === myId}
-                            red={["♥", "♦"].includes(
-                              cards.find((c) => c.val === p.vote)?.suit || "",
-                            )}
-                            tone={allSame ? "consensus" : isHigh ? "high" : isLow ? "low" : undefined}
-                            tag={isHigh ? t("game.highest") : isLow ? t("game.lowest") : undefined}
-                            style={{ animationDelay: `${i * 0.07}s` }}
-                          >
-                            {/* Rule 5 again: the tick is a second signal beside
-                                the card's gold border, and it says the word too
-                                rather than leaving a bare glyph to carry it. */}
-                            {allSame && <Chip tone="gold">{t("game.agreed")}</Chip>}
-                          </RevealCard>
-                        );
-                      })}
-                    </RevealGrid>
                     {isObs && requiresManualFinalEstimate && (
                       <Card
                         variant="gold"
@@ -8234,14 +8252,20 @@ function GameScreen({
                     actions={
                       <>
                         {revealed && p.voted && <Chip tone="gold" count>{p.vote}</Chip>}
+                        {/* Danger, not ghost. Removing somebody mid-round takes
+                            their vote out of the table with no undo, and as a
+                            ghost button it was the same weight as the name
+                            beside it — easy to press by accident and easy to
+                            miss when you meant to. Same treatment End session
+                            wears, for the same reason. */}
                         {isObs && p.id !== myId && (
                           <Button
-                            variant="ghost"
+                            variant="danger"
                             size="sm"
                             aria-label={t("game.removeFromRoom", { name: p.name })}
                             onClick={() => onRemoveParticipant(p.id, p.name)}
                           >
-                            Remove
+                            {t("game.remove")}
                           </Button>
                         )}
                       </>
@@ -8258,12 +8282,12 @@ function GameScreen({
                     actions={
                       isObs && p.id !== myId ? (
                         <Button
-                          variant="ghost"
+                          variant="danger"
                           size="sm"
                           aria-label={t("game.removeFromRoom", { name: p.name })}
                           onClick={() => onRemoveParticipant(p.id, p.name)}
                         >
-                          Remove
+                          {t("game.remove")}
                         </Button>
                       ) : null
                     }

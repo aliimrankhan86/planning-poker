@@ -377,6 +377,7 @@ export const ui = {
   "game.nobodyYet": "まだ誰もいません",
   "game.votedLabel": "投票済み",
   "game.notVoted": "まだ投票していません",
+  "game.remove": "退出させる",
   "game.removeFromRoom": "{name} をルームから外す",
   "game.facilitatorNoVote": "ファシリテーター · 投票なし",
   "game.sprintAnalytics": "スプリント分析",

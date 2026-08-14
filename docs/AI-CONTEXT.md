@@ -24,7 +24,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 398 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 400 KB |
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 75 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 36 KB |
@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 313 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 316 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -919,6 +919,58 @@ states, because the derivation is only safe while they hold.
 
 Auto-reveal when *everyone has voted* is untouched — that one is the table
 finishing, not a clock expiring.
+
+## Reveal shows the people first — 14 August 2026 (reported by the owner)
+
+Asked for: the facilitator's reveal button in a yellow shade, clicking it should
+show who voted what, and important buttons should stand out.
+
+**The reveal button was already gold** — `variant="primary"`, an
+`--action-gradient` from `#ffd978` to `#d99b1f`, the biggest thing on the
+pre-reveal screen. Nothing to change there, and it is worth saying rather than
+quietly claiming a fix.
+
+**What was actually wrong was the order after the click.** The results panel
+opened with the AVERAGE VOTE hero — the number, then min/median/max, then the
+spread — and put WHO PICKED WHAT roughly **780px down the page**. So a
+facilitator who pressed Reveal in front of a room saw a mean, and had to scroll
+to find out who had actually said what. That is the one thing the table is
+about to talk about, and the product's own guide says so: consensus comes out
+of the conversation about the differences, not out of the average.
+
+The cards come first now. Measured at the top of the page after a reveal, in a
+943px viewport: the cards occupy 523–674 and the hero starts at 706, so both
+are on screen and the faces are the thing you land on. Nothing is lost on a
+consensus round — every card carries the same number — and the split-vote
+decision card lower down already repeats votes shown, average and spread, which
+is where a facilitator picking a number reads them anyway.
+
+**Remove is red.** It was `variant="ghost"` in the participant rail: the same
+weight as the name beside it, for an action that takes somebody's vote off the
+table with no undo. It is `variant="danger"` now, the treatment End session
+already wears, which gives the room one consistent word for "this takes
+something away". Its visible label was also **hardcoded English** while only the
+`aria-label` was translated, so pt and ja rooms had an English button in the
+rail; it is `t("game.remove")` now.
+
+**Ceiling ratcheted 1370 → 1369.** `.avg-hero-sub` declared
+`margin-top: var(--sp-3)` while `.avg-hero > * + *` already supplied exactly
+that, and the sub is never the first child. Verified on both live instances —
+12px either way — then deleted.
+
+### The timer-expiry flow, tested end to end
+
+The owner asked for the whole path, not just the expiry: countdown runs out →
+facilitator can still reveal → then record, re-vote, or anything else. Run
+twice in a live three-browser room:
+
+| step | result |
+|------|--------|
+| countdown reaches 0 | cards stay down, status **TIME IS UP**, gold enabled "Time is up — reveal everyone's cards" |
+| Reveal | WHO PICKED WHAT first, with the voter's card and name |
+| decision row | Record *n* & next item (gold, enabled), Re-vote, New sprint, End session (red) — all live |
+| **Record** | advances to story 2 of 3, summary reads "User login flow, PROJ-42 → 8", 1 of 3 sized, 8 points total, analytics update |
+| **Re-vote** | round resets, cards cleared, expired state gone, countdown row back |
 
 ## The exports carry the product's name — 14 August 2026
 
