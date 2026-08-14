@@ -1048,9 +1048,12 @@ from my summary of it.
    timer to `accent`, reveal confirmed already `primary`); each was deliberate
    and any of them could be what is meant. Ask.
 2. **The time-is-up copy is unclear.** Shipped the same day, untested on anyone
-   but me. `action.timeUp`, `action.revealTimeUp`, `action.hintTimeUp` and
-   `action.hintTimeUpNone`; the state comes from `isTimeUp()`. Facilitator and
-   voter read different sentences and the report does not say which.
+   but me. The four strings are `action.timeUp`, `action.revealTimeUp`,
+   `action.hintTimeUp` and `action.hintTimeUpNone` in `src/locales/en.mjs` (and
+   their `pt`/`ja` counterparts); they are rendered by `RoomActionBar` in
+   `src/App.js`, and the expired state comes from `isTimeUp(timer, revealed)` in
+   `src/estimation.js`. Facilitator and voter read different sentences and the
+   report does not say which.
 3. **"Viewing what others have estimated isn't fixed" — this contradicts a claim
    made in this session.** The reveal grid was moved above the average hero and
    verified by driving a live three-browser room: cards at 523–674px, hero from

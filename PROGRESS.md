@@ -14,7 +14,7 @@ Verbatim:
 |---|------|-------|
 | 1 | "the buttons" | No screen, state or control named. Ask before touching — four separate button passes landed this week and a guess will undo one |
 | 2 | Time-is-up message unclear | `action.timeUp` / `revealTimeUp` / `hintTimeUp` / `hintTimeUpNone` in `src/locales/en.mjs`; expired state from `isTimeUp()` in `src/estimation.js`. Facilitator and voter see different copy; which one is unclear is not recorded |
-| 3 | Viewing others' estimates "isn't fixed" | **Contradicts a claim made on 14 Aug.** The reveal grid was moved above the average hero and measured in a live three-browser room. Either it fails on the owner's path, or the phrase means something other than card order |
+| 3 | Viewing others' estimates "isn't fixed" | **Contradicts a claim made on 14 Aug.** The `who-section` / `<RevealGrid>` was moved above `.avg-hero` in `src/App.js` and measured in a live three-browser room — cards at 523–674px, hero from 706px, 943px viewport. Either it fails on the owner's path, or the phrase means something other than card order |
 
 **Collect before acting:** a screenshot per item, viewport width, role
 (facilitator or voter), and round state (pre-reveal / revealed / expired). All
