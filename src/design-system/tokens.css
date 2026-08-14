@@ -117,12 +117,20 @@
    Eight steps on a 16px base, roughly a 1.25 major third, plus two fluid
    clamps for hero and section headings.
 
-   Cormorant Garamond ships OLD-STYLE figures: 3, 4, 7 and 9 drop below the
-   baseline and 1 sits short, so a column of them wobbles. Every NUMBER in the
-   product — card values, stat values, timers, table cells — is set in
-   --font-ui with tabular-nums. The display serif is for words. */
+   ONE family, and --font-display is gone. There was a display serif, Cormorant
+   Garamond, and by 14 Aug 2026 it rendered in a single selector — the modal
+   title — which put two typefaces inside one dialog: "Sign in" in the serif
+   directly above a card title in Outfit. The owner asked for the heading face,
+   so the serif now renders nowhere and the token that named it would have been
+   a live-looking pointer at nothing. Its .woff2 moved to assets/fonts/, out of
+   everything that ships, because scripts/make-og-image.py still draws the OG
+   card's wordmark with it.
+
+   Every NUMBER in the product — card values, stat values, timers, table cells —
+   is --font-ui with tabular-nums, which was the reason the serif was kept off
+   digits in the first place: Cormorant's old-style figures drop 3, 4, 7 and 9
+   below the baseline and a column of them wobbles. */
 :root {
-  --font-display: 'Cormorant Garamond', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --font-ui: 'Outfit', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 

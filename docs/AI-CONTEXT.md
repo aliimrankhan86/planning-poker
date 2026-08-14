@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 319 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 321 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -149,7 +149,7 @@ existing 10k-line file theme-aware without rewriting it.
 
 | Measure | Now | Note |
 |---|---|---|
-| Design tokens | 231 | Type, spacing, elevation, motion, semantic colour |
+| Design tokens | 230 | Type, spacing, elevation, motion, semantic colour |
 | Roles defined per theme | 98 | Every one exists in both, or light falls back to a dark value |
 | Icons in `ICON_PATHS` | 20 | One stroke family, `currentColor` |
 | Distinct font sizes in CSS | 1 | Target is the 8-step scale; the rest is unmigrated legacy |
@@ -919,6 +919,57 @@ states, because the derivation is only safe while they hold.
 
 Auto-reveal when *everyone has voted* is untouched — that one is the table
 finishing, not a clock expiring.
+
+## One typeface — 14 August 2026 (reported by the owner)
+
+"The font mismatch is also there — in the sign in overlay and other overlays
+probably. I want the same font as heading used but appropriate size."
+
+**It was one selector, and only one.** Every other overlay was already Outfit —
+`.consensus-burst-text`, the toasts, the banners, the cookie strip. The
+mismatch was `.pp-modal__title`, the last thing in the product rendering the
+display serif, so the sign-in dialog read "Sign in" in Cormorant directly above
+"What an account adds" in Outfit, with the page's own sans H1 showing through
+the scrim behind it.
+
+`.pp-modal__title` is `--font-ui` now. `--fs-5` (22px) is unchanged and is the
+right step — one above `.pp-card__title` at `--fs-4` (18px), which is the other
+heading a dialog contains — plus `--tracking-display`, because Outfit at 22px
+bold sets a touch wide without it.
+
+### And then the serif rendered nowhere
+
+Two other selectors named `--font-display`: `.pp-logo--serif` and
+`.pp-card--editorial`. Neither has ever appeared on screen — no caller passes
+`serif` or `editorial` — so they went too, along with the props that set them. A
+prop that silently does nothing is worse than no prop.
+
+With nothing rendering it, the token, the `@font-face` and the shipped file all
+had to go. The `.woff2` **moved to `assets/fonts/`** rather than being deleted,
+because `scripts/make-og-image.py` still draws the OG card's wordmark with it,
+and `assets/` is outside everything that ships (same reason
+`brand-mark-master.png` lives there). `build/fonts` is Outfit only now — 84 kB,
+down 22.
+
+**Left undone, deliberately:** the OG card still renders the brand wordmark in
+Cormorant, which now disagrees with the site. Regenerating it needs
+`pip install pillow fonttools brotli`, which is not installed here, so it was
+left whole rather than half-changed. Decide it, do not inherit it.
+
+### Two tests that were green while the rule was broken
+
+- **A face can be loadable, declared, shipped — and reachable by nothing.** The
+  existing pair checked token → face and file → face. Both passed the entire
+  time Cormorant was rendered by one selector, and would still have passed with
+  zero. The third direction closes the loop: every family declared in fonts.css
+  must be one a `--font-*` token still names.
+- **A `var()` on a deleted token is silent.** Reverting `.pp-modal__title` to
+  `var(--font-display)` after the token was gone left all 496 tests green — the
+  declaration is invalid at computed-value time, so it does nothing and the
+  element inherits, which looks fine on the machine it was written on. That is
+  the same failure shape as the missing `@font-face`. A test now fails on any
+  `var(--x)` with no fallback naming a property nothing defines;
+  `var(--x, fallback)` is exempt, because a fallback is the contract.
 
 ## The ghost variant is deleted — 14 August 2026 (reported by the owner)
 

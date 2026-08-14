@@ -309,8 +309,8 @@ which are text characters, and the single 🎉 in the consensus burst.
 // A page measuring itself. Six shells did this and drifted to four widths between them.
 <div className="my-page" style={{ maxWidth: 1160, margin: "0 auto" }} />
 
-// The display serif on a number. Cormorant's old-style figures wobble in a column.
-<span style={{ fontFamily: "var(--font-display)" }}>{count}</span>
+// A second typeface. There is one, --font-ui, and --font-display no longer exists.
+<span style={{ fontFamily: "Georgia, serif" }}>{count}</span>
 ```
 
 ---

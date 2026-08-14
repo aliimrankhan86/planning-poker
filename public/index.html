@@ -50,11 +50,13 @@
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
 
     <!-- ── Fonts ─────────────────────────────────────────────────── -->
-    <!-- Outfit (UI, five weights) and Cormorant Garamond (display, 700) are
-         both self-hosted — no Google Fonts dependency. The @font-face rules
-         live in fonts.css; a test asserts every family a --font-* token names
-         is actually declared there, because a missing rule fails silently into
-         a system serif that looks fine on the machine it was written on. -->
+    <!-- Outfit, five weights, self-hosted — no Google Fonts dependency, and
+         the only family the product ships. The @font-face rules live in
+         fonts.css; a test asserts every family a --font-* token names is
+         actually declared there, because a missing rule fails silently into
+         a system serif that looks fine on the machine it was written on.
+         Cormorant Garamond was the display face until 14 Aug 2026; nothing
+         renders it now and it no longer ships. -->
     <link rel="stylesheet" href="%PUBLIC_URL%/fonts/fonts.css" />
 
     <!-- ── Critical inline styles (prevents flash before React loads) ── -->

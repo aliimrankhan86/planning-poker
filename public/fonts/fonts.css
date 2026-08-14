@@ -3,7 +3,7 @@
   These local @font-face declarations avoid third-party font requests,
   reduce external network dependency, and support stronger privacy and CWV.
 
-  TWO families, and every family named at the head of a --font-* token in
+  ONE family, and every family named at the head of a --font-* token in
   src/design-system/tokens.css must be declared here. It is not enough for the
   .woff2 to sit in this folder: without an @font-face the token falls through to
   its next candidate, and the product renders in Iowan Old Style on macOS,
@@ -11,9 +11,7 @@
   developing on a Mac would ever see. That is exactly what happened to Cormorant
   between the design system landing and 13 Aug 2026. A test now pins it.
 
-  Only the weights the product actually asks for are declared. Cormorant is used
-  at 700 alone (four components, all var(--fw-bold)); the 400, 600 and italic
-  files were deleted rather than left to ship 69 kB nothing could request.
+  Only the weights the product actually asks for are declared.
 */
 
 /* ── Outfit ─────────────────────────────────────────────────── */
@@ -53,15 +51,10 @@
   src: url('./outfit-v15-latin-700.woff2') format('woff2');
 }
 
-/* ── Cormorant Garamond ─────────────────────────────────────── */
-/* The display serif: hero titles, editorial card titles, modal titles and the
-   serif wordmark. Words only — every NUMBER in the product is set in Outfit
-   with tabular figures, because Cormorant's old-style figures wobble. See the
-   Type block in tokens.css. */
-@font-face {
-  font-family: 'Cormorant Garamond';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('./cormorant-garamond-v21-latin-700.woff2') format('woff2');
-}
+/* Cormorant Garamond is NOT declared here, and that is not an oversight —
+   the same missing-@font-face shape caused a real bug in Aug 2026, so it is
+   written down. Nothing in the product renders it any more: the modal title
+   was its last selector and moved to Outfit on 14 Aug. Its .woff2 lives in
+   assets/fonts/, outside everything that ships, and only
+   scripts/make-og-image.py reads it — to draw the OG card's wordmark. Declaring
+   a face nothing requests would put 22 kB in the deploy for no reader. */

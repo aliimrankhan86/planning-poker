@@ -19,6 +19,12 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS = os.path.join(ROOT, "public", "fonts")
+# Cormorant is no longer one of the shipped faces: nothing in the product
+# renders it since the modal title moved to Outfit (14 Aug 2026), so keeping it
+# under public/ would put 22 kB in every deploy for no reader. It lives beside
+# the other build-time-only brand assets instead, and this card is the last
+# thing that draws it. See public/fonts/fonts.css.
+BRAND_FONTS = os.path.join(ROOT, "assets", "fonts")
 W, H = 1200, 630
 
 # Straight from src/design-system/tokens.css.
@@ -32,9 +38,9 @@ CREAM = (238, 242, 236)
 MUTED = (168, 186, 172)
 
 
-def font(name, size):
+def font(name, size, where=None):
     """Load a brand woff2 as a PIL font (fontTools does the decompression)."""
-    f = TTFont(os.path.join(FONTS, name))
+    f = TTFont(os.path.join(where or FONTS, name))
     f.flavor = None
     buf = io.BytesIO()
     f.save(buf)
@@ -87,7 +93,7 @@ mark = mark.resize((MARK, MARK), Image.LANCZOS)
 img.paste(mark, (PAD, 54), mark)
 
 # ── wordmark and copy ──────────────────────────────────────────────────────
-f_brand = font(CORMORANT_BOLD, 100)
+f_brand = font(CORMORANT_BOLD, 100, BRAND_FONTS)
 f_tag = font(OUTFIT_BOLD, 38)
 f_body = font(OUTFIT_REG, 26)
 f_pill = font(OUTFIT_MED, 23)

@@ -1929,6 +1929,52 @@ describe("the system rules", () => {
     expect(files.filter((f) => !referenced.includes(f))).toEqual([]);
   });
 
+  test("and every family declared is one a token can still name", () => {
+    /* The third direction, and the one the other two could not see. Cormorant
+       had a token, an @font-face and a shipped file — all three consistent —
+       and by 14 Aug 2026 exactly one selector rendered it, the modal title.
+       When that moved to Outfit the face was loadable, declared, paid for in
+       the deploy, and reachable by nothing. Both tests above stayed green.
+
+       A family declared here must be named by a --font-* token; a token nobody
+       uses is caught by the dead-CSS test. Together that is the full loop:
+       file → face → token → selector. */
+    const declared = [...fontsCss.matchAll(/font-family:\s*'([^']+)'/g)].map((m) => m[1]);
+    const tokenFamilies = [...tokens.matchAll(/--font-[\w-]*:\s*([^;]+);/g)]
+      .flatMap((m) => m[1].split(",").map((f) => f.trim().replace(/^['"]|['"]$/g, "")));
+    expect(declared.length).toBeGreaterThan(0);
+    expect([...new Set(declared)].filter((f) => !tokenFamilies.includes(f))).toEqual([]);
+  });
+
+  /* Deleting --font-display left .pp-modal__title free to say
+     var(--font-display) again, and every one of the 496 tests stayed green: a
+     var() naming a property that does not exist is invalid at computed-value
+     time, so the declaration silently does nothing and the element quietly
+     inherits. Nothing looks broken on the machine it was written on — the same
+     failure shape as the missing @font-face in Aug 2026.
+
+     var(--x, fallback) is exempt, and deliberately: a fallback IS the contract,
+     which is how .pp-choice-row tunes --choice-basis per instance. */
+  test("no stylesheet references a custom property that does not exist", () => {
+    const defined = new Set();
+    for (const [, source] of SHEETS) {
+      for (const m of source.matchAll(/(--[\w-]+)\s*:/g)) defined.add(m[1]);
+    }
+    for (const m of tokens.matchAll(/(--[\w-]+)\s*:/g)) defined.add(m[1]);
+    // Set from JS too — style={{ "--pc-scale": … }} is a definition.
+    for (const f of ["App.js", "AdminDashboard.js", "design-system/index.js"]) {
+      const src = readFileSync(join(__dirname, f), "utf8");
+      for (const m of src.matchAll(/["']?(--[\w-]+)["']?\s*:/g)) defined.add(m[1]);
+    }
+    const dangling = [];
+    for (const [label, source] of SHEETS) {
+      for (const m of source.matchAll(/var\((--[\w-]+)\s*([,)])/g)) {
+        if (m[2] === ")" && !defined.has(m[1])) dangling.push(`${label}: ${m[1]}`);
+      }
+    }
+    expect([...new Set(dangling)]).toEqual([]);
+  });
+
   // ── 7 ────────────────────────────────────────────────────────────────────
   test.each(SHEETS)("every z-index is a token — %s", (_label, source) => {
     expect(valuesOf(source, "z-index").filter((v) => !/^var\(--z-/.test(v))).toEqual([]);

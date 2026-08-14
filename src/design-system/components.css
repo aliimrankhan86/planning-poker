@@ -130,7 +130,6 @@
 .pp-logo--sm .pp-logo__word { font-size: var(--fs-4); }
 .pp-logo--lg .pp-logo__mark { --mark-size: 48px; }
 .pp-logo--lg .pp-logo__word { font-size: var(--fs-6); }
-.pp-logo--serif .pp-logo__word { font-family: var(--font-display); font-weight: var(--fw-bold); letter-spacing: 0; }
 .pp-logo--on-felt .pp-logo__word { color: var(--text-on-felt); }
 .pp-logo--on-felt .pp-logo__word em { color: var(--brass-300); }
 
@@ -551,7 +550,6 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
    declares a larger gap keeps it, and a child that declares none gets this. */
 .pp-card__body > * + * { margin-top: var(--sp-4); }
 .pp-card__footer { display: flex; align-items: center; gap: var(--sp-3); margin-top: auto; padding-top: var(--sp-2); }
-.pp-card--editorial .pp-card__title { font-family: var(--font-display); font-size: var(--fs-5); font-weight: var(--fw-bold); letter-spacing: var(--tracking-display); }
 
 /* Stat tile. Value first, label above it, meaning below. Never render zeroes for absent data. */
 .pp-stat { display: grid; gap: var(--sp-1); padding: var(--sp-4); background: var(--surface-1); border: var(--bw-hair) solid var(--border-subtle); border-radius: var(--r-md); }
@@ -1108,7 +1106,17 @@ a.pp-card:hover .pp-card__title { color: var(--action-quiet); }
 .pp-modal > * { min-width: 0; }
 .pp-modal--wide { width: min(760px, 100%); }
 .pp-modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-4); }
-.pp-modal__title { font-family: var(--font-display); font-size: var(--fs-5); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
+/* Outfit, like every other heading in the product. This was the last selector
+   rendering the display serif, and it put two typefaces in one dialog: "Sign
+   in" in Cormorant sitting directly above "What an account adds" in Outfit,
+   with the page's own sans H1 showing through the scrim behind it. Reported by
+   the owner.
+
+   --fs-5 (22px) is unchanged and is the right step: one above .pp-card__title
+   at --fs-4, which is the other heading a dialog contains. --tracking-display
+   because Outfit at 22px bold sets a touch wide without it; .pp-hero__title
+   takes -0.03em at 56px, and tracking tightens with size, not against it. */
+.pp-modal__title { font-family: var(--font-ui); font-size: var(--fs-5); font-weight: var(--fw-bold); line-height: var(--lh-tight); letter-spacing: var(--tracking-display); }
 .pp-modal__sub { margin-top: var(--sp-2); font-size: var(--fs-2); line-height: var(--lh-body); color: var(--text-2); letter-spacing: var(--fs-2-tracking); max-width: var(--measure-tight); }
 .pp-modal__body { font-size: var(--fs-3); line-height: var(--lh-body); color: var(--text-2); }
 .pp-modal__footer { display: flex; gap: var(--sp-3); justify-content: flex-end; flex-wrap: wrap; }

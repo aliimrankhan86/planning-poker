@@ -7,8 +7,14 @@
   branch (design sweep, deck migration into the design system, dead-CSS removal,
   the Cormorant `@font-face` fix, and the measured header ladder) was merged to
   `main` on 13 August 2026.
-- 495 Jest tests pass; production build succeeds; sitemap and prerender both
+- 497 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
+- **14 August:** one typeface. The modal title was the last selector rendering
+  the display serif, which put two faces inside the sign-in dialog; it is
+  Outfit now, at the same 22px. With nothing left rendering Cormorant the
+  token, the `@font-face` and two unreachable selectors went with it, and the
+  `.woff2` moved to `assets/fonts/` — `scripts/make-og-image.py` still needs
+  it, and the deploy is 22 kB lighter.
 - **14 August:** the `ghost` button variant is deleted product-wide. It was
   transparent fill, transparent border and muted text, and it was carrying nine
   real controls (Sign in, Sign out, Stop timer, Leave, Resend verification,

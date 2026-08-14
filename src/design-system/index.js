@@ -62,11 +62,14 @@ export function Icon({ name, size = 20, title, className, ...rest }) {
 }
 
 /** The Point Poker lockup: a brass card pip beside a lowercase wordmark. */
-export function Logo({ size = "md", serif = false, onFelt = false, markOnly = false, as = "a", href = "/", className, ...rest }) {
+/* `serif` is gone with the display face. It set .pp-logo--serif, whose only
+   job was to draw the wordmark in Cormorant, and no caller ever passed it —
+   a prop that silently does nothing is worse than no prop. */
+export function Logo({ size = "md", onFelt = false, markOnly = false, as = "a", href = "/", className, ...rest }) {
   const Tag = as;
   return (
     <Tag
-      className={cx("pp-logo", size !== "md" && `pp-logo--${size}`, serif && "pp-logo--serif", onFelt && "pp-logo--on-felt", className)}
+      className={cx("pp-logo", size !== "md" && `pp-logo--${size}`, onFelt && "pp-logo--on-felt", className)}
       href={Tag === "a" ? href : undefined}
       aria-label="Point Poker"
       {...rest}
@@ -300,13 +303,16 @@ export function Checkbox({ label, type = "checkbox", className, ...rest }) {
     `as` exists for the one case that needs it: a whole card that is a link.
     Wrapping the card in an <a> instead nests the heading inside the link text,
     which is what makes a screen reader read the entire card as one link name. */
-export function Card({ as = "div", variant, interactive = false, pad, eyebrow, title, titleAs = "h3", editorial = false, children, footer, className, ...rest }) {
+/* `editorial` is gone for the same reason as Logo's `serif`: it set
+   .pp-card--editorial, which existed only to draw the card title in the
+   display serif, and nothing ever passed it. */
+export function Card({ as = "div", variant, interactive = false, pad, eyebrow, title, titleAs = "h3", children, footer, className, ...rest }) {
   const Tag = as;
   const Title = titleAs;
   return (
     <Tag
       className={cx("pp-card", variant && `pp-card--${variant}`, interactive && "pp-card--interactive",
-        pad && `pp-card--pad-${pad}`, editorial && "pp-card--editorial", className)}
+        pad && `pp-card--pad-${pad}`, className)}
       {...rest}
     >
       {eyebrow && <span className="pp-card__eyebrow">{eyebrow}</span>}
