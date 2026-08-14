@@ -884,9 +884,10 @@ from my summary of it.
    `src/estimation.js`. Facilitator and voter read different sentences and the
    report does not say which.
 3. **"Viewing what others have estimated isn't fixed" — this contradicts a claim
-   made in this session.** The reveal grid was moved above the average hero and
-   verified by driving a live three-browser room: cards at 523–674px, hero from
-   706px, 943px viewport. That measurement stands for what it measured. It does
+   made in this session.** The `who-section` / `<RevealGrid>` was moved above
+   `.avg-hero` inside `.panel-gold` in `src/App.js`, and verified by driving a
+   live three-browser room: cards at 523–674px, hero from 706px, in a 943px
+   viewport. That measurement stands for what it measured. It does
    not follow that the owner's complaint was about card order — it may be
    per-person attribution, a pre-reveal state, or history across rounds. **Do
    not re-apply the same reorder.** Find out what was expected.
