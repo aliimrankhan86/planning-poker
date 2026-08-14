@@ -2108,7 +2108,12 @@ ol.marketing-list li::marker {
 /* ══════════════════════ ADMIN DASHBOARD ══════════════════════ */
 .dash-wrap { padding-block: var(--sp-8) var(--sp-20); }
 .dash-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-5); flex-wrap: wrap; margin-bottom: var(--sp-5); }
-.dash-back { background: none; border: none; color: var(--gold-ink2); font-family: var(--font-ui); font-size: var(--fs-1); letter-spacing: var(--fs-1-tracking); cursor: pointer; padding: 0 0 var(--sp-2); }
+/* .dash-back is gone with the ghost variant. It was eight declarations
+   stripping a design-system Button back to a text link — background,
+   border, colour, font, size, tracking, padding — from outside the
+   component, which is the one thing App.js is not allowed to do to a
+   pp-* component. The dashboard back control is an ordinary secondary
+   button now, like every other way out of a screen. */
 .dash-head-actions { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
 .dash-panel { min-width: 0;
 }
@@ -2786,11 +2791,11 @@ function NavBar({
               {onAdmin && (
                 <IconButton icon="chart" size="sm" label={t("nav.dashboard")} onClick={onAdmin} />
               )}
-              <Button variant="ghost" size="sm" className="nav-btn-login" onClick={onLogout}>{t("nav.signOut")}</Button>
+              <Button size="sm" className="nav-btn-login" onClick={onLogout}>{t("nav.signOut")}</Button>
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" className="nav-btn-login" onClick={onLogin}>{t("nav.signIn")}</Button>
+              <Button size="sm" className="nav-btn-login" onClick={onLogin}>{t("nav.signIn")}</Button>
               {!inRoom && (
                 <Button
                   variant={onJoinScreen ? "secondary" : "primary"}
@@ -3339,7 +3344,6 @@ function LoginModal({
                   {teamRoomIntent ? t("login.continueTeamRooms") : t("login.continueWorkspace")}
                 </Button>
                 <Button
-                  variant="ghost"
                   block
                   onClick={handleResendVerification}
                   disabled={authStatus === "verify_resending"}
@@ -4887,7 +4891,7 @@ function MarketingPageShell({
   return (
     <div className="marketing-page">
       <Container>
-        <Button variant="ghost" size="sm" className="legal-back" onClick={() => onNavigate("/")}>
+        <Button size="sm" className="legal-back" onClick={() => onNavigate("/")}>
           {t("page.back")}
         </Button>
         {englishOnly && <p className="marketing-lang-note">{t("footer.englishOnly")}</p>}
@@ -5774,7 +5778,7 @@ function LegalPage({ title, lastUpdated, onBack, children }) {
   return (
     <Section className="legal-page">
       <Container size="narrow">
-        <Button variant="ghost" size="sm" className="legal-back" onClick={onBack} aria-label="Back to home">
+        <Button size="sm" className="legal-back" onClick={onBack} aria-label="Back to home">
           ← Back
         </Button>
         <SectionHead as="h1" eyebrow={`Last updated: ${lastUpdated}`} title={title} />
@@ -7652,7 +7656,7 @@ function GameScreen({
       <header className="hdr" role="banner" ref={headerRef}>
         <div className="hdr-in pp-container">
           <div className="hdr-l">
-            <Button variant="ghost" size="sm" className="btn-back" onClick={onBack} aria-label={t("game.leaveAria")}>
+            <Button size="sm" className="btn-back" onClick={onBack} aria-label={t("game.leaveAria")}>
               {t("game.leave")}
             </Button>
             <BrandMark size={34} onClick={onBack} label={t("game.returnHome")}/>
@@ -7712,7 +7716,7 @@ function GameScreen({
             title={t("game.teamRoomReady")}
             className="solo-invite-banner"
             actions={
-              <Button variant="ghost" size="sm" onClick={() => setSoloBannerDismissed(true)}>{t("game.dismiss")}</Button>
+              <Button size="sm" onClick={() => setSoloBannerDismissed(true)}>{t("game.dismiss")}</Button>
             }
           >
             {t("game.teamRoomBody")}
@@ -7843,7 +7847,7 @@ function GameScreen({
                           {urgent ? t("game.timeUp") : warn ? t("game.wrappingUp") : t("game.estimating")}
                         </div>
                         <div className="rhint">{t("game.timerEndsHint")}</div>
-                        <Button variant="ghost" size="sm" className="btn-stop" onClick={onStop}>
+                        <Button variant="accent" size="sm" className="btn-stop" onClick={onStop}>
                           <Icon name="stop" size={16} /> {t("game.stopTimer")}
                         </Button>
                       </div>

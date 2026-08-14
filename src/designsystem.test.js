@@ -45,7 +45,7 @@ const fontsCss = readFileSync(join(__dirname, "..", "public", "fonts", "fonts.cs
    sweep. It only ever goes down: lower it when a surface moves into the design
    system, and treat any need to raise it as a sign the surface was built in the
    wrong file. Comments are not counted, deliberately — see the test. */
-const CSS_DECLARATION_CEILING = 1369;
+const CSS_DECLARATION_CEILING = 1361;
 
 describe("design tokens exist", () => {
   const required = [
@@ -74,7 +74,7 @@ describe("design tokens exist", () => {
 describe("button system", () => {
   test("has one base class with five intents and three sizes", () => {
     for (const cls of [
-      ".pp-btn {", ".pp-btn--primary", ".pp-btn--secondary", ".pp-btn--ghost",
+      ".pp-btn {", ".pp-btn--primary", ".pp-btn--secondary", ".pp-btn--accent",
       ".pp-btn--danger", ".pp-btn--on-felt", ".pp-btn--sm", ".pp-btn--lg", ".pp-btn--block",
     ]) {
       expect(dsCss).toContain(cls);
@@ -84,6 +84,40 @@ describe("button system", () => {
   test("App.js keeps no second button system", () => {
     expect(css).not.toMatch(/\n\.btn\s*[,{]/);
     expect(css).not.toContain(".btn--primary");
+  });
+
+  /* Every rung of the ladder is visibly a control. The ghost variant was the
+     exception — transparent fill, transparent border, --text-2 label — and it
+     was carrying nine real actions: Sign in, Sign out, Stop timer, Leave,
+     Resend verification email, Dismiss and every Back link in the product.
+     Reported by the owner as buttons that are easy to miss. It is deleted
+     rather than restyled: a rung whose whole idea is "looks like nothing" is
+     not a rung, and the three that remain covered every call site. */
+  test("no button is invisible", () => {
+    // Comments stripped: the note explaining WHY the variant went necessarily
+    // names it, and this assertion is that the selector is absent. Same trap
+    // the print block fell into on 14 Aug.
+    expect(stripComments(dsCss)).not.toContain(".pp-btn--ghost");
+    const sources = ["App.js", "AdminDashboard.js", "design-system/index.js"]
+      .map((f) => readFileSync(join(__dirname, f), "utf8"));
+    sources.forEach((src) => expect(src).not.toContain('variant="ghost"'));
+  });
+
+  test("the three rungs that remain each paint themselves", () => {
+    // Guards the guard: if a variant ever loses its fill it becomes the thing
+    // that was just deleted, under a different name.
+    /* Read the VALUE out and compare it, rather than asserting a pattern with
+       a lookahead: /--btn-bg:\s*(?!transparent)/ passes on
+       "--btn-bg: transparent", because \s* backtracks to zero width and the
+       lookahead then runs against the space. Found by mutation-testing this
+       very rule — it stayed green with the fill removed. */
+    for (const v of ["primary", "secondary", "accent"]) {
+      const rule = stripComments(dsCss).match(new RegExp(`\\.pp-btn--${v}\\s*\\{[^}]*\\}`, "s"));
+      expect(rule).not.toBeNull();
+      const fill = (rule[0].match(/--btn-bg:\s*([^;]+);/) || [])[1];
+      expect(`${v}: ${fill}`).not.toBe(`${v}: transparent`);
+      expect(fill).toBeTruthy();
+    }
   });
 
   test("every button clears the 44px touch target floor", () => {

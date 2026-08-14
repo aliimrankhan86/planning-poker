@@ -143,10 +143,20 @@ One base class, four intents, three sizes:
 
 ```html
 <button class="btn btn--primary btn--lg btn--block">Reveal everyone's cards</button>
-<button class="btn btn--secondary">Start 30s countdown</button>
-<button class="btn btn--ghost btn--sm">Dismiss</button>
+<button class="btn btn--accent">Start 30s countdown</button>
+<button class="btn btn--secondary btn--sm">Dismiss</button>
 <button class="btn btn--danger">End session</button>
 ```
+
+**Every intent paints itself.** There was a fifth, `--ghost`: transparent fill,
+transparent border, `--text-2` label. It was carrying nine real controls — Sign
+in, Sign out, Stop timer, Leave, Resend verification email, Dismiss and every
+Back link in the product — and the owner reported them as buttons that are easy
+to miss. It is deleted, not restyled. A rung whose whole idea is "looks like
+nothing" is not a rung, and the three visible ones covered every call site:
+`--primary` is the action of the screen, `--accent` the action of a panel,
+`--secondary` a way out of this. A test fails on any button that reintroduces a
+transparent fill.
 
 Intent is set through local custom properties (`--btn-bg`, `--btn-fg`, `--btn-bd`),
 so a new variant is three declarations rather than a new class carrying its own
@@ -164,8 +174,12 @@ it only scrolls to the form below it and focuses the first field, so it drops to
 `--secondary` and leaves the gold to "Create Room", which is the control that
 finishes the job. `NavBar` takes `onJoinScreen` for exactly this.
 
-Ranking in the bar runs `--ghost` (Sign in) → `--secondary` → `--primary`. Three
-visible tiers, one gold.
+Ranking in the bar runs `--secondary` (Sign in) → `--primary` (Start a free
+room). On the join screen both bar controls are `--secondary` and the gold sits
+on "Create Room" in the card below, which is the control that finishes the job —
+so the bar is flat there on purpose, not by accident. It used to run
+`--ghost` → `--secondary` → `--primary`, and the bottom tier of that ladder was
+the invisible one.
 
 Every `.btn` is at least `--tap-min` (44px) tall. Sizes change padding and type,
 never that floor. WCAG 2.2 AA (2.5.8) requires 24px; 44px is the Apple HIG figure

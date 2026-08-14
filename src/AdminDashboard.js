@@ -312,7 +312,7 @@ export default function AdminDashboard({ currentUser, onBack }) {
     <div className="dash-wrap pp-container">
       <header className="dash-head">
         <div>
-          <Button variant="ghost" size="sm" className="dash-back" onClick={onBack}>← Point Poker</Button>
+          <Button size="sm" onClick={onBack}>← Point Poker</Button>
           <SectionHead
             align="start"
             as="h1"

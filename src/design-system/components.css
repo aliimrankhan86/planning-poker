@@ -219,12 +219,21 @@
   --btn-bd: var(--border-strong);
   --btn-shadow: var(--elev-1);
 }
-.pp-btn--ghost {
-  --btn-bg: transparent;
-  --btn-bg-hover: color-mix(in oklab, var(--text-1) 8%, transparent);
-  --btn-fg: var(--text-2);
-  --btn-bd: transparent;
-}
+/* .pp-btn--ghost is GONE, and the variant is not coming back. Transparent fill,
+   transparent border, --text-2 label: it was a line of text that happened to be
+   clickable, and it was carrying nine real controls — Sign in, Stop timer,
+   Leave, Resend verification email, Dismiss and every Back link in the product.
+   Reported by the owner as buttons that are easy to miss.
+
+   Nothing replaced it, because nothing had to. The system already has three
+   rungs that are all visibly controls, and every ghost call site belonged to
+   one of them:
+
+     --primary    the one action of the screen            (gold gradient)
+     --accent     the action of a panel                   (gold tint, outlined)
+     --secondary  a way out of this, and the default      (raised fill)
+
+   A fourth rung whose whole idea is "looks like nothing" is not a rung. */
 /* Filled, for the same reason --secondary is: a control is one rung above its
    container or it is not a control. Transparent-on-panel made "End session" —
    the one irreversible thing in the room — read as a line of red text with a

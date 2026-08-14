@@ -28,7 +28,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 | `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 75 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 36 KB |
-| `src/design-system/components.css` | The `pp-` component classes | 70 KB |
+| `src/design-system/components.css` | The `pp-` component classes | 71 KB |
 | `src/design-system/index.js` | The React components. Import from here | 41 KB |
 | `src/design-system/README.md` | The rulebook: theming, the ten rules, the decision table | 20 KB |
 | `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 13 KB |
@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 316 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 318 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -919,6 +919,62 @@ states, because the derivation is only safe while they hold.
 
 Auto-reveal when *everyone has voted* is untouched — that one is the table
 finishing, not a clock expiring.
+
+## The ghost variant is deleted — 14 August 2026 (reported by the owner)
+
+"I want the important CTAs to be in colour… I am not a big fan of the ghost
+variant." Applied product-wide, not to one screen.
+
+`.pp-btn--ghost` was transparent fill, transparent border, `--text-2` label — a
+line of text that happened to be clickable. It was carrying **nine real
+controls**: Sign in, Sign out, Stop timer, Leave, Resend verification email,
+Dismiss, and every Back link in the product including the admin dashboard's.
+
+It is **deleted, not restyled**. The system already had three rungs that all
+paint themselves, and every call site belonged to one of them:
+
+| rung | means | where the ghosts went |
+|------|-------|-----------------------|
+| `--primary` | the one action of the screen | — |
+| `--accent` | the action of *this panel* | **Stop timer**, which now matches the Start countdown it replaces |
+| `--secondary` | a way out of this, and the default | Sign in, Sign out, Leave, Dismiss, Resend, both Back links, dashboard Back |
+
+**`.dash-back` went with it** — eight declarations stripping a design-system
+Button back to a text link (background, border, colour, font, size, tracking,
+padding) from outside the component, which is the one thing App.js is not
+allowed to do to a `pp-*` component. The dashboard's back control is an ordinary
+secondary button now. **Ceiling 1369 → 1361.**
+
+### What this cost, stated honestly
+
+The navbar used to rank `ghost (Sign in) → secondary → primary`. On the join
+screen the CTA is deliberately `secondary` (it only scrolls to a form already on
+the page), so Sign in and "Start a free room" are now **the same weight there**.
+That is a real flattening, and it is the right trade: the gold on that screen
+belongs to "Create Room", which is the control that finishes the job, and
+neither bar control is invisible any more. On the other thirteen routes the CTA
+is `primary` and the rank is unchanged.
+
+### The nav ladder did not move
+
+Checked, because three notes in this file have been wrong about a nav number.
+The border box lives on `.pp-btn` itself (`border: var(--bw-hair) solid
+var(--btn-bd)`), so a transparent border occupies the same pixels as a coloured
+one — **Sign in measures 78px either way**. `git stash` isolation on the same
+dev server, settled reads: `full` at 1068 and `no-links` at 1063, both builds,
+65px tall.
+
+**A resize without a reload lies.** Going 1068 → 1063 and reading gave `full` at
+113px — a wrapped, stuck bar. Reloading at 1063 gave `no-links` at 65px, which
+matches the record. Reload between widths or the reading is hysteresis, not a
+threshold.
+
+### A test that passed with the rule broken
+
+`expect(rule).toMatch(/--btn-bg:\s*(?!transparent)/)` is green on
+`--btn-bg: transparent`: `\s*` backtracks to zero width and the lookahead then
+runs against the space. Found by mutation-testing the rule I had just written.
+It reads the value out and compares it now.
 
 ## Reveal shows the people first — 14 August 2026 (reported by the owner)
 

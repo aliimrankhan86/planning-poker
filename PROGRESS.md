@@ -7,8 +7,14 @@
   branch (design sweep, deck migration into the design system, dead-CSS removal,
   the Cormorant `@font-face` fix, and the measured header ladder) was merged to
   `main` on 13 August 2026.
-- 492 Jest tests pass; production build succeeds; sitemap and prerender both
+- 494 Jest tests pass; production build succeeds; sitemap and prerender both
   contain 26 URLs/documents.
+- **14 August:** the `ghost` button variant is deleted product-wide. It was
+  transparent fill, transparent border and muted text, and it was carrying nine
+  real controls (Sign in, Sign out, Stop timer, Leave, Resend verification,
+  Dismiss and every Back link). Every rung that remains paints itself; a test
+  fails on any button that reintroduces a transparent fill. Details in
+  `docs/AI-CONTEXT.hand.md`.
 - **14 August:** reveal now shows *who picked what* before the average — the
   faces used to sit ~780px below the fold. Remove in the participant rail is
   red rather than a ghost button, and its label is translated instead of
