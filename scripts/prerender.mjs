@@ -28,10 +28,10 @@ import {
   PRERENDER_LINKS,
   SUPPORT_EMAIL,
   alternatesFor,
-  localeUrl,
   activateAllLocales,
 } from "../src/routeMeta.mjs";
 import { LOCALES, UI } from "../src/locales/index.mjs";
+import { withLocale } from "../src/i18n.mjs";
 
 /* Translations load per language in the browser; a build has to write every
    one of them, so it pulls the whole set in first. Top-level await, because
@@ -203,10 +203,10 @@ function shellLinks(path, locale) {
     }[href];
     return (key && ui[key]) || fallback;
   };
-  return PRERENDER_LINKS.filter(([href]) => localeUrl(locale, href) !== path)
+  return PRERENDER_LINKS.filter(([href]) => withLocale(locale, href) !== path)
     .map(
       ([href, fallback]) =>
-        `<li><a href="${localeUrl(locale, href)}">${esc(label(href, fallback))}</a></li>`,
+        `<li><a href="${withLocale(locale, href)}">${esc(label(href, fallback))}</a></li>`,
     )
     .join("");
 }
