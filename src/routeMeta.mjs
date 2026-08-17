@@ -53,10 +53,8 @@ export const STATIC_SCREEN_BY_PATH = {
   "/about": "about",
   "/support": "support",
   "/trust": "trust",
-  "/agile-estimation-tool": "agileEstimationTool",
   "/pricing": "pricing",
   "/features": "features",
-  "/story-point-estimation": "storyPointEstimation",
   "/remote-sprint-planning": "remoteSprintPlanning",
   /* Routes below render from ROUTE_CONTENT via <ContentPage>, so adding one
      costs a data object rather than a hand-written component.
@@ -71,13 +69,18 @@ export const STATIC_SCREEN_BY_PATH = {
   "/pointing-poker": "/pointing-poker",
   "/story-points-to-hours": "/story-points-to-hours",
   "/planning-poker-jira": "/planning-poker-jira",
-  /* Converted from hand-written components. They were the three pages Search
-     Console showed carrying real impressions against a ~140-word prerender —
-     and their FAQs could not earn FAQPage schema while the answers lived in
-     JSX the prerender never saw. Data-driven, the two renderers cannot drift. */
+  /* Converted from hand-written components. They were pages Search Console
+     showed carrying real query impressions against a thin prerender — and
+     their FAQs could not earn FAQPage schema while the answers lived in JSX
+     the prerender never saw. Data-driven, the renderer cannot drift from what
+     Google is sent. /agile-estimation-tool and /story-point-estimation joined
+     this list after a query-demand sweep found the same defect a second time:
+     their hand-written H1s did not even match the ones in STATIC_ROUTE_META. */
   "/scrum-poker": "/scrum-poker",
   "/planning-poker-online": "/planning-poker-online",
   "/fibonacci-story-points": "/fibonacci-story-points",
+  "/agile-estimation-tool": "/agile-estimation-tool",
+  "/story-point-estimation": "/story-point-estimation",
   "/admin": "admin",
 };
 
@@ -551,12 +554,58 @@ export const ROUTE_CONTENT = {
     ],
   },
   "/story-point-estimation": {
+    eyebrow: "Story point estimation",
     h1: "Story Point Estimation Tool and Guide",
     intro:
       "Improve story point estimation with planning poker, Fibonacci cards, facilitator guidance, and clearer team consensus during backlog refinement.",
+    highlights: [
+      { value: "Fibonacci", label: "Default deck for effort and uncertainty" },
+      { value: "3", label: "Deck options for different team habits" },
+      { value: "Clear", label: "Facilitator flow for split estimates and agreement" },
+    ],
     body: [
       "Story points measure relative size, not hours. The value comes from the conversation a disagreement forces, which is why simultaneous reveal matters more than the number itself.",
       "The Team Alignment score tracks how often the whole team agreed on the first vote. A low score is not a people problem — it usually means the acceptance criteria are not clear enough yet.",
+    ],
+    sections: [
+      {
+        title: "Why teams use story points instead of hours",
+        intro: "Story points help teams compare relative effort and uncertainty without pretending the work is already perfectly understood.",
+        bullets: [
+          "Relative sizing beats fake precision — teams usually agree faster on whether something feels closer to a 3 or an 8 than on whether it will take exactly 9.5 hours.",
+          "Fibonacci highlights uncertainty — wider gaps at larger values push the team to acknowledge risk and complexity instead of compressing everything into tiny numeric differences.",
+          "Consensus matters more than average — discussion analytics stay visible, but only final agreed deck values get saved, so sprint history stays trustworthy.",
+        ],
+      },
+      {
+        title: "Running a story point estimation round",
+        intro: "Good estimation is structured. Each step makes the next decision obvious.",
+        bullets: [
+          "Let everyone vote independently — private voting reduces anchoring and produces a more honest first signal.",
+          "Reveal the cards together — use the spread, average, and median to guide discussion, not as an automatic answer.",
+          "Discuss the differences — the stories with the widest spread are usually where acceptance criteria or scope still need work.",
+          "Either re-vote or record the agreed estimate — the facilitator captures only a valid deck value, so the estimate stays aligned with the team's chosen method.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "Is there a story point estimation tool that also runs the vote, not just tracks the number?",
+        a: "Yes — Point Poker runs the whole round: private votes, a simultaneous reveal, and a facilitator step to record the agreed number. It is the estimation surface itself, not a field you fill in after estimating somewhere else.",
+      },
+      {
+        q: "Does this work as a story point app on a phone during standup?",
+        a: "Yes, the room works in a phone browser with no install, so a voter who is not at a desk can still pick a card and see the reveal.",
+      },
+      {
+        q: "How many story points should a team estimate in one session?",
+        a: "Ten to fifteen items fits comfortably in half an hour once the team has an agreed baseline story to compare against. Sessions that run long are usually a sign items arrived without clear acceptance criteria, not that the estimation itself is slow.",
+      },
+    ],
+    related: [
+      { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "See how the browser-first room flow supports live estimation from anywhere." },
+      { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "Understand how the same estimation flow fits sprint planning and backlog refinement." },
+      { href: "/fibonacci-story-points", kicker: "Deck", title: "Fibonacci story points", copy: "Why the gaps widen, and what a 21 or a 34 is really telling you." },
     ],
   },
   "/remote-sprint-planning": {
@@ -569,12 +618,75 @@ export const ROUTE_CONTENT = {
     ],
   },
   "/agile-estimation-tool": {
+    eyebrow: "Agile estimation tool",
     h1: "Agile Estimation Tool for Sprint Planning",
     intro:
       "Point Poker works as an agile estimation tool for sprint planning, backlog refinement, facilitator-led voting, and clearer story-point discussions across remote teams.",
+    highlights: [
+      { value: "Realtime", label: "Votes, reveals, and room state stay in sync" },
+      { value: "Facilitated", label: "Built for the person running the ceremony" },
+      { value: "Practical", label: "Works for backlog refinement and sprint planning" },
+    ],
     body: [
       "Estimation tooling should disappear into the ceremony. Create a room, work the queue, record the agreed number, move on — the tool never asks for a signup mid-meeting.",
       "Facilitator analytics show consensus rate, spread, distribution, and re-votes, so retro conversations about estimation quality have data behind them.",
+    ],
+    sections: [
+      {
+        title: "What teams usually expect from an agile estimation tool",
+        intro: "The tool does not need to be a giant agile suite. It needs to remove the friction around the specific estimation conversation the team is trying to have.",
+        bullets: [
+          "Fast setup — open a room and invite everyone from a browser link, especially when estimation is only one part of a larger planning session.",
+          "Unbiased initial estimates — independent first votes and simultaneous reveal show the genuine spread before stronger opinions steer the discussion.",
+          "Clear facilitator controls — reveal, re-vote, moderation, timer control, and final estimate capture are all obvious when the room is live.",
+        ],
+      },
+      {
+        title: "Where Point Poker fits in the agile workflow",
+        intro: "The product is narrow by design. It supports the estimation portion of agile planning well, instead of trying to replace your backlog tool, ticketing system, or roadmap process.",
+        bullets: [
+          "Backlog refinement — estimate stories before sprint commitment and surface unclear scope early.",
+          "Sprint planning — work the queue, discuss disagreement, and come out with a clearer sense of sprint scope.",
+          "Remote estimation ceremonies — share one link, keep everyone in sync, and let the facilitator keep momentum.",
+          "Recurring team rituals — Team Rooms make it easy to reuse the same room every sprint once the team has a repeatable cadence.",
+        ],
+      },
+      {
+        title: "Why this tool works for real estimation conversations",
+        intro: "A good agile estimation tool should reinforce healthy team behaviour rather than flatten everything into a silent number picker.",
+        bullets: [
+          "It supports discussion after reveal — split votes do not get averaged into misleading answers. The team discusses the difference and the facilitator records the final agreed deck value explicitly.",
+          "It keeps the room understandable — real names are required, roles are explicit, and the invite flow stays visible so the meeting does not become confusing for late joiners or mixed-discipline teams.",
+          "It creates reusable context over time — sprint history and two fixed Team Rooms help the same team come back to a consistent estimation workflow instead of starting from scratch every sprint.",
+        ],
+      },
+    ],
+    faq: [
+      {
+        q: "What is an agile estimation tool?",
+        a: "Software that runs the estimation part of agile planning: each person privately sizes a piece of work, the room reveals every vote at once, and the team discusses only where the estimates disagree before recording a final number. Point Poker is one, built specifically for that workflow rather than as a module bolted onto a larger project-management suite.",
+      },
+      {
+        q: "Is a scrum estimation tool different from an agile estimation tool?",
+        a: "No — scrum teams just tend to call it that because Scrum is the agile framework they are running. The estimation technique, planning poker with simultaneous reveal, is identical either way.",
+      },
+      {
+        q: "Does this work as a story point estimation tool specifically?",
+        a: "Yes, Fibonacci story points are the default deck. For the estimation practice itself — why relative sizing beats hours, and how to run the round — see the story point estimation guide.",
+      },
+      {
+        q: "What should I look for in an agile estimation tool?",
+        a: "Simultaneous reveal so nobody anchors on the first number said out loud, a facilitator flow that makes reveal and re-vote obvious, a join step with no account required so late joiners are not blocked, and a room that stays legible with real names and explicit roles rather than anonymous vote counts.",
+      },
+      {
+        q: "Is there a free online estimation tool with no sign-up?",
+        a: `Yes. Point Poker is free with no account required to create or join a room, up to ${MAX_PARTICIPANTS} people. Signing in is optional and only adds two reusable Team Room URLs plus sprint history.`,
+      },
+    ],
+    related: [
+      { href: "/what-is-planning-poker", kicker: "Method", title: "What is planning poker?", copy: "Understand the estimation ceremony and why simultaneous reveal matters." },
+      { href: "/story-point-estimation", kicker: "Workflow", title: "Story point estimation", copy: "See how the product supports relative sizing and explicit final agreement." },
+      { href: "/planning-poker-online", kicker: "Remote", title: "Planning poker online", copy: "See the browser-first workflow that makes the tool practical for distributed teams." },
     ],
   },
   /* Converted from a hand-written component, which had drifted from this

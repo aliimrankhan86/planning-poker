@@ -4602,17 +4602,11 @@ export default function App() {
           {screen === "trust" && (
             <TrustPage onNavigate={navTo} />
           )}
-          {screen === "agileEstimationTool" && (
-            <AgileEstimationToolPage onNavigate={navTo} />
-          )}
           {screen === "pricing" && (
             <PricingPage onNavigate={navTo} />
           )}
           {screen === "features" && (
             <FeaturesPage onNavigate={navTo} />
-          )}
-          {screen === "storyPointEstimation" && (
-            <StoryPointEstimationPage onNavigate={navTo} />
           )}
           {screen === "remoteSprintPlanning" && (
             <RemoteSprintPlanningPage onNavigate={navTo} />
@@ -5352,83 +5346,6 @@ function TrustPage({ onNavigate }) {
   );
 }
 
-function AgileEstimationToolPage({ onNavigate }) {
-  return (
-    <MarketingPageShell
-      eyebrow="Agile estimation tool"
-      title="An agile estimation tool should help the team reach clearer decisions, not just collect votes"
-      intro="Point Poker works as an agile estimation tool for sprint planning and backlog refinement because it gives teams a clear workflow: define the story, vote independently, reveal together, discuss the gap, and record the agreed estimate without losing momentum."
-      highlights={[
-        { value: "Realtime", label: "Votes, reveals, and room state stay in sync" },
-        { value: "Facilitated", label: "Built for the person running the ceremony" },
-        { value: "Practical", label: "Works for backlog refinement and sprint planning" },
-      ]}
-      onNavigate={onNavigate}
-      primaryHref="/"
-      primaryLabel="Open estimation room"
-      secondaryHref="/features"
-      secondaryLabel="See feature detail"
-    >
-      <MarketingSection
-        title="What teams usually expect from an agile estimation tool"
-        intro="The tool does not need to be a giant agile suite. It needs to remove the friction around the specific estimation conversation the team is trying to have."
-      >
-        <Grid min="280px">
-          <Card title="Fast setup">
-              Teams should be able to open a room and invite everyone from a browser link, especially when estimation is only one part of a larger planning session.
-              </Card>
-          <Card title="Unbiased initial estimates">
-              Independent first votes and simultaneous reveal help the team see genuine spread before stronger opinions steer the discussion.
-              </Card>
-          <Card title="Clear facilitator controls">
-              Reveal, re-vote, moderation, timer control, and final estimate capture should all be obvious to the facilitator when the room is live.
-              </Card>
-        </Grid>
-      </MarketingSection>
-
-      <MarketingSection
-        title="Where Point Poker fits in the agile workflow"
-        intro="The product is narrow by design. It supports the estimation portion of agile planning well, instead of trying to replace your backlog tool, ticketing system, or roadmap process."
-      >
-        <ul className="marketing-list">
-          <li><strong>Backlog refinement:</strong> estimate stories before sprint commitment and surface unclear scope early.</li>
-          <li><strong>Sprint planning:</strong> move through the queue, discuss disagreement, and come out with a clearer sense of sprint scope.</li>
-          <li><strong>Remote estimation ceremonies:</strong> share one link, keep everyone in sync, and let the facilitator keep momentum.</li>
-          <li><strong>Recurring team rituals:</strong> Team Rooms make it easy to reuse the same room every sprint once the team has a repeatable cadence.</li>
-        </ul>
-      </MarketingSection>
-
-      <MarketingSection
-        title="Why this tool works for real estimation conversations"
-        intro="A good agile estimation tool should reinforce healthy team behaviour rather than flatten everything into a silent number picker."
-      >
-        <Grid min="280px">
-          <Card title="It supports discussion after reveal">
-              Split votes do not get averaged into misleading answers. The team can discuss the difference and the facilitator records the final agreed deck value explicitly.
-              </Card>
-          <Card title="It keeps the room understandable">
-              Real names are required, roles are explicit, and the invite flow stays visible so the meeting does not become confusing for late joiners or mixed-discipline teams.
-              </Card>
-          <Card title="It creates reusable context over time">
-              Sprint history and two fixed Team Rooms help the same team come back to a consistent estimation workflow instead of starting from scratch every sprint.
-              </Card>
-        </Grid>
-      </MarketingSection>
-
-      <MarketingRelatedLinks
-        title="Related pages"
-        intro="These routes cover the method itself, online workflow, and the story-point side of agile estimation in more detail."
-        onNavigate={onNavigate}
-        links={[
-          { href: "/what-is-planning-poker", kicker: "Method", title: "What is planning poker?", copy: "Understand the estimation ceremony and why simultaneous reveal matters." },
-          { href: "/story-point-estimation", kicker: "Workflow", title: "Story point estimation", copy: "See how the product supports relative sizing and explicit final agreement." },
-          { href: "/planning-poker-online", kicker: "Remote", title: "Planning poker online", copy: "See the browser-first workflow that makes the tool practical for distributed teams." },
-        ]}
-      />
-    </MarketingPageShell>
-  );
-}
-
 function FeaturesPage({ onNavigate }) {
   return (
     <MarketingPageShell
@@ -5500,72 +5417,6 @@ function FeaturesPage({ onNavigate }) {
           { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing. See exactly what free covers and why it is built this way." },
           { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker use cases", copy: "See how the same workflow supports Scrum Masters, Product Owners, and remote engineering teams." },
           { href: "/remote-sprint-planning", kicker: "Remote", title: "Remote sprint planning", copy: "Learn how the product fits distributed ceremonies and recurring shared-room workflows." },
-        ]}
-      />
-    </MarketingPageShell>
-  );
-}
-
-function StoryPointEstimationPage({ onNavigate }) {
-  return (
-    <MarketingPageShell
-      eyebrow="Story point estimation"
-      title="Use story point estimation to drive better planning conversations, not false precision"
-      intro="Point Poker is built around the reality that estimates are a team decision, not a spreadsheet formula. The product helps teams vote independently, expose differences, discuss trade-offs, and record the final agreed value from the active deck."
-      highlights={[
-        { value: "Fibonacci", label: "Default deck for effort and uncertainty" },
-        { value: "3", label: "Deck options for different team habits" },
-        { value: "Clear", label: "Facilitator flow for split estimates and agreement" },
-      ]}
-      onNavigate={onNavigate}
-      primaryHref="/"
-      primaryLabel="Try story estimation free"
-      secondaryHref="/features"
-      secondaryLabel="See the estimation flow"
-    >
-      <MarketingSection
-        title="Why teams use story points instead of hours"
-        intro="Story points help teams compare relative effort and uncertainty without pretending the work is already perfectly understood."
-      >
-        <Grid min="280px">
-          <Card title="Relative sizing beats fake precision">
-              Teams can usually agree faster on whether something feels closer to a 3 or an 8 than on whether it will take exactly 9.5 hours.
-              </Card>
-          <Card title="Fibonacci highlights uncertainty">
-              Wider gaps at larger values push the team to acknowledge risk and complexity instead of compressing everything into tiny numeric differences.
-              </Card>
-          <Card title="Consensus matters more than average">
-              The product keeps discussion analytics visible, but it only saves final agreed deck values so sprint history stays trustworthy.
-              </Card>
-        </Grid>
-      </MarketingSection>
-
-      <MarketingSection
-        title="Best-practice estimation flow"
-        intro="Good estimation is structured. The app is designed to make the next decision obvious at every stage."
-      >
-        <Grid min="260px" className="marketing-steps">
-          {[
-            ["Let everyone vote independently", "Private voting reduces anchoring and produces a more honest first signal."],
-            ["Reveal the cards together", "Use the spread, average, and median to guide discussion, not as an automatic answer."],
-            ["Discuss the differences", "The stories with the widest spread are usually where acceptance criteria or scope still need work."],
-            ["Either re-vote or record the agreed estimate", "Facilitators can capture only valid deck values, keeping the estimate aligned with the team’s chosen method."],
-          ].map(([stepTitle, stepCopy], index) => (
-            <Card key={stepTitle} eyebrow={`Step ${index + 1}`} title={stepTitle}>
-              {stepCopy}
-            </Card>
-          ))}
-        </Grid>
-      </MarketingSection>
-
-      <MarketingRelatedLinks
-        title="Related pages"
-        intro="These routes cover the broader estimation workflow, Scrum ceremony context, and pricing trade-offs."
-        onNavigate={onNavigate}
-        links={[
-          { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "See how the browser-first room flow supports live estimation from anywhere." },
-          { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "Understand how the same estimation flow fits sprint planning and backlog refinement." },
-          { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, including the fixed Team Rooms recurring ceremonies rely on." },
         ]}
       />
     </MarketingPageShell>

@@ -24,8 +24,8 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 402 KB |
-| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 75 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 393 KB |
+| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 84 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 36 KB |
 | `src/design-system/components.css` | The `pp-` component classes | 71 KB |
@@ -62,10 +62,8 @@ Do not split it without a reason that outweighs that.
 - `/about`
 - `/support`
 - `/trust`
-- `/agile-estimation-tool`
 - `/pricing`
 - `/features`
-- `/story-point-estimation`
 - `/remote-sprint-planning`
 - `/what-is-planning-poker`
 - `/pointing-poker`
@@ -74,6 +72,8 @@ Do not split it without a reason that outweighs that.
 - `/scrum-poker`
 - `/planning-poker-online`
 - `/fibonacci-story-points`
+- `/agile-estimation-tool`
+- `/story-point-estimation`
 - `/admin`  (private, never indexed, never prerendered)
 
 Every public route is prerendered at build time with its own title, description, canonical,
@@ -163,9 +163,9 @@ migration, and they should fall over time, never rise.
 `src/design-system/design-system.test.js` computes the actual WCAG contrast of
 every semantic role in both themes and fails if one drops below AA.
 
-## Components in App.js (32)
+## Components in App.js (30)
 
-`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `HeaderLanguageSwitcher`, `LanguageSwitcher`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `AgileEstimationToolPage`, `FeaturesPage`, `StoryPointEstimationPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
+`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `HeaderLanguageSwitcher`, `LanguageSwitcher`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `FeaturesPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
 
 ---
 
