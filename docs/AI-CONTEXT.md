@@ -25,7 +25,7 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 | File | What it is | Size |
 |---|---|---|
 | `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 393 KB |
-| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 84 KB |
+| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 87 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 36 KB |
 | `src/design-system/components.css` | The `pp-` component classes | 71 KB |
@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 325 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 326 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -209,6 +209,21 @@ gates around 23 September 2026. Do not turn the documented firewall anecdote
 into a claim that banks generally block Point Poker, competitor bundles into
 proof of Point Poker demand, or a broad CPC benchmark into a Point Poker
 forecast.
+
+## Search Console re-pull, 23 September 2026
+
+The six-week comparison is done; results and the next pull (around
+4 November) are in `PROGRESS.md`. The property is `sc-domain:pointpoker.app`
+under `misteraliimran@gmail.com`; the default browser account has no access.
+
+**Translating a page now means touching `vercel.json` too.** One redirect,
+`/:locale(pt|ja)/:path(...)` → `/:path`, 301s every untranslated path under a
+live prefix to its English page, because before it Vercel's SPA fallback
+answered `/pt/about` and friends with a 200 and the home page, and Google
+indexed three of them. The rule excludes exactly the translated pages and
+`t/`. Add a page to `LOCALIZED_PATHS` without adding it to that exclusion and
+the new translation redirects away from itself; the test "an untranslated path
+under a live locale prefix 301s to English" fails first, which is the point.
 
 ## Things that will bite you
 

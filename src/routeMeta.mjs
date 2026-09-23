@@ -143,10 +143,17 @@ export const STATIC_ROUTE_META = {
     "Planning Poker Online, Free, for Remote Agile Teams",
     "Run planning poker online in any browser. Create a room, paste the link into your team chat, and everyone reveals together. Nothing to install and no account needed.",
   ),
+  /* Retitled 23 Sep 2026 from "Free Scrum Poker App for Sprint Planning".
+     The six-week Search Console pull showed the page ranking ~40-44 for
+     "scrum poker" with "scrum poker online", "free scrum poker" and
+     "scrum poker app" as its next-largest variants, and Google's own
+     related searches for the head term are "scrum poker online", "scrum
+     poker free" and "scrum poker app". The old title carried two of the
+     three; this one carries all three and leads with the head term. */
   "/scrum-poker": meta(
     "/scrum-poker",
-    "Free Scrum Poker App for Sprint Planning | Point Poker",
-    "A free scrum poker app for sprint planning and backlog refinement. Up to 20 people per room, which covers a full scrum team plus product, design and QA.",
+    "Scrum Poker Online: Free App, No Sign-Up | Point Poker",
+    `Run scrum poker online, free. Share one link, everyone picks a story point card in private, and all the cards turn over together. Up to ${MAX_PARTICIPANTS} people per room, no sign-up.`,
   ),
   "/story-point-estimation": meta(
     "/story-point-estimation",
@@ -485,7 +492,7 @@ export const ROUTE_CONTENT = {
     highlights: [
       { value: "Scrum", label: "Built for refinement and sprint planning" },
       { value: "Fair", label: "Votes reveal together, so nobody anchors" },
-      { value: "Free", label: "No account, no card, no seat limit" },
+      { value: "Free", label: "No account, no card, no paid tier" },
     ],
     body: [
       "Scrum poker and planning poker are the same ceremony under two names: the team sizes work relatively, votes simultaneously, and talks only about the gaps.",
@@ -514,6 +521,17 @@ export const ROUTE_CONTENT = {
         ],
       },
       {
+        title: "Choosing a scrum poker deck",
+        intro:
+          "Point Poker has three decks. You pick one when you create the room, and it stays fixed for the session so every vote is on the same scale.",
+        bullets: [
+          "Fibonacci (1, 2, 3, 5, 8, 13, 21, 34): the usual choice for story points. The gaps widen as items grow, which matches how uncertainty grows with size.",
+          "T-shirt sizes (XS to XXL): useful for epics and early roadmap sizing, where a number would suggest more precision than anyone has.",
+          "Powers of 2 (1, 2, 4, 8, 16, 32): a simple doubling scale for teams that find the Fibonacci jumps awkward.",
+          "Every deck has a ? card for anyone who cannot size the item yet. A table full of question marks means the story needs more work before anyone estimates it.",
+        ],
+      },
+      {
         title: "Running the session without it overrunning",
         intro:
           "Estimation meetings sprawl when the discussion has no stopping rule. These are the ones that hold.",
@@ -524,6 +542,20 @@ export const ROUTE_CONTENT = {
           "A story nobody can size is a finding, not a failure — send it back for splitting rather than guessing at it.",
         ],
       },
+    ],
+    /* "How does scrum poker work?" and "How to do planning poker?" are the
+       top People Also Ask questions on the "scrum poker" results page, and
+       the page answered neither in order. The title also names the HowTo
+       schema the prerender emits from these steps. */
+    stepsTitle: "How scrum poker works, step by step",
+    stepsIntro:
+      "The rules fit on one card. Each of them exists to stop the first number spoken from setting the estimate.",
+    steps: [
+      "The Product Owner reads the story and answers questions about intent. Nobody names a number yet.",
+      "Everyone who will do the work picks a card privately. The cards stay hidden until the whole table has voted.",
+      "All the cards turn over at once, so no estimate can pull the others towards it.",
+      "If the votes sit within one card of each other, record the number and move on. If they spread, the highest and lowest voters explain what each of them is seeing.",
+      "Vote once more. If the table still splits, the story is too vague or too big: split it or send it back to refinement rather than averaging.",
     ],
     faq: [
       {
@@ -546,11 +578,20 @@ export const ROUTE_CONTENT = {
         q: "How long should a scrum poker session take?",
         a: "Around a minute or two per item once the team has a baseline, so a refinement session of ten to fifteen items fits comfortably in half an hour. Sessions that run long are usually a symptom of items arriving without acceptance criteria, not of the estimation itself being slow.",
       },
+      {
+        q: "Does everyone need an account to join?",
+        a: "No. Anyone with the room link can join and vote from a browser, on desktop or mobile. A free account is only needed to reserve two permanent Team Room URLs for your team and to keep your sprint history.",
+      },
+      {
+        q: "Can we run scrum poker alongside Jira or Microsoft Teams?",
+        a: "Yes, and there is nothing to install. Paste your backlog items into the room in one go, share the room link in your Teams, Slack or meeting chat, and export the agreed estimates as CSV to bulk-update Jira, Linear or Azure DevOps. There is no plugin or integration to get approved.",
+      },
     ],
     related: [
       { href: "/what-is-planning-poker", kicker: "Guide", title: "What is planning poker?", copy: "The method itself, and why the simultaneous reveal is the part that matters." },
       { href: "/fibonacci-story-points", kicker: "Deck", title: "Fibonacci story points", copy: "Why the gaps widen, and what a 21 or a 34 is really telling you." },
       { href: "/story-point-estimation", kicker: "Practice", title: "Story point estimation", copy: "Turning the votes into estimates the team will still stand behind next sprint." },
+      { href: "/planning-poker-jira", kicker: "Tools", title: "Planning poker with Jira", copy: "Paste the backlog in, estimate together, and take the agreed points back to Jira as CSV." },
     ],
   },
   "/story-point-estimation": {

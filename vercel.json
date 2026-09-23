@@ -20,6 +20,11 @@
       "source": "/:locale(de|es|fr|nl)",
       "destination": "/",
       "permanent": true
+    },
+    {
+      "source": "/:locale(pt|ja)/:path((?!(?:what-is-planning-poker|scrum-poker|fibonacci-story-points|t)(?:/|$)).+)",
+      "destination": "/:path",
+      "permanent": true
     }
   ],
   "headers": [

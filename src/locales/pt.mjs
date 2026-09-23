@@ -922,7 +922,7 @@ export const content = {
     highlights: [
       { value: "Scrum", label: "Feito para refinamento e sprint planning" },
       { value: "Justo", label: "Os votos são revelados juntos, ninguém ancora" },
-      { value: "Grátis", label: "Sem conta, sem cartão, sem limite de vagas" },
+      { value: "Grátis", label: "Sem conta, sem cartão, sem plano pago" },
     ],
     body: [
       "Scrum poker e planning poker são a mesma cerimônia com dois nomes: o time estima de forma relativa, vota ao mesmo tempo e só conversa sobre as diferenças.",

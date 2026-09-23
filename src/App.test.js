@@ -911,6 +911,68 @@ describe("translations", () => {
     for (const rule of rules) expect(rule.permanent).toBe(true);
   });
 
+  /* Until 17 Aug 2026 (a7fd76d) the prerendered footer linked every
+     English-only page under the visitor's locale prefix, so Google crawled
+     /pt/about, /pt/pricing, /ja/planning-poker-online and more. None of them
+     has a document: Vercel's SPA fallback answered each with a 200 and the
+     English home page, and the 23 Sep 2026 Search Console pull showed three of
+     them indexed as duplicates of "/". One rule 301s them onto the English page
+     they stand for, which is also where withLocale() sends every internal link.
+
+     Its exclusion list must be exactly the translated pages plus the Team Room
+     prefix. Translate a page without adding it here and the translation 301s
+     away from itself; leave a page here after dropping its translation and the
+     URL goes back to being a soft 404. */
+  test("an untranslated path under a live locale prefix 301s to English", () => {
+    const vercel = JSON.parse(
+      readFileSync(join(__dirname, "..", "vercel.json"), "utf8"),
+    );
+    const prefixes = LOCALE_CODES.filter((c) => LOCALES[c].prefix);
+    const rule = vercel.redirects.find(
+      (r) => r.destination === "/:path" && prefixes.every((c) => r.source.includes(c)),
+    );
+    expect(rule).toBeDefined();
+    expect(rule.permanent).toBe(true);
+
+    const listed = rule.source
+      .slice(rule.source.indexOf(":locale(") + 8, rule.source.indexOf(")"))
+      .split("|");
+    expect(listed.sort()).toEqual([...prefixes].sort());
+
+    const kept = rule.source.match(/\(\?!\(\?:([^)]+)\)/)[1].split("|").sort();
+    expect(kept).toEqual(
+      [...LOCALIZED_PATHS.filter((p) => p !== "/").map((p) => p.slice(1)), "t"].sort(),
+    );
+
+    // The behaviour, with the source compiled the way Vercel compiles a
+    // custom-pattern parameter. The live deployment is still the final proof.
+    const re = new RegExp(
+      `^${rule.source
+        .replace(/:locale\(([^)]+)\)/, "($1)")
+        .replace(/:path\((.+)\)$/, "($1)")}$`,
+    );
+    const redirected = {
+      "/pt/about": "/about",
+      "/pt/pricing": "/pricing",
+      "/pt/pointing-poker": "/pointing-poker",
+      "/ja/planning-poker-online": "/planning-poker-online",
+      "/ja/planning-poker-jira": "/planning-poker-jira",
+      "/ja/scrum-poker-guide": "/scrum-poker-guide",
+    };
+    for (const [from, to] of Object.entries(redirected)) {
+      expect(`${from} -> ${from.replace(re, "/$2")}`).toBe(`${from} -> ${to}`);
+    }
+    for (const path of [
+      "/pt/", "/ja/", "/pt", "/ja",
+      "/pt/scrum-poker", "/pt/scrum-poker/",
+      "/ja/what-is-planning-poker", "/ja/fibonacci-story-points/",
+      "/pt/t/my-team", "/ja/t/my-team",
+      "/scrum-poker", "/about",
+    ]) {
+      expect(`${path}: ${re.test(path)}`).toBe(`${path}: false`);
+    }
+  });
+
   /* The legal pages are deliberately English-only: a mistranslated liability
      clause is a real liability, and the English text is the governing one. */
   test("the legal pages are not translated", () => {

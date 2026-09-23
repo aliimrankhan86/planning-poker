@@ -23,6 +23,125 @@ three reports are one line each, and item 3 in particular should not be
 
 Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
 
+## Session: 23 September 2026, the six-week Search Console re-pull
+
+Pulled from the `sc-domain:pointpoker.app` property (Google account
+`misteraliimran@gmail.com`, `/u/3/` in the Search Console URL; the default
+browser account has no access). The owner also supplied a 3-month export
+filtered to `/scrum-poker` (21 Jun to 20 Sep). "Now" below is the 28 days
+23 Aug to 20 Sep, which starts after every August fix had been recrawled.
+
+### The fixes worked
+
+Site-wide, weekly: impressions ~250/week through July, 700 to 1,160/week since
+mid-August. Clicks ~1/week before, 5 to 7/week now. Weighted average position
+~53 in July, 37.8 in the week of 14 Sep.
+
+| Query | Baseline pos (10 May to 9 Aug) | Now pos | Now impr | Owning page |
+|-------|------:|------:|------:|-------------|
+| pointing poker | 63.0 | **16.9** | 423 | `/` (27.2) and `/pointing-poker` (7.7) |
+| point poker *(brand)* | 12.7 | **5.2** | 122 | `/` |
+| scrum poker | 58.7 | **44.0** | 216 | `/scrum-poker` |
+| story points fibonacci | 56.4 | **32.9** | 38 | `/fibonacci-story-points` |
+| scrumpoker | 36.4 | 33.4 | 10 | `/scrum-poker` |
+| sprint poker | 59.6 | 57.5 | 30 | `/scrum-poker`, `/pointing-poker` |
+| poker planning | 80.7 | 73.1 | 225 | `/what-is-planning-poker` |
+| planning poker | 80.4 | 78.2 | 312 | `/what-is-planning-poker` (78.7), not `/planning-poker-online` |
+| fibonacci estimation template | 86.9 | none | 0 | |
+
+The homepage is the strongest page: position 20 over three months, 20 of the
+37 clicks, and it ranks for the commercial variants ("planning poker online
+free" 27, "free planning poker" 38).
+
+### Checklist items
+
+1. **English positions:** table above.
+2. **`/pt/*` and `/ja/*`:** `/ja/` pages took 368 impressions and **9 clicks**
+   at position 39 over three months, a 2.4% CTR against 0.6% site-wide and a
+   quarter of all clicks. `/pt/` took 74 impressions and 1 click at 40.8.
+3. **Non-English queries:** 11 Japanese-script queries, led by
+   `プランニングポーカー` (161 impr, pos 68, landing on `/ja/`),
+   `スクラムポーカー` (20, 18.8) and `ストーリーポイントフィボナッチ` (17, 21.2).
+   No Portuguese-language queries: Brazilian searchers use the English
+   loanwords ("planning poker scrum", "plan poker").
+4. **Sitemap:** 26 discovered, last read 15 Sep. Correct.
+5. **Page with redirect:** 10, not 7. All ten are correct 301s: the three
+   http/apex variants plus seven retired-locale URLs (`/nl/`, `/de/`,
+   `/fr/fibonacci-story-points`, `/es/about`, `/nl/scrum-poker`,
+   `/fr/scrum-poker`, `/nl/planning-poker-jira`).
+
+### The `/scrum-poker` drop from 12 September
+
+Impressions on the page fell from ~18/day to ~5/day on 12 Sep while the rest of
+the site held. Page-specific, and not a fault: "scrum poker" impressions went
+78 → 31 (3 to 11 Sep vs 12 to 20 Sep) as its position went 37.4 → 42.0, which
+is results page 4 to page 5, where far fewer people look. The page is indexed,
+was last crawled 11 Sep, declares the right canonical, and there is no
+cannibalisation (640 of 641 "scrum poker" impressions land on `/scrum-poker`).
+At this depth the constraint is authority, not the page.
+
+### Defect found: untranslated locale URLs were soft duplicates of the home page
+
+The Indexed count was 30 against a 26-URL sitemap. The extras were
+`/pt/about`, `/pt/planning-poker-online` and `/ja/planning-poker-online`, with
+`/pt/pointing-poker` and `/pt/pricing` under "Alternative page with proper
+canonical tag" and `/ja/planning-poker-jira` under "Crawled, currently not
+indexed". None of these has a document. Google found them through the
+prerendered footer before `a7fd76d` (17 Aug), and Vercel's SPA fallback
+answered every one with **200 and the English home page**, canonical `/`.
+
+**Fix:** one permanent redirect in `vercel.json`,
+`/:locale(pt|ja)/:path(...)` → `/:path`, excluding exactly the translated pages
+and the `t/` Team Room prefix. `/pt/about` now lands on `/about`, which is what
+`withLocale()` already does for every internal link. A new test pins the
+exclusion list to `LOCALIZED_PATHS` and exercises the pattern both ways.
+
+### What changed on `/scrum-poker`
+
+- Title: "Free Scrum Poker App for Sprint Planning" → **"Scrum Poker Online:
+  Free App, No Sign-Up"**. Google's related searches for the head term are
+  "scrum poker online", "scrum poker free" and "scrum poker app", and those are
+  the page's own next-largest variants. The old title carried two of three.
+- Meta description rewritten around the same terms, `MAX_PARTICIPANTS` sourced.
+- **"How scrum poker works, step by step"** (5 steps, emits HowTo): "How does
+  Scrum poker work?" and "How to do planning poker?" top People Also Ask for
+  "scrum poker", and the page answered neither in order.
+- **"Choosing a scrum poker deck"**: the three real decks with their real card
+  values; Google's "Things to know" panel lists scales.
+- Two FAQ entries (account to join; Jira and Microsoft Teams without a plugin,
+  both of which appear in Google's related searches), and a related link to
+  `/planning-poker-jira`.
+- **Factual fix, all three languages:** the "Free" highlight said "no seat
+  limit", which contradicts the 20-person cap stated two lines below it. Now
+  "no paid tier" / "sem plano pago" / "有料プランもなし", reusing terms both
+  translations already use elsewhere. No other translated copy changed.
+
+### What was deliberately not done
+
+- **No more translated pages.** Japanese is the best-converting segment and
+  `プランニングポーカー` lands on `/ja/` at position 68, so a Japanese
+  `/planning-poker-online` is the obvious next page. It waits for the native
+  review that is still outstanding; another machine pass is what the 13 Aug
+  record rules out.
+- **No homepage title change.** It carries 20 of 37 clicks.
+- **Nothing for the "planning poker" head term.** Google treats it as
+  informational and ranks `/what-is-planning-poker` at ~78 among Wikipedia and
+  the big exact-match domains. On-page work will not move that; links will.
+- **No paid acquisition.** The SEO half of the Ads gate now has evidence. The
+  activation, attribution and Keyword Planner gates were not assessed today.
+
+### For the next pull, around 4 November 2026
+
+1. `/scrum-poker`: position for "scrum poker", "scrum poker online", "free
+   scrum poker", "scrum poker app" against the table above; CTR once any of
+   them is inside the top 20.
+2. Indexed should drop back towards 26 as the redirected locale URLs are
+   recrawled, and "Page with redirect" should rise by up to six.
+3. `/ja/*` clicks and `プランニングポーカー` position, as the input to the
+   Japanese `/planning-poker-online` decision.
+
+---
+
 ## Authoritative status — 13 August 2026
 
 - Product code baseline is clean and fully pushed. The `design-consistency`
@@ -132,9 +251,10 @@ Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
 2. **Before 23 September:** obtain native-speaker reviews of the four
    Portuguese and four Japanese pages. Automated translation checks do not
    validate naturalness or practitioner vocabulary.
-3. **Around 23 September:** run the exact Search Console checklist under “For
-   the six-week re-pull”. Compare positions and first impressions, not clicks
-   alone.
+3. ~~**Around 23 September:** run the exact Search Console checklist under “For
+   the six-week re-pull”.~~ **Done 23 September**; results, the locale-redirect
+   fix and the `/scrum-poker` changes are in the 23 September session above.
+   Next pull around 4 November.
 4. **No-spend discovery window:** record actual enterprise-filter categories
    and access failures; interview 10–15 facilitators and seek three to five
    committed retrospective design-partner teams. Apply the decision gates in

@@ -38,6 +38,12 @@
   do not run Google Ads until the post-fix baseline and attribution gates exist.
   The evidence, unknowns, action calendar, and reopening tests are in
   [`docs/PRODUCT-DISCOVERY-2026-08-13.md`](docs/PRODUCT-DISCOVERY-2026-08-13.md).
+- **23 September 2026:** six-week Search Console re-pull done (full record in
+  `PROGRESS.md`). Positions moved on every page the August fixes touched:
+  "pointing poker" 63 → 17, "scrum poker" 59 → 44, brand 12.7 → 5.2; clicks
+  ~1/week → 5 to 7/week. `/ja/` pages carry a quarter of all clicks. Untranslated
+  paths under `/pt/` and `/ja/` (e.g. `/pt/about`) now 301 to English instead
+  of serving the home page with a 200; `/scrum-poker` retitled and extended.
 - There is no blocking or half-finished code work.
 
 The only open work is time- or human-gated and is listed in

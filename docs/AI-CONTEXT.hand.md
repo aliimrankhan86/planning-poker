@@ -39,6 +39,21 @@ into a claim that banks generally block Point Poker, competitor bundles into
 proof of Point Poker demand, or a broad CPC benchmark into a Point Poker
 forecast.
 
+## Search Console re-pull, 23 September 2026
+
+The six-week comparison is done; results and the next pull (around
+4 November) are in `PROGRESS.md`. The property is `sc-domain:pointpoker.app`
+under `misteraliimran@gmail.com`; the default browser account has no access.
+
+**Translating a page now means touching `vercel.json` too.** One redirect,
+`/:locale(pt|ja)/:path(...)` → `/:path`, 301s every untranslated path under a
+live prefix to its English page, because before it Vercel's SPA fallback
+answered `/pt/about` and friends with a 200 and the home page, and Google
+indexed three of them. The rule excludes exactly the translated pages and
+`t/`. Add a page to `LOCALIZED_PATHS` without adding it to that exclusion and
+the new translation redirects away from itself; the test "an untranslated path
+under a live locale prefix 301s to English" fails first, which is the point.
+
 ## Things that will bite you
 
 **Never name a class after an advertisement.** The admin dashboard prefixed all
