@@ -116,6 +116,39 @@ exclusion list to `LOCALIZED_PATHS` and exercises the pattern both ways.
   "no paid tier" / "sem plano pago" / "有料プランもなし", reusing terms both
   translations already use elsewhere. No other translated copy changed.
 
+### Deploy, and the Git connection that had gone
+
+Pushing `31d058e` and `0a573cf` deployed nothing. The Vercel project was **not
+connected to a Git repository** (Settings → Git said so outright), and had not
+been since 17 Aug: `a7fd76d` is the last Git-triggered deployment, and
+`eecda9c` went out by CLI. Nothing recorded a deliberate disconnection, and
+the README says pushing `main` deploys, so it was reconnected to
+`aliimrankhan86/planning-poker` on 23 Sep with the owner's approval, and
+`main` @ `0a573cf` was deployed to Production from the dashboard. GitHub's
+commit status for `0a573cf` reads "Vercel: Deployment has completed".
+
+**After any push, confirm a Vercel status appears on the commit** (GitHub
+commit page, or `curl -s https://api.github.com/repos/aliimrankhan86/planning-poker/commits/<sha>/status`).
+No status within a minute means Vercel did not see the push.
+
+Verified live after the deploy: `/pt/about`, `/pt/pricing`,
+`/pt/pointing-poker`, `/pt/planning-poker-online`, `/ja/planning-poker-online`
+and `/ja/planning-poker-jira` answer 308 to their English page; all four
+translated pages under both prefixes (with and without a trailing slash),
+`/pt/`, `/ja/`, `/pt/?room=…` and `/pt|ja/t/<slug>` answer 200, the Team Room
+URLs still carry `X-Robots-Tag: noindex, nofollow`, and `/de/` still 308s to
+`/`. `/scrum-poker` serves the new title, description, HowTo and seven FAQs;
+no "seat limit" text remains. URL Inspection before the request: indexed,
+Google-selected canonical = the page, last crawl 11 Sep. Indexing requested
+for `/scrum-poker` and the sitemap resubmitted (lastmod now 2026-09-23).
+Search Console's own Recommendations card had independently flagged
+`/scrum-poker` at −67% impressions, matching the diagnosis above.
+
+Verification: 504 Jest tests pass; production build succeeds with 26
+prerendered documents. The build ran from a copy outside the synced folder,
+because the connected-folder mount cannot delete `build/`. The code graph was
+not rebuilt: `code-review-graph` is installed on the Mac, not in the VM.
+
 ### What was deliberately not done
 
 - **No more translated pages.** Japanese is the best-converting segment and

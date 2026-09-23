@@ -506,6 +506,11 @@ harness has no assertion for.
 
 ## Deployment record
 
+**The Vercel Git connection was found missing on 23 Sep 2026** and
+reconnected. From 17 Aug until then, pushes to `main` deployed nothing and
+nothing said so. After any push, check the commit carries a Vercel status
+before assuming it is live.
+
 **Rules published to production on 2026-08-09** and verified against the live
 database, not just the console's success toast. The three-`.parent()` estimate
 fix, the analytics lockdown, the removal of the licences node and the admin
