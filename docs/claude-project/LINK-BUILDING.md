@@ -118,3 +118,13 @@ Ali Khan
 | Date | What | Result |
 |---|---|---|
 | 24 Sep 2026 | paramountconsultants.online/products/point-poker published, six followed links into pointpoker.app | Live. Same owner, so it helps discovery and brand association more than rankings |
+| 24 Sep 2026 | AlternativeTo: Point Poker submitted (username Ali-Imran, signed in with the same Google account as Search Console). 31 alternatives suggested: PlanITpoker plus 30 other planning poker tools | Waiting in the free review queue. The $5 priority review was declined on purpose; revisit only if AlternativeTo proves to send real traffic |
+| 24 Sep 2026 | Uneed: listing saved (uneed.best/tool/point-poker) with logo, OG image and two screenshots, in the free waiting line | Launches **10 Feb 2027**. Needs an upvote score of 10 on the day to stay published and 20 for a followed link. Below 10 it drops out and cannot rejoin the free line, so line up 10 to 20 people to upvote that morning. Paid slots ($14.99, $29.99) and the $249 directory package declined |
+| 24 Sep 2026 | Scrum Expert: suggestion for the Free Online Scrum Tools page sent through the contact form, from support@pointpoker.app | Awaiting reply. The page only lists tools with no paid version, which Point Poker meets |
+| 24 Sep 2026 | Zenhub: email to support@zenhub.com for Rich Elliott (author of "Best Planning Poker Tools for 2025"), from support@pointpoker.app | Sent. Low odds: Zenhub ranks its own product first |
+| 24 Sep 2026 | SW Academy (Brazil): free editorial suggestion in Portuguese to contato@swacademy.com.br, pointing at /pt/ | Sent. Their official route is a paid release (R$40 per article with a followed link), which is a paid link and was not used. If they reply offering it, decline |
+| 24 Sep 2026 | G2 | On hold (Ali's decision). G2 blocks automated browsers ("Access is temporarily restricted"), so it has to be done by hand in a normal browser |
+| 24 Sep 2026 | Product Hunt | Deferred. One launch only: plan it (date, first comment, supporters), ideally around the Uneed launch in Feb 2027 |
+| 24 Sep 2026 | awesome-agile | Dropped. The repo has merged 8 pull requests in its whole history, none recent |
+| To do | SaaSHub: needs an email-and-password account; its security check blocks automated browsers | Ali registers with support@pointpoker.app, then Claude fills the listing and the two "Suggest an alternative" pages |
+| To do | free-for-dev | Ali writes and opens the pull request himself. The repo closes AI-written or AI-edited PRs and blocks the account. Entry goes under "Issue Tracking and Project Management" after planitpoker.com; say point.poker is a different product; leave the template's last checkbox unticked |
