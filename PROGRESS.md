@@ -55,10 +55,16 @@ independent links, which are still the main constraint for "scrum poker" and
 `sc-domain:paramountconsultants.online` under the same Google account as Point
 Poker, verified with a TXT record in Vercel DNS (DNS is on Vercel; the existing
 ImprovMX SPF and MX records are untouched). Sitemap submitted (12 URLs), indexing
-requested for `/products` and `/products/point-poker`. Finding: Google indexes
-the Paramount home page as `https://paramountconsultants.online/` (apex, last
-crawl 21 Sep) and has never seen the `www` URLs, because Vercel redirects apex
-to `www` with a 307. Switching that redirect to 308 is the fix, not yet done.
+requested for `/products` and `/products/point-poker`. The Paramount home page
+is indexed as `https://www.paramountconsultants.online/` (Google-selected
+canonical `www`, last crawl 21 Sep). An early inspection straight after the
+property was created said the `www` URL was unknown to Google. That was the new
+property not having data yet, not a real gap.
+
+Both sites redirect the apex to `www` with a 307 (Vercel default, no status
+set) rather than a 308. Google has consolidated on `www` anyway, so a 308 is
+optional tidy-up. Changing Vercel domain settings from a session is blocked by
+the safety check, so it is left for Ali to do by hand if he wants it.
 
 ---
 
