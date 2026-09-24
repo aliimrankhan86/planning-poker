@@ -6,7 +6,7 @@ This folder feeds the **Point Poker** project in Claude.ai. The project syncs th
 |---|---|---|
 | `PROJECT-BRIEF.md` | Current state: product facts, routes, SEO position, decisions, open work, access and deploy | Edited by hand as the last step of every major change |
 | `CODE-MAP.md` | Every source file with its functions, components and constants, line numbers and the comment above each, plus the Firebase database shape | Regenerated on every commit by the pre-commit hook (`scripts/gen-code-map.mjs`), and by `npm run docs` |
-| `LINK-BUILDING.md` | Where to get Point Poker listed, the listing copy to use everywhere, outreach emails, a progress log and the follow-up checklist that the one weekly scheduled task ("Point Poker: weekly follow-up") works through | Edited by hand whenever a listing or outreach happens, and by the weekly task when it finishes a row |
+| `LINK-BUILDING.md` | The listings that exist, the listing copy, the weekly follow-up and its checklist, and what was decided against. Off-site work closed on 24 Sep 2026 | Status cells and checklist rows are overwritten in place, by hand or by the weekly follow-up |
 | `SEARCH-CONSOLE-YYYY-MM-DD.md` | Dated Search Console snapshots | A new file at each review. Never edit an old one |
 | `../AI-CONTEXT.md` | Generated structure, routes, constants and traps | Regenerated on every commit |
 
@@ -16,6 +16,10 @@ Kept out of git on purpose, because this repository is public:
 - `CLAUDE-PROJECT-INSTRUCTIONS.md` (repo root): the canonical copy of the project instructions, which hold account details.
 
 Never put account emails, credentials or anything private in this folder.
+
+## Keep it lean
+
+These files are the current state, not a diary. When something is done, superseded or dropped, overwrite or delete it in place rather than adding a new paragraph. History belongs in `PROGRESS.md` and git. The one exception is the dated `SEARCH-CONSOLE-*.md` snapshots, which are never edited.
 
 ## What counts as a major change
 
@@ -33,7 +37,7 @@ Copy tweaks, refactors with no change in behaviour, and test-only changes are no
 
 Whoever makes a major change (Ali or any AI agent) runs this as the last step of the task, without being asked.
 
-1. **Brief:** update `PROJECT-BRIEF.md`, the "Last updated" date and every section the change touched. For a Search Console review, add a new `SEARCH-CONSOLE-<date>.md` and point the brief at it.
+1. **Brief:** update `PROJECT-BRIEF.md`, the "Last updated" date and every section the change touched, and delete anything the change made obsolete. For a Search Console review, add a new `SEARCH-CONSOLE-<date>.md` and point the brief at it.
 2. **Instructions:** if product truth, rules, playbooks, open items or access changed, edit `CLAUDE-PROJECT-INSTRUCTIONS.md`.
 3. **Private notes:** update `CLAUDE.md` and `AGENTS.md` as the mandatory workflow already requires, and note whether either changed materially.
 4. **Commit and push `main`.** The hook regenerates `CODE-MAP.md` and `docs/AI-CONTEXT.md`. Confirm the commit shows a Vercel status on GitHub.

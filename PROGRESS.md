@@ -53,6 +53,14 @@ Ali then decided: no more sign-ups to other websites. Further listings
 (GitHub lists, Indie Hackers, free-for-dev, G2, Product Hunt) are dropped.
 The focus from here is Google itself: on-site SEO and Search Console.
 
+Knowledge tidied at the end of the session, on Ali's instruction to keep it
+lean: LINK-BUILDING.md cut from 22 KB to 11 KB (listings table, listing copy,
+weekly checklist, decided-against list), the brief's two "changes shipped"
+sections merged, a "What to expect" section added (pointing poker is the
+realistic win, planning poker and scrum poker will not reach page 1 without
+links, the Paramount link helps trust more than rankings), and a keep-it-lean
+rule added to docs/claude-project/README.md and the project instructions.
+
 ---
 
 ## Session: 24 September 2026, pointing poker becomes a tool page

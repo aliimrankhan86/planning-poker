@@ -132,34 +132,15 @@ Baseline is 10 May to 9 Aug 2026. "Now" is 23 Aug to 20 Sep 2026.
 - Page with redirect: 10, all correct (http and apex variants plus retired locale URLs). Expect up to six more as the fixed locale URLs are recrawled.
 - Core Web Vitals: no data (not enough traffic).
 
-## 6a. Changes shipped on 24 Sep 2026 (pointing poker and brand)
+## 6. Changes shipped 23 to 24 Sep 2026
 
-Evidence: "pointing poker" is the query that shows the site most (423 impressions in the 28 days to 20 Sep, average position 16.9), split between `/` (avg 27) and `/pointing-poker` (avg 7.7). Every result above it is a working tool. Once hydrated, the home page never said "pointing poker" and only the footer linked to the page, and `/pointing-poker` sent every visitor on to `/` before they could start.
-
-1. `/pointing-poker` is now a tool page. `<RoomQuickStart>` puts a create-room form (name, deck, Create Room) in the hero via `ROUTE_CONTENT["/pointing-poker"].quickStart`. It calls the same `handleCreate` as the home page, as facilitator, in stories mode. Joining by code and Team Rooms stay on `/`.
-2. `/pointing-poker` title "Pointing Poker: Free Online Tool, No Sign-Up | Point Poker", H1 "Free Pointing Poker for Agile Teams", new intro and description that lead with starting a room rather than listing six synonyms.
-3. Internal links: the home page's own copy now links "pointing poker"; `/what-is-planning-poker`, `/scrum-poker` and `/planning-poker-online` link to it in their related cards; the footer anchor is now "Pointing poker" (was "Pointing & poker planning").
-4. Home title "Free Planning Poker Online: No Sign-Up, No Ads | Point Poker". The old one said "No Limits", which the 20-person cap contradicts. "No Ads" is true and is a real difference from the ad-funded leader for "pointing poker".
-5. "| Point Poker" added to the `/planning-poker-online` and `/planning-poker-jira` titles.
-6. Structured data: WebSite `alternateName: ["PointPoker"]`; the six generic terms removed from the SoftwareApplication `alternateName` (Google says avoid generic names there); SoftwareApplication `creator` is Paramount Consultants, named visibly in the footer ("Built and run by Paramount Consultants", linking to its Point Poker page).
-7. Tests pin all of it: the form refuses a blank name and creates a room with the chosen deck, the hero has one primary action, the home copy links the page, the three guides link it.
-8. Trailing slashes: Vercel serves the right prerendered document for `/scrum-poker/`, but the app looked routes up only as typed, so the slash URL hydrated into the home page with the home title and canonical `/`. `routeKey()` in `src/App.js` now tries the path as typed (locale homes such as `/pt/` keep their slash) and then without the trailing slash. Directories often add the slash, so this matters for the link-building work.
-
-Found and not fixed: `/features` prerenders H1 "Planning Poker Features — All Free" but the hand-built page renders a different H1. Same kind of drift the data-driven pages were created to remove.
-
-Two other products use almost this name (pointpoker.co, a Jira Marketplace app, and point.poker). Always write "Point Poker" with the pointpoker.app link.
-
-What to watch at the 4 Nov review: whether Google stops splitting "pointing poker" between `/` and `/pointing-poker`, and its average position (16.9 before).
-
-## 6. Changes shipped on 23 Sep 2026
-
-1. Untranslated `/pt/*` and `/ja/*` paths now 301 to their English page. The rule in `vercel.json` excludes exactly the translated pages and `t/`. A test pins that list to `LOCALIZED_PATHS`.
-2. `/scrum-poker`: title now "Scrum Poker Online: Free App, No Sign-Up | Point Poker". New description. New "How scrum poker works, step by step" section (HowTo schema), "Choosing a scrum poker deck" section, two new FAQs (joining without an account, Jira and Microsoft Teams without a plugin), related link to `/planning-poker-jira`.
-3. The "Free" highlight on `/scrum-poker` claimed "no seat limit" in all three languages, which contradicted the 20-person cap. Now "no paid tier".
-4. The Vercel project had lost its GitHub connection after 17 Aug, so pushes deployed nothing. Reconnected and verified: a push now deploys automatically.
-5. Indexing requested for `/scrum-poker`.
-
-Deliberately not done: no new translated pages (waiting for native review), no home page title change, nothing for the "planning poker" head term, no paid acquisition.
+- **`/pointing-poker` is a tool page.** `<RoomQuickStart>` sits in the hero (set by `ROUTE_CONTENT["/pointing-poker"].quickStart`, rendered through `MarketingPageShell`'s `heroAside`) and creates a room as facilitator, in stories mode, through the home page's `handleCreate`. Title "Pointing Poker: Free Online Tool, No Sign-Up | Point Poker", H1 "Free Pointing Poker for Agile Teams". Reason: "pointing poker" is the query that shows the site most and every result above it is a working tool.
+- **Internal links to `/pointing-poker`** from the home page's own copy, the related cards on `/what-is-planning-poker`, `/scrum-poker` and `/planning-poker-online`, and the footer ("Pointing poker").
+- **Titles:** home "Free Planning Poker Online: No Sign-Up, No Ads | Point Poker" (the old "No Limits" contradicted the 20-person cap). "| Point Poker" added to `/planning-poker-online` and `/planning-poker-jira`. `/scrum-poker` "Scrum Poker Online: Free App, No Sign-Up | Point Poker", with a step-by-step HowTo section, a deck section, two new FAQs, and its false "no seat limit" claim fixed.
+- **Structured data:** WebSite `alternateName: ["PointPoker"]`, the generic SoftwareApplication alternate names removed, `creator` Paramount Consultants, shown in the footer as "Built and run by Paramount Consultants".
+- **Routing:** untranslated `/pt/*` and `/ja/*` paths 301 to English (`vercel.json`, pinned to `LOCALIZED_PATHS` by a test). `routeKey()` in `src/App.js` resolves a trailing slash (`/scrum-poker/`) to the same page, while locale homes such as `/pt/` keep theirs.
+- **Deploys:** the Vercel project had lost its GitHub connection after 17 Aug. Reconnected, and pushes deploy again.
+- Tests pin all of it (514 pass). Build: 26 prerendered documents.
 
 ## 7. Decisions in force
 
@@ -168,19 +149,37 @@ Deliberately not done: no new translated pages (waiting for native review), no h
 - **Retrospectives: research, do not build.** Needs 10 to 15 facilitator interviews and three to five teams committed to using a prototype for two consecutive sprints.
 - **No machine translation of more pages** and never of Terms or Privacy.
 - **No fabricated review or rating markup.** No claims of integrations that do not exist.
+- **Off-site link-building is closed (24 Sep 2026).** Ali will not sign up to any more websites. The listings that exist are kept alive by the weekly follow-up in `LINK-BUILDING.md`. Ranking work from here is on-site SEO and Search Console.
+- **Pay for nothing** (listings, priority reviews, featured slots, links) unless it is highly recommended.
+- **Leave the Paramount Consultants cross-links as they are.** A normal "our products" setup. Adding more would start to look like a link scheme.
+- **One scheduled item only.** Point Poker follow-ups run from "Point Poker: weekly follow-up" (see `LINK-BUILDING.md`). New follow-ups become rows in its checklist, never new scheduled tasks.
 
-## 8. Open work
+## 8. What to expect (assessment, 24 Sep 2026)
+
+This is a judgement, not a measurement. The 4 Nov review is the evidence.
+
+- **"pointing poker" is the realistic win.** It sat at 16.9, the top of page 2, and the 24 Sep changes target it directly. Page 1 within one to two months is plausible and would be the biggest traffic gain from this work.
+- **"planning poker" (about 78) and "scrum poker" (about 44) will not reach page 1 on this work.** The sites above have years of links from other websites, and off-site link-building is closed, so these move slowly.
+- **The directory listings** add a trickle of visitors and some trust. Most directory links carry little ranking weight.
+- **The Paramount Consultants link** helps Google see a real business behind the product and helped it find the pages. It carries little ranking weight because Google discounts links between sites with the same owner, and Paramount's own site is new.
+- **The next lever is on-site:** pages for searches with weaker competition, the Portuguese and Japanese versions, and whatever Search Console flags.
+
+## 9. Open work
 
 1. Three room defects reported 14 Aug 2026, not reproduced or fixed: "the buttons" (control not named), the time-up message is unclear (facilitator and voter see different copy), viewing what others estimated "isn't fixed". Collect a screenshot, viewport width, role and round state first.
 2. Native-speaker review of the four Portuguese and four Japanese pages. Then decide on a Japanese `/planning-poker-online` page.
-3. Next Search Console review around 4 Nov 2026:
+3. Search Console review on 4 Nov 2026, run by the weekly follow-up. Check:
+   - "pointing poker": average position (16.9 before) and whether Google has stopped splitting it between `/` and `/pointing-poker`
    - `/scrum-poker` positions for "scrum poker", "scrum poker online", "free scrum poker", "scrum poker app"
    - Indexed count falling back towards 26, redirects rising by up to six
    - `/ja/*` clicks and the position of プランニングポーカー
-4. Discovery evidence still to collect: filtering vendor categories (Palo Alto, FortiGuard, BrightCloud), real organisation-network access tests, facilitator interviews.
-5. Authority is now the main SEO constraint. The plan, listing copy, submission targets and emails are in `docs/claude-project/LINK-BUILDING.md`. Each needs an account in Ali's name. Done on 24 Sep 2026: AlternativeTo (in review), Uneed (launches 10 Feb 2027, needs 10+ upvotes that day), SaaSHub (listed as "PointPoker.app" because point.poker owns "Point Poker" there, verified and awaiting approval for up to 32 days, with verification to renew every quarter, next by 24 Dec 2026), emails to Scrum Expert, Zenhub and SW Academy. On 24 Sep 2026 Ali decided: no more sign-ups to other websites, so free-for-dev, the GitHub lists, Indie Hackers, G2 and Product Hunt are dropped. The focus from here is on-site SEO and Search Console. Follow-ups run from one self-renewing weekly reminder, "Point Poker: weekly follow-up" (Wednesdays 09:00 UTC, delivered into the Cowork conversation linked to Ali's Mac), which works through the checklist in the "Weekly check" section of LINK-BUILDING.md, marks rows Done and logs results. Do not create other Point Poker scheduled tasks: add a row to that checklist instead. G2 on hold, Product Hunt deferred to around Feb 2027. The first link went live on 24 Sep 2026 from Ali's own consultancy site: https://www.paramountconsultants.online/products/point-poker (plus a `/products` index, a Products nav item, sitemap entries and "Built by us" boxes on its Agile Delivery and Full-Stack Development pages). It carries six followed links into pointpoker.app (`/`, `/what-is-planning-poker`, `/fibonacci-story-points`, `/scrum-poker`, `/planning-poker-jira`, `/pricing`) and SoftwareApplication schema naming Paramount Consultants as publisher. A same-owner link helps discovery and ties the product to a real business, but carries little ranking weight. Independent directory listings started on 24 Sep 2026 (above). Useful content and community mentions have not started. paramountconsultants.online was added to Search Console on 24 Sep 2026 as Domain property `sc-domain:paramountconsultants.online` (same Google account as Point Poker, verified by a TXT record in Vercel DNS), sitemap submitted and indexing requested for `/products` and `/products/point-poker`. Both paramountconsultants.online and pointpoker.app redirect the apex to `www` with a 307 (Vercel's default) rather than a 308. Google has consolidated both sites on `www` regardless, so switching to 308 is optional tidy-up, done by hand in Vercel > Domains > Edit if wanted.
+   - Links report: which external sites Google has picked up
+4. After that review: the on-site changes it points to (see section 8).
+5. `/features` prerenders H1 "Planning Poker Features — All Free" but the hand-built page renders a different H1. Align them.
+6. Optional: both pointpoker.app and paramountconsultants.online redirect the apex to `www` with a 307 (Vercel's default). Google has consolidated on `www` anyway. Switching to 308 is tidy-up, by hand in Vercel > Domains > Edit.
+7. Discovery evidence still to collect: filtering vendor categories (Palo Alto, FortiGuard, BrightCloud), real organisation-network access tests, facilitator interviews.
 
-## 9. Access and deployment
+## 10. Access and deployment
 
 - **Search Console:** Domain property `sc-domain:pointpoker.app`. It sits under a separate Google account, not Ali's default one (named in the private notes and the project instructions).
 - **Vercel:** project `planning-poker` under "Ali Khan's projects" (Hobby). Login needs Ali's passkey. Connected to GitHub, production branch `main`.
@@ -188,9 +187,11 @@ Deliberately not done: no new translated pages (waiting for native review), no h
 - **Firebase:** project `planning-poker-b6ac1`. Rules and Functions deploy separately with the Firebase CLI and must be verified live. Use the `firebaseio.com` host for REST checks.
 - **Verification commands:** `CI=true npm test -- --runInBand --watchAll=false`, `npm run build`, `npm run test:rules` for rules, `npm --prefix functions test` for Functions.
 - **Vercel "Project Link not found"** on a project's Git settings page means the Vercel GitHub App has lost access to that repo. The app is installed on `aliimrankhan86` with "Only select repositories"; fix it at GitHub > Settings > Applications > Vercel > Repository access. Both `planning-poker` and `paramount-codebase` are selected as of 24 Sep 2026.
+- **Paramount Consultants:** paramountconsultants.online (repo `paramount-codebase`, on Vercel). Point Poker page at `/products/point-poker`. Search Console Domain property `sc-domain:paramountconsultants.online` under the same Google account as Point Poker, verified by a TXT record in Vercel DNS.
+- **Scheduled follow-up:** "Point Poker: weekly follow-up", Wednesdays 09:00 UTC, a self-renewing reminder in the Cowork conversation linked to Ali's Mac. How it works is in `LINK-BUILDING.md`.
 - The repo lives in an iCloud-synced Documents folder. Stray files such as `.git/index 2` are sync artefacts.
 
-## 10. Traps worth remembering
+## 11. Traps worth remembering
 
 - A CSS class starting `ad-`, `ads-`, `promo-`, `popup-` or containing `advert` or `sponsor` is hidden by ad blockers. A test enforces this.
 - Vercel `:path*` does not match a trailing-slash path. Use `:path(.*)`. Verify every routing change live, with and without a trailing slash.
@@ -198,3 +199,4 @@ Deliberately not done: no new translated pages (waiting for native review), no h
 - An empty `/rooms` node does not mean Team Rooms are gone. Teams live on `/users`, history on `/history`.
 - Stale `plan: "pro"` fields on old user profiles grant nothing. Do not rebuild entitlement logic around them.
 - Search Console's Pages report lags. URL Inspection reflects the live index.
+- Two other products use almost this name: PointPoker at pointpoker.co (a Jira Marketplace app) and point.poker. Always write "Point Poker" with the pointpoker.app link.
