@@ -24,14 +24,14 @@ no ads. An optional free account reserves two permanent room URLs and stores spr
 
 | File | What it is | Size |
 |---|---|---|
-| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 393 KB |
-| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 87 KB |
+| `src/App.js` | The entire app: CSS string, all components, all Firebase logic | 397 KB |
+| `src/routeMeta.mjs` | Route table, SEO metadata, prerendered content. Read by the app **and** the build | 88 KB |
 | `src/AdminDashboard.js` | Owner-only usage dashboard, lazy-loaded so users never download it | 20 KB |
 | `src/design-system/tokens.css` | Every colour, size, radius, shadow and duration. Dark on `:root`, light under `[data-theme="light"]` | 36 KB |
 | `src/design-system/components.css` | The `pp-` component classes | 71 KB |
 | `src/design-system/index.js` | The React components. Import from here | 41 KB |
 | `src/design-system/README.md` | The rulebook: theming, the ten rules, the decision table | 20 KB |
-| `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 13 KB |
+| `scripts/prerender.mjs` | Writes one real HTML file per route after the CRA build | 14 KB |
 | `scripts/build-rules.mjs` | Strips comments from the Firebase rules to make the console-pasteable copy | 1 KB |
 | `scripts/gen-ai-context.mjs` | Generates this file | 13 KB |
 | `database.rules.json` | Firebase rules, with comments. **Source of truth.** | 19 KB |
@@ -121,7 +121,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 
 ## Tests
 
-`npm test` — 326 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
+`npm test` — 330 test blocks across AdminDashboard.test.js, App.test.js, AppErrorBoundary.test.js, design-system/design-system.test.js, designsystem.test.js, estimation.test.js (more cases
 than that at runtime, because `test.each` expands). They cover the things
 that break silently: the estimation maths (consensus, stats, slugs), SEO route metadata
 uniqueness, and the dashboard arithmetic that business decisions rest on.
@@ -163,9 +163,9 @@ migration, and they should fall over time, never rise.
 `src/design-system/design-system.test.js` computes the actual WCAG contrast of
 every semantic role in both themes and fails if one drops below AA.
 
-## Components in App.js (30)
+## Components in App.js (31)
 
-`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `HeaderLanguageSwitcher`, `LanguageSwitcher`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `FeaturesPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
+`BrandMark`, `PrintReport`, `BrandWordmark`, `NavLinkButton`, `RouteLink`, `NavBar`, `HeaderLanguageSwitcher`, `LanguageSwitcher`, `SiteFooter`, `LoginModal`, `CookieBanner`, `Confetti`, `MarketingSection`, `MarketingRelatedLinks`, `MarketingPageShell`, `RoomQuickStart`, `ContentPage`, `PricingPage`, `AboutPage`, `SupportPage`, `TrustPage`, `FeaturesPage`, `RemoteSprintPlanningPage`, `LegalPage`, `TermsPage`, `PrivacyPage`, `HistoryModal`, `JoinScreen`, `WtpPoll`, `RoomActionBar`, `GameScreen`
 
 ---
 

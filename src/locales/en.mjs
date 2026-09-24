@@ -71,7 +71,7 @@ export const ui = {
   "footer.supportContact": "Support & contact",
   "footer.guides": "Guides",
   "footer.guideWhatIs": "What is planning poker?",
-  "footer.guidePointing": "Pointing & poker planning",
+  "footer.guidePointing": "Pointing poker",
   "footer.guideFib": "Fibonacci story points",
   "footer.guideHours": "Story points to hours",
   "footer.guideEstimation": "Story point estimation",
@@ -79,6 +79,7 @@ export const ui = {
   "footer.guideScrum": "Scrum poker",
   "footer.guideRemote": "Remote sprint planning",
   "footer.guideAgile": "Agile estimation tool",
+  "footer.builtBy": "Built and run by",
   "footer.copyright": "© {year} Point Poker. All rights reserved. Registered in England & Wales.",
   "footer.legalNote1": "Point Poker is provided “as-is” without warranty of any kind. Use is subject to our",
   "footer.legalNote2":
@@ -246,6 +247,7 @@ export const ui = {
   "home.linkWhatIs": "what planning poker is",
   "home.linkFib": "Fibonacci story points",
   "home.linkAgile": "agile estimation tools",
+  "home.linkPointing": "pointing poker",
   "home.linkTrust": "trust and reliability",
   "home.faqTitle": "Frequently asked questions",
 

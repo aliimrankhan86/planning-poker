@@ -81,6 +81,7 @@ export const ui = {
   "footer.guideScrum": "スクラムポーカー",
   "footer.guideRemote": "リモートのスプリントプランニング",
   "footer.guideAgile": "アジャイル見積もりツール",
+  "footer.builtBy": "開発・運営：",
   "footer.copyright": "© {year} Point Poker. All rights reserved. イングランドおよびウェールズ登記。",
   "footer.legalNote1":
     "Point Poker は現状のまま提供され、いかなる保証も伴いません。ご利用にあたっては当社の",
@@ -242,6 +243,7 @@ export const ui = {
   "home.linkWhatIs": "プランニングポーカーとは",
   "home.linkFib": "フィボナッチのストーリーポイント",
   "home.linkAgile": "アジャイル見積もりツール",
+  "home.linkPointing": "ポインティングポーカー",
   "home.linkTrust": "プライバシーと信頼性",
   "home.faqTitle": "よくある質問",
 

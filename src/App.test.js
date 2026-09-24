@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { ref as dbRef } from "firebase/database";
 import App from "./App";
 import {
@@ -982,6 +982,67 @@ describe("translations", () => {
         if (code === "en") continue;
         expect(STATIC_ROUTE_META[`${LOCALES[code].prefix}${path}`]).toBeUndefined();
       }
+    }
+  });
+});
+
+/* ── /pointing-poker is a tool page ──────────────────────────────────
+   24 Sep 2026. "pointing poker" is the query that shows the site most, and
+   Search Console split it between the home page (avg 27) and /pointing-poker
+   (avg 7.7). Every result above it is a working tool; this page used to send
+   visitors on to / before they could start, the home page never mentioned the
+   term once hydrated, and only the footer linked to it. These pin the fix.
+──────────────────────────────────────────────────────────────────────── */
+describe("pointing poker is a tool page, not a doorway", () => {
+  test("its hero holds a room form that refuses a blank name and creates the room it describes", async () => {
+    const { set, onDisconnect } = require("firebase/database");
+    // CRA resets mock implementations between tests, so restore the two this
+    // path relies on: the room write resolves, and the presence hook exists.
+    set.mockResolvedValue(undefined);
+    onDisconnect.mockReturnValue({ update: jest.fn() });
+    window.history.pushState({}, "", "/pointing-poker");
+    render(<App />);
+
+    // Start-up writes (visit counters) are not the room; only a write that
+    // carries players is.
+    const roomWrites = () => set.mock.calls.filter(([, value]) => value?.players);
+    const create = screen.getByRole("button", { name: /create room/i });
+    fireEvent.click(create);
+    expect(screen.getByText(UI.en["join.errName"])).toBeInTheDocument();
+    expect(roomWrites()).toHaveLength(0);
+
+    fireEvent.change(screen.getByLabelText(UI.en["join.yourName"]), { target: { value: "Sam Rivera" } });
+    fireEvent.change(screen.getByLabelText(UI.en["join.cardDeck"]), { target: { value: "tshirt" } });
+    fireEvent.click(create);
+
+    await waitFor(() => expect(roomWrites()).toHaveLength(1));
+    const room = roomWrites()[0][1];
+    expect(room.deck).toBe("tshirt");
+    expect(room.estimationMode).toBe("stories");
+    expect(Object.values(room.players)[0]).toMatchObject({ name: "Sam Rivera", role: "observer" });
+  });
+
+  test("the hero has one primary action: the form's, not a second link away to /", () => {
+    window.history.pushState({}, "", "/pointing-poker");
+    render(<App />);
+    const hero = screen.getByRole("heading", { level: 1 }).closest("section");
+    expect(within(hero).queryByRole("link", { name: UI.en["page.startFree"] })).toBeNull();
+    expect(within(hero).getByRole("button", { name: /create room/i })).toBeInTheDocument();
+  });
+
+  test("the home page links to it from its own copy, not only from the footer", () => {
+    window.history.pushState({}, "", "/");
+    render(<App />);
+    const inCopy = screen
+      .getAllByRole("link")
+      .filter((a) => a.getAttribute("href") === "/pointing-poker" && !a.closest("footer"));
+    expect(inCopy.length).toBeGreaterThan(0);
+  });
+
+  test("the guides closest to it link to it", () => {
+    for (const path of ["/what-is-planning-poker", "/scrum-poker", "/planning-poker-online"]) {
+      const hrefs = ROUTE_CONTENT[path].related.map((r) => r.href);
+      expect(`${path}:${hrefs.includes("/pointing-poker")}`).toBe(`${path}:true`);
     }
   });
 });

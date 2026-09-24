@@ -20,13 +20,13 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 | `scripts/gen-sitemap.mjs` | 92 | 4 KB |
 | `scripts/make-icons.py` | 75 | 2 KB |
 | `scripts/make-og-image.py` | 176 | 7 KB |
-| `scripts/prerender.mjs` | 339 | 13 KB |
+| `scripts/prerender.mjs` | 346 | 13 KB |
 | `scripts/rules-test.mjs` | 316 | 19 KB |
 | `src/AdminDashboard.js` | 466 | 19 KB |
 | `src/AdminDashboard.test.js` | 119 | 5 KB |
 | `src/App.css` | 39 | 0 KB |
-| `src/App.js` | 8573 | 393 KB |
-| `src/App.test.js` | 988 | 48 KB |
+| `src/App.js` | 8642 | 396 KB |
+| `src/App.test.js` | 1049 | 51 KB |
 | `src/AppErrorBoundary.js` | 74 | 2 KB |
 | `src/AppErrorBoundary.test.js` | 90 | 3 KB |
 | `src/design-system/base.css` | 87 | 3 KB |
@@ -43,12 +43,12 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 | `src/i18n.mjs` | 127 | 4 KB |
 | `src/index.css` | 14 | 0 KB |
 | `src/index.js` | 43 | 1 KB |
-| `src/locales/en.mjs` | 628 | 32 KB |
+| `src/locales/en.mjs` | 630 | 32 KB |
 | `src/locales/index.mjs` | 146 | 7 KB |
-| `src/locales/ja.mjs` | 976 | 77 KB |
-| `src/locales/pt.mjs` | 993 | 62 KB |
+| `src/locales/ja.mjs` | 978 | 77 KB |
+| `src/locales/pt.mjs` | 995 | 62 KB |
 | `src/reportWebVitals.js` | 14 | 0 KB |
-| `src/routeMeta.mjs` | 1251 | 86 KB |
+| `src/routeMeta.mjs` | 1256 | 87 KB |
 | `src/setupTests.js` | 37 | 1 KB |
 | `vercel.json` | 109 | 2 KB |
 
@@ -108,13 +108,14 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L41 `BUILD_DIR`
 - L42 `esc`
 - L48 `ORGANISATION`
-- L65 `WEBSITE`
-- L74 `SOFTWARE_APP`
-- L118 `breadcrumb`
-- L128 `graphFor`
-- L183 `shellLinks`: a soft 404 authored on purpose.
-- L214 `shellFor`
-- L249 `render`
+- L68 `MAKER`: the maker is part of telling Google which Point Poker this is.
+- L75 `WEBSITE`
+- L87 `SOFTWARE_APP`
+- L125 `breadcrumb`
+- L135 `graphFor`
+- L190 `shellLinks`: a soft 404 authored on purpose.
+- L221 `shellFor`
+- L256 `render`
 
 ## `scripts/rules-test.mjs`
 
@@ -217,43 +218,44 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L2851 `HeaderLanguageSwitcher`: the URL and document language in agreement.
 - L2919 `LanguageSwitcher`
 - L2947 `SiteFooter`
-- L3058 `LoginModal`
-- L3443 `CookieBanner`: COOKIE / STORAGE NOTICE
-- L3471 `App`: MAIN APP
-- L4730 `CONFETTI_COLORS`
-- L4744 `Confetti`
-- L4860 `MarketingSection`: heading does not get the gap twice.
-- L4869 `MarketingRelatedLinks`
-- L4891 `MarketingPageShell`
-- L4958 `ContentPage`: STATIC_SCREEN_BY_PATH.
-- L5023 `PricingPage`
-- L5128 `AboutPage`
-- L5207 `SupportPage`
-- L5269 `TrustPage`
-- L5349 `FeaturesPage`
-- L5426 `RemoteSprintPlanningPage`
-- L5486 `getAuthErrorMessage`
-- L5505 `getVerificationErrorMessage`
-- L5518 `deriveDisplayNameFallback`
-- L5531 `deriveTeamRoomName`
-- L5537 `deriveDedicatedRoomOwnerSuffix`
-- L5544 `buildDedicatedRoomLabel`
-- L5552 `clampTeamRoomLabel`
-- L5560 `deriveSecondaryTeamRoomName`
-- L5571 `buildDedicatedTeamRoomsFromLabel`
-- L5585 `deriveDedicatedRoomLabelPrefix`
-- L5601 `resolveDedicatedTeamRooms`
-- L5619 `saveUserProfile`
-- L5651 `LegalPage`
-- L5671 `TermsPage`
-- L5856 `PrivacyPage`
-- L6098 `HistoryModal`
-- L6182 `JoinScreen`: JOIN SCREEN
-- L6990 `WTP_STORAGE_KEY`
-- L6991 `WTP_OPTIONS`
-- L6998 `WtpPoll`
-- L7049 `RoomActionBar`
-- L7153 `GameScreen`
+- L3066 `LoginModal`
+- L3451 `CookieBanner`: COOKIE / STORAGE NOTICE
+- L3479 `App`: MAIN APP
+- L4738 `CONFETTI_COLORS`
+- L4752 `Confetti`
+- L4868 `MarketingSection`: heading does not get the gap twice.
+- L4877 `MarketingRelatedLinks`
+- L4899 `MarketingPageShell`
+- L4980 `RoomQuickStart`: lands anyway. Name validation mirrors JoinScreen's validateEnteredName.
+- L5022 `ContentPage`
+- L5090 `PricingPage`
+- L5195 `AboutPage`
+- L5274 `SupportPage`
+- L5336 `TrustPage`
+- L5416 `FeaturesPage`
+- L5493 `RemoteSprintPlanningPage`
+- L5553 `getAuthErrorMessage`
+- L5572 `getVerificationErrorMessage`
+- L5585 `deriveDisplayNameFallback`
+- L5598 `deriveTeamRoomName`
+- L5604 `deriveDedicatedRoomOwnerSuffix`
+- L5611 `buildDedicatedRoomLabel`
+- L5619 `clampTeamRoomLabel`
+- L5627 `deriveSecondaryTeamRoomName`
+- L5638 `buildDedicatedTeamRoomsFromLabel`
+- L5652 `deriveDedicatedRoomLabelPrefix`
+- L5668 `resolveDedicatedTeamRooms`
+- L5686 `saveUserProfile`
+- L5718 `LegalPage`
+- L5738 `TermsPage`
+- L5923 `PrivacyPage`
+- L6165 `HistoryModal`
+- L6249 `JoinScreen`: JOIN SCREEN
+- L7059 `WTP_STORAGE_KEY`
+- L7060 `WTP_OPTIONS`
+- L7067 `WtpPoll`
+- L7118 `RoomActionBar`
+- L7222 `GameScreen`
 
 ## `src/App.test.js`
 
@@ -329,6 +331,11 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L886   test: the retired locale prefixes 301 instead of 404ing
 - L926   test: an untranslated path under a live locale prefix 301s to English
 - L978   test: the legal pages are not translated
+- L996 describe: pointing poker is a tool page, not a doorway
+- L997   test: its hero holds a room form that refuses a blank name and creates the room it describes
+- L1025   test: the hero has one primary action: the form
+- L1033   test: the home page links to it from its own copy, not only from the footer
+- L1042   test: the guides closest to it link to it
 
 ## `src/AppErrorBoundary.test.js`
 
@@ -812,14 +819,14 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 ## `src/locales/ja.mjs`
 
 - L18 `ui`
-- L615 `meta`
-- L638 `content`
+- L617 `meta`
+- L640 `content`
 
 ## `src/locales/pt.mjs`
 
 - L13 `ui`
-- L631 `meta`
-- L654 `content`
+- L633 `meta`
+- L656 `content`
 
 ## `src/reportWebVitals.js`
 
@@ -839,13 +846,13 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L308 `HOW_TO_STEPS`
 - L317 `ALL_LINKS`
 - L336 `ROUTE_CONTENT`
-- L1159 `VARS`: The translations are written with {max} and {email} rather than a literal 20 and a literal address, so the participant cap the Firebase rules enforce cannot dri…
-- L1160 `fillVars`
-- L1171 `localeUrl`
-- L1207 `installLocaleRoutes`: The words arrive with the language chunk. Idempotent, so calling it twice — which the tests and the prerenderer both do — is harmless.
-- L1228 `activateLocale`: Fetch a language and wire its pages into the route tables. This is what src/index.js awaits before the first render.
-- L1236 `activateAllLocales`: Every language at once, for the prerenderer, the sitemap generator and the tests. None of those ships to a browser, so the size does not matter there.
-- L1243 `alternatesFor`: Every URL a path exists at, including its own — reciprocal by construction, which is the condition Google puts on honouring any hreflang at all.
+- L1164 `VARS`: The translations are written with {max} and {email} rather than a literal 20 and a literal address, so the participant cap the Firebase rules enforce cannot dri…
+- L1165 `fillVars`
+- L1176 `localeUrl`
+- L1212 `installLocaleRoutes`: The words arrive with the language chunk. Idempotent, so calling it twice — which the tests and the prerenderer both do — is harmless.
+- L1233 `activateLocale`: Fetch a language and wire its pages into the route tables. This is what src/index.js awaits before the first render.
+- L1241 `activateAllLocales`: Every language at once, for the prerenderer, the sitemap generator and the tests. None of those ships to a browser, so the size does not matter there.
+- L1248 `alternatesFor`: Every URL a path exists at, including its own — reciprocal by construction, which is the condition Google puts on honouring any hreflang at all.
 
 ## Firebase Realtime Database shape
 

@@ -62,10 +62,23 @@ const ORGANISATION = {
   },
 };
 
+/* Who builds and runs it, named visibly in the footer on every page. Two
+   unrelated products share almost this name (pointpoker.co, point.poker), so
+   the maker is part of telling Google which Point Poker this is. */
+const MAKER = {
+  "@type": "Organization",
+  "@id": "https://www.paramountconsultants.online/#organization",
+  name: "Paramount Consultants",
+  url: "https://www.paramountconsultants.online/",
+};
+
 const WEBSITE = {
   "@type": "WebSite",
   "@id": `${SITE_URL}/#website`,
   name: "Point Poker",
+  // Google's site-name guidance: alternateName is for a recognised shorter or
+  // alternative form of the brand, never generic terms.
+  alternateName: ["PointPoker"],
   url: `${SITE_URL}/`,
   publisher: { "@id": `${SITE_URL}/#organization` },
   inLanguage: "en-GB",
@@ -75,17 +88,10 @@ const SOFTWARE_APP = {
   "@type": "SoftwareApplication",
   "@id": `${SITE_URL}/#app`,
   name: "Point Poker",
-  // Six names for one ceremony, and teams search for all six. This is the
-  // machine-readable way to say so — the alternative is five near-identical
-  // landing pages, which is a doorway-page penalty rather than a ranking.
-  alternateName: [
-    "Planning Poker",
-    "Scrum Poker",
-    "Pointing Poker",
-    "Poker Planning",
-    "Sprint Poker",
-    "Estimation Poker",
-  ],
+  // No alternateName. It used to list six generic terms ("Planning Poker",
+  // "Scrum Poker"...). Those are not names of this product, and Google's
+  // guidance is to avoid generic names; /pointing-poker covers the synonyms
+  // in visible copy instead.
   applicationCategory: "BusinessApplication",
   applicationSubCategory: "Agile estimation",
   operatingSystem: "Web browser",
@@ -113,6 +119,7 @@ const SOFTWARE_APP = {
   ],
   isAccessibleForFree: true,
   publisher: { "@id": `${SITE_URL}/#organization` },
+  creator: { "@id": MAKER["@id"] },
 };
 
 function breadcrumb(path, title) {
@@ -142,7 +149,7 @@ function graphFor(path, m, content) {
   });
   // Every locale's home page describes the same application, in its own words.
   if ((m.basePath || path) === "/") {
-    nodes.push({ ...SOFTWARE_APP, description: m.description });
+    nodes.push({ ...SOFTWARE_APP, description: m.description }, MAKER);
   }
   if (content?.faq?.length) {
     nodes.push({

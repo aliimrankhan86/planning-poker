@@ -3038,6 +3038,14 @@ function SiteFooter({ onCookieSettings, currentUser, onNavTerms, onNavPrivacy, o
       <div className="footer-bottom pp-container">
         <LanguageSwitcher />
         <div className="footer-copy">{t("footer.copyright", { year })}</div>
+        {/* Two unrelated products share almost this name, one on a .co
+            domain and one at point.poker. Saying who builds this one, on every
+            page, is what the schema's creator field points at and what
+            directories check before listing a product. */}
+        <div className="footer-copy">
+          {t("footer.builtBy")}{" "}
+          <a className="footer-link footer-link--inline" href="https://www.paramountconsultants.online/products/point-poker">Paramount Consultants</a>
+        </div>
         <div className="footer-legal-note">
           {t("footer.legalNote1")}{" "}
           <button className="footer-link footer-link--inline" onClick={onNavTerms}>{t("footer.terms")}</button>
@@ -4613,7 +4621,7 @@ export default function App() {
           )}
           {/* Every data-driven page, in one line. See STATIC_SCREEN_BY_PATH. */}
           {screen.startsWith("/") && ROUTE_CONTENT[screen] && (
-            <ContentPage path={screen} onNavigate={navTo} />
+            <ContentPage path={screen} onNavigate={navTo} onCreate={handleCreate} />
           )}
           {screen === "admin" && (
             <Suspense fallback={<div className="loading"><div className="spinner" /></div>}>
@@ -4898,6 +4906,7 @@ function MarketingPageShell({
   secondaryHref = "/pricing",
   secondaryLabel,
   onNavigate,
+  heroAside,
   children,
 }) {
   /* Reading a Japanese site and landing on a page that is English only is
@@ -4921,23 +4930,27 @@ function MarketingPageShell({
         actions={
           <>
             {/* Rule 2: one primary per screen. It is the one that opens a room —
-                the reason the page exists. */}
-            <Button variant="primary" as={RouteLink} href={primaryHref} onNavigate={onNavigate}>
-              {primaryLabel || t("page.startFree")}
-            </Button>
+                the reason the page exists. When the room form itself sits in
+                the hero (heroAside), its Create button is that primary, so a
+                second "Start a free room" link would be a competing one. */}
+            {!heroAside && (
+              <Button variant="primary" as={RouteLink} href={primaryHref} onNavigate={onNavigate}>
+                {primaryLabel || t("page.startFree")}
+              </Button>
+            )}
             <Button as={RouteLink} href={secondaryHref} onNavigate={onNavigate}>
               {secondaryLabel || t("page.viewPricing")}
             </Button>
           </>
         }
         aside={
-          highlights?.length ? (
+          heroAside || (highlights?.length ? (
             <Grid min="180px" className="marketing-stat-grid">
               {highlights.map((item) => (
                 <StatTile key={item.label} label={item.label} value={item.value} gold />
               ))}
             </Grid>
-          ) : null
+          ) : null)
         }
       />
       <Container>{children}</Container>
@@ -4955,7 +4968,58 @@ function MarketingPageShell({
    are looking at one set of words by construction rather than by discipline.
    A new landing page is now a data object in routeMeta.mjs and a line in
    STATIC_SCREEN_BY_PATH. */
-function ContentPage({ path, onNavigate }) {
+/* The room form for a guide page that is also a tool page (ROUTE_CONTENT
+   `quickStart`). Added 24 Sep 2026 for /pointing-poker: every page ranking
+   above it for that query is a working tool, and this page used to send each
+   visitor on to / before they could start.
+
+   Create only, on purpose: name and deck, then the same handleCreate the home
+   page calls, as facilitator, in stories mode. Joining by code and Team Rooms
+   stay on the home page, which is where anyone holding a link or a team URL
+   lands anyway. Name validation mirrors JoinScreen's validateEnteredName. */
+function RoomQuickStart({ title, note, onCreate }) {
+  const [name, setName] = useState(() => recallName());
+  const [deck, setDeck] = useState("fibonacci");
+  const [err, setErr] = useState("");
+
+  const start = () => {
+    const entered = name.trim();
+    if (!entered) { setErr(t("join.errName")); return; }
+    if (INVALID_PLACEHOLDER_NAMES.has(entered.toLowerCase())) { setErr(t("join.errRealName")); return; }
+    const clean = entered.slice(0, 40);
+    rememberName(clean);
+    onCreate(clean, "observer", deck, "stories");
+  };
+
+  return (
+    <Card title={title} titleAs="h2" className="quickstart-card">
+      <Stack>
+        <TextField
+          id="quickstart-name"
+          label={t("join.yourName")}
+          placeholder={t("join.namePlaceholder")}
+          value={name}
+          maxLength={40}
+          autoComplete="name"
+          onChange={(e) => { setName(e.target.value); setErr(""); }}
+          onKeyDown={(e) => e.key === "Enter" && start()}
+          error={err || undefined}
+        />
+        <Select
+          id="quickstart-deck"
+          label={t("join.cardDeck")}
+          value={deck}
+          onChange={(e) => setDeck(e.target.value)}
+          options={Object.keys(DECK_DEFINITIONS).map((key) => ({ value: key, label: DECK_DEFINITIONS[key].label }))}
+        />
+        <Button variant="primary" size="lg" block onClick={start}>{t("join.createRoom")}</Button>
+        {note && <p className="join-note join-note--centred">{note}</p>}
+      </Stack>
+    </Card>
+  );
+}
+
+function ContentPage({ path, onNavigate, onCreate }) {
   const c = ROUTE_CONTENT[path];
   if (!c) return null;
 
@@ -4965,6 +5029,9 @@ function ContentPage({ path, onNavigate }) {
       title={c.h1}
       intro={c.intro}
       highlights={c.highlights}
+      heroAside={c.quickStart && onCreate
+        ? <RoomQuickStart title={c.quickStart.title} note={c.quickStart.note} onCreate={onCreate} />
+        : undefined}
       onNavigate={onNavigate}
       primaryHref="/"
       primaryLabel={t("page.startFree")}
@@ -6950,6 +7017,8 @@ function JoinScreen({
               <RouteLink href="/story-point-estimation" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkEstimation")}</RouteLink>
               {", "}
               <RouteLink href="/what-is-planning-poker" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkWhatIs")}</RouteLink>
+              {", "}
+              <RouteLink href="/pointing-poker" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkPointing")}</RouteLink>
               {", "}
               <RouteLink href="/fibonacci-story-points" onNavigate={onNavigate} className="seo-inline-link">{t("home.linkFib")}</RouteLink>
               {", "}

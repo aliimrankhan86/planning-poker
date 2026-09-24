@@ -52,7 +52,7 @@ Search intent ownership:
 |---|---|
 | Brand, "free planning poker online" | `/` |
 | "scrum poker" and variants | `/scrum-poker` |
-| "pointing poker", "poker planning", "sprint poker", "estimation poker", "agile poker" | `/pointing-poker` (one page on purpose, never split) |
+| "pointing poker", "poker planning", "sprint poker", "estimation poker", "agile poker" | `/pointing-poker` (one page on purpose, never split). Since 24 Sep 2026 it is a tool page: the room form sits in its hero |
 | "planning poker online" | `/planning-poker-online` |
 | "what is planning poker" | `/what-is-planning-poker` |
 | Fibonacci story points | `/fibonacci-story-points` |
@@ -132,6 +132,22 @@ Baseline is 10 May to 9 Aug 2026. "Now" is 23 Aug to 20 Sep 2026.
 - Page with redirect: 10, all correct (http and apex variants plus retired locale URLs). Expect up to six more as the fixed locale URLs are recrawled.
 - Core Web Vitals: no data (not enough traffic).
 
+## 6a. Changes shipped on 24 Sep 2026 (pointing poker and brand)
+
+Evidence: "pointing poker" is the query that shows the site most (423 impressions in the 28 days to 20 Sep, average position 16.9), split between `/` (avg 27) and `/pointing-poker` (avg 7.7). Every result above it is a working tool. Once hydrated, the home page never said "pointing poker" and only the footer linked to the page, and `/pointing-poker` sent every visitor on to `/` before they could start.
+
+1. `/pointing-poker` is now a tool page. `<RoomQuickStart>` puts a create-room form (name, deck, Create Room) in the hero via `ROUTE_CONTENT["/pointing-poker"].quickStart`. It calls the same `handleCreate` as the home page, as facilitator, in stories mode. Joining by code and Team Rooms stay on `/`.
+2. `/pointing-poker` title "Pointing Poker: Free Online Tool, No Sign-Up | Point Poker", H1 "Free Pointing Poker for Agile Teams", new intro and description that lead with starting a room rather than listing six synonyms.
+3. Internal links: the home page's own copy now links "pointing poker"; `/what-is-planning-poker`, `/scrum-poker` and `/planning-poker-online` link to it in their related cards; the footer anchor is now "Pointing poker" (was "Pointing & poker planning").
+4. Home title "Free Planning Poker Online: No Sign-Up, No Ads | Point Poker". The old one said "No Limits", which the 20-person cap contradicts. "No Ads" is true and is a real difference from the ad-funded leader for "pointing poker".
+5. "| Point Poker" added to the `/planning-poker-online` and `/planning-poker-jira` titles.
+6. Structured data: WebSite `alternateName: ["PointPoker"]`; the six generic terms removed from the SoftwareApplication `alternateName` (Google says avoid generic names there); SoftwareApplication `creator` is Paramount Consultants, named visibly in the footer ("Built and run by Paramount Consultants", linking to its Point Poker page).
+7. Tests pin all of it: the form refuses a blank name and creates a room with the chosen deck, the hero has one primary action, the home copy links the page, the three guides link it.
+
+Two other products use almost this name (pointpoker.co, a Jira Marketplace app, and point.poker). Always write "Point Poker" with the pointpoker.app link.
+
+What to watch at the 4 Nov review: whether Google stops splitting "pointing poker" between `/` and `/pointing-poker`, and its average position (16.9 before).
+
 ## 6. Changes shipped on 23 Sep 2026
 
 1. Untranslated `/pt/*` and `/ja/*` paths now 301 to their English page. The rule in `vercel.json` excludes exactly the translated pages and `t/`. A test pins that list to `LOCALIZED_PATHS`.
@@ -159,7 +175,7 @@ Deliberately not done: no new translated pages (waiting for native review), no h
    - Indexed count falling back towards 26, redirects rising by up to six
    - `/ja/*` clicks and the position of プランニングポーカー
 4. Discovery evidence still to collect: filtering vendor categories (Palo Alto, FortiGuard, BrightCloud), real organisation-network access tests, facilitator interviews.
-5. Authority is now the main SEO constraint. The first link went live on 24 Sep 2026 from Ali's own consultancy site: https://www.paramountconsultants.online/products/point-poker (plus a `/products` index, a Products nav item, sitemap entries and "Built by us" boxes on its Agile Delivery and Full-Stack Development pages). It carries six followed links into pointpoker.app (`/`, `/what-is-planning-poker`, `/fibonacci-story-points`, `/scrum-poker`, `/planning-poker-jira`, `/pricing`) and SoftwareApplication schema naming Paramount Consultants as publisher. A same-owner link helps discovery and ties the product to a real business, but carries little ranking weight. Independent links (agile tool directories, useful content, community mentions) have still not been started. paramountconsultants.online was added to Search Console on 24 Sep 2026 as Domain property `sc-domain:paramountconsultants.online` (same Google account as Point Poker, verified by a TXT record in Vercel DNS), sitemap submitted and indexing requested for `/products` and `/products/point-poker`. Both paramountconsultants.online and pointpoker.app redirect the apex to `www` with a 307 (Vercel's default) rather than a 308. Google has consolidated both sites on `www` regardless, so switching to 308 is optional tidy-up, done by hand in Vercel > Domains > Edit if wanted.
+5. Authority is now the main SEO constraint. The plan, listing copy, submission targets and emails are in `docs/claude-project/LINK-BUILDING.md`; each needs an account in Ali's name. The first link went live on 24 Sep 2026 from Ali's own consultancy site: https://www.paramountconsultants.online/products/point-poker (plus a `/products` index, a Products nav item, sitemap entries and "Built by us" boxes on its Agile Delivery and Full-Stack Development pages). It carries six followed links into pointpoker.app (`/`, `/what-is-planning-poker`, `/fibonacci-story-points`, `/scrum-poker`, `/planning-poker-jira`, `/pricing`) and SoftwareApplication schema naming Paramount Consultants as publisher. A same-owner link helps discovery and ties the product to a real business, but carries little ranking weight. Independent links (agile tool directories, useful content, community mentions) have still not been started. paramountconsultants.online was added to Search Console on 24 Sep 2026 as Domain property `sc-domain:paramountconsultants.online` (same Google account as Point Poker, verified by a TXT record in Vercel DNS), sitemap submitted and indexing requested for `/products` and `/products/point-poker`. Both paramountconsultants.online and pointpoker.app redirect the apex to `www` with a 307 (Vercel's default) rather than a 308. Google has consolidated both sites on `www` regardless, so switching to 308 is optional tidy-up, done by hand in Vercel > Domains > Edit if wanted.
 
 ## 9. Access and deployment
 

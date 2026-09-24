@@ -82,6 +82,7 @@ export const ui = {
   "footer.guideScrum": "Scrum poker",
   "footer.guideRemote": "Sprint planning remoto",
   "footer.guideAgile": "Ferramenta de estimativa ágil",
+  "footer.builtBy": "Criado e mantido por",
   "footer.copyright":
     "© {year} Point Poker. Todos os direitos reservados. Registrada na Inglaterra e no País de Gales.",
   "footer.legalNote1":
@@ -247,6 +248,7 @@ export const ui = {
   "home.linkWhatIs": "o que é planning poker",
   "home.linkFib": "story points de Fibonacci",
   "home.linkAgile": "ferramentas de estimativa ágil",
+  "home.linkPointing": "pointing poker",
   "home.linkTrust": "privacidade e confiabilidade",
   "home.faqTitle": "Perguntas frequentes",
 

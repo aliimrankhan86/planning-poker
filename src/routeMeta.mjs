@@ -38,7 +38,7 @@ export const SUPPORT_EMAIL =
   process.env.REACT_APP_SUPPORT_EMAIL || "support@pointpoker.app";
 
 export const DEFAULT_META = {
-  title: "Free Planning Poker Online — No Sign-Up, No Limits | Point Poker",
+  title: "Free Planning Poker Online: No Sign-Up, No Ads | Point Poker",
   description:
     "Free online planning poker for agile and scrum teams. Everything is free: 20 people per room, unlimited rounds, unlimited stories, all three card decks, a countdown timer, facilitator analytics and CSV export. No account needed and no ads.",
   canonical: `${SITE_URL}/`,
@@ -140,7 +140,7 @@ export const STATIC_ROUTE_META = {
   ),
   "/planning-poker-online": meta(
     "/planning-poker-online",
-    "Planning Poker Online, Free, for Remote Agile Teams",
+    "Planning Poker Online, Free, for Remote Agile Teams | Point Poker",
     "Run planning poker online in any browser. Create a room, paste the link into your team chat, and everyone reveals together. Nothing to install and no account needed.",
   ),
   /* Retitled 23 Sep 2026 from "Free Scrum Poker App for Sprint Planning".
@@ -177,8 +177,8 @@ export const STATIC_ROUTE_META = {
      which is a penalty rather than a ranking. */
   "/pointing-poker": meta(
     "/pointing-poker",
-    "Pointing Poker Online — Free Tool, No Sign-Up Needed",
-    "Pointing poker, poker planning, sprint poker, estimation poker and scrum poker are five names for one ceremony: everyone sizes the work privately, then all the cards turn over together. Play it free here, up to 20 people per room, no account.",
+    "Pointing Poker: Free Online Tool, No Sign-Up | Point Poker",
+    `Free pointing poker online. Start a room on this page, share the link, and everyone's story point cards turn over at the same moment. Up to ${MAX_PARTICIPANTS} people per room, no account and no ads.`,
   ),
   "/story-points-to-hours": meta(
     "/story-points-to-hours",
@@ -187,7 +187,7 @@ export const STATIC_ROUTE_META = {
   ),
   "/planning-poker-jira": meta(
     "/planning-poker-jira",
-    "Planning Poker for Jira — Free, No Plugin to Install",
+    "Planning Poker for Jira — Free, No Plugin to Install | Point Poker",
     "Run planning poker alongside Jira, Linear or Azure DevOps without a Marketplace plugin or an admin approval queue. Paste the backlog in one go, estimate together, export the agreed points as CSV, and bulk-update the tracker you already use.",
   ),
   "/terms": meta(
@@ -325,7 +325,7 @@ const ALL_LINKS = [
   ["/agile-estimation-tool", "Agile estimation tool"],
   ["/what-is-planning-poker", "What is planning poker?"],
   ["/fibonacci-story-points", "Fibonacci story points"],
-  ["/pointing-poker", "Pointing poker and poker planning"],
+  ["/pointing-poker", "Pointing poker"],
   ["/story-points-to-hours", "Story points to hours"],
   ["/planning-poker-jira", "Planning poker with Jira"],
   ["/about", "About"],
@@ -482,6 +482,7 @@ export const ROUTE_CONTENT = {
       { href: "/scrum-poker", kicker: "Scrum", title: "Scrum poker", copy: "The same ceremony under the name scrum teams tend to use for it." },
       { href: "/planning-poker-jira", kicker: "Trackers", title: "Planning poker with Jira", copy: "Paste the backlog in, get the estimates out. No plugin, no admin approval." },
       { href: "/features", kicker: "Product", title: "All features", copy: "Decks, timers, story queue, sprint history and CSV export." },
+      { href: "/pointing-poker", kicker: "Tool", title: "Pointing poker", copy: `Start a free pointing poker room without leaving the page, up to ${MAX_PARTICIPANTS} people.` },
     ],
   },
   "/scrum-poker": {
@@ -592,6 +593,7 @@ export const ROUTE_CONTENT = {
       { href: "/fibonacci-story-points", kicker: "Deck", title: "Fibonacci story points", copy: "Why the gaps widen, and what a 21 or a 34 is really telling you." },
       { href: "/story-point-estimation", kicker: "Practice", title: "Story point estimation", copy: "Turning the votes into estimates the team will still stand behind next sprint." },
       { href: "/planning-poker-jira", kicker: "Tools", title: "Planning poker with Jira", copy: "Paste the backlog in, estimate together, and take the agreed points back to Jira as CSV." },
+      { href: "/pointing-poker", kicker: "Tool", title: "Pointing poker", copy: "What teams who say pointing rather than planning are looking for, with a room you can open on the page." },
     ],
   },
   "/story-point-estimation": {
@@ -811,6 +813,7 @@ export const ROUTE_CONTENT = {
       { href: "/planning-poker-online", kicker: "Workflow", title: "Planning poker online", copy: "How the product turns the ceremony into a browser-first, live estimation flow." },
       { href: "/fibonacci-story-points", kicker: "Deck", title: "Fibonacci story points", copy: "Why the gaps widen, and what a 21 or a 34 is really telling you." },
       { href: "/scrum-poker", kicker: "Ceremony", title: "Scrum poker", copy: "Where the method gets used: refinement and sprint planning." },
+      { href: "/pointing-poker", kicker: "Tool", title: "Pointing poker", copy: "The same ceremony named after the story point. Start a free room straight from the page." },
     ],
   },
   "/fibonacci-story-points": {
@@ -892,19 +895,21 @@ export const ROUTE_CONTENT = {
   },
   "/pointing-poker": {
     eyebrow: "Pointing poker",
-    highlights: [
-      { value: "6 names", label: "One ceremony, six things teams call it" },
-      { value: "1 game", label: "Private vote, reveal together, discuss the gap" },
-      { value: "$0", label: "Every feature, every team, no account" },
-    ],
+    /* 24 Sep 2026: the room form sits in the hero. The pages ranking above
+       this one for "pointing poker" are working tools, and this page used to
+       send every visitor on to / before they could start. See <RoomQuickStart>. */
+    quickStart: {
+      title: "Start a pointing poker room",
+      note: `Free, up to ${MAX_PARTICIPANTS} people, no account. You join as facilitator and share the link.`,
+    },
     related: [
       { href: "/what-is-planning-poker", kicker: "Guide", title: "What is planning poker?", copy: "The ceremony itself: why the simultaneous reveal is the part that does the work." },
       { href: "/fibonacci-story-points", kicker: "Guide", title: "Fibonacci story points", copy: "Why the gaps widen, and what a 21 or a 34 is really telling you." },
       { href: "/", kicker: "Product", title: "Open a free room", copy: "No account, no install. Create a room and paste the link into your team chat." },
     ],
-    h1: "Pointing Poker: The Same Game Under Six Names",
+    h1: "Free Pointing Poker for Agile Teams",
     intro:
-      "Pointing poker is planning poker. So are poker planning, sprint poker, estimation poker, agile poker and scrum poker. One ceremony, six labels, and the mechanism underneath is identical every time: everyone picks a card privately, all the cards turn over at once, and the team talks about the gap.",
+      "Start a pointing poker room here: add your name, pick a deck and share the link with your team. Everyone picks a story point card in private, all the cards turn over at once, and you talk about the gap. Pointing poker is planning poker under another name, so the session runs exactly the same.",
     body: [
       "Which name you use mostly says where you learned it rather than what you do. James Grenning described the technique in 2002, and Mike Cohn's Agile Estimating and Planning put the name \"planning poker\" in front of most of the industry three years later. \"Scrum poker\" attaches it to the framework teams usually run it inside. \"Pointing poker\" and \"story point poker\" name the unit instead of the ceremony. \"Poker planning\" is the same two words the other way round. \"Sprint poker\" names the meeting it happens in. None is more correct than the others, and no tool behaves differently depending on which one you typed into Google.",
       "What every version shares is the simultaneous reveal, and that is the part doing the work. When people call out numbers in turn, the first number spoken becomes an anchor and everyone after it drifts toward it — so the estimate ends up measuring seniority rather than complexity. Turning all the cards over at the same moment removes the anchor. That is the whole trick, and it is why a ceremony that looks slightly silly on paper has outlasted most of the estimation techniques that replaced it.",

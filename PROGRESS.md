@@ -23,6 +23,52 @@ three reports are one line each, and item 3 in particular should not be
 
 Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
 
+## Session: 24 September 2026, pointing poker becomes a tool page
+
+Ali asked for significant, research-backed work on Point Poker's Google
+rankings. Research (search results for the six main queries, four competitor
+tool pages, Google's own guidance, and our rendered pages in a headless
+browser) found:
+
+- "pointing poker" (423 impressions, avg 16.9) is split between `/` (27) and
+  `/pointing-poker` (7.7). The pages above it are working tools; ours sent
+  visitors on to `/` before they could start.
+- Once React hydrates, the home page says "pointing poker" 0 times and only
+  the footer links to `/pointing-poker` (anchor "Pointing & poker planning").
+  The prerendered HTML said it twice, but Google indexes the rendered page.
+- The SoftwareApplication schema listed six generic terms as alternate names.
+- The home title said "No Limits", which the 20-person cap contradicts.
+- Two other products share almost the name: pointpoker.co and point.poker.
+
+Shipped:
+
+- `<RoomQuickStart>` in `src/App.js`, rendered in the hero of any
+  `ROUTE_CONTENT` page with `quickStart` (only `/pointing-poker` for now):
+  name, deck, Create Room, via the same `handleCreate` as the home page.
+  `MarketingPageShell` gained `heroAside`, which also drops the hero's
+  "Start a free room" link so the form's button is the only primary.
+- `/pointing-poker` title, H1, intro and description rewritten around
+  starting a room.
+- In-copy links to `/pointing-poker` from the home page and from three
+  guides' related cards; footer anchor "Pointing poker".
+- Home title now "...No Sign-Up, No Ads | Point Poker". Brand suffix on
+  `/planning-poker-online` and `/planning-poker-jira`.
+- Schema: WebSite alternateName "PointPoker", generic SoftwareApplication
+  alternateNames removed, `creator` Paramount Consultants, with a visible
+  "Built and run by Paramount Consultants" line in the footer.
+- `docs/claude-project/LINK-BUILDING.md`: the off-site plan. 22 round-ups
+  checked, none lists us, almost all are by rival vendors. Best return is
+  AlternativeTo, SaaSHub, G2 (now also Capterra), free-for-dev, awesome-agile,
+  Product Hunt and a few independent articles. Listing copy and emails are
+  written; every submission needs an account in Ali's name. free-for-dev
+  closes AI-written PRs, so Ali writes that one himself.
+
+Tests: 508 pass (4 new). Build: 26 prerendered documents. Checked in a
+headless browser at 1440 and 390 px: form in the hero, one primary action,
+blank name refused, no horizontal overflow.
+
+---
+
 ## Session: 24 September 2026, first link from paramountconsultants.online
 
 Ali asked for a product page on his consultancy site, paramountconsultants.online
