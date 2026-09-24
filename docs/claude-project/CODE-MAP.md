@@ -25,8 +25,8 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 | `src/AdminDashboard.js` | 466 | 19 KB |
 | `src/AdminDashboard.test.js` | 119 | 5 KB |
 | `src/App.css` | 39 | 0 KB |
-| `src/App.js` | 8642 | 396 KB |
-| `src/App.test.js` | 1049 | 51 KB |
+| `src/App.js` | 8654 | 397 KB |
+| `src/App.test.js` | 1080 | 52 KB |
 | `src/AppErrorBoundary.js` | 74 | 2 KB |
 | `src/AppErrorBoundary.test.js` | 90 | 3 KB |
 | `src/design-system/base.css` | 87 | 3 KB |
@@ -177,85 +177,86 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L164 `trackSessionLength`: How long a room stayed open. Ad revenue is a function of time-on-site, so this is the difference between "worth running ads" and "not worth the ad tag".
 - L174 `trackVisit`: Called once per app load: visitor recency and device mix, the two inputs an ad-network RPM estimate actually depends on.
 - L186 `saveSessionHistory`: SPRINT HISTORY Saves a session summary to Firebase /history/{uid} when a session ends. Requires an authenticated user — anonymous sessions are not recorded. Fai…
-- L228 `getScreenForPath`
-- L232 `upsertMeta`
-- L242 `upsertLink`
-- L255 `applyAlternates`: alternates in the head, pointing four URLs at the wrong page.
-- L272 `applyRouteMeta`
-- L311 `DECK_DEFINITIONS`: CARD DECKS Each deck is an array of card objects. The facilitator selects a deck when creating a room; the choice is stored in Firebase so all players see the s…
-- L356 `getCards`: Derive cards for a given deck key, falling back to Fibonacci.
-- L362 `ESTIMATION_MODES`: ESTIMATION MODE Controls whether the team is estimating User Stories or Tasks within stories. Stored in Firebase as room.estimationMode. All in-room copy adapts…
-- L398 `getEstMode`
-- L399 `INVALID_PLACEHOLDER_NAMES`
-- L411 `TEAM_ROUTE`
-- L413 `homePath`: Leaving a room in a Japanese session lands on /ja/, not on the English home.
-- L418 `roomPath`: up, in the wrong language, because of a prefix the sharer never saw.
-- L419 `teamRoomPath`
-- L421 `countParticipants`
-- L427 `scrollBehavior`: scrollIntoView({behavior:"smooth"}) beats the CSS scroll-behavior:auto that the reduced-motion block sets, so the preference has to be read here.
-- L429 `revealElement`
-- L434 `copyText`: Clipboard writes fail on http origins, in some in-app browsers, and when the user denies permission. Fall back to a hidden textarea, and always tell the caller …
-- L459 `NAME_STORAGE_KEY`: Guests should not retype their name every sprint. Stored locally only — never sent anywhere except into the room they choose to join.
-- L460 `rememberName`
-- L463 `recallName`
-- L468 `CSS`: CSS
-- L2295 `ALIGN_BAR_TONE`: score text is amber — a split vote is the tool working, not an error.
-- L2306 `sweepAwayPlayers`: Removes players whose socket dropped over an hour ago, from one room, by the clients still sitting in it. This used to live inside sweepStaleRooms, where it sha…
-- L2349 `FOUNDER_ROOM_CONFIG`: FOUNDER ROOM DEFAULTS These client-visible values select the intended default deck and let the two established team URLs bootstrap without an account. They are …
-- L2353 `getFounderRoomConfig`
-- L2361 `isFounderRoom`
-- L2362 `getFounderDefaultDeck`
-- L2367 `Icon`: containers in this file still rely on; it is not a second Icon.
-- L2382 `BrandMark`
-- L2408 `PrintReport`
-- L2449 `BrandWordmark`
-- L2458 `NavLinkButton`
-- L2474 `RouteLink`: because navTo does the prefixing and doing it twice would produce /de/de/.
-- L2541 `useBarFit`: break.
-- L2664 `useHeaderHeight`
-- L2701 `NavBar`
-- L2842 `languageTarget`
-- L2851 `HeaderLanguageSwitcher`: the URL and document language in agreement.
-- L2919 `LanguageSwitcher`
-- L2947 `SiteFooter`
-- L3066 `LoginModal`
-- L3451 `CookieBanner`: COOKIE / STORAGE NOTICE
-- L3479 `App`: MAIN APP
-- L4738 `CONFETTI_COLORS`
-- L4752 `Confetti`
-- L4868 `MarketingSection`: heading does not get the gap twice.
-- L4877 `MarketingRelatedLinks`
-- L4899 `MarketingPageShell`
-- L4980 `RoomQuickStart`: lands anyway. Name validation mirrors JoinScreen's validateEnteredName.
-- L5022 `ContentPage`
-- L5090 `PricingPage`
-- L5195 `AboutPage`
-- L5274 `SupportPage`
-- L5336 `TrustPage`
-- L5416 `FeaturesPage`
-- L5493 `RemoteSprintPlanningPage`
-- L5553 `getAuthErrorMessage`
-- L5572 `getVerificationErrorMessage`
-- L5585 `deriveDisplayNameFallback`
-- L5598 `deriveTeamRoomName`
-- L5604 `deriveDedicatedRoomOwnerSuffix`
-- L5611 `buildDedicatedRoomLabel`
-- L5619 `clampTeamRoomLabel`
-- L5627 `deriveSecondaryTeamRoomName`
-- L5638 `buildDedicatedTeamRoomsFromLabel`
-- L5652 `deriveDedicatedRoomLabelPrefix`
-- L5668 `resolveDedicatedTeamRooms`
-- L5686 `saveUserProfile`
-- L5718 `LegalPage`
-- L5738 `TermsPage`
-- L5923 `PrivacyPage`
-- L6165 `HistoryModal`
-- L6249 `JoinScreen`: JOIN SCREEN
-- L7059 `WTP_STORAGE_KEY`
-- L7060 `WTP_OPTIONS`
-- L7067 `WtpPoll`
-- L7118 `RoomActionBar`
-- L7222 `GameScreen`
+- L234 `routeKey`: "/pt/" are keyed with their slash), then without the trailing slash.
+- L240 `getScreenForPath`
+- L244 `upsertMeta`
+- L254 `upsertLink`
+- L267 `applyAlternates`: alternates in the head, pointing four URLs at the wrong page.
+- L284 `applyRouteMeta`
+- L323 `DECK_DEFINITIONS`: CARD DECKS Each deck is an array of card objects. The facilitator selects a deck when creating a room; the choice is stored in Firebase so all players see the s…
+- L368 `getCards`: Derive cards for a given deck key, falling back to Fibonacci.
+- L374 `ESTIMATION_MODES`: ESTIMATION MODE Controls whether the team is estimating User Stories or Tasks within stories. Stored in Firebase as room.estimationMode. All in-room copy adapts…
+- L410 `getEstMode`
+- L411 `INVALID_PLACEHOLDER_NAMES`
+- L423 `TEAM_ROUTE`
+- L425 `homePath`: Leaving a room in a Japanese session lands on /ja/, not on the English home.
+- L430 `roomPath`: up, in the wrong language, because of a prefix the sharer never saw.
+- L431 `teamRoomPath`
+- L433 `countParticipants`
+- L439 `scrollBehavior`: scrollIntoView({behavior:"smooth"}) beats the CSS scroll-behavior:auto that the reduced-motion block sets, so the preference has to be read here.
+- L441 `revealElement`
+- L446 `copyText`: Clipboard writes fail on http origins, in some in-app browsers, and when the user denies permission. Fall back to a hidden textarea, and always tell the caller …
+- L471 `NAME_STORAGE_KEY`: Guests should not retype their name every sprint. Stored locally only — never sent anywhere except into the room they choose to join.
+- L472 `rememberName`
+- L475 `recallName`
+- L480 `CSS`: CSS
+- L2307 `ALIGN_BAR_TONE`: score text is amber — a split vote is the tool working, not an error.
+- L2318 `sweepAwayPlayers`: Removes players whose socket dropped over an hour ago, from one room, by the clients still sitting in it. This used to live inside sweepStaleRooms, where it sha…
+- L2361 `FOUNDER_ROOM_CONFIG`: FOUNDER ROOM DEFAULTS These client-visible values select the intended default deck and let the two established team URLs bootstrap without an account. They are …
+- L2365 `getFounderRoomConfig`
+- L2373 `isFounderRoom`
+- L2374 `getFounderDefaultDeck`
+- L2379 `Icon`: containers in this file still rely on; it is not a second Icon.
+- L2394 `BrandMark`
+- L2420 `PrintReport`
+- L2461 `BrandWordmark`
+- L2470 `NavLinkButton`
+- L2486 `RouteLink`: because navTo does the prefixing and doing it twice would produce /de/de/.
+- L2553 `useBarFit`: break.
+- L2676 `useHeaderHeight`
+- L2713 `NavBar`
+- L2854 `languageTarget`
+- L2863 `HeaderLanguageSwitcher`: the URL and document language in agreement.
+- L2931 `LanguageSwitcher`
+- L2959 `SiteFooter`
+- L3078 `LoginModal`
+- L3463 `CookieBanner`: COOKIE / STORAGE NOTICE
+- L3491 `App`: MAIN APP
+- L4750 `CONFETTI_COLORS`
+- L4764 `Confetti`
+- L4880 `MarketingSection`: heading does not get the gap twice.
+- L4889 `MarketingRelatedLinks`
+- L4911 `MarketingPageShell`
+- L4992 `RoomQuickStart`: lands anyway. Name validation mirrors JoinScreen's validateEnteredName.
+- L5034 `ContentPage`
+- L5102 `PricingPage`
+- L5207 `AboutPage`
+- L5286 `SupportPage`
+- L5348 `TrustPage`
+- L5428 `FeaturesPage`
+- L5505 `RemoteSprintPlanningPage`
+- L5565 `getAuthErrorMessage`
+- L5584 `getVerificationErrorMessage`
+- L5597 `deriveDisplayNameFallback`
+- L5610 `deriveTeamRoomName`
+- L5616 `deriveDedicatedRoomOwnerSuffix`
+- L5623 `buildDedicatedRoomLabel`
+- L5631 `clampTeamRoomLabel`
+- L5639 `deriveSecondaryTeamRoomName`
+- L5650 `buildDedicatedTeamRoomsFromLabel`
+- L5664 `deriveDedicatedRoomLabelPrefix`
+- L5680 `resolveDedicatedTeamRooms`
+- L5698 `saveUserProfile`
+- L5730 `LegalPage`
+- L5750 `TermsPage`
+- L5935 `PrivacyPage`
+- L6177 `HistoryModal`
+- L6261 `JoinScreen`: JOIN SCREEN
+- L7071 `WTP_STORAGE_KEY`
+- L7072 `WTP_OPTIONS`
+- L7079 `WtpPoll`
+- L7130 `RoomActionBar`
+- L7234 `GameScreen`
 
 ## `src/App.test.js`
 
@@ -336,6 +337,9 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L1025   test: the hero has one primary action: the form
 - L1033   test: the home page links to it from its own copy, not only from the footer
 - L1042   test: the guides closest to it link to it
+- L1054 describe: a trailing slash is the same page
+- L1055   test: %s renders its own page and metadata
+- L1064   test: a hand-built page with a slash gets its own title and canonical too
 
 ## `src/AppErrorBoundary.test.js`
 

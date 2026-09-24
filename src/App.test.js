@@ -1046,3 +1046,34 @@ describe("pointing poker is a tool page, not a doorway", () => {
     }
   });
 });
+
+/* Vercel serves /scrum-poker/ with the right prerendered document, but the app
+   used to look the route up only as typed, so the slash version hydrated into
+   the home page: home H1, home title, canonical "/". Directories add the slash
+   often enough for that to matter. */
+describe("a trailing slash is the same page", () => {
+  test.each(["/pointing-poker/", "/scrum-poker/", "/what-is-planning-poker/"])("%s renders its own page and metadata", (path) => {
+    window.history.pushState({}, "", path);
+    render(<App />);
+    const bare = path.slice(0, -1);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(ROUTE_CONTENT[bare].h1);
+    expect(document.title).toBe(STATIC_ROUTE_META[bare].title);
+    expect(document.querySelector('link[rel="canonical"]').getAttribute("href")).toBe(`${SITE_URL}${bare}`);
+  });
+
+  test("a hand-built page with a slash gets its own title and canonical too", () => {
+    window.history.pushState({}, "", "/features/");
+    render(<App />);
+    expect(document.title).toBe(STATIC_ROUTE_META["/features"].title);
+    expect(document.querySelector('link[rel="canonical"]').getAttribute("href")).toBe(`${SITE_URL}/features`);
+  });
+
+  test.each([["/pt/", "/pt/"], ["/pt/scrum-poker/", "/pt/scrum-poker"]])(
+    "%s, a translated URL, still resolves to %s",
+    (path, key) => {
+      window.history.pushState({}, "", path);
+      render(<App />);
+      expect(document.title).toBe(STATIC_ROUTE_META[key].title);
+    },
+  );
+});

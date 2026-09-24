@@ -143,6 +143,9 @@ Evidence: "pointing poker" is the query that shows the site most (423 impression
 5. "| Point Poker" added to the `/planning-poker-online` and `/planning-poker-jira` titles.
 6. Structured data: WebSite `alternateName: ["PointPoker"]`; the six generic terms removed from the SoftwareApplication `alternateName` (Google says avoid generic names there); SoftwareApplication `creator` is Paramount Consultants, named visibly in the footer ("Built and run by Paramount Consultants", linking to its Point Poker page).
 7. Tests pin all of it: the form refuses a blank name and creates a room with the chosen deck, the hero has one primary action, the home copy links the page, the three guides link it.
+8. Trailing slashes: Vercel serves the right prerendered document for `/scrum-poker/`, but the app looked routes up only as typed, so the slash URL hydrated into the home page with the home title and canonical `/`. `routeKey()` in `src/App.js` now tries the path as typed (locale homes such as `/pt/` keep their slash) and then without the trailing slash. Directories often add the slash, so this matters for the link-building work.
+
+Found and not fixed: `/features` prerenders H1 "Planning Poker Features — All Free" but the hand-built page renders a different H1. Same kind of drift the data-driven pages were created to remove.
 
 Two other products use almost this name (pointpoker.co, a Jira Marketplace app, and point.poker). Always write "Point Poker" with the pointpoker.app link.
 

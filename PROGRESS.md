@@ -63,7 +63,12 @@ Shipped:
   written; every submission needs an account in Ali's name. free-for-dev
   closes AI-written PRs, so Ali writes that one himself.
 
-Tests: 508 pass (4 new). Build: 26 prerendered documents. Checked in a
+- Trailing slashes: `/pointing-poker/` (and every other guide with a slash)
+  hydrated into the home page with the home title and canonical. New
+  `routeKey()` looks the path up as typed, then without the slash. Locale
+  homes (`/pt/`) keep their slash.
+
+Tests: 514 pass (10 new). Build: 26 prerendered documents. Checked in a
 headless browser at 1440 and 390 px: form in the hero, one primary action,
 blank name refused, no horizontal overflow.
 

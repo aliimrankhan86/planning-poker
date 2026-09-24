@@ -225,8 +225,20 @@ if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
   window.history.scrollRestoration = "manual";
 }
 
+/* "/scrum-poker/" is the same page as "/scrum-poker". Vercel serves the
+   prerendered document for both, and directories and chat apps often add the
+   slash. Looked up only as typed, the slash version hydrated into the home
+   page with the home page's title and canonical, handing Google a duplicate of
+   / at the guide's URL. Look the path up as typed first (locale homes such as
+   "/pt/" are keyed with their slash), then without the trailing slash. */
+function routeKey(pathname = "/") {
+  if (STATIC_SCREEN_BY_PATH[pathname] || pathname.length < 2 || !pathname.endsWith("/")) return pathname;
+  const bare = pathname.replace(/\/+$/, "");
+  return STATIC_SCREEN_BY_PATH[bare] ? bare : pathname;
+}
+
 function getScreenForPath(pathname) {
-  return STATIC_SCREEN_BY_PATH[pathname] || "join";
+  return STATIC_SCREEN_BY_PATH[routeKey(pathname)] || "join";
 }
 
 function upsertMeta(selector, createTag, attrs, content) {
@@ -3642,8 +3654,8 @@ export default function App() {
       return;
     }
 
-    if (STATIC_ROUTE_META[pathname]) {
-      applyRouteMeta(STATIC_ROUTE_META[pathname]);
+    if (STATIC_ROUTE_META[routeKey(pathname)]) {
+      applyRouteMeta(STATIC_ROUTE_META[routeKey(pathname)]);
       return;
     }
 
