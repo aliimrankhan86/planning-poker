@@ -188,7 +188,7 @@ This is a judgement, not a measurement. The 4 Nov review is the evidence.
 - **Verification commands:** `CI=true npm test -- --runInBand --watchAll=false`, `npm run build`, `npm run test:rules` for rules, `npm --prefix functions test` for Functions.
 - **Vercel "Project Link not found"** on a project's Git settings page means the Vercel GitHub App has lost access to that repo. The app is installed on `aliimrankhan86` with "Only select repositories"; fix it at GitHub > Settings > Applications > Vercel > Repository access. Both `planning-poker` and `paramount-codebase` are selected as of 24 Sep 2026.
 - **Paramount Consultants:** paramountconsultants.online (repo `paramount-codebase`, on Vercel). Point Poker page at `/products/point-poker`. Search Console Domain property `sc-domain:paramountconsultants.online` under the same Google account as Point Poker, verified by a TXT record in Vercel DNS.
-- **Scheduled follow-up:** "Point Poker: weekly follow-up", Wednesdays 09:00 UTC, a self-renewing reminder in the Cowork conversation linked to Ali's Mac. How it works is in `LINK-BUILDING.md`.
+- **Scheduled follow-up:** "Point Poker: weekly follow-up", a self-renewing reminder that runs only when a checklist row is due (first run 7 Oct 2026, 09:00 UTC) in the Cowork conversation linked to Ali's Mac. How it works is in `LINK-BUILDING.md`.
 - The repo lives in an iCloud-synced Documents folder. Stray files such as `.git/index 2` are sync artefacts.
 
 ## 11. Traps worth remembering
