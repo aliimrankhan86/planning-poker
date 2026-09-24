@@ -23,6 +23,45 @@ three reports are one line each, and item 3 in particular should not be
 
 Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
 
+## Session: 24 September 2026, first link from paramountconsultants.online
+
+Ali asked for a product page on his consultancy site, paramountconsultants.online
+(repo `aliimrankhan86/paramount-codebase`, Vercel project `paramount-codebase`),
+to help Point Poker with Google. Shipped in paramount-codebase commit `46059cc`:
+
+- `/products` index and `/products/point-poker`: what the tool does, how a
+  session runs, how it was built, and six followed contextual links into
+  pointpoker.app (`/`, `/what-is-planning-poker`, `/fibonacci-story-points`,
+  `/scrum-poker`, `/planning-poker-jira`, `/pricing`).
+- JSON-LD `SoftwareApplication` (publisher Paramount Consultants, price 0 GBP,
+  en, pt-BR, ja) and `BreadcrumbList`.
+- "Products" in the header and footer nav, both URLs in `sitemap.xml`, and a
+  "Built by us" box on the Agile Delivery and Full-Stack Development pages.
+
+**Deploy fault found and fixed.** The Paramount Vercel project showed "Project
+Link not found" and had not deployed from Git since August (the 18 Aug
+deploys came from the CLI). Cause: the Vercel GitHub App is installed with
+"Only select repositories" and only `planning-poker` was selected. Adding
+`paramount-codebase` restored the link and Vercel deployed `46059cc` to
+production from Git; GitHub shows the Vercel status as success. All pages
+checked live with 200s.
+
+**Honest value:** a same-owner link helps Google discover the pages and
+associate Point Poker with a real business. It is not a substitute for
+independent links, which are still the main constraint for "scrum poker" and
+"planning poker".
+
+**Search Console for Paramount.** Ali had never set it up. Added Domain property
+`sc-domain:paramountconsultants.online` under the same Google account as Point
+Poker, verified with a TXT record in Vercel DNS (DNS is on Vercel; the existing
+ImprovMX SPF and MX records are untouched). Sitemap submitted (12 URLs), indexing
+requested for `/products` and `/products/point-poker`. Finding: Google indexes
+the Paramount home page as `https://paramountconsultants.online/` (apex, last
+crawl 21 Sep) and has never seen the `www` URLs, because Vercel redirects apex
+to `www` with a 307. Switching that redirect to 308 is the fix, not yet done.
+
+---
+
 ## Session: 24 September 2026, the Claude.ai project keeps itself current
 
 Ali created a Claude.ai project, **Point Poker**, holding the project

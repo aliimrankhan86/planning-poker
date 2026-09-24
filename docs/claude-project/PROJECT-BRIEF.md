@@ -159,7 +159,7 @@ Deliberately not done: no new translated pages (waiting for native review), no h
    - Indexed count falling back towards 26, redirects rising by up to six
    - `/ja/*` clicks and the position of プランニングポーカー
 4. Discovery evidence still to collect: filtering vendor categories (Palo Alto, FortiGuard, BrightCloud), real organisation-network access tests, facilitator interviews.
-5. Authority is now the main SEO constraint. Honest ways to earn links (listings in agile tool directories, useful content, community mentions) have not been started.
+5. Authority is now the main SEO constraint. The first link went live on 24 Sep 2026 from Ali's own consultancy site: https://www.paramountconsultants.online/products/point-poker (plus a `/products` index, a Products nav item, sitemap entries and "Built by us" boxes on its Agile Delivery and Full-Stack Development pages). It carries six followed links into pointpoker.app (`/`, `/what-is-planning-poker`, `/fibonacci-story-points`, `/scrum-poker`, `/planning-poker-jira`, `/pricing`) and SoftwareApplication schema naming Paramount Consultants as publisher. A same-owner link helps discovery and ties the product to a real business, but carries little ranking weight. Independent links (agile tool directories, useful content, community mentions) have still not been started. paramountconsultants.online was added to Search Console on 24 Sep 2026 as Domain property `sc-domain:paramountconsultants.online` (same Google account as Point Poker, verified by a TXT record in Vercel DNS), sitemap submitted and indexing requested for `/products` and `/products/point-poker`. Google indexes that site's home page under the apex, not `www`, because the apex to `www` redirect is a 307 (temporary).
 
 ## 9. Access and deployment
 
@@ -168,6 +168,7 @@ Deliberately not done: no new translated pages (waiting for native review), no h
 - **Deploy:** push to `main`. Then confirm the commit shows a Vercel status on GitHub. No status within a minute means the push was not picked up.
 - **Firebase:** project `planning-poker-b6ac1`. Rules and Functions deploy separately with the Firebase CLI and must be verified live. Use the `firebaseio.com` host for REST checks.
 - **Verification commands:** `CI=true npm test -- --runInBand --watchAll=false`, `npm run build`, `npm run test:rules` for rules, `npm --prefix functions test` for Functions.
+- **Vercel "Project Link not found"** on a project's Git settings page means the Vercel GitHub App has lost access to that repo. The app is installed on `aliimrankhan86` with "Only select repositories"; fix it at GitHub > Settings > Applications > Vercel > Repository access. Both `planning-poker` and `paramount-codebase` are selected as of 24 Sep 2026.
 - The repo lives in an iCloud-synced Documents folder. Stray files such as `.git/index 2` are sync artefacts.
 
 ## 10. Traps worth remembering
