@@ -8,6 +8,7 @@
 set -e
 
 node scripts/gen-ai-context.mjs
+node scripts/gen-code-map.mjs
 node scripts/build-rules.mjs
 
-git add docs/AI-CONTEXT.md database.rules.publish.json
+git add docs/AI-CONTEXT.md docs/claude-project/CODE-MAP.md database.rules.publish.json

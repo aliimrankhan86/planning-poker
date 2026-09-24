@@ -28,6 +28,10 @@ yarn-error.log*
 CLAUDE.md
 STRATEGY.md
 AGENTS.md
+# Canonical copy of the Claude.ai project instructions (holds account details)
+CLAUDE-PROJECT-INSTRUCTIONS.md
+# Files the Claude desktop app delivers into this folder
+Claude outputs/
 
 # Firebase emulator artefacts (npm run test:rules)
 database-debug.log

@@ -44,6 +44,10 @@
   ~1/week → 5 to 7/week. `/ja/` pages carry a quarter of all clicks. Untranslated
   paths under `/pt/` and `/ja/` (e.g. `/pt/about`) now 301 to English instead
   of serving the home page with a 200; `/scrum-poker` retitled and extended.
+- **24 September 2026:** the Claude.ai "Point Poker" project syncs this repo.
+  `docs/claude-project/` carries its knowledge (brief, generated code map,
+  dated Search Console snapshots). After any major change, refresh it using
+  `docs/claude-project/README.md`.
 - There is no blocking or half-finished code work.
 
 The only open work is time- or human-gated and is listed in

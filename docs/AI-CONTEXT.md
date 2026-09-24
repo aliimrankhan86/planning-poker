@@ -117,7 +117,7 @@ console. No client can write to `/admins`, so nobody can promote themselves.
 - `npm run test:rules` — `node scripts/build-rules.mjs && PATH="$(/usr/libexec/java_home -v 21 2>/dev/null)/bin:$PATH" npx --yes firebase-tools emulators:exec --only database --project demo-pointpoker 'node scripts/rules-test.mjs'`
 - `npm run prerender` — `node scripts/prerender.mjs`
 - `npm run sitemap` — `node scripts/gen-sitemap.mjs`
-- `npm run docs` — `node scripts/gen-ai-context.mjs`
+- `npm run docs` — `node scripts/gen-ai-context.mjs && node scripts/gen-code-map.mjs`
 
 ## Tests
 
@@ -213,8 +213,16 @@ forecast.
 ## Search Console re-pull, 23 September 2026
 
 The six-week comparison is done; results and the next pull (around
-4 November) are in `PROGRESS.md`. The property is `sc-domain:pointpoker.app`
-under `misteraliimran@gmail.com`; the default browser account has no access.
+4 November) are in `PROGRESS.md`. The property is `sc-domain:pointpoker.app`,
+under a separate Google account named in `CLAUDE.md`; the default browser
+account has no access.
+
+**The Claude.ai "Point Poker" project syncs this repo from GitHub.** After any
+major change (product facts, routes, architecture, Firebase, an SEO review,
+business decisions, open items, access), finish the task with the refresh
+procedure in [`docs/claude-project/README.md`](claude-project/README.md):
+update `PROJECT-BRIEF.md`, commit, push, then sync the project in Claude.ai.
+`CODE-MAP.md` regenerates itself on every commit.
 
 **Translating a page now means touching `vercel.json` too.** One redirect,
 `/:locale(pt|ja)/:path(...)` → `/:path`, 301s every untranslated path under a

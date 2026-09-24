@@ -23,6 +23,30 @@ three reports are one line each, and item 3 in particular should not be
 
 Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
 
+## Session: 24 September 2026, the Claude.ai project keeps itself current
+
+Ali created a Claude.ai project, **Point Poker**, holding the project
+instructions, this repo synced from GitHub and his private notes, and asked for
+it to be updated automatically whenever a major change is made.
+
+- **`docs/claude-project/`** now holds the project knowledge, so the GitHub
+  sync carries it: `README.md` (what counts as major and the refresh steps),
+  `PROJECT-BRIEF.md` (current state, hand-edited after every major change),
+  `CODE-MAP.md` (generated) and `SEARCH-CONSOLE-2026-09-23.md` (dated snapshot).
+- **`scripts/gen-code-map.mjs`** writes `CODE-MAP.md`: every tracked source
+  file, its functions, components and constants with line numbers and the
+  comment above each, and the Firebase shape. It runs in the pre-commit hook
+  and in `npm run docs`, and is deterministic, so it only changes when the
+  code does.
+- **`CLAUDE-PROJECT-INSTRUCTIONS.md`** (repo root, gitignored) is the canonical
+  copy of the project instructions. It holds account details, and this repo
+  is public, so it stays out of git.
+- `Claude outputs/`, where the desktop app drops delivered files, is gitignored.
+- The standing rule is in `AGENTS.md` (mandatory workflow step 8),
+  `CLAUDE.md` and `docs/AI-CONTEXT.hand.md`.
+
+---
+
 ## Session: 23 September 2026, the six-week Search Console re-pull
 
 Pulled from the `sc-domain:pointpoker.app` property (Google account
