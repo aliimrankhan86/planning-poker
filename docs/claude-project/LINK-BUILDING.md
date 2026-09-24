@@ -131,12 +131,56 @@ Ali Khan
 | 24 Sep 2026 | SaaSHub: listed as **PointPoker.app** at https://www.saashub.com/pointpoker-app (account `pointpoker`, registered by Ali with support@pointpoker.app). Full profile: tagline, markdown description with the feature list, six features, platform Web, pricing Free linking `/pricing`, released March 2026, UK, 1 to 9 staff, not open source, logo and three screenshots. Categories: Agile Project Management, Team Collaboration, Project Management, Task Management, Work Collaboration. Competitors: PlanITpoker, Planning poker online, Scrumpoker Online, Planning Poker, DinoSize, Firepoker, PlanningWith.Cards | Verified (status ACTIVE) on 24 Sep 2026, pending approval for up to 32 days. Once approved it shows as a verified alternative on all seven competitors' pages, including /planitpoker-alternatives, /planning-poker-online-alternatives and /planning-poker-alternatives. **Verification lasts one quarter: re-verify by 24 Dec 2026** (Manage > Verification > Verify). $75 Priority+ declined. The "SaaSHub Experts" nomination game shown after verifying was skipped |
 | To do | free-for-dev | Ali writes and opens the pull request himself. The repo closes AI-written or AI-edited PRs and blocks the account. Entry goes under "Issue Tracking and Project Management" after planitpoker.com; say point.poker is a different product; leave the template's last checkbox unticked |
 
-## Dates to check
+## Weekly check (the one scheduled task works from this)
 
-| When | What |
-|---|---|
-| By 26 Oct 2026 | SaaSHub approval (up to 32 days from 24 Sep). Check that PointPoker.app appears on https://www.saashub.com/planitpoker-alternatives and whether its link to pointpoker.app is followed. Log the result above |
-| 4 Nov 2026 | Search Console review. Also look for referral visits from AlternativeTo and SaaSHub |
-| By 24 Dec 2026 | SaaSHub re-verification. A lapsed product loses the verified-alternative placement. Repeat every quarter |
-| Early Feb 2027 | Uneed: line up 10 to 20 people to upvote on launch morning |
-| 10 Feb 2027 | Uneed launch day. Below 10 upvotes it drops out for good |
+One scheduled task, **"Point Poker: weekly follow-up"**, runs every Wednesday at 09:00 UTC (10:00 UK in summer, 09:00 in winter). Its prompt only says "follow the Weekly check in LINK-BUILDING.md", so the instructions live here and change with the repo. There are no other Point Poker scheduled tasks. To stop it, pause or delete it under Scheduled in the Claude app. To change what it does, edit this section.
+
+Each run:
+
+1. Read the checklist below. Work only on rows with Status "Pending" whose "From" date is today or earlier.
+2. Do the Claude rows. Record each result in the Progress log above, then set the row to "Done" with the date. If a row could not be finished, leave it Pending with a short note so the next run tries again. A row marked "Repeats" gets a new row with the next date when it is done.
+3. Never do Ali's rows. Mention a dated Ali row when it falls due. Mention the undated Ali rows only in the first run of each month, in one line.
+4. If a file changed: commit on the Mac with `git -c core.hooksPath=.githooks commit` (message ending with the Co-Authored-By line for Claude), push with the Push button in VS Code's Source Control Graph (VS Code is granted at click tier), check `git status` shows main level with origin, then re-sync the "Point Poker" Claude project (hover the GitHub card, click its sync icon).
+5. Message Ali only when something was done, something needs him or something failed. Otherwise end with "Nothing due this week".
+6. After row 8 is Done, change this task's schedule to monthly (cron `0 9 1 * *`). When no Claude rows are Pending, disable the task and tell Ali which of his rows are still open.
+
+If Ali's Mac or Chrome cannot be reached (the computer tools are missing or fail), read this file from GitHub (https://raw.githubusercontent.com/aliimrankhan86/planning-poker/main/docs/claude-project/LINK-BUILDING.md), do only the checks that work on public pages, change nothing, leave every row Pending and say once that the Mac was unreachable. If the tools are missing on every run, the task's "Require this computer" setting is off.
+
+Never create accounts, enter passwords, pay for anything, vote, send email, post, or open pull requests without Ali's go-ahead in chat. Style for anything written: UK English, no em or en dashes, no semicolons, lead with the answer.
+
+### Checklist
+
+| # | From | Item | Owner | Status |
+|---|---|---|---|---|
+| 1 | 30 Sep 2026 | **SaaSHub approval** (due by 26 Oct 2026). Look for PointPoker.app in the list itself on https://www.saashub.com/planitpoker-alternatives, /planning-poker-online-alternatives and /planning-poker-alternatives (the logged-in header always shows PointPoker.app, ignore it). Once listed, record whether the link to pointpoker.app on https://www.saashub.com/pointpoker-app is followed or nofollow | Claude | Pending |
+| 2 | 30 Sep 2026 | **AlternativeTo publication.** Is Point Poker (submitted 24 Sep, user Ali-Imran) published, and listed on https://alternativeto.net/software/planitpoker/about/? Record the outbound link rel | Claude | Pending |
+| 3 | 30 Sep 2026 | **Outreach replies.** In Zoho Mail (mail.zoho.eu, support@pointpoker.app) look for replies from Scrum Expert, Zenhub, SW Academy or any directory. Summarise them for Ali, never reply. Mark Done on 28 Oct 2026 if nothing has come | Claude | Pending |
+| 4 | 4 Nov 2026 | **Search Console review.** Search Console as the Point Poker Google account (authuser=3, property sc-domain:pointpoker.app). Last 28 days against the 28 days to 20 Sep 2026: "pointing poker" 423 impressions, position 16.9, split between / (27) and /pointing-poker (7.7), "scrum poker" 44, "planning poker" 78. Report those queries plus "planning poker online", "scrum poker online" and "point poker", whether the pointing poker split has ended, top pages, indexing problems and linking sites. Three to five recommendations with evidence. Record as a dated section in PROJECT-BRIEF.md. No code changes in the run | Claude | Pending |
+| 5 | 9 Dec 2026 | **SaaSHub re-verification** (lapses 24 Dec 2026). On https://www.saashub.com/manage/pointpoker-app check the details are still true, fix any that are not, click the free "Verify" link, ignore Priority+ and the "SaaSHub Experts" page, confirm status ACTIVE with today's date. If SaaSHub wants a login, Ali must sign in. Repeats: add a new row about 80 days on | Claude | Pending |
+| 6 | 27 Jan 2027 | **Uneed launch prep.** Confirm https://www.uneed.best/tool/point-poker still launches 10 Feb 2027 and the listing is complete (assets in `Claude outputs/listing-assets/`). Check Uneed's current launch-day rules. Write two short messages in Ali's voice, one for WhatsApp or LinkedIn DMs and one LinkedIn post, honest and saying he built it, and save them as a Zoho draft to support@pointpoker.app titled "Uneed launch messages". Do not send. Tell Ali to line up 10 to 20 real people | Claude | Pending |
+| 7 | 10 Feb 2027 | **Uneed launch day.** Report the upvote score, rank and when voting closes. Remind Ali to send the drafted messages. Needs 10 to stay published, 20 for a followed link | Claude | Pending |
+| 8 | 17 Feb 2027 | **Uneed result.** Did it stay published, and is the link followed? Record it | Claude | Pending |
+| 9 | Any time | **free-for-dev** pull request, written by Ali himself (the repo closes AI-written PRs). Entry under "Issue Tracking and Project Management". Say point.poker, already listed there, is a different product | Ali | Pending |
+| 10 | Any time | **awesome-remote-work** pull request (entry ready below). Claude opens it once Ali says go in chat | Ali says go | Pending |
+| 11 | Any time | **awesome-no-login-web-apps** pull request (entry ready below). Claude opens it once Ali says go in chat | Ali says go | Pending |
+| 12 | Any time | **Indie Hackers** product page. Ali signs in at https://www.indiehackers.com with the same Google account as Search Console, then Claude fills the product page | Ali, then Claude | Pending |
+| 13 | On hold | **G2** (also covers Capterra and GetApp). Ali's decision | Ali | On hold |
+| 14 | Deferred | **Product Hunt.** One launch only, planned near the Uneed launch | Ali | Deferred |
+
+### Entries ready to submit
+
+**awesome-remote-work** (https://github.com/zenika-open-source/awesome-remote-work, active, last merge Aug 2026, no rule against AI-written PRs). In README.md, section "💪 Productivity", on the line after PlanITpoker:
+
+`- [Point Poker, free planning poker for remote agile teams with no sign-up](https://www.pointpoker.app/)`
+
+Commit message in their gitmoji style: `📝 Add Point Poker to Productivity`. PR text: "Point Poker is a free planning poker tool for remote agile teams. The facilitator shares one link, everyone votes in private and the cards turn over together. No account needed to join, up to 20 people per room. I built it and run it, no paid tier."
+
+**awesome-no-login-web-apps** (https://github.com/aviaryan/awesome-no-login-web-apps, very active, merges weekly). PR title `Add Point Poker`. At the bottom of "Utilities (uncategorized)":
+
+`* [Point Poker](https://www.pointpoker.app/) - Planning poker for agile teams. Create a room, share the link, and everyone votes in private before the cards turn over together. Up to 20 people per room with CSV export. An optional free account keeps permanent team rooms.`
+
+Fill the PR template: the URL, a two-line explanation (core features need no account, which is the list's rule), and tick all three boxes truthfully.
+
+### Researched and not worth doing now (24 Sep 2026)
+
+SourceForge (free, no account, but free listings show the website as plain text, no link), TrustRadius and SoftwareSuggest (no planning poker tools listed, no link), SaaSworthy (free tier only through a sales form, no clickable link), Crozdesk (asks for a marketing budget, nofollow), Microlaunch (2 to 3 month free queue, nofollow), Peerlist (links only for the weekly top 5), StackShare (followed link but it now covers developer and AI tools, long shot). Skip: Fazier (free tier needs a link back, which is a link exchange), Slant (site down), remote.tools (no longer a tools directory).

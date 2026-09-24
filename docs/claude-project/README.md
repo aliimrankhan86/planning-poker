@@ -6,7 +6,7 @@ This folder feeds the **Point Poker** project in Claude.ai. The project syncs th
 |---|---|---|
 | `PROJECT-BRIEF.md` | Current state: product facts, routes, SEO position, decisions, open work, access and deploy | Edited by hand as the last step of every major change |
 | `CODE-MAP.md` | Every source file with its functions, components and constants, line numbers and the comment above each, plus the Firebase database shape | Regenerated on every commit by the pre-commit hook (`scripts/gen-code-map.mjs`), and by `npm run docs` |
-| `LINK-BUILDING.md` | Where to get Point Poker listed, the listing copy to use everywhere, outreach emails and a progress log | Edited by hand whenever a listing or outreach happens |
+| `LINK-BUILDING.md` | Where to get Point Poker listed, the listing copy to use everywhere, outreach emails, a progress log and the follow-up checklist that the one weekly scheduled task ("Point Poker: weekly follow-up") works through | Edited by hand whenever a listing or outreach happens, and by the weekly task when it finishes a row |
 | `SEARCH-CONSOLE-YYYY-MM-DD.md` | Dated Search Console snapshots | A new file at each review. Never edit an old one |
 | `../AI-CONTEXT.md` | Generated structure, routes, constants and traps | Regenerated on every commit |
 

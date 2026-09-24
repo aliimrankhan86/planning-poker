@@ -41,8 +41,16 @@ account (Claude cannot) and Claude filled the listings. Nothing was paid for.
 - Listing screenshots made from a live demo room with made-up names, kept in
   `Claude outputs/listing-assets/` (gitignored).
 
-Every follow-up date is in the "Dates to check" table at the end of
-LINK-BUILDING.md.
+Follow-ups: one weekly scheduled task, "Point Poker: weekly follow-up"
+(Wednesdays 09:00 UTC), works through the checklist in the "Weekly check"
+section of LINK-BUILDING.md: SaaSHub approval, AlternativeTo, outreach
+replies, the 4 Nov Search Console review, SaaSHub re-verification, and the
+Uneed launch. It replaced five one-off reminders on Ali's instruction. New
+follow-ups go in as checklist rows, never as new scheduled tasks.
+
+Researched next targets: awesome-remote-work and awesome-no-login-web-apps
+(entries ready, waiting for Ali's go), Indie Hackers (Ali signs in first).
+Seven other directories checked and rejected, reasons in LINK-BUILDING.md.
 
 ---
 
