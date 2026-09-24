@@ -49,7 +49,9 @@ Point Poker is a free planning poker tool for agile and scrum teams. The facilit
 - English, Portuguese and Japanese
 - No ads, no tracking cookies
 
-**Screenshots to take** (directories ask for 3 to 5): a room mid-vote with cards face down, the reveal with the results table, the facilitator analytics panel, the create-room form, and the page on a phone. Use a real room with made-up names.
+**Screenshots** (made 24 Sep 2026 from a live demo room with made-up names: Sam facilitating, Priya, Tom, Kenji and Ana voting). They are in `Claude outputs/listing-assets/` on Ali's Mac, which git ignores: `1-vote-in-private.jpg`, `2-cards-reveal-together.jpg`, `3-start-a-room.jpg`, `4-phone.jpg` (portrait, 390px wide) and `point-poker-logo.png` (512px square, same file as `public/logo512.png`). Reuse them for G2 and Product Hunt. Still missing: the facilitator analytics panel. To remake them, run a room on the live site in a headless browser with four voter contexts. The card buttons are labelled "Vote 5" and so on, the cards reveal on their own once everyone has voted, and the facilitator records with "Record 5 as the agreed estimate" then "Record 5 & next item".
+
+**Name on SaaSHub:** PointPoker.app, not Point Poker. SaaSHub already gives the name "Point Poker" and the slug `point-poker` to point.poker, a different product, so the domain-style name keeps the two apart.
 
 ## Where to submit, best value for effort first
 
@@ -58,7 +60,7 @@ Each of these needs an account in Ali's name. Claude cannot create accounts.
 | # | Where | How | Notes |
 |---|---|---|---|
 | 1 | AlternativeTo | Sign in, "Add application", then suggest Point Poker as an alternative on https://alternativeto.net/software/planitpoker/ and https://alternativeto.net/software/planning-poker/ | Free. The PlanITpoker page lists 25 alternatives and Point Poker is not one |
-| 2 | SaaSHub | https://www.saashub.com/submit, verify the product, then "Suggest an alternative" on https://www.saashub.com/planning-poker-online-alternatives and https://www.saashub.com/planning-poker-alternatives | Free, needs verification |
+| 2 | SaaSHub | https://www.saashub.com/submit, then verify the product | Done 24 Sep 2026, see the log. Competitors picked at submission replace the separate "Suggest an alternative" step |
 | 3 | G2 (also covers Capterra and GetApp since G2 bought them in Feb 2026) | https://www.g2.com/products/new | Free profile, reviewed in 3 to 5 business days. Category: Project Management |
 | 4 | free-for-dev (GitHub list, about 124k stars) | Pull request adding Point Poker under "Issue Tracking and Project Management", next to planitpoker.com and point.poker. Use their PR template and tick every box | **Write the PR yourself.** Their contributing guide says PRs written with AI are closed without review. Lead with what is different: 20 people free, no sign-up, CSV export for Jira, three languages |
 | 5 | awesome-agile (GitHub, 1.5k stars) | One pull request adding one line to `Estimation.md`, alphabetically before "Pointing Poker", in the format `- [Point Poker](https://www.pointpoker.app/) (Web app) - "Takeaway."` | https://github.com/lorabv/awesome-agile/blob/master/CONTRIBUTING.md. Check the repo still merges PRs before spending time |
@@ -126,5 +128,15 @@ Ali Khan
 | 24 Sep 2026 | G2 | On hold (Ali's decision). G2 blocks automated browsers ("Access is temporarily restricted"), so it has to be done by hand in a normal browser |
 | 24 Sep 2026 | Product Hunt | Deferred. One launch only: plan it (date, first comment, supporters), ideally around the Uneed launch in Feb 2027 |
 | 24 Sep 2026 | awesome-agile | Dropped. The repo has merged 8 pull requests in its whole history, none recent |
-| To do | SaaSHub: needs an email-and-password account; its security check blocks automated browsers | Ali registers with support@pointpoker.app, then Claude fills the listing and the two "Suggest an alternative" pages |
+| 24 Sep 2026 | SaaSHub: listed as **PointPoker.app** at https://www.saashub.com/pointpoker-app (account `pointpoker`, registered by Ali with support@pointpoker.app). Full profile: tagline, markdown description with the feature list, six features, platform Web, pricing Free linking `/pricing`, released March 2026, UK, 1 to 9 staff, not open source, logo and three screenshots. Categories: Agile Project Management, Team Collaboration, Project Management, Task Management, Work Collaboration. Competitors: PlanITpoker, Planning poker online, Scrumpoker Online, Planning Poker, DinoSize, Firepoker, PlanningWith.Cards | Verified (status ACTIVE) on 24 Sep 2026, pending approval for up to 32 days. Once approved it shows as a verified alternative on all seven competitors' pages, including /planitpoker-alternatives, /planning-poker-online-alternatives and /planning-poker-alternatives. **Verification lasts one quarter: re-verify by 24 Dec 2026** (Manage > Verification > Verify). $75 Priority+ declined. The "SaaSHub Experts" nomination game shown after verifying was skipped |
 | To do | free-for-dev | Ali writes and opens the pull request himself. The repo closes AI-written or AI-edited PRs and blocks the account. Entry goes under "Issue Tracking and Project Management" after planitpoker.com; say point.poker is a different product; leave the template's last checkbox unticked |
+
+## Dates to check
+
+| When | What |
+|---|---|
+| By 26 Oct 2026 | SaaSHub approval (up to 32 days from 24 Sep). Check that PointPoker.app appears on https://www.saashub.com/planitpoker-alternatives and whether its link to pointpoker.app is followed. Log the result above |
+| 4 Nov 2026 | Search Console review. Also look for referral visits from AlternativeTo and SaaSHub |
+| By 24 Dec 2026 | SaaSHub re-verification. A lapsed product loses the verified-alternative placement. Repeat every quarter |
+| Early Feb 2027 | Uneed: line up 10 to 20 people to upvote on launch morning |
+| 10 Feb 2027 | Uneed launch day. Below 10 upvotes it drops out for good |

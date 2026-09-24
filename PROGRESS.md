@@ -23,6 +23,29 @@ three reports are one line each, and item 3 in particular should not be
 
 Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
 
+## Session: 24 September 2026, first directory listings
+
+Off-site work from `docs/claude-project/LINK-BUILDING.md`. Ali created each
+account (Claude cannot) and Claude filled the listings. Nothing was paid for.
+
+- AlternativeTo: submitted, 31 alternatives suggested, in the free review queue.
+- Uneed: saved in the free line, launches 10 Feb 2027, needs 10+ upvotes that
+  day (20 for a followed link).
+- SaaSHub: listed as "PointPoker.app" (point.poker owns "Point Poker" there),
+  full profile, seven planning poker competitors, verified. Awaiting approval
+  (up to 32 days). Verification must be renewed every quarter, next by
+  24 Dec 2026.
+- Emails sent to Scrum Expert, Zenhub and SW Academy.
+- G2 on hold, Product Hunt deferred, awesome-agile dropped, free-for-dev left
+  to Ali (the repo bans AI-written PRs).
+- Listing screenshots made from a live demo room with made-up names, kept in
+  `Claude outputs/listing-assets/` (gitignored).
+
+Every follow-up date is in the "Dates to check" table at the end of
+LINK-BUILDING.md.
+
+---
+
 ## Session: 24 September 2026, pointing poker becomes a tool page
 
 Ali asked for significant, research-backed work on Point Poker's Google
