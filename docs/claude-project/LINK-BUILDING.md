@@ -150,6 +150,8 @@ Never create accounts, enter passwords, pay for anything, vote, send email, post
 
 ### Checklist
 
+**Decision, 24 Sep 2026:** Ali does not want to sign up to any more websites. No new listings, directories, GitHub lists or launch sites. Rows 9 to 14 are dropped. The weekly task only follows up the listings that already exist (SaaSHub, AlternativeTo, Uneed, the three emails) and runs the Search Console review. From here the focus is Google itself: on-site SEO and Search Console.
+
 | # | From | Item | Owner | Status |
 |---|---|---|---|---|
 | 1 | 30 Sep 2026 | **SaaSHub approval** (due by 26 Oct 2026). Look for PointPoker.app in the list itself on https://www.saashub.com/planitpoker-alternatives, /planning-poker-online-alternatives and /planning-poker-alternatives (the logged-in header always shows PointPoker.app, ignore it). Once listed, record whether the link to pointpoker.app on https://www.saashub.com/pointpoker-app is followed or nofollow | Claude | Pending |
@@ -160,12 +162,12 @@ Never create accounts, enter passwords, pay for anything, vote, send email, post
 | 6 | 27 Jan 2027 | **Uneed launch prep.** Confirm https://www.uneed.best/tool/point-poker still launches 10 Feb 2027 and the listing is complete (assets in `Claude outputs/listing-assets/`). Check Uneed's current launch-day rules. Write two short messages in Ali's voice, one for WhatsApp or LinkedIn DMs and one LinkedIn post, honest and saying he built it, and save them as a Zoho draft to support@pointpoker.app titled "Uneed launch messages". Do not send. Tell Ali to line up 10 to 20 real people | Claude | Pending |
 | 7 | 10 Feb 2027 | **Uneed launch day.** Report the upvote score, rank and when voting closes. Remind Ali to send the drafted messages. Needs 10 to stay published, 20 for a followed link | Claude | Pending |
 | 8 | 17 Feb 2027 | **Uneed result.** Did it stay published, and is the link followed? Record it | Claude | Pending |
-| 9 | Any time | **free-for-dev** pull request, written by Ali himself (the repo closes AI-written PRs). Entry under "Issue Tracking and Project Management". Say point.poker, already listed there, is a different product | Ali | Pending |
-| 10 | Any time | **awesome-remote-work** pull request (entry ready below). Claude opens it once Ali says go in chat | Ali says go | Pending |
-| 11 | Any time | **awesome-no-login-web-apps** pull request (entry ready below). Claude opens it once Ali says go in chat | Ali says go | Pending |
-| 12 | Any time | **Indie Hackers** product page. Ali signs in at https://www.indiehackers.com with the same Google account as Search Console, then Claude fills the product page | Ali, then Claude | Pending |
-| 13 | On hold | **G2** (also covers Capterra and GetApp). Ali's decision | Ali | On hold |
-| 14 | Deferred | **Product Hunt.** One launch only, planned near the Uneed launch | Ali | Deferred |
+| 9 | Any time | **free-for-dev** pull request, written by Ali himself (the repo closes AI-written PRs). Entry under "Issue Tracking and Project Management". Say point.poker, already listed there, is a different product | Ali | Dropped 24 Sep 2026 |
+| 10 | Any time | **awesome-remote-work** pull request (entry ready below). Claude opens it once Ali says go in chat | Ali says go | Dropped 24 Sep 2026 |
+| 11 | Any time | **awesome-no-login-web-apps** pull request (entry ready below). Claude opens it once Ali says go in chat | Ali says go | Dropped 24 Sep 2026 |
+| 12 | Any time | **Indie Hackers** product page. Ali signs in at https://www.indiehackers.com with the same Google account as Search Console, then Claude fills the product page | Ali, then Claude | Dropped 24 Sep 2026 |
+| 13 | On hold | **G2** (also covers Capterra and GetApp). Ali's decision | Ali | Dropped 24 Sep 2026 |
+| 14 | Deferred | **Product Hunt.** One launch only, planned near the Uneed launch | Ali | Dropped 24 Sep 2026 |
 
 ### Entries ready to submit
 

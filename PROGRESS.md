@@ -48,9 +48,9 @@ replies, the 4 Nov Search Console review, SaaSHub re-verification, and the
 Uneed launch. It replaced five one-off reminders on Ali's instruction. New
 follow-ups go in as checklist rows, never as new scheduled tasks.
 
-Researched next targets: awesome-remote-work and awesome-no-login-web-apps
-(entries ready, waiting for Ali's go), Indie Hackers (Ali signs in first).
-Seven other directories checked and rejected, reasons in LINK-BUILDING.md.
+Ali then decided: no more sign-ups to other websites. Further listings
+(GitHub lists, Indie Hackers, free-for-dev, G2, Product Hunt) are dropped.
+The focus from here is Google itself: on-site SEO and Search Console.
 
 ---
 
