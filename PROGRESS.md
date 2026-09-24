@@ -41,8 +41,9 @@ account (Claude cannot) and Claude filled the listings. Nothing was paid for.
 - Listing screenshots made from a live demo room with made-up names, kept in
   `Claude outputs/listing-assets/` (gitignored).
 
-Follow-ups: one weekly scheduled task, "Point Poker: weekly follow-up"
-(Wednesdays 09:00 UTC), works through the checklist in the "Weekly check"
+Follow-ups: one self-renewing weekly reminder, "Point Poker: weekly
+follow-up" (Wednesdays 09:00 UTC, runs in the Cowork conversation linked to
+Ali's Mac, so it can use Chrome and the repo), works through the checklist in the "Weekly check"
 section of LINK-BUILDING.md: SaaSHub approval, AlternativeTo, outreach
 replies, the 4 Nov Search Console review, SaaSHub re-verification, and the
 Uneed launch. It replaced five one-off reminders on Ali's instruction. New

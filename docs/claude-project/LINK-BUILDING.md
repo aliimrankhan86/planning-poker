@@ -133,7 +133,7 @@ Ali Khan
 
 ## Weekly check (the one scheduled task works from this)
 
-One scheduled task, **"Point Poker: weekly follow-up"**, runs every Wednesday at 09:00 UTC (10:00 UK in summer, 09:00 in winter). Its prompt only says "follow the Weekly check in LINK-BUILDING.md", so the instructions live here and change with the repo. There are no other Point Poker scheduled tasks. To stop it, pause or delete it under Scheduled in the Claude app. To change what it does, edit this section.
+One scheduled item, **"Point Poker: weekly follow-up"**, fires every Wednesday at 09:00 UTC (10:00 UK in summer, 09:00 in winter). It is a one-off reminder delivered back into the Cowork conversation that set it up, because that conversation is linked to Ali's Mac (a cloud scheduled task cannot reach the Mac unless "Require this computer" is on, and that switch is not offered for tasks created from chat). Each run does the work below and then books the next one, so there is only ever one Point Poker item in Scheduled. Its message only says "follow the Weekly check in LINK-BUILDING.md", so the instructions live here and change with the repo. To stop it, delete it under Scheduled in the Claude app. To change what it does, edit this section.
 
 Each run:
 
@@ -142,9 +142,9 @@ Each run:
 3. Never do Ali's rows. Mention a dated Ali row when it falls due. Mention the undated Ali rows only in the first run of each month, in one line.
 4. If a file changed: commit on the Mac with `git -c core.hooksPath=.githooks commit` (message ending with the Co-Authored-By line for Claude), push with the Push button in VS Code's Source Control Graph (VS Code is granted at click tier), check `git status` shows main level with origin, then re-sync the "Point Poker" Claude project (hover the GitHub card, click its sync icon).
 5. Message Ali only when something was done, something needs him or something failed. Otherwise end with "Nothing due this week".
-6. After row 8 is Done, change this task's schedule to monthly (cron `0 9 1 * *`). When no Claude rows are Pending, disable the task and tell Ali which of his rows are still open.
+6. Book the next run with `send_later` into this same conversation, named "Point Poker: weekly follow-up", for next Wednesday 09:00 UTC (for the 1st of next month once row 8 is Done). Check with `list_triggers` that exactly one Point Poker item is pending, never more. When no Claude rows are Pending, book nothing and tell Ali which of his rows are still open.
 
-If Ali's Mac or Chrome cannot be reached (the computer tools are missing or fail), read this file from GitHub (https://raw.githubusercontent.com/aliimrankhan86/planning-poker/main/docs/claude-project/LINK-BUILDING.md), do only the checks that work on public pages, change nothing, leave every row Pending and say once that the Mac was unreachable. If the tools are missing on every run, the task's "Require this computer" setting is off.
+If Ali's Mac or Chrome cannot be reached (the computer tools are missing or fail), read this file from GitHub (https://raw.githubusercontent.com/aliimrankhan86/planning-poker/main/docs/claude-project/LINK-BUILDING.md), do only the checks that work on public pages, change nothing, leave every row Pending and say once that the Mac was unreachable. Still book the next run. If the Mac is unreachable three weeks running, tell Ali the conversation has lost its link to his Mac.
 
 Never create accounts, enter passwords, pay for anything, vote, send email, post, or open pull requests without Ali's go-ahead in chat. Style for anything written: UK English, no em or en dashes, no semicolons, lead with the answer.
 
