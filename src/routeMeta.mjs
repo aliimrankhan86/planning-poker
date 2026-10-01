@@ -384,7 +384,7 @@ export const ROUTE_CONTENT = {
     faq: HOME_FAQ,
   },
   "/features": {
-    h1: "Planning Poker Features — All Free",
+    h1: "Planning Poker Features: All Free",
     intro:
       "Everything below is included for every team at no cost: the live planning flow and the repeatable operational layer that brings the same team back sprint after sprint.",
     bullets: [

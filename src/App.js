@@ -5103,7 +5103,7 @@ function PricingPage({ onNavigate }) {
   return (
     <MarketingPageShell
       eyebrow="Pricing"
-      title="Planning poker pricing: everything is free, for every team"
+      title={ROUTE_CONTENT["/pricing"].h1}
       intro="There is no paid tier, no trial countdown and no credit card field anywhere on Point Poker. All three card decks, the countdown timer, facilitator analytics, story queues, CSV export and two fixed Team Rooms are free for everyone while we grow the user base."
       highlights={[
         { value: "$0", label: "Every feature, every team, no card" },
@@ -5208,7 +5208,7 @@ function AboutPage({ onNavigate }) {
   return (
     <MarketingPageShell
       eyebrow="About Point Poker"
-      title="A planning poker tool built to stay fast, trustworthy, and usable in real sprint planning"
+      title={ROUTE_CONTENT["/about"].h1}
       intro="Point Poker exists for teams that want the useful parts of online estimation without the usual product bloat. The goal is simple: make it easy to open a room, invite the team, vote fairly, discuss clearly, and keep sprint planning moving."
       highlights={[
         { value: "Fast", label: "Browser-first estimation with minimal setup" },
@@ -5287,7 +5287,7 @@ function SupportPage({ onNavigate }) {
   return (
     <MarketingPageShell
       eyebrow="Support"
-      title="Planning poker help and support"
+      title={ROUTE_CONTENT["/support"].h1}
       intro="The questions below cover almost everything people write in about. If yours is not one of them, the email address on this page goes straight to a person."
       highlights={[
         // A StatTile puts the label above the value, so the value has to be the
@@ -5351,7 +5351,7 @@ function TrustPage({ onNavigate }) {
   return (
     <MarketingPageShell
       eyebrow="Trust and reliability"
-      title="Trust signals for teams that want a lightweight planning poker tool without lightweight operating standards"
+      title={ROUTE_CONTENT["/trust"].h1}
       intro="Point Poker is intentionally simple on the surface, but teams still need to know the basics are handled properly. This page brings together the practical trust signals behind the product: clear support, public legal routes, authenticated email, no ads or tracking cookies, and room safeguards that keep live sessions understandable."
       highlights={[
         { value: "Direct", label: `Support at ${support}` },
@@ -5429,7 +5429,7 @@ function FeaturesPage({ onNavigate }) {
   return (
     <MarketingPageShell
       eyebrow="Features"
-      title="Everything an agile team needs to estimate clearly, reveal fairly, and keep sprint planning moving"
+      title={ROUTE_CONTENT["/features"].h1}
       intro="Point Poker is built for live estimation, not static voting widgets. It gives facilitators structure, participants a frictionless join flow, and teams enough context to move from discussion to agreement quickly."
       highlights={[
         { value: "3", label: "Card decks: Fibonacci, T-Shirt, Powers of 2" },
@@ -5440,7 +5440,6 @@ function FeaturesPage({ onNavigate }) {
       primaryHref="/"
       primaryLabel="Start free room"
       secondaryHref="/pricing"
-      secondaryLabel="Compare plans"
     >
       <MarketingSection
         title="Core estimation workflow"
@@ -5506,7 +5505,7 @@ function RemoteSprintPlanningPage({ onNavigate }) {
   return (
     <MarketingPageShell
       eyebrow="Remote sprint planning"
-      title="Run remote sprint planning with one browser link, structured facilitation, and a room your team can actually reuse"
+      title={ROUTE_CONTENT["/remote-sprint-planning"].h1}
       intro="Distributed teams need sprint planning tools that are fast to join, easy to facilitate, and reliable enough to reuse every sprint. Point Poker keeps the estimation part of the ceremony compact so the team can focus on scope and delivery decisions."
       highlights={[
         { value: "1 link", label: "Share in Slack, Teams, Zoom, or calendar invites" },

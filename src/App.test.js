@@ -449,6 +449,35 @@ describe("pages rendered from route data", () => {
   });
 });
 
+/* The hand-built pages prerendered one H1 and hydrated into a different one,
+   so a crawler that runs JavaScript and one that does not were shown two
+   headings for the same URL (/features, /about, /trust, /pricing and
+   /remote-sprint-planning until 1 Oct 2026). One string in routeMeta.mjs now
+   feeds both. */
+describe("hand-built pages render the H1 the prerender sends", () => {
+  const handBuilt = Object.entries(STATIC_SCREEN_BY_PATH)
+    .filter(([path, s]) => !s.startsWith("/") && path !== "/" && ROUTE_CONTENT[path]?.h1)
+    .map(([path]) => path);
+
+  afterEach(() => window.history.pushState({}, "", "/"));
+
+  test("the list is not empty", () => {
+    expect(handBuilt).toEqual(expect.arrayContaining(["/features", "/about", "/pricing"]));
+  });
+
+  test.each(handBuilt)("%s", (path) => {
+    window.history.pushState({}, "", path);
+    render(<App />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(ROUTE_CONTENT[path].h1);
+  });
+
+  test("/features no longer offers to compare plans that do not exist", () => {
+    window.history.pushState({}, "", "/features");
+    render(<App />);
+    expect(screen.queryByText(/compare plans/i)).toBeNull();
+  });
+});
+
 /* ── THE SITEMAP IS A FOURTH COPY OF THE ROUTE TABLE ─────────────────────
    routeMeta.mjs feeds the runtime router, the runtime <head>, the build-time
    prerender and — since scripts/gen-sitemap.mjs replaced the hand-written

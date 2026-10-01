@@ -25,8 +25,8 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 | `src/AdminDashboard.js` | 466 | 19 KB |
 | `src/AdminDashboard.test.js` | 119 | 5 KB |
 | `src/App.css` | 39 | 0 KB |
-| `src/App.js` | 8654 | 397 KB |
-| `src/App.test.js` | 1089 | 53 KB |
+| `src/App.js` | 8653 | 396 KB |
+| `src/App.test.js` | 1118 | 54 KB |
 | `src/AppErrorBoundary.js` | 74 | 2 KB |
 | `src/AppErrorBoundary.test.js` | 90 | 3 KB |
 | `src/design-system/base.css` | 87 | 3 KB |
@@ -234,29 +234,29 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L5286 `SupportPage`
 - L5348 `TrustPage`
 - L5428 `FeaturesPage`
-- L5505 `RemoteSprintPlanningPage`
-- L5565 `getAuthErrorMessage`
-- L5584 `getVerificationErrorMessage`
-- L5597 `deriveDisplayNameFallback`
-- L5610 `deriveTeamRoomName`
-- L5616 `deriveDedicatedRoomOwnerSuffix`
-- L5623 `buildDedicatedRoomLabel`
-- L5631 `clampTeamRoomLabel`
-- L5639 `deriveSecondaryTeamRoomName`
-- L5650 `buildDedicatedTeamRoomsFromLabel`
-- L5664 `deriveDedicatedRoomLabelPrefix`
-- L5680 `resolveDedicatedTeamRooms`
-- L5698 `saveUserProfile`
-- L5730 `LegalPage`
-- L5750 `TermsPage`
-- L5935 `PrivacyPage`
-- L6177 `HistoryModal`
-- L6261 `JoinScreen`: JOIN SCREEN
-- L7071 `WTP_STORAGE_KEY`
-- L7072 `WTP_OPTIONS`
-- L7079 `WtpPoll`
-- L7130 `RoomActionBar`
-- L7234 `GameScreen`
+- L5504 `RemoteSprintPlanningPage`
+- L5564 `getAuthErrorMessage`
+- L5583 `getVerificationErrorMessage`
+- L5596 `deriveDisplayNameFallback`
+- L5609 `deriveTeamRoomName`
+- L5615 `deriveDedicatedRoomOwnerSuffix`
+- L5622 `buildDedicatedRoomLabel`
+- L5630 `clampTeamRoomLabel`
+- L5638 `deriveSecondaryTeamRoomName`
+- L5649 `buildDedicatedTeamRoomsFromLabel`
+- L5663 `deriveDedicatedRoomLabelPrefix`
+- L5679 `resolveDedicatedTeamRooms`
+- L5697 `saveUserProfile`
+- L5729 `LegalPage`
+- L5749 `TermsPage`
+- L5934 `PrivacyPage`
+- L6176 `HistoryModal`
+- L6260 `JoinScreen`: JOIN SCREEN
+- L7070 `WTP_STORAGE_KEY`
+- L7071 `WTP_OPTIONS`
+- L7078 `WtpPoll`
+- L7129 `RoomActionBar`
+- L7233 `GameScreen`
 
 ## `src/App.test.js`
 
@@ -297,49 +297,53 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L407   test: every internal footer link points at a real route
 - L424   test: a page with its own steps names them, so the HowTo schema is not generic
 - L439   test: no two pages answer the same question
-- L461 describe: the sitemap and the route table say the same thing
-- L468   test: every indexable route is in the sitemap
-- L472   test: the sitemap advertises nothing that is not a route
-- L476   test: no route is listed twice, which splits its own ranking signal
-- L480   test: every URL is absolute and on the canonical host
-- L488   test: robots.txt keeps live rooms out of the index
-- L500   test: private routes are blocked in robots.txt and by a header
-- L520   test: vercel.json header entries carry no keys Vercel will reject
-- L539 describe: no Firebase write fails silently
-- L544   test: every awaited write is inside a try, a write() call, or an explicit catch
-- L564   test: the escape hatch stays rare enough to read in one sitting
-- L568   test: no read is wrapped in a promise that can never reject
-- L584 describe: translations
-- L587   test: every locale defines exactly the English key set
-- L597   test: a value that is a list in English is a list of the same length everywhere
-- L608   test: every placeholder in an English string survives translation
-- L633   test: no locale left an English sentence sitting in a translated table
-- L643   test: the rule is tight enough to catch a real omission
-- L655   test: no locale contains characters from a writing system it does not use
-- L664   test: Japanese is actually written in Japanese
-- L670   test: every locale has every localized page, with meta and content
-- L685   test: titles and descriptions are unique across every language
-- L701   test: the hreflang cluster is reciprocal and carries an x-default
-- L718   test: every localized URL is in the sitemap, and nothing is listed twice
-- L730   test: a locale prefix only matches a whole path segment
-- L739   test: an untranslated page keeps its English URL in every language
-- L750 describe: header language selector
-- L761   test: is visible in the header and offers every live language
-- L773   test: keeps the equivalent translated page when switching
-- L784   test: closes on Escape and returns focus to its trigger
-- L800   test: no translated screen still holds an English sentence in its source
-- L857   test: vercel.json knows about every locale prefix
-- L886   test: the retired locale prefixes 301 instead of 404ing
-- L926   test: an untranslated path under a live locale prefix 301s to English
-- L978   test: the legal pages are not translated
-- L1001 describe: pointing poker and scrum poker are tool pages, not doorways
-- L1002   test: %s: the hero holds a room form that refuses a blank name and creates the room it describes
-- L1034   test: %s: the hero has one primary action, the form
-- L1042   test: the home page links to it from its own copy, not only from the footer
-- L1051   test: the guides closest to it link to it
-- L1063 describe: a trailing slash is the same page
-- L1064   test: %s renders its own page and metadata
-- L1073   test: a hand-built page with a slash gets its own title and canonical too
+- L457 describe: hand-built pages render the H1 the prerender sends
+- L464   test: the list is not empty
+- L468   test: %s
+- L474   test: /features no longer offers to compare plans that do not exist
+- L490 describe: the sitemap and the route table say the same thing
+- L497   test: every indexable route is in the sitemap
+- L501   test: the sitemap advertises nothing that is not a route
+- L505   test: no route is listed twice, which splits its own ranking signal
+- L509   test: every URL is absolute and on the canonical host
+- L517   test: robots.txt keeps live rooms out of the index
+- L529   test: private routes are blocked in robots.txt and by a header
+- L549   test: vercel.json header entries carry no keys Vercel will reject
+- L568 describe: no Firebase write fails silently
+- L573   test: every awaited write is inside a try, a write() call, or an explicit catch
+- L593   test: the escape hatch stays rare enough to read in one sitting
+- L597   test: no read is wrapped in a promise that can never reject
+- L613 describe: translations
+- L616   test: every locale defines exactly the English key set
+- L626   test: a value that is a list in English is a list of the same length everywhere
+- L637   test: every placeholder in an English string survives translation
+- L662   test: no locale left an English sentence sitting in a translated table
+- L672   test: the rule is tight enough to catch a real omission
+- L684   test: no locale contains characters from a writing system it does not use
+- L693   test: Japanese is actually written in Japanese
+- L699   test: every locale has every localized page, with meta and content
+- L714   test: titles and descriptions are unique across every language
+- L730   test: the hreflang cluster is reciprocal and carries an x-default
+- L747   test: every localized URL is in the sitemap, and nothing is listed twice
+- L759   test: a locale prefix only matches a whole path segment
+- L768   test: an untranslated page keeps its English URL in every language
+- L779 describe: header language selector
+- L790   test: is visible in the header and offers every live language
+- L802   test: keeps the equivalent translated page when switching
+- L813   test: closes on Escape and returns focus to its trigger
+- L829   test: no translated screen still holds an English sentence in its source
+- L886   test: vercel.json knows about every locale prefix
+- L915   test: the retired locale prefixes 301 instead of 404ing
+- L955   test: an untranslated path under a live locale prefix 301s to English
+- L1007   test: the legal pages are not translated
+- L1030 describe: pointing poker and scrum poker are tool pages, not doorways
+- L1031   test: %s: the hero holds a room form that refuses a blank name and creates the room it describes
+- L1063   test: %s: the hero has one primary action, the form
+- L1071   test: the home page links to it from its own copy, not only from the footer
+- L1080   test: the guides closest to it link to it
+- L1092 describe: a trailing slash is the same page
+- L1093   test: %s renders its own page and metadata
+- L1102   test: a hand-built page with a slash gets its own title and canonical too
 
 ## `src/AppErrorBoundary.test.js`
 
