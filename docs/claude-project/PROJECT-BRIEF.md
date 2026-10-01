@@ -1,6 +1,6 @@
 # Point Poker: project brief
 
-Last updated: 24 September 2026. Owner: Ali Khan. Live site: https://www.pointpoker.app
+Last updated: 1 October 2026. Owner: Ali Khan. Live site: https://www.pointpoker.app
 
 This file is the current state of the product, its search performance and the open work. It is updated as the last step of every major change (see `docs/claude-project/README.md`). Newer dated notes from Ali override it.
 
@@ -51,7 +51,7 @@ Search intent ownership:
 | Intent | Page |
 |---|---|
 | Brand, "free planning poker online" | `/` |
-| "scrum poker" and variants | `/scrum-poker` |
+| "scrum poker" and variants | `/scrum-poker`. Since 1 Oct 2026 a tool page like `/pointing-poker`: the room form sits in its hero |
 | "pointing poker", "poker planning", "sprint poker", "estimation poker", "agile poker" | `/pointing-poker` (one page on purpose, never split). Since 24 Sep 2026 it is a tool page: the room form sits in its hero |
 | "planning poker online" | `/planning-poker-online` |
 | "what is planning poker" | `/what-is-planning-poker` |
@@ -66,11 +66,12 @@ Search intent ownership:
 - **11 to 12 Aug:** thin pages rebuilt from data (for example `/scrum-poker` went from 139 to 756 words, with FAQ schema). `/pointing-poker`, `/story-points-to-hours`, `/planning-poker-jira` added.
 - **12 Aug:** seven languages shipped, cut to Portuguese and Japanese the same day. Reason: Dutch and German searchers already use English loanwords, Japan and Brazil do not have good English-language options.
 - **17 Aug:** prerendered footer stopped linking untranslated pages under a locale prefix. `/agile-estimation-tool` and `/story-point-estimation` rebuilt from data.
-- **23 Sep:** six-week re-pull done. Changes below.
+- **23 Sep:** six-week re-pull done. `/scrum-poker` retitled, untranslated locale paths 301.
+- **24 Sep:** `/pointing-poker` became a tool page. **1 Oct:** `/scrum-poker` too. See section 6.
 
 ## 5. Search Console at the six-week review
 
-Property `sc-domain:pointpoker.app`. The full query and page tables are in `SEARCH-CONSOLE-2026-09-23.md` in this folder.
+Property `sc-domain:pointpoker.app`. The full query and page tables are in `SEARCH-CONSOLE-2026-09-23.md` in this folder. That is the baseline for the 4 Nov review. The two-week read after the 24 Sep changes is in `SEARCH-CONSOLE-2026-10-01.md` and summarised at the end of this section.
 
 ### Site trend
 
@@ -121,18 +122,26 @@ Baseline is 10 May to 9 Aug 2026. "Now" is 23 Aug to 20 Sep 2026.
 - Japanese is the best-converting segment: `/ja/*` took 368 impressions and 9 clicks at position 39 (2.4% CTR against 0.6% site-wide). 11 Japanese-script queries, led by プランニングポーカー (161 impressions, position 68, landing on `/ja/`) and スクラムポーカー (20, position 18.8).
 - Portuguese: 74 impressions, 1 click. Brazilian searchers use English loanwords ("planning poker scrum", "plan poker"). No Portuguese-language queries yet.
 - "planning poker" is treated by Google as informational and sits at about 78 among Wikipedia and long-established exact-match domains. On-page work will not move it. Links will.
-- Jira cluster ("jira planning poker", "scrum poker for jira", "planning poker in jira" and similar) is roughly 400 impressions at positions 58 to 80.
-- `/scrum-poker` impressions fell about 67% from 12 Sep. Diagnosis: "scrum poker" slipped from position 37 to 42, which is results page 4 to page 5. The page is indexed, its canonical is correct and there is no cannibalisation. Normal movement at this depth, not a fault.
+- Jira cluster ("jira planning poker", "scrum poker for jira", "planning poker in jira" and similar) was roughly 400 impressions at positions 58 to 80. Those impressions fell away from 17 Sep (see the two-week read).
 - `/scrum-poker` audience: US 304 impressions, Switzerland 153, Netherlands 143, Germany 105, Brazil 100, UK 83. 80% desktop.
 
-### Indexing at the review
+### Two-week read, 1 Oct 2026
 
-- Sitemap: 26 discovered pages, correct. Resubmitted 23 Sep.
-- Indexed 30 against 26 in the sitemap. The extra URLs were untranslated locale paths (`/pt/about`, `/pt/planning-poker-online`, `/ja/planning-poker-online`) that served the English home page with a 200. Fixed 23 Sep with a permanent redirect to the English page. Indexed should fall back towards 26.
-- Page with redirect: 10, all correct (http and apex variants plus retired locale URLs). Expect up to six more as the fixed locale URLs are recrawled.
+17 to 30 Sep against 3 to 16 Sep. Full tables in `SEARCH-CONSOLE-2026-10-01.md`.
+
+- Site: clicks 13 to 43, CTR 0.8% to 2.4%, average position 43.1 to 23.2. 31 clicks in the last 7 days, against 5 to 7 a week before.
+- "pointing poker": 17.1 to 8.1 (page 1), and Google stopped splitting it. `/pointing-poker` now takes 91% of its impressions at 6.9, and 12 clicks.
+- "scrum poker" 39.4 to 18.7, "scrum poker online" 40.5 to 14.8, "estimation poker" 72.9 to 21.7, "planningpoker" 62 to 22.5. `/scrum-poker` sits at 16, page 2 for every variant.
+- `/planning-poker-jira` impressions fell 82% (141 to 25). The drop started 17 Sep, before any change, and removed only impressions at positions 60 to 80 that never produced a click. Its position improved to 39.4 and it took 2 clicks. The "planning poker for jira" results page is Marketplace apps, so the plugin intent cannot be met honestly. No change.
+- New queries worth watching: "best free planning poker" (32.2) and "best free planning poker tool" (33.5).
+
+### Indexing, 1 Oct 2026
+
+- Sitemap: 26 discovered pages, correct.
+- Indexed 28, not indexed 16, as expected after the 23 Sep locale 301s. Page with redirect 12, all correct. `/pt/pointing-poker` and `/pt/pricing` still show as alternative canonical because they were last crawled before the 301. `/terms` discovered, not indexed. Nothing to fix.
 - Core Web Vitals: no data (not enough traffic).
 
-## 6. Changes shipped 23 to 24 Sep 2026
+## 6. Changes shipped since 23 Sep 2026
 
 - **`/pointing-poker` is a tool page.** `<RoomQuickStart>` sits in the hero (set by `ROUTE_CONTENT["/pointing-poker"].quickStart`, rendered through `MarketingPageShell`'s `heroAside`) and creates a room as facilitator, in stories mode, through the home page's `handleCreate`. Title "Pointing Poker: Free Online Tool, No Sign-Up | Point Poker", H1 "Free Pointing Poker for Agile Teams". Reason: "pointing poker" is the query that shows the site most and every result above it is a working tool.
 - **Internal links to `/pointing-poker`** from the home page's own copy, the related cards on `/what-is-planning-poker`, `/scrum-poker` and `/planning-poker-online`, and the footer ("Pointing poker").
@@ -140,7 +149,9 @@ Baseline is 10 May to 9 Aug 2026. "Now" is 23 Aug to 20 Sep 2026.
 - **Structured data:** WebSite `alternateName: ["PointPoker"]`, the generic SoftwareApplication alternate names removed, `creator` Paramount Consultants, shown in the footer as "Built and run by Paramount Consultants".
 - **Routing:** untranslated `/pt/*` and `/ja/*` paths 301 to English (`vercel.json`, pinned to `LOCALIZED_PATHS` by a test). `routeKey()` in `src/App.js` resolves a trailing slash (`/scrum-poker/`) to the same page, while locale homes such as `/pt/` keep theirs.
 - **Deploys:** the Vercel project had lost its GitHub connection after 17 Aug. Reconnected, and pushes deploy again.
-- Tests pin all of it (514 pass). Build: 26 prerendered documents.
+- **1 Oct: `/scrum-poker` is a tool page.** `ROUTE_CONTENT["/scrum-poker"].quickStart` puts the room form in its hero, the intro points at it, and the hero highlights drop out (the form replaces them). Title, description and H1 unchanged, because the 23 Sep retitle is working. Reason: the same position pattern `/pointing-poker` had before its form (see the two-week read above), and the top two results for "scrum poker" are working tools.
+- **1 Oct: hand-built pages render the H1 the prerender sends.** `/features`, `/about`, `/trust`, `/pricing` and `/remote-sprint-planning` used to hydrate into a longer, different H1. Each now reads `ROUTE_CONTENT[path].h1`. `/features` H1 is "Planning Poker Features: All Free", and its "Compare plans" button (there are no plans) is now "View pricing".
+- Tests pin all of it (524 pass). Build: 26 prerendered documents.
 
 ## 7. Decisions in force
 
@@ -154,12 +165,13 @@ Baseline is 10 May to 9 Aug 2026. "Now" is 23 Aug to 20 Sep 2026.
 - **Leave the Paramount Consultants cross-links as they are.** A normal "our products" setup. Adding more would start to look like a link scheme.
 - **One scheduled item only.** Point Poker follow-ups run from "Point Poker: weekly follow-up" (see `LINK-BUILDING.md`). New follow-ups become rows in its checklist, never new scheduled tasks.
 
-## 8. What to expect (assessment, 24 Sep 2026)
+## 8. What to expect (assessment, 1 Oct 2026)
 
 This is a judgement, not a measurement. The 4 Nov review is the evidence.
 
-- **"pointing poker" is the realistic win.** It sat at 16.9, the top of page 2, and the 24 Sep changes target it directly. Page 1 within one to two months is plausible and would be the biggest traffic gain from this work.
-- **"planning poker" (about 78) and "scrum poker" (about 44) will not reach page 1 on this work.** The sites above have years of links from other websites, and off-site link-building is closed, so these move slowly.
+- **"pointing poker" reached page 1 within a week** (6.9 on `/pointing-poker` by 1 Oct). Holding it is the priority. Do not retitle or restructure that page while it is climbing.
+- **"scrum poker" is the next realistic win.** It moved from about 44 to 21 after the 23 Sep retitle, and the 1 Oct room form targets it. Page 1 is plausible but not assured: the results page mixes tools with Wikipedia, Atlassian and Agile Alliance guides.
+- **"planning poker" (about 71) will not reach page 1 on this work.** The sites above have years of links from other websites, and off-site link-building is closed, so it moves slowly.
 - **The directory listings** add a trickle of visitors and some trust. Most directory links carry little ranking weight.
 - **The Paramount Consultants link** helps Google see a real business behind the product and helped it find the pages. It carries little ranking weight because Google discounts links between sites with the same owner, and Paramount's own site is new.
 - **The next lever is on-site:** pages for searches with weaker competition, the Portuguese and Japanese versions, and whatever Search Console flags.
@@ -169,15 +181,15 @@ This is a judgement, not a measurement. The 4 Nov review is the evidence.
 1. Three room defects reported 14 Aug 2026, not reproduced or fixed: "the buttons" (control not named), the time-up message is unclear (facilitator and voter see different copy), viewing what others estimated "isn't fixed". Collect a screenshot, viewport width, role and round state first.
 2. Native-speaker review of the four Portuguese and four Japanese pages. Then decide on a Japanese `/planning-poker-online` page.
 3. Search Console review on 4 Nov 2026, run by the weekly follow-up. Check:
-   - "pointing poker": average position (16.9 before) and whether Google has stopped splitting it between `/` and `/pointing-poker`
-   - `/scrum-poker` positions for "scrum poker", "scrum poker online", "free scrum poker", "scrum poker app"
+   - "pointing poker": still on page 1 (6.9 on 1 Oct, 16.9 at the baseline) and still owned by `/pointing-poker`
+   - `/scrum-poker` positions for "scrum poker", "scrum poker online", "free scrum poker", "scrum poker app" after the 1 Oct room form (21.2, 14.8, 19.2 and 16.0 on 1 Oct)
+   - Whether "best free planning poker" queries grow enough to justify a comparison section
    - Indexed count falling back towards 26, redirects rising by up to six
    - `/ja/*` clicks and the position of プランニングポーカー
    - Links report: which external sites Google has picked up
 4. After that review: the on-site changes it points to (see section 8).
-5. `/features` prerenders H1 "Planning Poker Features — All Free" but the hand-built page renders a different H1. Align them.
-6. Optional: both pointpoker.app and paramountconsultants.online redirect the apex to `www` with a 307 (Vercel's default). Google has consolidated on `www` anyway. Switching to 308 is tidy-up, by hand in Vercel > Domains > Edit.
-7. Discovery evidence still to collect: filtering vendor categories (Palo Alto, FortiGuard, BrightCloud), real organisation-network access tests, facilitator interviews.
+5. Optional: both pointpoker.app and paramountconsultants.online redirect the apex to `www` with a 307 (Vercel's default). Google has consolidated on `www` anyway. Switching to 308 is tidy-up, by hand in Vercel > Domains > Edit.
+6. Discovery evidence still to collect: filtering vendor categories (Palo Alto, FortiGuard, BrightCloud), real organisation-network access tests, facilitator interviews.
 
 ## 10. Access and deployment
 

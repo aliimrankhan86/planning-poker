@@ -23,6 +23,40 @@ three reports are one line each, and item 3 in particular should not be
 
 Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
 
+## Session: 1 October 2026, two-week Search Console read
+
+Ali shared two Search Console recommendation cards: `/pointing-poker` +320%
+impressions and `/planning-poker-jira` -82%. Pulled 17 to 30 Sep against 3 to
+16 Sep (full tables in `docs/claude-project/SEARCH-CONSOLE-2026-10-01.md`).
+
+- The 23 and 24 Sep changes worked. Clicks 13 to 43, CTR 0.8% to 2.4%,
+  average position 43.1 to 23.2. "pointing poker" 17.1 to 8.1, now owned by
+  `/pointing-poker` at 6.9. "scrum poker" 39.4 to 18.7.
+- The Jira drop is not a fault: it began 17 Sep, before any change, and only
+  removed impressions at positions 60 to 80 that never produced a click. Its
+  position improved and it took 2 clicks. The results page for "planning poker
+  for jira" is Marketplace apps. No change.
+- Indexing 28 / 16 is the expected result of the 23 Sep locale 301s.
+
+Shipped:
+
+- `/scrum-poker` is a tool page: `quickStart` room form in the hero, new
+  intro, highlights dropped. Title, description and H1 unchanged.
+- `/features`, `/about`, `/trust`, `/pricing` and `/remote-sprint-planning`
+  render the H1 their prerender sends (`ROUTE_CONTENT[path].h1`). `/features`
+  lost its "Compare plans" button. Closes the brief's open `/features` item.
+- Tests 514 to 524, all pass. Build: 26 prerendered documents.
+
+Found, not changed: with npm 10.9, `npm ci` refuses the lock file as out of
+sync (`yaml@2.9.1` missing, a transitive dependency). `npm install` works and
+Vercel deploys succeed. Worth regenerating the lock in a commit of its own.
+
+Project refresh: brief updated (sections 3 to 9), new Search Console
+snapshot. The project instructions' open item about the `/features` H1 is
+closed. `CLAUDE.md` and `AGENTS.md` unchanged.
+
+---
+
 ## Session: 24 September 2026, first directory listings
 
 Off-site work from `docs/claude-project/LINK-BUILDING.md`. Ali created each
