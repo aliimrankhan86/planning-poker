@@ -487,14 +487,20 @@ export const ROUTE_CONTENT = {
   },
   "/scrum-poker": {
     eyebrow: "Scrum poker",
+    /* 1 Oct 2026: the room form sits in the hero, as on /pointing-poker.
+       Search Console, 17 to 30 Sep against the fortnight before: "scrum poker"
+       39.4 to 21.2, "scrum poker online" 40.5 to 14.8, "online scrum poker"
+       12.8, "scrumpoker" 13. Page 2 for every variant, which is where
+       "pointing poker" sat (17.1) before /pointing-poker became a tool page
+       and moved to 6.9. The top two results for "scrum poker" are working
+       tools. The form replaces the hero highlights (heroAside wins). */
+    quickStart: {
+      title: "Start a scrum poker room",
+      note: `Free, up to ${MAX_PARTICIPANTS} people, no account. You join as facilitator and share the link.`,
+    },
     h1: "Free Scrum Poker App for Sprint Planning",
     intro:
-      "Use Point Poker as a scrum poker app for sprint planning and backlog refinement, with fast, unbiased story-point discussions across a distributed team.",
-    highlights: [
-      { value: "Scrum", label: "Built for refinement and sprint planning" },
-      { value: "Fair", label: "Votes reveal together, so nobody anchors" },
-      { value: "Free", label: "No account, no card, no paid tier" },
-    ],
+      "Start a scrum poker room here: add your name, pick a deck and share the link with your team. Everyone picks a story point card in private, all the cards turn over together, and the team talks about the gap before it agrees a number. It runs online in any browser, with nothing to install.",
     body: [
       "Scrum poker and planning poker are the same ceremony under two names: the team sizes work relatively, votes simultaneously, and talks only about the gaps.",
       `Rooms hold up to ${MAX_PARTICIPANTS} people including facilitators, which covers a full scrum team plus product, design, and QA in one session.`,

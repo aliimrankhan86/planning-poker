@@ -26,7 +26,7 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 | `src/AdminDashboard.test.js` | 119 | 5 KB |
 | `src/App.css` | 39 | 0 KB |
 | `src/App.js` | 8654 | 397 KB |
-| `src/App.test.js` | 1080 | 52 KB |
+| `src/App.test.js` | 1089 | 53 KB |
 | `src/AppErrorBoundary.js` | 74 | 2 KB |
 | `src/AppErrorBoundary.test.js` | 90 | 3 KB |
 | `src/design-system/base.css` | 87 | 3 KB |
@@ -48,7 +48,7 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 | `src/locales/ja.mjs` | 978 | 77 KB |
 | `src/locales/pt.mjs` | 995 | 62 KB |
 | `src/reportWebVitals.js` | 14 | 0 KB |
-| `src/routeMeta.mjs` | 1256 | 87 KB |
+| `src/routeMeta.mjs` | 1262 | 88 KB |
 | `src/setupTests.js` | 37 | 1 KB |
 | `vercel.json` | 109 | 2 KB |
 
@@ -332,14 +332,14 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L886   test: the retired locale prefixes 301 instead of 404ing
 - L926   test: an untranslated path under a live locale prefix 301s to English
 - L978   test: the legal pages are not translated
-- L996 describe: pointing poker is a tool page, not a doorway
-- L997   test: its hero holds a room form that refuses a blank name and creates the room it describes
-- L1025   test: the hero has one primary action: the form
-- L1033   test: the home page links to it from its own copy, not only from the footer
-- L1042   test: the guides closest to it link to it
-- L1054 describe: a trailing slash is the same page
-- L1055   test: %s renders its own page and metadata
-- L1064   test: a hand-built page with a slash gets its own title and canonical too
+- L1001 describe: pointing poker and scrum poker are tool pages, not doorways
+- L1002   test: %s: the hero holds a room form that refuses a blank name and creates the room it describes
+- L1034   test: %s: the hero has one primary action, the form
+- L1042   test: the home page links to it from its own copy, not only from the footer
+- L1051   test: the guides closest to it link to it
+- L1063 describe: a trailing slash is the same page
+- L1064   test: %s renders its own page and metadata
+- L1073   test: a hand-built page with a slash gets its own title and canonical too
 
 ## `src/AppErrorBoundary.test.js`
 
@@ -850,13 +850,13 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L308 `HOW_TO_STEPS`
 - L317 `ALL_LINKS`
 - L336 `ROUTE_CONTENT`
-- L1164 `VARS`: The translations are written with {max} and {email} rather than a literal 20 and a literal address, so the participant cap the Firebase rules enforce cannot dri…
-- L1165 `fillVars`
-- L1176 `localeUrl`
-- L1212 `installLocaleRoutes`: The words arrive with the language chunk. Idempotent, so calling it twice — which the tests and the prerenderer both do — is harmless.
-- L1233 `activateLocale`: Fetch a language and wire its pages into the route tables. This is what src/index.js awaits before the first render.
-- L1241 `activateAllLocales`: Every language at once, for the prerenderer, the sitemap generator and the tests. None of those ships to a browser, so the size does not matter there.
-- L1248 `alternatesFor`: Every URL a path exists at, including its own — reciprocal by construction, which is the condition Google puts on honouring any hreflang at all.
+- L1170 `VARS`: The translations are written with {max} and {email} rather than a literal 20 and a literal address, so the participant cap the Firebase rules enforce cannot dri…
+- L1171 `fillVars`
+- L1182 `localeUrl`
+- L1218 `installLocaleRoutes`: The words arrive with the language chunk. Idempotent, so calling it twice — which the tests and the prerenderer both do — is harmless.
+- L1239 `activateLocale`: Fetch a language and wire its pages into the route tables. This is what src/index.js awaits before the first render.
+- L1247 `activateAllLocales`: Every language at once, for the prerenderer, the sitemap generator and the tests. None of those ships to a browser, so the size does not matter there.
+- L1254 `alternatesFor`: Every URL a path exists at, including its own — reciprocal by construction, which is the condition Google puts on honouring any hreflang at all.
 
 ## Firebase Realtime Database shape
 

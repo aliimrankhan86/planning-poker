@@ -993,14 +993,23 @@ describe("translations", () => {
    visitors on to / before they could start, the home page never mentioned the
    term once hydrated, and only the footer linked to it. These pin the fix.
 ──────────────────────────────────────────────────────────────────────── */
-describe("pointing poker is a tool page, not a doorway", () => {
-  test("its hero holds a room form that refuses a blank name and creates the room it describes", async () => {
-    const { set, onDisconnect } = require("firebase/database");
-    // CRA resets mock implementations between tests, so restore the two this
-    // path relies on: the room write resolves, and the presence hook exists.
+/* 1 Oct 2026: /scrum-poker got the same form. "scrum poker" and its online
+   variants had climbed to page 2 (12.8 to 21.2), where "pointing poker" was
+   before this change took it to 6.9. Both pages are pinned by the same tests. */
+const TOOL_PAGES = ["/pointing-poker", "/scrum-poker"];
+
+describe("pointing poker and scrum poker are tool pages, not doorways", () => {
+  test.each(TOOL_PAGES)("%s: the hero holds a room form that refuses a blank name and creates the room it describes", async (path) => {
+    const { set, onDisconnect, onValue } = require("firebase/database");
+    // CRA resets mock implementations between tests, so restore the three this
+    // path relies on: the room write resolves, the presence hook exists, and
+    // the room screen's listeners hand back an unsubscribe for unmount.
     set.mockResolvedValue(undefined);
     onDisconnect.mockReturnValue({ update: jest.fn() });
-    window.history.pushState({}, "", "/pointing-poker");
+    onValue.mockImplementation(() => () => {});
+    // The form prefills the last name used, and the previous case stored one.
+    localStorage.clear();
+    window.history.pushState({}, "", path);
     render(<App />);
 
     // Start-up writes (visit counters) are not the room; only a write that
@@ -1022,8 +1031,8 @@ describe("pointing poker is a tool page, not a doorway", () => {
     expect(Object.values(room.players)[0]).toMatchObject({ name: "Sam Rivera", role: "observer" });
   });
 
-  test("the hero has one primary action: the form's, not a second link away to /", () => {
-    window.history.pushState({}, "", "/pointing-poker");
+  test.each(TOOL_PAGES)("%s: the hero has one primary action, the form's, not a second link away to /", (path) => {
+    window.history.pushState({}, "", path);
     render(<App />);
     const hero = screen.getByRole("heading", { level: 1 }).closest("section");
     expect(within(hero).queryByRole("link", { name: UI.en["page.startFree"] })).toBeNull();
