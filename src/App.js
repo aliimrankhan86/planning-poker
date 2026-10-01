@@ -2287,7 +2287,7 @@ ol.marketing-list li::marker {
 // Dynamic rooms: each Create generates a unique 5-char code.
 // URL is updated via replaceState so links can be shared directly.
 // ── FREE FOR EVERYONE ────────────────────────────────────────────
-// Every feature is unlocked for every user while we grow the user base.
+// Every feature is unlocked for every user. There is no paid tier.
 // MAX_PARTICIPANTS is imported from routeMeta.mjs so the marketing copy and the
 // enforced cap can never disagree. Rooms in Firebase still carry a `plan` field
 // (the security rules require it) but it no longer changes what anyone can do.
@@ -5104,7 +5104,7 @@ function PricingPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Pricing"
       title={ROUTE_CONTENT["/pricing"].h1}
-      intro="There is no paid tier, no trial countdown and no credit card field anywhere on Point Poker. All three card decks, the countdown timer, facilitator analytics, story queues, CSV export and two fixed Team Rooms are free for everyone while we grow the user base."
+      intro={ROUTE_CONTENT["/pricing"].intro}
       highlights={[
         { value: "$0", label: "Every feature, every team, no card" },
         { value: `${MAX_PARTICIPANTS}`, label: "Participants per room, facilitators included" },
@@ -5209,7 +5209,7 @@ function AboutPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="About Point Poker"
       title={ROUTE_CONTENT["/about"].h1}
-      intro="Point Poker exists for teams that want the useful parts of online estimation without the usual product bloat. The goal is simple: make it easy to open a room, invite the team, vote fairly, discuss clearly, and keep sprint planning moving."
+      intro={ROUTE_CONTENT["/about"].intro}
       highlights={[
         { value: "Fast", label: "Browser-first estimation with minimal setup" },
         { value: "Clear", label: "Facilitator-led flow with explicit next steps" },
@@ -5232,8 +5232,8 @@ function AboutPage({ onNavigate }) {
           <Card title="Better structure once the team is inside">
               Simultaneous reveal, queue-based flow, split-vote resolution, and facilitator-only controls make the session feel purposeful instead of improvised.
               </Card>
-          <Card title="A clean upgrade path when repeatability matters">
-              Nothing is locked behind billing. Every feature, decks, timer, queue, analytics, export, Team Rooms, is free for every team while we find out how many teams this is genuinely useful to.
+          <Card title="Nothing locked behind billing">
+              Decks, timer, queue, analytics, export and Team Rooms are free for every team, with no trial clock and no card.
               </Card>
         </Grid>
       </MarketingSection>
@@ -5288,7 +5288,7 @@ function SupportPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Support"
       title={ROUTE_CONTENT["/support"].h1}
-      intro="The questions below cover almost everything people write in about. If yours is not one of them, the email address on this page goes straight to a person."
+      intro={ROUTE_CONTENT["/support"].intro}
       highlights={[
         // A StatTile puts the label above the value, so the value has to be the
         // datum. "Email" over an uppercased address read backwards: the big gold
@@ -5352,7 +5352,7 @@ function TrustPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Trust and reliability"
       title={ROUTE_CONTENT["/trust"].h1}
-      intro="Point Poker is intentionally simple on the surface, but teams still need to know the basics are handled properly. This page brings together the practical trust signals behind the product: clear support, public legal routes, authenticated email, no ads or tracking cookies, and room safeguards that keep live sessions understandable."
+      intro={ROUTE_CONTENT["/trust"].intro}
       highlights={[
         { value: "Direct", label: `Support at ${support}` },
         { value: "Verified", label: "SPF, DKIM, and DMARC now pass" },
@@ -5416,7 +5416,7 @@ function TrustPage({ onNavigate }) {
         intro="These pages explain the product philosophy, support path, and commercial fit in more detail."
         onNavigate={onNavigate}
         links={[
-          { href: "/about", kicker: "About", title: "Why Point Poker exists", copy: "See the product philosophy behind the lightweight workflow and focused upgrade path." },
+          { href: "/about", kicker: "About", title: "Why Point Poker exists", copy: "Why the product stays small, and why every feature is free." },
           { href: "/support", kicker: "Support", title: "Support and product guidance", copy: "See where to get help, what questions come up most often, and how the workflow is explained." },
           { href: "/pricing", kicker: "Pricing", title: "What it costs", copy: "Nothing, for everyone, and a straight answer on why and for how long." },
         ]}
@@ -5430,7 +5430,7 @@ function FeaturesPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Features"
       title={ROUTE_CONTENT["/features"].h1}
-      intro="Point Poker is built for live estimation, not static voting widgets. It gives facilitators structure, participants a frictionless join flow, and teams enough context to move from discussion to agreement quickly."
+      intro={ROUTE_CONTENT["/features"].intro}
       highlights={[
         { value: "3", label: "Card decks: Fibonacci, T-Shirt, Powers of 2" },
         { value: "Live", label: "Realtime reveal, votes, and participant sync" },
@@ -5506,7 +5506,7 @@ function RemoteSprintPlanningPage({ onNavigate }) {
     <MarketingPageShell
       eyebrow="Remote sprint planning"
       title={ROUTE_CONTENT["/remote-sprint-planning"].h1}
-      intro="Distributed teams need sprint planning tools that are fast to join, easy to facilitate, and reliable enough to reuse every sprint. Point Poker keeps the estimation part of the ceremony compact so the team can focus on scope and delivery decisions."
+      intro={ROUTE_CONTENT["/remote-sprint-planning"].intro}
       highlights={[
         { value: "1 link", label: "Share in Slack, Teams, Zoom, or calendar invites" },
         { value: "Live", label: "Votes, reveals, and story flow sync in real time" },
