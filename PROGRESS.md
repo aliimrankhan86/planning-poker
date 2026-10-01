@@ -42,14 +42,19 @@ Shipped:
 
 - `/scrum-poker` is a tool page: `quickStart` room form in the hero, new
   intro, highlights dropped. Title, description and H1 unchanged.
-- `/features`, `/about`, `/trust`, `/pricing` and `/remote-sprint-planning`
-  render the H1 their prerender sends (`ROUTE_CONTENT[path].h1`). `/features`
-  lost its "Compare plans" button. Closes the brief's open `/features` item.
-- Tests 514 to 524, all pass. Build: 26 prerendered documents.
-
-Found, not changed: with npm 10.9, `npm ci` refuses the lock file as out of
-sync (`yaml@2.9.1` missing, a transitive dependency). `npm install` works and
-Vercel deploys succeed. Worth regenerating the lock in a commit of its own.
+- `/features`, `/about`, `/trust`, `/pricing`, `/support` and
+  `/remote-sprint-planning` render the H1 and intro their prerender sends
+  (`ROUTE_CONTENT[path].h1` and `.intro`). `/features` lost its "Compare
+  plans" button. Closes the brief's open `/features` item.
+- Copy that called free temporary ("free right now", "while we grow the user
+  base", "upgrade path") removed from the home page in all three languages,
+  `/pricing`, `/about` and `/trust`.
+- `package-lock.json` regenerated: npm 10 wanted an entry for an optional
+  peer (`yaml` under `tailwindcss`), so `npm ci` refused the old lock.
+  `npm ci` now installs from clean, root and `functions/`.
+- `.claude/settings.local.json` (per-machine Claude Code settings) is
+  gitignored, so the Mac repo shows a clean `git status`.
+- Tests 514 to 529, all pass. Build: 26 prerendered documents.
 
 Project refresh: brief updated (sections 3 to 9), new Search Console
 snapshot. The project instructions' open item about the `/features` H1 is
