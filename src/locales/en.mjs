@@ -187,7 +187,7 @@ export const ui = {
   "home.h2": "Free Online Planning Poker for Sprint Planning, Scrum Poker, and Remote Estimation",
   "home.h2sub":
     "Point Poker gives agile teams a fast, low-friction way to run planning poker online. Create a room, share one link in Slack, Teams, or Zoom, and let everyone vote at the same time. No install, no training, no ads, and no account needed to play.",
-  "home.freeLead": "Everything is free right now, every feature, for every team.",
+  "home.freeLead": "Everything is free: every feature, for every team.",
   "home.freeBody":
     "Other planning poker tools cap your free sessions at a handful of votes, seven participants, or hide the timer and averages behind a paid plan. Here you get {max} people per room, unlimited voting rounds, unlimited stories, all three card decks, the timer, full analytics, and export, for $0. We are focused on being genuinely useful to as many teams as possible first. If paid add-ons ever arrive, everything listed on this page stays free.",
   "home.revealTitle": "Why simultaneous reveal matters",
@@ -205,7 +205,7 @@ export const ui = {
   "home.plansAria": "Pricing overview",
   "home.plansTitle": "What it costs: nothing",
   "home.plansSub":
-    "One product, free for every team, while we find out how many of you there are. No tiers, no trial clock, no card.",
+    "One product, free for every team. No tiers, no trial clock, no card.",
   "home.planEveryone": "Everyone",
   "home.planFreeList": [
     "Up to {max} participants including facilitators",

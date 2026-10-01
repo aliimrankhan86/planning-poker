@@ -150,8 +150,10 @@ Baseline is 10 May to 9 Aug 2026. "Now" is 23 Aug to 20 Sep 2026.
 - **Routing:** untranslated `/pt/*` and `/ja/*` paths 301 to English (`vercel.json`, pinned to `LOCALIZED_PATHS` by a test). `routeKey()` in `src/App.js` resolves a trailing slash (`/scrum-poker/`) to the same page, while locale homes such as `/pt/` keep theirs.
 - **Deploys:** the Vercel project had lost its GitHub connection after 17 Aug. Reconnected, and pushes deploy again.
 - **1 Oct: `/scrum-poker` is a tool page.** `ROUTE_CONTENT["/scrum-poker"].quickStart` puts the room form in its hero, the intro points at it, and the hero highlights drop out (the form replaces them). Title, description and H1 unchanged, because the 23 Sep retitle is working. Reason: the same position pattern `/pointing-poker` had before its form (see the two-week read above), and the top two results for "scrum poker" are working tools.
-- **1 Oct: hand-built pages render the H1 the prerender sends.** `/features`, `/about`, `/trust`, `/pricing` and `/remote-sprint-planning` used to hydrate into a longer, different H1. Each now reads `ROUTE_CONTENT[path].h1`. `/features` H1 is "Planning Poker Features: All Free", and its "Compare plans" button (there are no plans) is now "View pricing".
-- Tests pin all of it (524 pass). Build: 26 prerendered documents.
+- **1 Oct: hand-built pages render the hero the prerender sends.** `/features`, `/about`, `/trust`, `/pricing`, `/support` and `/remote-sprint-planning` used to hydrate into a different H1 and intro. Each now reads `ROUTE_CONTENT[path].h1` and `.intro`. New intros for `/pricing`, `/features` and `/remote-sprint-planning`. `/features` H1 is "Planning Poker Features: All Free", and its "Compare plans" button (there are no plans) is now "View pricing". Page bodies below the hero stay hand-built, by design.
+- **1 Oct: no copy calls free temporary.** "Free right now", "while we grow the user base", "while we find out how many of you there are" and "upgrade path" removed from the home page (English, Portuguese and Japanese), `/pricing`, `/about` and `/trust`. The pricing page's "Why free, and for how long" box still says paid add-ons may come one day and everything listed stays free.
+- **1 Oct: `package-lock.json` regenerated.** npm 10 wanted an entry for an optional peer (`yaml` under `tailwindcss`), so `npm ci` refused the old lock. It now installs from clean.
+- Tests pin all of it (529 pass). Build: 26 prerendered documents.
 
 ## 7. Decisions in force
 

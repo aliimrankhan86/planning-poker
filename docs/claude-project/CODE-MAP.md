@@ -25,8 +25,8 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 | `src/AdminDashboard.js` | 466 | 19 KB |
 | `src/AdminDashboard.test.js` | 119 | 5 KB |
 | `src/App.css` | 39 | 0 KB |
-| `src/App.js` | 8653 | 396 KB |
-| `src/App.test.js` | 1118 | 54 KB |
+| `src/App.js` | 8653 | 395 KB |
+| `src/App.test.js` | 1129 | 55 KB |
 | `src/AppErrorBoundary.js` | 74 | 2 KB |
 | `src/AppErrorBoundary.test.js` | 90 | 3 KB |
 | `src/design-system/base.css` | 87 | 3 KB |
@@ -297,53 +297,54 @@ Regenerated from the repository by `scripts/gen-code-map.mjs` on every commit (p
 - L407   test: every internal footer link points at a real route
 - L424   test: a page with its own steps names them, so the HowTo schema is not generic
 - L439   test: no two pages answer the same question
-- L457 describe: hand-built pages render the H1 the prerender sends
+- L457 describe: hand-built pages render the hero the prerender sends
 - L464   test: the list is not empty
-- L468   test: %s
-- L474   test: /features no longer offers to compare plans that do not exist
-- L490 describe: the sitemap and the route table say the same thing
-- L497   test: every indexable route is in the sitemap
-- L501   test: the sitemap advertises nothing that is not a route
-- L505   test: no route is listed twice, which splits its own ranking signal
-- L509   test: every URL is absolute and on the canonical host
-- L517   test: robots.txt keeps live rooms out of the index
-- L529   test: private routes are blocked in robots.txt and by a header
-- L549   test: vercel.json header entries carry no keys Vercel will reject
-- L568 describe: no Firebase write fails silently
-- L573   test: every awaited write is inside a try, a write() call, or an explicit catch
-- L593   test: the escape hatch stays rare enough to read in one sitting
-- L597   test: no read is wrapped in a promise that can never reject
-- L613 describe: translations
-- L616   test: every locale defines exactly the English key set
-- L626   test: a value that is a list in English is a list of the same length everywhere
-- L637   test: every placeholder in an English string survives translation
-- L662   test: no locale left an English sentence sitting in a translated table
-- L672   test: the rule is tight enough to catch a real omission
-- L684   test: no locale contains characters from a writing system it does not use
-- L693   test: Japanese is actually written in Japanese
-- L699   test: every locale has every localized page, with meta and content
-- L714   test: titles and descriptions are unique across every language
-- L730   test: the hreflang cluster is reciprocal and carries an x-default
-- L747   test: every localized URL is in the sitemap, and nothing is listed twice
-- L759   test: a locale prefix only matches a whole path segment
-- L768   test: an untranslated page keeps its English URL in every language
-- L779 describe: header language selector
-- L790   test: is visible in the header and offers every live language
-- L802   test: keeps the equivalent translated page when switching
-- L813   test: closes on Escape and returns focus to its trigger
-- L829   test: no translated screen still holds an English sentence in its source
-- L886   test: vercel.json knows about every locale prefix
-- L915   test: the retired locale prefixes 301 instead of 404ing
-- L955   test: an untranslated path under a live locale prefix 301s to English
-- L1007   test: the legal pages are not translated
-- L1030 describe: pointing poker and scrum poker are tool pages, not doorways
-- L1031   test: %s: the hero holds a room form that refuses a blank name and creates the room it describes
-- L1063   test: %s: the hero has one primary action, the form
-- L1071   test: the home page links to it from its own copy, not only from the footer
-- L1080   test: the guides closest to it link to it
-- L1092 describe: a trailing slash is the same page
-- L1093   test: %s renders its own page and metadata
-- L1102   test: a hand-built page with a slash gets its own title and canonical too
+- L468   test: %s: same H1 and intro
+- L479   test: %s never calls free temporary or offers an upgrade
+- L485   test: /features no longer offers to compare plans that do not exist
+- L501 describe: the sitemap and the route table say the same thing
+- L508   test: every indexable route is in the sitemap
+- L512   test: the sitemap advertises nothing that is not a route
+- L516   test: no route is listed twice, which splits its own ranking signal
+- L520   test: every URL is absolute and on the canonical host
+- L528   test: robots.txt keeps live rooms out of the index
+- L540   test: private routes are blocked in robots.txt and by a header
+- L560   test: vercel.json header entries carry no keys Vercel will reject
+- L579 describe: no Firebase write fails silently
+- L584   test: every awaited write is inside a try, a write() call, or an explicit catch
+- L604   test: the escape hatch stays rare enough to read in one sitting
+- L608   test: no read is wrapped in a promise that can never reject
+- L624 describe: translations
+- L627   test: every locale defines exactly the English key set
+- L637   test: a value that is a list in English is a list of the same length everywhere
+- L648   test: every placeholder in an English string survives translation
+- L673   test: no locale left an English sentence sitting in a translated table
+- L683   test: the rule is tight enough to catch a real omission
+- L695   test: no locale contains characters from a writing system it does not use
+- L704   test: Japanese is actually written in Japanese
+- L710   test: every locale has every localized page, with meta and content
+- L725   test: titles and descriptions are unique across every language
+- L741   test: the hreflang cluster is reciprocal and carries an x-default
+- L758   test: every localized URL is in the sitemap, and nothing is listed twice
+- L770   test: a locale prefix only matches a whole path segment
+- L779   test: an untranslated page keeps its English URL in every language
+- L790 describe: header language selector
+- L801   test: is visible in the header and offers every live language
+- L813   test: keeps the equivalent translated page when switching
+- L824   test: closes on Escape and returns focus to its trigger
+- L840   test: no translated screen still holds an English sentence in its source
+- L897   test: vercel.json knows about every locale prefix
+- L926   test: the retired locale prefixes 301 instead of 404ing
+- L966   test: an untranslated path under a live locale prefix 301s to English
+- L1018   test: the legal pages are not translated
+- L1041 describe: pointing poker and scrum poker are tool pages, not doorways
+- L1042   test: %s: the hero holds a room form that refuses a blank name and creates the room it describes
+- L1074   test: %s: the hero has one primary action, the form
+- L1082   test: the home page links to it from its own copy, not only from the footer
+- L1091   test: the guides closest to it link to it
+- L1103 describe: a trailing slash is the same page
+- L1104   test: %s renders its own page and metadata
+- L1113   test: a hand-built page with a slash gets its own title and canonical too
 
 ## `src/AppErrorBoundary.test.js`
 

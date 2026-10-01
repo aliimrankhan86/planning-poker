@@ -386,7 +386,7 @@ export const ROUTE_CONTENT = {
   "/features": {
     h1: "Planning Poker Features: All Free",
     intro:
-      "Everything below is included for every team at no cost: the live planning flow and the repeatable operational layer that brings the same team back sprint after sprint.",
+      "Everything below is free for every team: simultaneous reveal, three card decks, a story queue you can paste a whole backlog into, a countdown timer, facilitator analytics and CSV export. A free account adds two permanent Team Rooms and sprint history.",
     bullets: [
       "Simultaneous vote reveal that removes anchoring bias",
       "Fibonacci (1–34), T-shirt sizing (XS–XXL), and Powers of 2 decks",
@@ -403,7 +403,7 @@ export const ROUTE_CONTENT = {
   "/pricing": {
     h1: "Planning Poker Pricing: Everything Is Free",
     intro:
-      "There is no paid tier, no trial countdown, and no credit card field anywhere on Point Poker. Every feature is free for everyone while we grow the user base.",
+      "There is no paid tier, no trial countdown and no credit card field anywhere on Point Poker. All three card decks, the countdown timer, facilitator analytics, story queues, CSV export and two fixed Team Rooms are free for every team, and they stay free.",
     body: [
       `One plan, $0: up to ${MAX_PARTICIPANTS} participants per room, unlimited voting rounds, unlimited stories, all card decks, the countdown timer, facilitator analytics, clipboard and CSV export, and two fixed Team Rooms with a free account.`,
       "A planning poker tool is only useful if the whole team will actually open it, and paywalls kill that on the first invite. The plan is to keep every feature free, watch how many teams use it, and only look at paid add-ons once there is a real user base to serve. If that day comes, everything described here stays free.",
@@ -660,7 +660,7 @@ export const ROUTE_CONTENT = {
   "/remote-sprint-planning": {
     h1: "Remote Sprint Planning Tool",
     intro:
-      "Run remote sprint planning with a shared planning poker room, facilitator controls, reusable Team Room links, and live sprint analytics.",
+      "Run the estimation part of remote sprint planning from one browser link. Share it in Slack, Teams or Zoom, everyone votes in private and the cards turn over together. A free account gives the team a Team Room link it reuses every sprint.",
     body: [
       "Team Rooms give a recurring squad two fixed URLs so nobody recreates and re-shares a room every sprint. Bookmark them once and they work every fortnight.",
       "Session summaries copy to the clipboard or download as CSV, so estimates land in Jira, Linear, Azure DevOps, or a spreadsheet without retyping.",
@@ -1127,7 +1127,7 @@ export const ROUTE_CONTENT = {
       "Point Poker exists because sprint planning tools kept getting heavier while the ceremony itself stayed simple: size the work, agree, move on.",
     body: [
       "The product is deliberately narrow — run planning poker well, keep the room flow clean, and add only what improves repeat use.",
-      "Nothing is locked behind billing. Every feature is free for every team while we find out how many teams this is genuinely useful to.",
+      "Nothing is locked behind billing. Every feature is free for every team.",
     ],
   },
   "/trust": {

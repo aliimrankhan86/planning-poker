@@ -41,3 +41,5 @@ ui-debug.log
 
 # Claude Code worktrees: local scratch, never part of the repo.
 .claude/worktrees/
+# Claude Code per-machine settings (permissions granted on this Mac).
+.claude/settings.local.json

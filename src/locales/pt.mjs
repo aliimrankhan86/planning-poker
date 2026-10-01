@@ -188,7 +188,7 @@ export const ui = {
     "Planning poker online e grátis, para sprint planning, scrum poker e estimativa remota",
   "home.h2sub":
     "O Point Poker dá aos times ágeis um jeito rápido e sem atrito de jogar planning poker online. Crie uma sala, compartilhe um link no Slack, no Teams ou no Zoom, e todo mundo vota ao mesmo tempo. Sem instalar nada, sem treinamento, sem anúncios e sem conta para jogar.",
-  "home.freeLead": "Agora tudo é grátis: todos os recursos, para todos os times.",
+  "home.freeLead": "Tudo é grátis: todos os recursos, para todos os times.",
   "home.freeBody":
     "Outras ferramentas de planning poker limitam as sessões gratuitas a um punhado de votações ou a sete participantes, ou escondem o cronômetro e as médias atrás de um plano pago. Aqui você tem {max} pessoas por sala, rodadas de votação ilimitadas, histórias ilimitadas, os três baralhos, o cronômetro, a análise completa e a exportação, por R$ 0. Nossa prioridade é ser realmente útil ao maior número possível de times. Se algum dia surgirem recursos pagos, tudo o que está nesta página continua grátis.",
   "home.revealTitle": "Por que revelar ao mesmo tempo faz diferença",
@@ -206,7 +206,7 @@ export const ui = {
   "home.plansAria": "Resumo de preços",
   "home.plansTitle": "O que custa: nada",
   "home.plansSub":
-    "Um produto, grátis para todos os times, enquanto descobrimos quantos vocês são. Sem níveis, sem contagem regressiva de teste, sem cartão.",
+    "Um produto, grátis para todos os times. Sem níveis, sem contagem regressiva de teste, sem cartão.",
   "home.planEveryone": "Para todos",
   "home.planFreeList": [
     "Até {max} participantes, facilitadores incluídos",

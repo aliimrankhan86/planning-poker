@@ -449,12 +449,12 @@ describe("pages rendered from route data", () => {
   });
 });
 
-/* The hand-built pages prerendered one H1 and hydrated into a different one,
-   so a crawler that runs JavaScript and one that does not were shown two
-   headings for the same URL (/features, /about, /trust, /pricing and
-   /remote-sprint-planning until 1 Oct 2026). One string in routeMeta.mjs now
-   feeds both. */
-describe("hand-built pages render the H1 the prerender sends", () => {
+/* The hand-built pages prerendered one H1 and intro and hydrated into
+   different ones, so a crawler that runs JavaScript and one that does not were
+   shown two heroes for the same URL (/features, /about, /trust, /pricing,
+   /support and /remote-sprint-planning until 1 Oct 2026). One pair of strings
+   in routeMeta.mjs now feeds both. */
+describe("hand-built pages render the hero the prerender sends", () => {
   const handBuilt = Object.entries(STATIC_SCREEN_BY_PATH)
     .filter(([path, s]) => !s.startsWith("/") && path !== "/" && ROUTE_CONTENT[path]?.h1)
     .map(([path]) => path);
@@ -465,10 +465,21 @@ describe("hand-built pages render the H1 the prerender sends", () => {
     expect(handBuilt).toEqual(expect.arrayContaining(["/features", "/about", "/pricing"]));
   });
 
-  test.each(handBuilt)("%s", (path) => {
+  test.each(handBuilt)("%s: same H1 and intro", (path) => {
     window.history.pushState({}, "", path);
     render(<App />);
+    const hero = screen.getByRole("heading", { level: 1 }).closest("section");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(ROUTE_CONTENT[path].h1);
+    expect(within(hero).getByText(ROUTE_CONTENT[path].intro)).toBeInTheDocument();
+  });
+
+  /* "Free for everyone, indefinitely" is the product. Copy that says free
+     "right now", "while we grow the user base" or offers an "upgrade path"
+     tells a reader the opposite, and five places said so until 1 Oct 2026. */
+  test.each(["/", "/pricing", "/about", "/trust", "/features"])("%s never calls free temporary or offers an upgrade", (path) => {
+    window.history.pushState({}, "", path);
+    render(<App />);
+    expect(document.body.textContent).not.toMatch(/while we (grow|find out)|free right now|upgrade path/i);
   });
 
   test("/features no longer offers to compare plans that do not exist", () => {
