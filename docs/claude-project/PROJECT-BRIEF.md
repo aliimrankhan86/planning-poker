@@ -1,6 +1,6 @@
 # Point Poker: project brief
 
-Last updated: 1 October 2026. Owner: Ali Khan. Live site: https://www.pointpoker.app
+Last updated: 2 October 2026. Owner: Ali Khan. Live site: https://www.pointpoker.app
 
 This file is the current state of the product, its search performance and the open work. It is updated as the last step of every major change (see `docs/claude-project/README.md`). Newer dated notes from Ali override it.
 
@@ -135,10 +135,21 @@ Baseline is 10 May to 9 Aug 2026. "Now" is 23 Aug to 20 Sep 2026.
 - `/planning-poker-jira` impressions fell 82% (141 to 25). The drop started 17 Sep, before any change, and removed only impressions at positions 60 to 80 that never produced a click. Its position improved to 39.4 and it took 2 clicks. The "planning poker for jira" results page is Marketplace apps, so the plugin intent cannot be met honestly. No change.
 - New queries worth watching: "best free planning poker" (32.2) and "best free planning poker tool" (33.5).
 
-### Indexing, 1 Oct 2026
+### Indexing, verified 2 Oct 2026
 
-- Sitemap: 26 discovered pages, correct.
-- Indexed 28, not indexed 16, as expected after the 23 Sep locale 301s. Page with redirect 12, all correct. `/pt/pointing-poker` and `/pt/pricing` still show as alternative canonical because they were last crawled before the 301. `/terms` discovered, not indexed. Nothing to fix.
+The Pages report shows 28 indexed and 16 not indexed, but its data is from 21 Sep, before the 23 Sep locale 301s. Every URL in it was checked on 2 Oct by fetching it as Googlebot and with Search Console's live URL test. Nothing is wrong and nothing needs doing.
+
+| Report status | URLs | Last crawled | Live on 2 Oct |
+|---|---|---|---|
+| Indexed, but not in the sitemap | `/pt/about`, `/pt/planning-poker-online`, `/ja/planning-poker-online` | 29 Aug, 13 Aug, 6 Sep | 308 to the English page. Google's live test lands on it with that page as canonical |
+| Alternative page with proper canonical tag (2, old validation "Failed") | `/pt/pointing-poker`, `/pt/pricing` | 29 Aug, 13 Aug | Same |
+| Crawled, currently not indexed | `/ja/planning-poker-jira` | 13 Aug | Same |
+| Page with redirect (12) | http, apex and retired `/de/`, `/es/`, `/fr/`, `/nl/` URLs | | Correct |
+| Discovered, currently not indexed | `/terms` | Never | 200, indexable, self-canonical. URL Inspection calls it unknown to Google. Only the sitemap and the cookie notice link to it, because the footer's Terms and Privacy are buttons. No search value, no action |
+
+- Back then the six old locale URLs served the home page with a canonical of `/`. That is why Google set them aside. They now 308 to the English page, and no page links to them.
+- 25 of the 26 sitemap pages are indexed. The missing one is `/terms`.
+- Expected once Google recrawls the six old URLs, with no action: 25 indexed (26 if `/terms` gets crawled) and 19 not indexed, 18 of them redirects.
 - Core Web Vitals: no data (not enough traffic).
 
 ## 6. Changes shipped since 23 Sep 2026
@@ -186,7 +197,7 @@ This is a judgement, not a measurement. The 4 Nov review is the evidence.
    - "pointing poker": still on page 1 (6.9 on 1 Oct, 16.9 at the baseline) and still owned by `/pointing-poker`
    - `/scrum-poker` positions for "scrum poker", "scrum poker online", "free scrum poker", "scrum poker app" after the 1 Oct room form (21.2, 14.8, 19.2 and 16.0 on 1 Oct)
    - Whether "best free planning poker" queries grow enough to justify a comparison section
-   - Indexed count falling back towards 26, redirects rising by up to six
+   - Indexed count at 25 (26 if `/terms` is crawled), Page with redirect at up to 18 (see "Indexing, verified 2 Oct 2026")
    - `/ja/*` clicks and the position of プランニングポーカー
    - Links report: which external sites Google has picked up
 4. After that review: the on-site changes it points to (see section 8).

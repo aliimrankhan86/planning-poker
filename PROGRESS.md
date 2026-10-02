@@ -23,6 +23,18 @@ three reports are one line each, and item 3 in particular should not be
 
 Full reasoning in `CLAUDE.md` under "OPEN — three room defects".
 
+## 2 October 2026: indexing report checked
+
+The Pages report (data from 21 Sep) showed 28 indexed and 16 not indexed. All
+of it is stale, not a fault. Six old `/pt/` and `/ja/` URLs were last crawled
+in August or early September, when they served the home page. They now 308
+to the English pages, and Search Console's live test confirms Google lands
+there with the right canonical. `/terms` is indexable but not yet crawled.
+Details and the expected end state are in the brief, "Indexing, verified
+2 Oct 2026". No code change.
+
+---
+
 ## Session: 1 October 2026, two-week Search Console read
 
 Ali shared two Search Console recommendation cards: `/pointing-poker` +320%
